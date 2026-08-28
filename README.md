@@ -19,5 +19,4 @@ Repositorio para las evidencias del proyecto APT122.
   - Evidencias Individuales
   - Evidencias Grupales
 
-Los nombres de los estudiantes deben escribirse en MAYÚSCULAS y SIN TILDES.
-Los documentos en inglés marcados como optativos pueden omitirse si no son requeridos.
+
