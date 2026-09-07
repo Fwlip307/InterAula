@@ -67,9 +67,27 @@ Para que la confirmación de correo y la recuperación de contraseñas redirijan
 
 ---
 
-## 6. Probar el Flujo Completo
+---
 
-Una vez configurado `.env.local`:
+## 6. Ejecutar la Migración de Base de Datos (Sprint 1: Perfiles y Hub de Proyectos)
+
+Para crear la tabla `profiles`, los catálogos de materias/habilidades, las tablas del Hub de Proyectos, los triggers automáticos y las políticas RLS:
+
+1. En el panel lateral de tu proyecto Supabase, dirígete a **SQL Editor** (ícono de terminal `>_`).
+2. Haz clic en **New query**.
+3. Abre el archivo local:
+   ```text
+   supabase/migrations/001_profiles_and_projects.sql
+   ```
+4. Copia todo su contenido y pégalo en el editor SQL de Supabase.
+5. Haz clic en el botón verde **Run** (o presiona `Ctrl + Enter`).
+6. Verás el mensaje `Success. No rows returned`. Con esto, la base de datos de InterAula estará completamente estructurada y lista con sus catálogos iniciales.
+
+---
+
+## 7. Probar el Flujo Completo
+
+Una vez configurado `.env.local` y ejecutada la migración:
 
 1. Inicia el servidor de desarrollo:
    ```bash
@@ -77,8 +95,9 @@ Una vez configurado `.env.local`:
    ```
 2. Abre `http://localhost:5173`.
 3. Prueba:
-   - **Registro:** Crea una cuenta en `/register`.
+   - **Registro:** Crea una cuenta en `/register` (o vía Google). Se creará automáticamente su perfil en `public.profiles`.
    - **Login:** Inicia sesión en `/login` (serás redirigido a `/dashboard`).
    - **Sesión persistente:** Recarga la página y comprueba que sigues en `/dashboard`.
    - **Cierre de sesión:** Presiona el botón "Cerrar sesión" en `/dashboard`.
    - **Recuperación:** Solicita un enlace en `/forgot-password` y cámbialo en `/update-password`.
+

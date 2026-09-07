@@ -42,6 +42,8 @@ const EyeOffIcon = () => (
   </svg>
 );
 
+import { LockIcon } from '../../components/common/Icons';
+
 // Formulario de restablecimiento de contraseña en InterAula
 export default function UpdatePassword() {
   const navigate = useNavigate();
@@ -142,7 +144,8 @@ export default function UpdatePassword() {
     <div className="auth-page-wrapper">
       <div className="auth-card">
         <div className="auth-brand-badge">
-          🔒 Nueva Credencial
+          <LockIcon size={16} />
+          <span>Nueva Credencial</span>
         </div>
 
         <h1 className="auth-title">Nueva contraseña</h1>

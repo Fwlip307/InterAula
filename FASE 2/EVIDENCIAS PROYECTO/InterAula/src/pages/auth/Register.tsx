@@ -64,6 +64,8 @@ const GoogleIcon = () => (
   </svg>
 );
 
+import { GraduationCapIcon } from '../../components/common/Icons';
+
 // Registro de usuarios con Supabase Auth en InterAula
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -158,7 +160,8 @@ export default function Register() {
     <div className="auth-page-wrapper">
       <div className="auth-card">
         <div className="auth-brand-badge">
-          🎓 Nueva Cuenta
+          <GraduationCapIcon size={16} />
+          <span>Nueva Cuenta</span>
         </div>
 
         <h1 className="auth-title">Crear cuenta</h1>

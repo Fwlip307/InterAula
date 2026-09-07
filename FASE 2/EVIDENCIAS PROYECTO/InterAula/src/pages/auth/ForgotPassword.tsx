@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
+import { KeyIcon } from '../../components/common/Icons';
+
 // Recuperación de contraseña mediante Supabase Auth para InterAula
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -58,7 +60,8 @@ export default function ForgotPassword() {
     <div className="auth-page-wrapper">
       <div className="auth-card">
         <div className="auth-brand-badge">
-          🔑 Seguridad
+          <KeyIcon size={16} />
+          <span>Seguridad</span>
         </div>
 
         <h1 className="auth-title">Recuperar contraseña</h1>

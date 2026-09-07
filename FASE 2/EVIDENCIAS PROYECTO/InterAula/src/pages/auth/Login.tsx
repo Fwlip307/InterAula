@@ -41,6 +41,8 @@ const GoogleIcon = () => (
   </svg>
 );
 
+import { GraduationCapIcon } from '../../components/common/Icons';
+
 // Inicio de sesión con correo/contraseña y Google OAuth en InterAula
 export default function Login() {
   const navigate = useNavigate();
@@ -103,7 +105,8 @@ export default function Login() {
     <div className="auth-page-wrapper">
       <div className="auth-card">
         <div className="auth-brand-badge">
-          🎓 Portal Académico
+          <GraduationCapIcon size={16} />
+          <span>Portal Académico</span>
         </div>
 
         <h1 className="auth-title">Iniciar sesión</h1>

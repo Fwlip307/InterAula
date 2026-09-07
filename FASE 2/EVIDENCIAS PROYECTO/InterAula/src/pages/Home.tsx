@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { GraduationCapIcon } from '../components/common/Icons';
 
 // Página de inicio o bienvenida de InterAula
 export default function Home() {
@@ -9,7 +10,8 @@ export default function Home() {
     <div className="auth-page-wrapper">
       <div className="auth-card" style={{ textAlign: 'center' }}>
         <div className="auth-brand-badge">
-          🎓 Plataforma Universitaria
+          <GraduationCapIcon size={16} />
+          <span>Plataforma Universitaria</span>
         </div>
 
         <h1 className="auth-title">Bienvenido a InterAula</h1>

@@ -1,0 +1,1210 @@
+/* ==========================================================================
+   InterAula - Estilos de la Vista Genérica del Dashboard Académico
+   ========================================================================== */
+
+.ia-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* Barra superior de navegación */
+.ia-navbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+.ia-navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ia-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.ia-brand-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.ia-brand-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.ia-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.ia-nav-item {
+  color: #475569;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.ia-nav-item:hover,
+.ia-nav-item.active {
+  color: #2563eb;
+}
+
+.ia-nav-user {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ia-user-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f1f5f9;
+  padding: 5px 12px 5px 6px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ia-user-pill-btn:hover {
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.ia-user-avatar {
+  width: 28px;
+  height: 28px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ia-user-avatar-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ia-user-name-text {
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Menú desplegable de usuario */
+.ia-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 6px;
+  z-index: 50;
+  animation: iaFadeDown 0.15s ease-out;
+}
+
+@keyframes iaFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ia-dropdown-header {
+  padding: 10px 12px;
+}
+
+.ia-dropdown-header strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ia-dropdown-email {
+  font-size: 0.76rem;
+  color: #64748b;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ia-dropdown-divider {
+  height: 1px;
+  background-color: #f1f5f9;
+  margin: 4px 0;
+}
+
+.ia-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #334155;
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.ia-dropdown-item:hover {
+  background-color: #f1f5f9;
+  color: #2563eb;
+}
+
+.ia-dropdown-item.danger {
+  color: #dc2626;
+}
+
+.ia-dropdown-item.danger:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Botón menú móvil */
+.ia-mobile-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 28px;
+  height: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ia-hamburger-line {
+  display: block;
+  height: 2.5px;
+  width: 100%;
+  background-color: #334155;
+  border-radius: 2px;
+}
+
+.ia-mobile-nav {
+  display: none;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 20px 20px 20px;
+}
+
+.ia-mobile-nav-item {
+  display: block;
+  padding: 10px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.ia-mobile-nav-item.active {
+  color: #2563eb;
+}
+
+/* Contenido Principal */
+.ia-main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 20px 60px 20px;
+  box-sizing: border-box;
+}
+
+/* Banner de Bienvenida */
+.ia-hero-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #0284c7 100%);
+  border-radius: 20px;
+  padding: 36px 32px;
+  color: #ffffff;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.ia-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ia-hero-text h1 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.ia-hero-text p {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.92;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.ia-hero-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.ia-btn-hero-primary {
+  background-color: #ffffff;
+  color: #1d4ed8;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ia-btn-hero-primary:hover {
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.ia-btn-hero-secondary {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.ia-btn-hero-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Tarjetas de Métricas */
+.ia-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.ia-stat-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.ia-stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.ia-stat-icon.blue { background-color: #eff6ff; color: #2563eb; }
+.ia-stat-icon.green { background-color: #f0fdf4; color: #16a34a; }
+.ia-stat-icon.amber { background-color: #fffbeb; color: #d97706; }
+.ia-stat-icon.purple { background-color: #faf5ff; color: #9333ea; }
+
+.ia-stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.ia-stat-label {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Grid de contenido de dos columnas */
+.ia-content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.ia-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 24px;
+}
+
+.ia-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.ia-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ia-card-action {
+  font-size: 0.85rem;
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ia-card-action:hover {
+  text-decoration: underline;
+}
+
+/* Lista de Tutorías / Sesiones */
+.ia-session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
+}
+
+.ia-session-item:hover {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.ia-session-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ia-session-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ia-session-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 3px 0;
+}
+
+.ia-session-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.ia-session-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Tags de Materias */
+.ia-tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ia-tag {
+  background-color: #f1f5f9;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ia-tag:hover {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+/* Avisos / Notificaciones */
+.ia-notice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ia-notice-item {
+  padding-left: 12px;
+  border-left: 3px solid #2563eb;
+}
+
+.ia-notice-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+}
+
+.ia-notice-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ==========================================================================
+   Banner de Perfil Incompleto
+   ========================================================================== */
+.ia-banner-alert {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08);
+}
+
+.ia-banner-alert-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.ia-banner-alert-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #fef3c7;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ia-banner-alert-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 4px 0;
+}
+
+.ia-banner-alert-text {
+  font-size: 0.88rem;
+  color: #78350f;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.ia-banner-alert-btn {
+  background-color: #d97706;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ia-banner-alert-btn:hover {
+  background-color: #b45309;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Badges y Estados de Disponibilidad
+   ========================================================================== */
+.ia-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ia-badge-success {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.ia-badge-neutral {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.ia-badge-blue {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.ia-badge-amber {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.ia-badge-purple {
+  background-color: #faf5ff;
+  color: #9333ea;
+  border: 1px solid #e9d5ff;
+}
+
+/* ==========================================================================
+   Vistas de Perfil (Profile & Public Profile)
+   ========================================================================== */
+.ia-profile-header-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  margin-bottom: 28px;
+}
+
+.ia-profile-cover {
+  height: 140px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #38bdf8 100%);
+  position: relative;
+}
+
+.ia-profile-header-body {
+  padding: 0 32px 28px 32px;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: -50px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.ia-profile-avatar-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.ia-profile-avatar-xl {
+  width: 100px;
+  height: 100px;
+  border-radius: 24px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: 4px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: 800;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ia-profile-avatar-img-xl {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ia-profile-main-meta h1 {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.ia-profile-main-meta p {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.ia-profile-sub-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #64748b;
+  align-items: center;
+}
+
+.ia-profile-sub-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ia-profile-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ==========================================================================
+   Elementos de Formulario y Edición de Perfil
+   ========================================================================== */
+.ia-form-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.ia-form-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ia-form-section-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0 0 20px 0;
+}
+
+.ia-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.ia-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ia-form-group.full {
+  grid-column: span 2;
+}
+
+.ia-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ia-label-hint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.ia-input,
+.ia-select,
+.ia-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  color: #0f172a;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.ia-input:focus,
+.ia-select:focus,
+.ia-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.ia-input:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Switches Modernos */
+.ia-switch-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  transition: all 0.15s ease;
+}
+
+.ia-switch-card:hover {
+  background-color: #f1f5f9;
+}
+
+.ia-switch-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ia-switch-info p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.ia-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.ia-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ia-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.2s;
+  border-radius: 34px;
+}
+
+.ia-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+input:checked + .ia-slider {
+  background-color: #16a34a;
+}
+
+input:checked + .ia-slider:before {
+  transform: translateX(22px);
+}
+
+/* Chips / Tags seleccionables */
+.ia-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ia-chip-btn {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ia-chip-btn:hover {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+.ia-chip-btn.active {
+  background-color: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+/* Listados de Materias / Habilidades en Perfil y Edición */
+.ia-catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.ia-catalog-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  transition: all 0.15s ease;
+}
+
+.ia-catalog-item:hover {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.ia-catalog-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.ia-catalog-item-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.ia-catalog-item-desc {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+/* Botones y Utilidades */
+.ia-btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.ia-btn-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.ia-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ia-btn-secondary {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.ia-btn-secondary:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.ia-btn-icon-danger {
+  background: none;
+  border: 1px solid transparent;
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ia-btn-icon-danger:hover {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* Cajas de Estado Vacío */
+.ia-empty-box {
+  padding: 36px 20px;
+  text-align: center;
+  background-color: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+}
+
+.ia-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px auto;
+}
+
+.ia-empty-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #334155;
+  margin: 0 0 6px 0;
+}
+
+.ia-empty-desc {
+  font-size: 0.85rem;
+  color: #64748b;
+  max-width: 420px;
+  margin: 0 auto 14px auto;
+  line-height: 1.4;
+}
+
+/* Footer */
+.ia-footer {
+  border-top: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  padding: 24px 20px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Responsividad */
+@media (max-width: 900px) {
+  .ia-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ia-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ia-hero-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .ia-nav-links {
+    display: none;
+  }
+
+  .ia-mobile-toggle {
+    display: flex;
+  }
+
+  .ia-mobile-nav {
+    display: block;
+  }
+
+  .ia-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ia-form-group.full {
+    grid-column: span 1;
+  }
+
+  .ia-profile-header-body {
+    padding: 0 20px 20px 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .ia-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ia-navbar-inner {
+    padding: 0 14px;
+  }
+
+  .ia-hero-text h1 {
+    font-size: 1.45rem;
+  }
+
+  .ia-user-name-text {
+    display: none;
+  }
+
+  .ia-banner-alert {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ia-banner-alert-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ia-profile-avatar-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ia-profile-actions {
+    width: 100%;
+  }
+
+  .ia-profile-actions a,
+  .ia-profile-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
