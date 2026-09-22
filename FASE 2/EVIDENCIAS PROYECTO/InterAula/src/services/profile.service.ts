@@ -12,16 +12,39 @@ import type {
   AcademicLevel,
 } from '../types/profile';
 
+/**
+ * Helper interno para obtener el usuario autenticado obligatorio en operaciones de mutación.
+ * Si no hay sesión válida activa, lanza un error tipado.
+ */
+async function getRequiredAuthUser() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    throw new Error('Usuario no autenticado');
+  }
+  return authData.user;
+}
+
+/**
+ * Helper interno para obtener el usuario autenticado opcional (ej. consultas de lectura).
+ */
+async function getOptionalAuthUser() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    return null;
+  }
+  return authData.user;
+}
+
 export const profileService = {
   // Obtener perfil del usuario actualmente autenticado
   async getMyProfile(): Promise<Profile | null> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) return null;
+    const user = await getOptionalAuthUser();
+    if (!user) return null;
 
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', authData.user.id)
+      .eq('id', user.id)
       .single();
 
     if (error) {
@@ -48,13 +71,12 @@ export const profileService = {
 
   // Actualizar datos del perfil del usuario en sesión
   async updateMyProfile(data: UpdateProfileDTO): Promise<Profile | null> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { data: updated, error } = await supabase
       .from('profiles')
       .update(data)
-      .eq('id', authData.user.id)
+      .eq('id', user.id)
       .select()
       .single();
 
@@ -113,13 +135,12 @@ export const profileService = {
     level: AcademicLevel,
     description?: string
   ): Promise<OfferedSubject> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { data, error } = await supabase
       .from('profile_offered_subjects')
       .upsert({
-        profile_id: authData.user.id,
+        profile_id: user.id,
         subject_id: subjectId,
         level,
         description: description || null,
@@ -136,13 +157,12 @@ export const profileService = {
 
   // Eliminar materia ofrecida
   async removeOfferedSubject(subjectId: string): Promise<void> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { error } = await supabase
       .from('profile_offered_subjects')
       .delete()
-      .eq('profile_id', authData.user.id)
+      .eq('profile_id', user.id)
       .eq('subject_id', subjectId);
 
     if (error) {
@@ -157,13 +177,12 @@ export const profileService = {
     currentLevel?: AcademicLevel,
     notes?: string
   ): Promise<NeededSubject> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { data, error } = await supabase
       .from('profile_needed_subjects')
       .upsert({
-        profile_id: authData.user.id,
+        profile_id: user.id,
         subject_id: subjectId,
         current_level: currentLevel || null,
         notes: notes || null,
@@ -180,13 +199,12 @@ export const profileService = {
 
   // Eliminar materia necesaria
   async removeNeededSubject(subjectId: string): Promise<void> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { error } = await supabase
       .from('profile_needed_subjects')
       .delete()
-      .eq('profile_id', authData.user.id)
+      .eq('profile_id', user.id)
       .eq('subject_id', subjectId);
 
     if (error) {
@@ -225,13 +243,12 @@ export const profileService = {
 
   // Agregar habilidad al perfil
   async addProfileSkill(skillId: string, level: AcademicLevel): Promise<ProfileSkill> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { data, error } = await supabase
       .from('profile_skills')
       .upsert({
-        profile_id: authData.user.id,
+        profile_id: user.id,
         skill_id: skillId,
         level,
       })
@@ -247,13 +264,12 @@ export const profileService = {
 
   // Eliminar habilidad del perfil
   async removeProfileSkill(skillId: string): Promise<void> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { error } = await supabase
       .from('profile_skills')
       .delete()
-      .eq('profile_id', authData.user.id)
+      .eq('profile_id', user.id)
       .eq('skill_id', skillId);
 
     if (error) {
@@ -292,13 +308,12 @@ export const profileService = {
 
   // Agregar área de interés al perfil
   async addProjectInterest(interestId: string): Promise<ProfileProjectInterest> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { data, error } = await supabase
       .from('profile_project_interests')
       .upsert({
-        profile_id: authData.user.id,
+        profile_id: user.id,
         interest_id: interestId,
       })
       .select('*, interest:project_interests(*)')
@@ -313,13 +328,12 @@ export const profileService = {
 
   // Eliminar área de interés del perfil
   async removeProjectInterest(interestId: string): Promise<void> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { error } = await supabase
       .from('profile_project_interests')
       .delete()
-      .eq('profile_id', authData.user.id)
+      .eq('profile_id', user.id)
       .eq('interest_id', interestId);
 
     if (error) {

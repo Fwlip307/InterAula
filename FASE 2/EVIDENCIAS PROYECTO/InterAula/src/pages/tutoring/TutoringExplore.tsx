@@ -9,6 +9,7 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
 } from '../../components/common/Icons';
+import EmptyState from '../../components/common/EmptyState';
 
 export default function TutoringExplore() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -116,9 +117,10 @@ export default function TutoringExplore() {
             ))}
           </div>
         ) : (
-          <div className="ia-empty-box">
-            <p className="ia-empty-desc">No se encontraron materias que coincidan con "{searchTerm}".</p>
-          </div>
+          <EmptyState
+            title="Sin coincidencias"
+            description={`No se encontraron materias que coincidan con "${searchTerm}".`}
+          />
         )}
       </div>
 

@@ -24,6 +24,8 @@ import {
   XIcon,
   EditIcon,
 } from '../components/common/Icons';
+import EmptyState from '../components/common/EmptyState';
+import { getUserDisplayName } from '../utils/formatters';
 import '../styles/dashboard.css';
 
 export default function Dashboard() {
@@ -85,14 +87,8 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  // Saludo dinámico según Requisito 4
-  const greetingName =
-    profile?.first_name ||
-    profile?.display_name ||
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email?.split('@')[0] ||
-    'Estudiante';
+  // Saludo dinámico según Requisito 4 mediante función centralizada
+  const greetingName = getUserDisplayName(profile, user?.user_metadata, user?.email);
 
   return (
     <div>
@@ -206,23 +202,21 @@ export default function Dashboard() {
             </div>
 
             {/* Estado Vacío Conectado (Requisito 3) */}
-            <div className="ia-empty-box">
-              <div className="ia-empty-icon">
-                <CalendarIcon size={26} color="#94a3b8" />
-              </div>
-              <h3 className="ia-empty-title">Aún no tienes tutorías agendadas</h3>
-              <p className="ia-empty-desc">
-                Explora los tutores pares disponibles en la comunidad o indica qué materias puedes enseñar para que otros estudiantes te contacten.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Link to="/tutoring" className="ia-btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                  Explorar Tutorías
-                </Link>
-                <Link to="/profile/edit" className="ia-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                  Gestionar Materias
-                </Link>
-              </div>
-            </div>
+            <EmptyState
+              icon={<CalendarIcon size={26} color="#94a3b8" />}
+              title="Aún no tienes tutorías agendadas"
+              description="Explora los tutores pares disponibles en la comunidad o indica qué materias puedes enseñar para que otros estudiantes te contacten."
+              action={
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <Link to="/tutoring" className="ia-btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                    Explorar Tutorías
+                  </Link>
+                  <Link to="/profile/edit" className="ia-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                    Gestionar Materias
+                  </Link>
+                </div>
+              }
+            />
           </div>
 
           {/* Asignaturas Disponibles en Catálogo Real */}

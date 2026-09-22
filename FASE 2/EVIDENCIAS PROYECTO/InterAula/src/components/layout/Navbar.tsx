@@ -9,6 +9,7 @@ import {
   SettingsIcon,
   ChevronDownIcon,
 } from '../common/Icons';
+import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -31,13 +32,11 @@ export default function Navbar() {
         console.error('[Navbar] Error al cargar perfil:', err);
       }
     }
-    if (user) {
-      loadProfile();
-    }
+    loadProfile();
     return () => {
       isMounted = false;
     };
-  }, [user, location.pathname]);
+  }, [location.pathname]);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -61,16 +60,9 @@ export default function Navbar() {
     navigate('/login', { replace: true });
   };
 
-  // Cálculo del avatar y nombre a mostrar
-  const displayName =
-    profile?.first_name ||
-    profile?.display_name ||
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.name ||
-    user?.email?.split('@')[0] ||
-    'Usuario';
-
-  const initial = (displayName[0] || 'U').toUpperCase();
+  // Cálculo del avatar y nombre a mostrar mediante utilidad centralizada
+  const displayName = getUserDisplayName(profile, user?.user_metadata, user?.email);
+  const initial = getUserInitial(displayName);
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
 
   return (

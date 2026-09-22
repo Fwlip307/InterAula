@@ -7,6 +7,7 @@ import {
   ArrowLeftIcon,
   EditIcon,
 } from '../../components/common/Icons';
+import EmptyState from '../../components/common/EmptyState';
 
 export default function ProjectsHub() {
   return (
@@ -74,25 +75,22 @@ export default function ProjectsHub() {
 
       {/* Estado del Módulo */}
       <div className="ia-card">
-        <div className="ia-empty-box" style={{ padding: '50px 20px' }}>
-          <div className="ia-empty-icon" style={{ width: '64px', height: '64px', backgroundColor: '#eff6ff', color: '#2563eb' }}>
-            <BriefcaseIcon size={32} />
-          </div>
-          <h2 className="ia-empty-title" style={{ fontSize: '1.3rem' }}>
-            El Hub de Proyectos está en construcción activa
-          </h2>
-          <p className="ia-empty-desc" style={{ maxWidth: '540px' }}>
-            Las tablas y modelos de seguridad (proyectos, vacantes, membresías y postulaciones protegidas) ya se encuentran desplegadas en Supabase. La interfaz de gestión y postulación de proyectos se activará en el siguiente Sprint.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
-            <Link to="/profile" className="ia-btn-secondary">
-              Ver mi perfil actual
-            </Link>
-            <Link to="/dashboard" className="ia-btn-primary">
-              <ArrowLeftIcon size={16} /> Volver al panel
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          style={{ padding: '50px 20px' }}
+          icon={<BriefcaseIcon size={32} color="#2563eb" />}
+          title="El Hub de Proyectos está en construcción activa"
+          description="Las tablas y modelos de seguridad (proyectos, vacantes, membresías y postulaciones protegidas) ya se encuentran desplegadas en Supabase. La interfaz de gestión y postulación de proyectos se activará en el siguiente Sprint."
+          action={
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+              <Link to="/profile" className="ia-btn-secondary">
+                Ver mi perfil actual
+              </Link>
+              <Link to="/dashboard" className="ia-btn-primary">
+                <ArrowLeftIcon size={16} /> Volver al panel
+              </Link>
+            </div>
+          }
+        />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
 } from '../../components/common/Icons';
+import EmptyState from '../../components/common/EmptyState';
 
 export default function MyTutoring() {
   return (
@@ -22,25 +23,22 @@ export default function MyTutoring() {
       </div>
 
       <div className="ia-card">
-        <div className="ia-empty-box" style={{ padding: '48px 20px' }}>
-          <div className="ia-empty-icon" style={{ width: '60px', height: '60px', backgroundColor: '#eff6ff', color: '#2563eb' }}>
-            <CalendarIcon size={30} />
-          </div>
-          <h2 className="ia-empty-title" style={{ fontSize: '1.25rem' }}>
-            Aún no tienes sesiones agendadas
-          </h2>
-          <p className="ia-empty-desc" style={{ maxWidth: '480px' }}>
-            El módulo de agendamiento y salas de encuentro se activará en el Sprint correspondiente. Mientras tanto, mantén actualizado tu catálogo de materias en tu perfil.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
-            <Link to="/tutoring" className="ia-btn-primary">
-              <BookOpenIcon size={16} /> Explorar materias
-            </Link>
-            <Link to="/profile/edit" className="ia-btn-secondary">
-              <UsersIcon size={16} /> Configurar mis materias
-            </Link>
-          </div>
-        </div>
+        <EmptyState
+          style={{ padding: '48px 20px' }}
+          icon={<CalendarIcon size={30} color="#2563eb" />}
+          title="Aún no tienes sesiones agendadas"
+          description="El módulo de agendamiento y salas de encuentro se activará en el Sprint correspondiente. Mientras tanto, mantén actualizado tu catálogo de materias en tu perfil."
+          action={
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/tutoring" className="ia-btn-primary">
+                <BookOpenIcon size={16} /> Explorar materias
+              </Link>
+              <Link to="/profile/edit" className="ia-btn-secondary">
+                <UsersIcon size={16} /> Configurar mis materias
+              </Link>
+            </div>
+          }
+        />
       </div>
 
       <div className="ia-card" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>

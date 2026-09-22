@@ -8,7 +8,6 @@ import type {
   NeededSubject,
   ProfileSkill,
   ProfileProjectInterest,
-  AcademicLevel,
 } from '../../types/profile';
 import {
   EditIcon,
@@ -23,20 +22,8 @@ import {
   MapPinIcon,
   GraduationCapIcon,
 } from '../../components/common/Icons';
-
-// Función para traducir los niveles académicos
-const translateLevel = (level: AcademicLevel | null): string => {
-  switch (level) {
-    case 'basic':
-      return 'Básico';
-    case 'intermediate':
-      return 'Intermedio';
-    case 'advanced':
-      return 'Avanzado';
-    default:
-      return 'Nivel no especificado';
-  }
-};
+import EmptyState from '../../components/common/EmptyState';
+import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
 
 export default function ProfileView() {
   const { user } = useAuth();
@@ -93,11 +80,8 @@ export default function ProfileView() {
     );
   }
 
-  const fullName = profile?.first_name
-    ? `${profile.first_name} ${profile.last_name || ''}`.trim()
-    : profile?.display_name || user?.email?.split('@')[0] || 'Estudiante';
-
-  const initial = (fullName[0] || 'U').toUpperCase();
+  const fullName = getUserDisplayName(profile, user?.user_metadata, user?.email);
+  const initial = getUserInitial(fullName);
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
 
   return (
@@ -172,14 +156,15 @@ export default function ProfileView() {
                 {profile.bio}
               </p>
             ) : (
-              <div className="ia-empty-box" style={{ padding: '24px' }}>
-                <p className="ia-empty-desc" style={{ margin: '0 0 12px 0' }}>
-                  Aún no has agregado una descripción personal.
-                </p>
-                <Link to="/profile/edit" className="ia-btn-secondary" style={{ fontSize: '0.82rem', padding: '6px 14px' }}>
-                  Agregar descripción
-                </Link>
-              </div>
+              <EmptyState
+                style={{ padding: '24px' }}
+                description="Aún no has agregado una descripción personal."
+                action={
+                  <Link to="/profile/edit" className="ia-btn-secondary" style={{ fontSize: '0.82rem', padding: '6px 14px' }}>
+                    Agregar descripción
+                  </Link>
+                }
+              />
             )}
           </div>
 
@@ -209,24 +194,22 @@ export default function ProfileView() {
                       </div>
                     </div>
                     <span className="ia-badge ia-badge-blue">
-                      {translateLevel(item.level)}
+                      {formatAcademicLevel(item.level)}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="ia-empty-box">
-                <div className="ia-empty-icon">
-                  <BookOpenIcon size={26} color="#94a3b8" />
-                </div>
-                <h3 className="ia-empty-title">Aún no has indicado materias que puedas enseñar</h3>
-                <p className="ia-empty-desc">
-                  Comparte tus conocimientos con otros compañeros universitarios y genera impacto académico.
-                </p>
-                <Link to="/profile/edit" className="ia-btn-primary" style={{ fontSize: '0.85rem' }}>
-                  Agregar materias
-                </Link>
-              </div>
+              <EmptyState
+                icon={<BookOpenIcon size={26} color="#94a3b8" />}
+                title="Aún no has indicado materias que puedas enseñar"
+                description="Comparte tus conocimientos con otros compañeros universitarios y genera impacto académico."
+                action={
+                  <Link to="/profile/edit" className="ia-btn-primary" style={{ fontSize: '0.85rem' }}>
+                    Agregar materias
+                  </Link>
+                }
+              />
             )}
           </div>
 
@@ -257,25 +240,23 @@ export default function ProfileView() {
                     </div>
                     {item.current_level && (
                       <span className="ia-badge ia-badge-amber">
-                        Nivel actual: {translateLevel(item.current_level)}
+                        Nivel actual: {formatAcademicLevel(item.current_level)}
                       </span>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="ia-empty-box">
-                <div className="ia-empty-icon">
-                  <UsersIcon size={26} color="#94a3b8" />
-                </div>
-                <h3 className="ia-empty-title">Aún no has indicado materias en las que necesites apoyo</h3>
-                <p className="ia-empty-desc">
-                  Indica qué asignaturas te representan un desafío para que tutores pares puedan encontrarte.
-                </p>
-                <Link to="/profile/edit" className="ia-btn-secondary" style={{ fontSize: '0.85rem' }}>
-                  Solicitar apoyo
-                </Link>
-              </div>
+              <EmptyState
+                icon={<UsersIcon size={26} color="#94a3b8" />}
+                title="Aún no has indicado materias en las que necesites apoyo"
+                description="Indica qué asignaturas te representan un desafío para que tutores pares puedan encontrarte."
+                action={
+                  <Link to="/profile/edit" className="ia-btn-secondary" style={{ fontSize: '0.85rem' }}>
+                    Solicitar apoyo
+                  </Link>
+                }
+              />
             )}
           </div>
         </div>
@@ -348,7 +329,7 @@ export default function ProfileView() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {skills.map((sk) => (
                     <span key={sk.skill_id} className="ia-badge ia-badge-amber">
-                      {sk.skill?.name} · {translateLevel(sk.level)}
+                      {sk.skill?.name} · {formatAcademicLevel(sk.level)}
                     </span>
                   ))}
                 </div>

@@ -6,6 +6,28 @@ import type {
   ProjectApplication,
 } from '../types/project';
 
+/**
+ * Helper interno para obtener el usuario autenticado obligatorio en operaciones de mutación.
+ */
+async function getRequiredAuthUser() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    throw new Error('Usuario no autenticado');
+  }
+  return authData.user;
+}
+
+/**
+ * Helper interno para obtener el usuario autenticado opcional (ej. consultas de lectura de proyectos propios).
+ */
+async function getOptionalAuthUser() {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    return null;
+  }
+  return authData.user;
+}
+
 export const projectService = {
   // Obtener proyectos públicos activos para el Hub
   async getProjects(): Promise<Project[]> {
@@ -39,13 +61,13 @@ export const projectService = {
 
   // Obtener proyectos creados por el usuario en sesión
   async getMyProjects(): Promise<Project[]> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) return [];
+    const user = await getOptionalAuthUser();
+    if (!user) return [];
 
     const { data, error } = await supabase
       .from('projects')
       .select('*, owner:profiles(*)')
-      .eq('owner_id', authData.user.id)
+      .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -87,13 +109,13 @@ export const projectService = {
 
   // Obtener postulaciones enviadas por el usuario actual
   async getMyApplications(): Promise<ProjectApplication[]> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) return [];
+    const user = await getOptionalAuthUser();
+    if (!user) return [];
 
     const { data, error } = await supabase
       .from('project_applications')
       .select('*, project:projects(*), position:project_positions(*)')
-      .eq('applicant_id', authData.user.id)
+      .eq('applicant_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -109,15 +131,14 @@ export const projectService = {
     positionId: string,
     message?: string
   ): Promise<ProjectApplication> {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) throw new Error('Usuario no autenticado');
+    const user = await getRequiredAuthUser();
 
     const { data, error } = await supabase
       .from('project_applications')
       .insert({
         project_id: projectId,
         position_id: positionId,
-        applicant_id: authData.user.id,
+        applicant_id: user.id,
         message: message?.trim() || null,
         status: 'pending',
       })

@@ -4,6 +4,7 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
 } from '../../components/common/Icons';
+import EmptyState from '../../components/common/EmptyState';
 
 export default function Resources() {
   return (
@@ -20,20 +21,17 @@ export default function Resources() {
       </div>
 
       <div className="ia-card">
-        <div className="ia-empty-box" style={{ padding: '50px 20px' }}>
-          <div className="ia-empty-icon" style={{ width: '60px', height: '60px', backgroundColor: '#f0fdf4', color: '#16a34a' }}>
-            <BookOpenIcon size={30} />
-          </div>
-          <h2 className="ia-empty-title" style={{ fontSize: '1.25rem' }}>
-            Repositorio Académico en Desarrollo
-          </h2>
-          <p className="ia-empty-desc" style={{ maxWidth: '480px' }}>
-            Próximamente podrás subir, compartir y descargar guías de estudio, apuntes de clases y resúmenes validados por tutores pares de tu misma universidad.
-          </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#eff6ff', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700, color: '#2563eb', marginTop: '12px' }}>
-            <SparklesIcon size={14} color="#2563eb" /> Módulo planificado para futuros Sprints
-          </div>
-        </div>
+        <EmptyState
+          style={{ padding: '50px 20px' }}
+          icon={<BookOpenIcon size={30} color="#16a34a" />}
+          title="Repositorio Académico en Desarrollo"
+          description="Próximamente podrás subir, compartir y descargar guías de estudio, apuntes de clases y resúmenes validados por tutores pares de tu misma universidad."
+          action={
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: '#eff6ff', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700, color: '#2563eb', marginTop: '12px' }}>
+              <SparklesIcon size={14} color="#2563eb" /> Módulo planificado para futuros Sprints
+            </div>
+          }
+        />
       </div>
     </div>
   );

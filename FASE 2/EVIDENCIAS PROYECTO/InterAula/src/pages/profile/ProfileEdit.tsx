@@ -17,20 +17,21 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   AlertCircleIcon,
-  PlusIcon,
-  TrashIcon,
-  BookOpenIcon,
-  UsersIcon,
-  CodeIcon,
-  SparklesIcon,
   BriefcaseIcon,
 } from '../../components/common/Icons';
+import { isValidUrl } from '../../utils/validators';
+
+// Subcomponentes modulares de catálogos
+import OfferedSubjectsSection from './components/OfferedSubjectsSection';
+import NeededSubjectsSection from './components/NeededSubjectsSection';
+import SkillsSection from './components/SkillsSection';
+import InterestsSection from './components/InterestsSection';
 
 export default function ProfileEdit() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Estados del perfil
+  // Estados del perfil principal
   const [_profile, setProfile] = useState<Profile | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -56,20 +57,6 @@ export default function ProfileEdit() {
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
   const [userSkills, setUserSkills] = useState<ProfileSkill[]>([]);
   const [userInterests, setUserInterests] = useState<ProfileProjectInterest[]>([]);
-
-  // Formulario rápido para agregar materia a enseñar
-  const [newOfferedSubjectId, setNewOfferedSubjectId] = useState('');
-  const [newOfferedLevel, setNewOfferedLevel] = useState<AcademicLevel>('intermediate');
-  const [newOfferedDesc, setNewOfferedDesc] = useState('');
-
-  // Formulario rápido para agregar materia que necesita aprender
-  const [newNeededSubjectId, setNewNeededSubjectId] = useState('');
-  const [newNeededLevel, setNewNeededLevel] = useState<AcademicLevel>('basic');
-  const [newNeededNotes, setNewNeededNotes] = useState('');
-
-  // Formulario rápido para agregar habilidad técnica
-  const [newSkillId, setNewSkillId] = useState('');
-  const [newSkillLevel, setNewSkillLevel] = useState<AcademicLevel>('intermediate');
 
   // Estados de carga y mensajes
   const [loading, setLoading] = useState(true);
@@ -148,24 +135,13 @@ export default function ProfileEdit() {
     };
   }, [user]);
 
-  // Validar URL opcional
-  const isValidUrl = (url: string) => {
-    if (!url.trim()) return true;
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   // Guardar información del formulario general
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccessMessage(null);
     setErrorMessage(null);
 
-    // Validar URLs
+    // Validación de URLs con el validador compartido
     if (!isValidUrl(portfolioUrl)) {
       setErrorMessage('La URL del sitio web o portafolio no es válida (ej: https://ejemplo.com).');
       return;
@@ -179,7 +155,7 @@ export default function ProfileEdit() {
       return;
     }
 
-    // Requisito 18: Verificar si el perfil está completo
+    // Verificar si los campos requeridos para considerar completo el perfil están presentes
     const isCompleted = Boolean(
       firstName.trim() &&
       lastName.trim() &&
@@ -220,21 +196,15 @@ export default function ProfileEdit() {
   };
 
   // 14. Agregar materia que puedo enseñar
-  const handleAddOfferedSubject = async () => {
-    if (!newOfferedSubjectId) return;
+  const handleAddOfferedSubject = async (subjectId: string, level: AcademicLevel, description: string) => {
     try {
       setErrorMessage(null);
-      const added = await profileService.addOfferedSubject(
-        newOfferedSubjectId,
-        newOfferedLevel,
-        newOfferedDesc.trim()
-      );
+      const added = await profileService.addOfferedSubject(subjectId, level, description);
       setOfferedSubjects((prev) => [...prev.filter((i) => i.subject_id !== added.subject_id), added]);
-      setNewOfferedSubjectId('');
-      setNewOfferedDesc('');
     } catch (err) {
       console.error('[ProfileEdit] Error al agregar materia ofrecida:', err);
       setErrorMessage('No se pudo agregar la materia ofrecida.');
+      throw err;
     }
   };
 
@@ -247,25 +217,20 @@ export default function ProfileEdit() {
     } catch (err) {
       console.error('[ProfileEdit] Error al eliminar materia:', err);
       setErrorMessage('No se pudo eliminar la materia.');
+      throw err;
     }
   };
 
   // 15. Agregar materia que quiero aprender
-  const handleAddNeededSubject = async () => {
-    if (!newNeededSubjectId) return;
+  const handleAddNeededSubject = async (subjectId: string, level: AcademicLevel, notes: string) => {
     try {
       setErrorMessage(null);
-      const added = await profileService.addNeededSubject(
-        newNeededSubjectId,
-        newNeededLevel,
-        newNeededNotes.trim()
-      );
+      const added = await profileService.addNeededSubject(subjectId, level, notes);
       setNeededSubjects((prev) => [...prev.filter((i) => i.subject_id !== added.subject_id), added]);
-      setNewNeededSubjectId('');
-      setNewNeededNotes('');
     } catch (err) {
       console.error('[ProfileEdit] Error al agregar materia necesaria:', err);
       setErrorMessage('No se pudo agregar la materia solicitada.');
+      throw err;
     }
   };
 
@@ -278,20 +243,20 @@ export default function ProfileEdit() {
     } catch (err) {
       console.error('[ProfileEdit] Error al eliminar materia:', err);
       setErrorMessage('No se pudo eliminar la materia solicitada.');
+      throw err;
     }
   };
 
   // 16. Agregar habilidad de proyecto
-  const handleAddSkill = async () => {
-    if (!newSkillId) return;
+  const handleAddSkill = async (skillId: string, level: AcademicLevel) => {
     try {
       setErrorMessage(null);
-      const added = await profileService.addProfileSkill(newSkillId, newSkillLevel);
+      const added = await profileService.addProfileSkill(skillId, level);
       setUserSkills((prev) => [...prev.filter((s) => s.skill_id !== added.skill_id), added]);
-      setNewSkillId('');
     } catch (err) {
       console.error('[ProfileEdit] Error al agregar habilidad:', err);
       setErrorMessage('No se pudo agregar la habilidad.');
+      throw err;
     }
   };
 
@@ -304,6 +269,7 @@ export default function ProfileEdit() {
     } catch (err) {
       console.error('[ProfileEdit] Error al eliminar habilidad:', err);
       setErrorMessage('No se pudo eliminar la habilidad.');
+      throw err;
     }
   };
 
@@ -322,6 +288,7 @@ export default function ProfileEdit() {
     } catch (err) {
       console.error('[ProfileEdit] Error al alternar interés:', err);
       setErrorMessage('No se pudo actualizar el área de interés.');
+      throw err;
     }
   };
 
@@ -332,21 +299,6 @@ export default function ProfileEdit() {
       </div>
     );
   }
-
-  // Materias aún no agregadas a ofrecidas
-  const availableCatalogOffered = catalogSubjects.filter(
-    (s) => !offeredSubjects.some((o) => o.subject_id === s.id)
-  );
-
-  // Materias aún no agregadas a necesitadas
-  const availableCatalogNeeded = catalogSubjects.filter(
-    (s) => !neededSubjects.some((n) => n.subject_id === s.id)
-  );
-
-  // Habilidades aún no agregadas
-  const availableCatalogSkills = catalogSkills.filter(
-    (s) => !userSkills.some((u) => u.skill_id === s.id)
-  );
 
   return (
     <div>
@@ -624,310 +576,36 @@ export default function ProfileEdit() {
         </div>
       </form>
 
-      {/* 14. Gestionar Materias que Puedo Enseñar */}
-      <div className="ia-form-section" id="offered-subjects">
-        <h2 className="ia-form-section-title">
-          <BookOpenIcon size={20} color="#2563eb" /> Materias que Puedo Enseñar ({offeredSubjects.length})
-        </h2>
-        <p className="ia-form-section-desc">
-          Selecciona materias del catálogo en las que tengas buen dominio y desees compartir con compañeros.
-        </p>
+      {/* 14. Gestionar Materias que Puedo Enseñar (Subcomponente modular) */}
+      <OfferedSubjectsSection
+        offeredSubjects={offeredSubjects}
+        catalogSubjects={catalogSubjects}
+        onAdd={handleAddOfferedSubject}
+        onRemove={handleRemoveOfferedSubject}
+      />
 
-        {/* Formulario para añadir */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ flex: '2', minWidth: '200px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Materia</label>
-            <select
-              className="ia-select"
-              value={newOfferedSubjectId}
-              onChange={(e) => setNewOfferedSubjectId(e.target.value)}
-            >
-              <option value="">-- Selecciona una materia --</option>
-              {availableCatalogOffered.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.category ? `(${s.category})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* 15. Gestionar Materias que Quiero Aprender (Subcomponente modular) */}
+      <NeededSubjectsSection
+        neededSubjects={neededSubjects}
+        catalogSubjects={catalogSubjects}
+        onAdd={handleAddNeededSubject}
+        onRemove={handleRemoveNeededSubject}
+      />
 
-          <div style={{ flex: '1', minWidth: '140px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Nivel de Dominio</label>
-            <select
-              className="ia-select"
-              value={newOfferedLevel}
-              onChange={(e) => setNewOfferedLevel(e.target.value as AcademicLevel)}
-            >
-              <option value="basic">Básico</option>
-              <option value="intermediate">Intermedio</option>
-              <option value="advanced">Avanzado</option>
-            </select>
-          </div>
+      {/* 16. Habilidades para el Hub de Proyectos (Subcomponente modular) */}
+      <SkillsSection
+        userSkills={userSkills}
+        catalogSkills={catalogSkills}
+        onAdd={handleAddSkill}
+        onRemove={handleRemoveSkill}
+      />
 
-          <div style={{ flex: '2', minWidth: '200px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Descripción / Enfoque (opcional)</label>
-            <input
-              type="text"
-              className="ia-input"
-              value={newOfferedDesc}
-              onChange={(e) => setNewOfferedDesc(e.target.value)}
-              placeholder="Ej. Apoyo en ejercicios y preparación de certámenes"
-            />
-          </div>
-
-          <button
-            type="button"
-            className="ia-btn-primary"
-            onClick={handleAddOfferedSubject}
-            disabled={!newOfferedSubjectId}
-            style={{ height: '42px' }}
-          >
-            <PlusIcon size={16} /> Agregar
-          </button>
-        </div>
-
-        {/* Listado de materias a enseñar */}
-        {offeredSubjects.length > 0 ? (
-          <div className="ia-catalog-list">
-            {offeredSubjects.map((item) => (
-              <div key={item.subject_id} className="ia-catalog-item">
-                <div className="ia-catalog-item-info">
-                  <div>
-                    <span className="ia-catalog-item-title">{item.subject?.name}</span>
-                    {item.description && (
-                      <p className="ia-catalog-item-desc">{item.description}</p>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="ia-badge ia-badge-blue">
-                    {item.level === 'basic' ? 'Básico' : item.level === 'intermediate' ? 'Intermedio' : 'Avanzado'}
-                  </span>
-                  <button
-                    type="button"
-                    className="ia-btn-icon-danger"
-                    onClick={() => handleRemoveOfferedSubject(item.subject_id)}
-                    title="Eliminar materia"
-                  >
-                    <TrashIcon size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-            Aún no has agregado materias que puedas enseñar.
-          </p>
-        )}
-      </div>
-
-      {/* 15. Gestionar Materias que Quiero Aprender */}
-      <div className="ia-form-section" id="needed-subjects">
-        <h2 className="ia-form-section-title">
-          <UsersIcon size={20} color="#16a34a" /> Materias en las que Necesito Ayuda ({neededSubjects.length})
-        </h2>
-        <p className="ia-form-section-desc">
-          Indica asignaturas donde requieras reforzamiento, tutorías pares o resolución de dudas.
-        </p>
-
-        {/* Formulario para añadir */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ flex: '2', minWidth: '200px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Materia</label>
-            <select
-              className="ia-select"
-              value={newNeededSubjectId}
-              onChange={(e) => setNewNeededSubjectId(e.target.value)}
-            >
-              <option value="">-- Selecciona una materia --</option>
-              {availableCatalogNeeded.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.category ? `(${s.category})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ flex: '1', minWidth: '140px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Nivel Actual</label>
-            <select
-              className="ia-select"
-              value={newNeededLevel}
-              onChange={(e) => setNewNeededLevel(e.target.value as AcademicLevel)}
-            >
-              <option value="basic">Básico</option>
-              <option value="intermediate">Intermedio</option>
-              <option value="advanced">Avanzado</option>
-            </select>
-          </div>
-
-          <div style={{ flex: '2', minWidth: '200px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Nota / Dificultad (opcional)</label>
-            <input
-              type="text"
-              className="ia-input"
-              value={newNeededNotes}
-              onChange={(e) => setNewNeededNotes(e.target.value)}
-              placeholder="Ej. Me cuesta la unidad de integrales triples"
-            />
-          </div>
-
-          <button
-            type="button"
-            className="ia-btn-primary"
-            onClick={handleAddNeededSubject}
-            disabled={!newNeededSubjectId}
-            style={{ height: '42px' }}
-          >
-            <PlusIcon size={16} /> Solicitar
-          </button>
-        </div>
-
-        {/* Listado de materias a aprender */}
-        {neededSubjects.length > 0 ? (
-          <div className="ia-catalog-list">
-            {neededSubjects.map((item) => (
-              <div key={item.subject_id} className="ia-catalog-item">
-                <div className="ia-catalog-item-info">
-                  <div>
-                    <span className="ia-catalog-item-title">{item.subject?.name}</span>
-                    {item.notes && (
-                      <p className="ia-catalog-item-desc">{item.notes}</p>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {item.current_level && (
-                    <span className="ia-badge ia-badge-amber">
-                      {item.current_level === 'basic' ? 'Básico' : item.current_level === 'intermediate' ? 'Intermedio' : 'Avanzado'}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="ia-btn-icon-danger"
-                    onClick={() => handleRemoveNeededSubject(item.subject_id)}
-                    title="Eliminar materia"
-                  >
-                    <TrashIcon size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-            Aún no has indicado materias en las que necesites apoyo.
-          </p>
-        )}
-      </div>
-
-      {/* 16. Habilidades para el Hub de Proyectos */}
-      <div className="ia-form-section">
-        <h2 className="ia-form-section-title">
-          <CodeIcon size={20} color="#d97706" /> Habilidades para Proyectos ({userSkills.length})
-        </h2>
-        <p className="ia-form-section-desc">
-          Registra tus conocimientos técnicos o habilidades prácticas para aportar en equipos colaborativos.
-        </p>
-
-        {/* Formulario para añadir habilidad */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '16px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ flex: '2', minWidth: '200px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Habilidad</label>
-            <select
-              className="ia-select"
-              value={newSkillId}
-              onChange={(e) => setNewSkillId(e.target.value)}
-            >
-              <option value="">-- Selecciona una habilidad --</option>
-              {availableCatalogSkills.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.category ? `(${s.category})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ flex: '1', minWidth: '140px' }}>
-            <label className="ia-label" style={{ marginBottom: '4px', display: 'block' }}>Nivel</label>
-            <select
-              className="ia-select"
-              value={newSkillLevel}
-              onChange={(e) => setNewSkillLevel(e.target.value as AcademicLevel)}
-            >
-              <option value="basic">Básico</option>
-              <option value="intermediate">Intermedio</option>
-              <option value="advanced">Avanzado</option>
-            </select>
-          </div>
-
-          <button
-            type="button"
-            className="ia-btn-primary"
-            onClick={handleAddSkill}
-            disabled={!newSkillId}
-            style={{ height: '42px' }}
-          >
-            <PlusIcon size={16} /> Agregar Habilidad
-          </button>
-        </div>
-
-        {/* Listado de habilidades */}
-        {userSkills.length > 0 ? (
-          <div className="ia-catalog-list">
-            {userSkills.map((item) => (
-              <div key={item.skill_id} className="ia-catalog-item">
-                <span className="ia-catalog-item-title">{item.skill?.name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="ia-badge ia-badge-amber">
-                    {item.level === 'basic' ? 'Básico' : item.level === 'intermediate' ? 'Intermedio' : 'Avanzado'}
-                  </span>
-                  <button
-                    type="button"
-                    className="ia-btn-icon-danger"
-                    onClick={() => handleRemoveSkill(item.skill_id)}
-                    title="Eliminar habilidad"
-                  >
-                    <TrashIcon size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-            No has agregado habilidades técnicas aún.
-          </p>
-        )}
-      </div>
-
-      {/* 17. Intereses para Proyectos (Chips seleccionables) */}
-      <div className="ia-form-section">
-        <h2 className="ia-form-section-title">
-          <SparklesIcon size={20} color="#9333ea" /> Áreas de Proyectos que me Interesan ({userInterests.length})
-        </h2>
-        <p className="ia-form-section-desc">
-          Haz clic en las temáticas en las que te gustaría participar o crear proyectos:
-        </p>
-
-        <div className="ia-chips-grid">
-          {catalogInterests.map((int) => {
-            const isSelected = userInterests.some((u) => u.interest_id === int.id);
-            return (
-              <button
-                key={int.id}
-                type="button"
-                className={`ia-chip-btn ${isSelected ? 'active' : ''}`}
-                onClick={() => handleToggleInterest(int.id)}
-              >
-                {isSelected && <CheckIcon size={14} color="#ffffff" />}
-                {int.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* 17. Intereses para Proyectos (Subcomponente modular) */}
+      <InterestsSection
+        userInterests={userInterests}
+        catalogInterests={catalogInterests}
+        onToggle={handleToggleInterest}
+      />
 
       {/* Acciones de pie de página */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>

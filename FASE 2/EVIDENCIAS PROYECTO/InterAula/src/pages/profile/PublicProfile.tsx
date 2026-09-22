@@ -7,7 +7,6 @@ import type {
   NeededSubject,
   ProfileSkill,
   ProfileProjectInterest,
-  AcademicLevel,
 } from '../../types/profile';
 import {
   BookOpenIcon,
@@ -23,19 +22,7 @@ import {
   AwardIcon,
   ArrowLeftIcon,
 } from '../../components/common/Icons';
-
-const translateLevel = (level: AcademicLevel | null): string => {
-  switch (level) {
-    case 'basic':
-      return 'Básico';
-    case 'intermediate':
-      return 'Intermedio';
-    case 'advanced':
-      return 'Avanzado';
-    default:
-      return 'Nivel no especificado';
-  }
-};
+import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
 
 export default function PublicProfile() {
   const { id } = useParams<{ id: string }>();
@@ -113,11 +100,8 @@ export default function PublicProfile() {
     );
   }
 
-  const fullName = profile.first_name
-    ? `${profile.first_name} ${profile.last_name || ''}`.trim()
-    : profile.display_name || 'Estudiante InterAula';
-
-  const initial = (fullName[0] || 'U').toUpperCase();
+  const fullName = getUserDisplayName(profile);
+  const initial = getUserInitial(fullName);
 
   return (
     <div>
@@ -225,7 +209,7 @@ export default function PublicProfile() {
                       )}
                     </div>
                     <span className="ia-badge ia-badge-blue">
-                      {translateLevel(item.level)}
+                      {formatAcademicLevel(item.level)}
                     </span>
                   </div>
                 ))}
@@ -253,7 +237,7 @@ export default function PublicProfile() {
                     </div>
                     {item.current_level && (
                       <span className="ia-badge ia-badge-amber">
-                        Nivel actual: {translateLevel(item.current_level)}
+                        Nivel actual: {formatAcademicLevel(item.current_level)}
                       </span>
                     )}
                   </div>
@@ -294,7 +278,7 @@ export default function PublicProfile() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {skills.map((sk) => (
                     <span key={sk.skill_id} className="ia-badge ia-badge-amber">
-                      {sk.skill?.name} · {translateLevel(sk.level)}
+                      {sk.skill?.name} · {formatAcademicLevel(sk.level)}
                     </span>
                   ))}
                 </div>
