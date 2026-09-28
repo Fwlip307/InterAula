@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 import { KeyIcon } from '../../components/common/Icons';
+import interaulaLogo from '../../assets/branding/interaula-logo.png';
 
 // Recuperación de contraseña mediante Supabase Auth para InterAula
 export default function ForgotPassword() {
@@ -59,6 +60,14 @@ export default function ForgotPassword() {
   return (
     <div className="auth-page-wrapper">
       <div className="auth-card">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          <img
+            src={interaulaLogo}
+            alt="Logo InterAula"
+            style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+          />
+        </div>
+
         <div className="auth-brand-badge">
           <KeyIcon size={16} />
           <span>Seguridad</span>

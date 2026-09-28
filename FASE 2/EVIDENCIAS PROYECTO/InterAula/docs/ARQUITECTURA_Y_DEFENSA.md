@@ -2,51 +2,56 @@
 
 > **Proyecto:** InterAula — Plataforma Universitaria de Aprendizaje Colaborativo y Hub de Proyectos  
 > **Carrera:** Ingeniería en Informática — Proyecto Capstone  
-> **Estado del Módulo:** Sprint 1 Refactorizado (Autenticación Robusta y Perfiles Híbridos)  
+> **Estado del Módulo:** Sprint 2 Implementado (Módulo de Tutorías Universitarias, Evaluaciones, Reputación e Insignias)  
 > **Fecha de actualización:** Septiembre 2026
 
 ---
 
 ## 1. Organización del Proyecto y Responsabilidades
 
-El proyecto InterAula utiliza una arquitectura limpia por capas en el frontend, orientada a la **separación estricta de responsabilidades**:
+El proyecto InterAula utiliza una arquitectura lógica de **3 capas**, orientada a la **separación estricta de responsabilidades**:
 
 ```text
 InterAula/
 ├── docs/                               # Documentación técnica y académica de defensa
 │   └── ARQUITECTURA_Y_DEFENSA.md
 ├── src/
+│   ├── assets/branding/                # Logo oficial optimizado (interaula-logo.png)
 │   ├── components/                     # Elementos visuales reutilizables
-│   │   ├── common/                     # Íconos SVG puros y componentes genéricos (EmptyState)
-│   │   ├── layout/                     # Estructura visual permanente (Navbar, Footer, AppLayout)
+│   │   ├── common/                     # Íconos SVG puros, EmptyState, TutorStats, BadgeList
+│   │   ├── layout/                     # Estructura visual permanente (Navbar con logo, Footer, AppLayout)
 │   │   └── routing/                    # Guardas de navegación (ProtectedRoute, PublicOnlyRoute)
 │   ├── context/                        # Estado global de la aplicación (AuthContext)
 │   ├── layouts/                        # Envoltorios de páginas (AuthLayout, AppLayout)
 │   ├── lib/                            # Clientes de infraestructura externa (supabase.ts)
 │   ├── pages/                          # Vistas de la aplicación asociadas a rutas
 │   │   ├── auth/                       # Login, Register, ForgotPassword, UpdatePassword, AuthCallback
-│   │   ├── profile/                    # Perfil privado, perfil público y edición
+│   │   ├── profile/                    # Perfil privado, perfil público y edición con estadísticas e insignias
 │   │   │   └── components/             # Subcomponentes modulares de edición de catálogos
 │   │   ├── projects/                   # Hub de Proyectos
 │   │   ├── resources/                  # Repositorio de apuntes y guías
 │   │   ├── settings/                   # Ajustes de cuenta y preferencias
-│   │   └── tutoring/                   # Explorador de materias y mis tutorías
+│   │   └── tutoring/                   # Explorar tutores reales y Mis Tutorías (gestión dual estudiante/tutor)
+│   │       └── components/             # RequestTutoringModal, ReviewModal, SessionCard
 │   ├── router/                         # Definición central de rutas con React Router (AppRouter.tsx)
-│   ├── services/                       # Capa de acceso a datos y comunicación con Supabase
+│   ├── services/                       # Capa de aplicación / negocio y comunicación con Supabase
 │   │   ├── profile.service.ts          # Perfiles, materias académicas, habilidades e intereses
-│   │   └── project.service.ts          # Proyectos, vacantes y postulaciones
+│   │   ├── project.service.ts          # Proyectos, vacantes y postulaciones
+│   │   └── tutoring.service.ts         # Sesiones de tutoría, evaluaciones, vista de estadísticas e insignias
 │   ├── styles/                         # Hojas de estilo Vanilla CSS con prefijo .ia-*
 │   │   ├── auth.css
 │   │   └── dashboard.css
-│   ├── types/                          # Definición de modelos de dominio TypeScript
+│   ├── types/                          # Modelos de dominio TypeScript
 │   │   ├── profile.ts
-│   │   └── project.ts
+│   │   ├── project.ts
+│   │   └── tutoring.ts                 # Sesiones, estados, modalidades, evaluaciones, insignias, estadísticas
 │   └── utils/                          # Funciones puras compartidas (formateo y validaciones)
-│       ├── formatters.ts
+│       ├── formatters.ts               # Estados de tutoría, fechas ISO, duraciones, calificaciones
 │       └── validators.ts
 └── supabase/
     └── migrations/                     # Migraciones SQL y esquemas de base de datos
-        └── 001_profiles_and_projects.sql
+        ├── 001_profiles_and_projects.sql
+        └── 002_tutoring_and_badges.sql
 ```
 
 ### Responsabilidades por capa:
@@ -306,3 +311,19 @@ La arquitectura refactorizada sienta las bases firmes para los módulos del Caps
 > 3. Creamos el componente reutilizable `EmptyState`, eliminando código JSX repetido en 6 vistas del sistema.
 > 4. Limpiamos los servicios (`profile.service.ts` y `project.service.ts`), centralizando la obtención y validación del usuario autenticado en helpers internos.
 > Todo el proyecto compila estrictamente en TypeScript con cero errores en `oxlint` y `tsc`."
+
+### P6: ¿Dónde se solicita una tutoría y cómo se comunican las 3 capas?
+> **Respuesta:**  
+> "La página `TutoringExplore` invoca `tutoringService.requestTutoring(dto)` en la Capa 2 (Negocio), la cual valida fechas futuras y previene solicitudes a uno mismo antes de comunicarse con Supabase. Luego, la Capa 3 (PostgreSQL en Supabase) ejecuta el trigger de seguridad `validate_tutoring_session_transition`, verificando que el usuario autenticado coincida con el estudiante solicitante, que el tutor realmente ofrezca la materia y que el estado inicial sea 'pending'. La UI jamás interactúa con consultas SQL arbitrarias."
+
+### P7: ¿Cómo aseguran que las evaluaciones a tutores sean legítimas y no se dupliquen?
+> **Respuesta:**  
+> "La protección definitiva reside en la base de datos (Capa 3):
+> 1. La tabla `tutoring_reviews` tiene una restricción `UNIQUE (session_id)`, garantizando a nivel de índice único que ninguna sesión reciba más de una evaluación.
+> 2. El trigger `validate_tutoring_review_submission` comprueba que la sesión esté en estado `completed` y que el evaluador sea exclusivamente el estudiante de dicha sesión (`auth.uid() = student_id`).
+> 3. La nota global no se calcula en React: una columna generada o trigger calcula `overall_score = ROUND((comm + know + punc) / 3.0, 2)` de forma atómica e inmutable."
+
+### P8: ¿Cómo se calculan la reputación y las insignias de los tutores?
+> **Respuesta:**  
+> "La reputación se calcula en tiempo real mediante la vista SQL `tutor_statistics_view`, la cual agrupa las evaluaciones recibidas sin generar duplicaciones cartesianas. Las insignias académicas se almacenan en `user_badges` y se otorgan automáticamente a través del trigger `award_tutoring_badge` al completarse una tutoría (hit de 1, 10, 25 o 50 tutorías). El frontend solo tiene permisos de lectura sobre las insignias (`SELECT`), impidiendo que cualquier usuario intente adjudicarse reconocimientos de forma manual."
+

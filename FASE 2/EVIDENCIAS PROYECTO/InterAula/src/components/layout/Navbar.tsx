@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
 } from '../common/Icons';
 import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
+import interaulaLogo from '../../assets/branding/interaula-logo.png';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
@@ -70,7 +71,11 @@ export default function Navbar() {
       <div className="ia-navbar-inner">
         {/* Logo / Marca */}
         <NavLink to="/dashboard" className="ia-brand" title="Ir al panel principal">
-          <div className="ia-brand-icon">IA</div>
+          <img
+            src={interaulaLogo}
+            alt="Logo InterAula"
+            style={{ width: '36px', height: '36px', objectFit: 'contain' }}
+          />
           <span className="ia-brand-name">InterAula</span>
         </NavLink>
 

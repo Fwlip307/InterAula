@@ -25,7 +25,9 @@ import {
   EditIcon,
 } from '../components/common/Icons';
 import EmptyState from '../components/common/EmptyState';
-import { getUserDisplayName } from '../utils/formatters';
+import { getUserDisplayName, formatTutoringDateTime, formatTutoringStatus } from '../utils/formatters';
+import { tutoringService } from '../services/tutoring.service';
+import type { TutoringSession } from '../types/tutoring';
 import '../styles/dashboard.css';
 
 export default function Dashboard() {
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const [skills, setSkills] = useState<ProfileSkill[]>([]);
   const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
   const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<TutoringSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,6 +57,8 @@ export default function Dashboard() {
           skillsData,
           interestsData,
           subjectsData,
+          studentSessions,
+          tutorSessions,
         ] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getOfferedSubjects(user.id),
@@ -61,6 +66,8 @@ export default function Dashboard() {
           profileService.getProfileSkills(user.id),
           profileService.getProfileProjectInterests(user.id),
           profileService.getSubjects(),
+          tutoringService.getMySessionsAsStudent().catch(() => []),
+          tutoringService.getMySessionsAsTutor().catch(() => []),
         ]);
 
         if (isMounted) {
@@ -70,6 +77,10 @@ export default function Dashboard() {
           setSkills(skillsData);
           setInterests(interestsData);
           setCatalogSubjects(subjectsData.slice(0, 8)); // Top 8 materias del catálogo real
+          const activeSessions = [...(studentSessions || []), ...(tutorSessions || [])]
+            .filter((s) => s.status === 'pending' || s.status === 'accepted')
+            .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+          setUpcomingSessions(activeSessions);
         }
       } catch (err) {
         console.error('[Dashboard] Error al cargar datos de Supabase:', err);
@@ -201,22 +212,78 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            {/* Estado Vacío Conectado (Requisito 3) */}
-            <EmptyState
-              icon={<CalendarIcon size={26} color="#94a3b8" />}
-              title="Aún no tienes tutorías agendadas"
-              description="Explora los tutores pares disponibles en la comunidad o indica qué materias puedes enseñar para que otros estudiantes te contacten."
-              action={
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <Link to="/tutoring" className="ia-btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                    Explorar Tutorías
-                  </Link>
-                  <Link to="/profile/edit" className="ia-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                    Gestionar Materias
+            {/* Lista de Sesiones Activas o Estado Vacío */}
+            {upcomingSessions.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {upcomingSessions.slice(0, 3).map((session) => {
+                  const statusInfo = formatTutoringStatus(session.status);
+                  const isTutorRole = session.tutor_id === user?.id;
+                  const otherPerson = isTutorRole ? session.student : session.tutor;
+                  const otherName = getUserDisplayName(otherPerson);
+
+                  return (
+                    <div
+                      key={session.id}
+                      style={{
+                        padding: '12px 16px',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#0f172a' }}>
+                          {session.subject?.name}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          {isTutorRole ? `Estudiante: ${otherName}` : `Tutor: ${otherName}`} • {formatTutoringDateTime(session.scheduled_at)}
+                        </div>
+                      </div>
+
+                      <span
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '3px 10px',
+                          borderRadius: '9999px',
+                          background: session.status === 'accepted' ? '#eff6ff' : '#fef3c7',
+                          color: session.status === 'accepted' ? '#1d4ed8' : '#b45309',
+                          border: `1px solid ${session.status === 'accepted' ? '#bfdbfe' : '#fde68a'}`,
+                        }}
+                      >
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                <div style={{ textAlign: 'center', marginTop: '6px' }}>
+                  <Link to="/my-tutoring" className="ia-card-action" style={{ fontSize: '0.85rem' }}>
+                    Ver todas las tutorías en Mis Tutorías
                   </Link>
                 </div>
-              }
-            />
+              </div>
+            ) : (
+              <EmptyState
+                icon={<CalendarIcon size={26} color="#94a3b8" />}
+                title="Aún no tienes tutorías agendadas"
+                description="Explora los tutores pares disponibles en la comunidad o indica qué materias puedes enseñar para que otros estudiantes te contacten."
+                action={
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <Link to="/tutoring" className="ia-btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                      Explorar Tutorías
+                    </Link>
+                    <Link to="/profile/edit" className="ia-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                      Gestionar Materias
+                    </Link>
+                  </div>
+                }
+              />
+            )}
           </div>
 
           {/* Asignaturas Disponibles en Catálogo Real */}

@@ -42,6 +42,7 @@ const GoogleIcon = () => (
 );
 
 import { GraduationCapIcon } from '../../components/common/Icons';
+import interaulaLogo from '../../assets/branding/interaula-logo.png';
 
 // Inicio de sesión con correo/contraseña y Google OAuth en InterAula
 export default function Login() {
@@ -104,6 +105,14 @@ export default function Login() {
   return (
     <div className="auth-page-wrapper">
       <div className="auth-card">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          <img
+            src={interaulaLogo}
+            alt="Logo InterAula"
+            style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+          />
+        </div>
+
         <div className="auth-brand-badge">
           <GraduationCapIcon size={16} />
           <span>Portal Académico</span>

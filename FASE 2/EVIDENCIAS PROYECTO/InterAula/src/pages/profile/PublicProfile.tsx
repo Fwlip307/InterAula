@@ -23,6 +23,10 @@ import {
   ArrowLeftIcon,
 } from '../../components/common/Icons';
 import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
+import { tutoringService } from '../../services/tutoring.service';
+import type { TutorStatistics, UserBadge } from '../../types/tutoring';
+import TutorStats from '../../components/common/TutorStats';
+import BadgeList from '../../components/common/BadgeList';
 
 export default function PublicProfile() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +36,8 @@ export default function PublicProfile() {
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
   const [skills, setSkills] = useState<ProfileSkill[]>([]);
   const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
+  const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
+  const [badges, setBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -44,12 +50,14 @@ export default function PublicProfile() {
         setLoading(true);
         setNotFound(false);
 
-        const [p, offered, needed, sk, int] = await Promise.all([
+        const [p, offered, needed, sk, int, stats, uBadges] = await Promise.all([
           profileService.getProfileById(id),
           profileService.getOfferedSubjects(id),
           profileService.getNeededSubjects(id),
           profileService.getProfileSkills(id),
           profileService.getProfileProjectInterests(id),
+          tutoringService.getTutorStats(id),
+          tutoringService.getUserBadges(id),
         ]);
 
         if (isMounted) {
@@ -61,6 +69,8 @@ export default function PublicProfile() {
             setNeededSubjects(needed);
             setSkills(sk);
             setInterests(int);
+            setTutorStats(stats);
+            setBadges(uBadges);
           }
         }
       } catch (err) {
@@ -251,8 +261,14 @@ export default function PublicProfile() {
           </div>
         </div>
 
-        {/* Columna Derecha: Proyectos, Habilidades, Enlaces y Módulos Futuros */}
-        <div>
+        {/* Columna Derecha: Reputación, Insignias, Proyectos y Enlaces */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Reputación y Estadísticas de Tutor */}
+          <TutorStats stats={tutorStats} />
+
+          {/* Insignias Obtenidas */}
+          <BadgeList badges={badges} />
+
           {/* Proyectos y Habilidades */}
           <div className="ia-card">
             <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>

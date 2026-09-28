@@ -24,6 +24,10 @@ import {
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
+import { tutoringService } from '../../services/tutoring.service';
+import type { TutorStatistics, UserBadge } from '../../types/tutoring';
+import TutorStats from '../../components/common/TutorStats';
+import BadgeList from '../../components/common/BadgeList';
 
 export default function ProfileView() {
   const { user } = useAuth();
@@ -32,6 +36,8 @@ export default function ProfileView() {
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
   const [skills, setSkills] = useState<ProfileSkill[]>([]);
   const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
+  const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
+  const [badges, setBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,12 +47,14 @@ export default function ProfileView() {
       if (!user) return;
       try {
         setLoading(true);
-        const [p, offered, needed, sk, int] = await Promise.all([
+        const [p, offered, needed, sk, int, stats, uBadges] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getOfferedSubjects(user.id),
           profileService.getNeededSubjects(user.id),
           profileService.getProfileSkills(user.id),
           profileService.getProfileProjectInterests(user.id),
+          tutoringService.getTutorStats(user.id),
+          tutoringService.getUserBadges(user.id),
         ]);
 
         if (isMounted) {
@@ -55,6 +63,8 @@ export default function ProfileView() {
           setNeededSubjects(needed);
           setSkills(sk);
           setInterests(int);
+          setTutorStats(stats);
+          setBadges(uBadges);
         }
       } catch (err) {
         console.error('[ProfileView] Error al cargar perfil:', err);
@@ -261,8 +271,14 @@ export default function ProfileView() {
           </div>
         </div>
 
-        {/* Columna Derecha: Proyectos, Habilidades, Intereses y Enlaces */}
-        <div>
+        {/* Columna Derecha: Reputación, Insignias, Proyectos y Enlaces */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Reputación y Estadísticas de Tutor */}
+          <TutorStats stats={tutorStats} />
+
+          {/* Insignias Obtenidas */}
+          <BadgeList badges={badges} />
+
           {/* Proyectos y Colaboración */}
           <div className="ia-card">
             <div className="ia-card-header" style={{ marginBottom: '14px' }}>

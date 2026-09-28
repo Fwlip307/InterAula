@@ -65,6 +65,7 @@ const GoogleIcon = () => (
 );
 
 import { GraduationCapIcon } from '../../components/common/Icons';
+import interaulaLogo from '../../assets/branding/interaula-logo.png';
 
 // Registro de usuarios con Supabase Auth en InterAula
 export default function Register() {
@@ -159,6 +160,14 @@ export default function Register() {
   return (
     <div className="auth-page-wrapper">
       <div className="auth-card">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          <img
+            src={interaulaLogo}
+            alt="Logo InterAula"
+            style={{ width: '60px', height: '60px', objectFit: 'contain' }}
+          />
+        </div>
+
         <div className="auth-brand-badge">
           <GraduationCapIcon size={16} />
           <span>Nueva Cuenta</span>
@@ -292,7 +301,7 @@ export default function Register() {
             </div>
             {confirmPassword.length > 0 && (
               <p style={{ fontSize: '12px', marginTop: '4px', color: confirmPassword === password ? '#16a34a' : '#ef4444', fontWeight: 600 }}>
-                {confirmPassword === password ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
+                {confirmPassword === password ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}
               </p>
             )}
           </div>

@@ -258,7 +258,7 @@ export default function UpdatePassword() {
             </div>
             {confirm.length > 0 && (
               <p style={{ fontSize: '12px', marginTop: '4px', color: confirm === password ? '#16a34a' : '#ef4444', fontWeight: 600 }}>
-                {confirm === password ? '✓ Las contraseñas coinciden' : '✗ Las contraseñas no coinciden'}
+                {confirm === password ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}
               </p>
             )}
           </div>

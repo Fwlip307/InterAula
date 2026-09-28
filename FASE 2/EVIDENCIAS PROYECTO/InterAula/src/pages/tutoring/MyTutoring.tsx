@@ -1,57 +1,408 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { tutoringService } from '../../services/tutoring.service';
+import type { TutoringSession } from '../../types/tutoring';
+import SessionCard from './components/SessionCard';
+import ReviewModal from './components/ReviewModal';
+import EmptyState from '../../components/common/EmptyState';
 import {
   CalendarIcon,
-  BookOpenIcon,
   UsersIcon,
-  ArrowLeftIcon,
-  SparklesIcon,
+  BookOpenIcon,
+  AlertCircleIcon,
+  CheckIcon,
+  XIcon,
 } from '../../components/common/Icons';
-import EmptyState from '../../components/common/EmptyState';
+
+type TabType = 'student' | 'tutor';
 
 export default function MyTutoring() {
+  const [activeTab, setActiveTab] = useState<TabType>('student');
+  const [studentSessions, setStudentSessions] = useState<TutoringSession[]>([]);
+  const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Estado para modal de evaluación
+  const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  // Estado para cancelación con motivo
+  const [sessionToCancel, setSessionToCancel] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+
+  const loadSessions = async () => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const [asStudent, asTutor] = await Promise.all([
+        tutoringService.getMySessionsAsStudent(),
+        tutoringService.getMySessionsAsTutor(),
+      ]);
+      setStudentSessions(asStudent);
+      setTutorSessions(asTutor);
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al cargar sesiones:', err);
+      setErrorMsg(err.message || 'No fue posible cargar tus tutorías.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const handleAccept = async (sessionId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateSessionStatus(sessionId, 'accepted');
+      setSuccessMsg('Solicitud de tutoría aceptada correctamente.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al aceptar sesión:', err);
+      setErrorMsg(err.message || 'No fue posible aceptar la solicitud.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async (sessionId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateSessionStatus(sessionId, 'rejected');
+      setSuccessMsg('Solicitud de tutoría rechazada.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al rechazar sesión:', err);
+      setErrorMsg(err.message || 'No fue posible rechazar la solicitud.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelClick = (sessionId: string) => {
+    setSessionToCancel(sessionId);
+    setCancellationReason('');
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!sessionToCancel) return;
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateSessionStatus(sessionToCancel, 'cancelled', cancellationReason);
+      setSuccessMsg('La sesión ha sido cancelada.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      setSessionToCancel(null);
+      setCancellationReason('');
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al cancelar sesión:', err);
+      setErrorMsg(err.message || 'No fue posible cancelar la sesión.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleComplete = async (sessionId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateSessionStatus(sessionId, 'completed');
+      setSuccessMsg('¡Tutoría marcada como completada! Ahora puedes calificar a tu tutor.');
+      setTimeout(() => setSuccessMsg(''), 6000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al completar sesión:', err);
+      setErrorMsg(err.message || 'No fue posible confirmar la realización de la sesión.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOpenReview = (session: TutoringSession) => {
+    setSelectedSessionForReview(session);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewSuccess = async () => {
+    setSuccessMsg('¡Evaluación registrada exitosamente! Muchas gracias por colaborar.');
+    setTimeout(() => setSuccessMsg(''), 5000);
+    await loadSessions();
+  };
+
+  const currentList = activeTab === 'student' ? studentSessions : tutorSessions;
+
+  // Conteo de solicitudes pendientes como tutor para llamar la atención
+  const pendingTutorRequestsCount = tutorSessions.filter((s) => s.status === 'pending').length;
+
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link to="/dashboard" className="ia-btn-secondary" style={{ padding: '8px 12px' }}>
-            <ArrowLeftIcon size={16} /> Volver
-          </Link>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-            Mis Tutorías
-          </h1>
-        </div>
-      </div>
-
-      <div className="ia-card">
-        <EmptyState
-          style={{ padding: '48px 20px' }}
-          icon={<CalendarIcon size={30} color="#2563eb" />}
-          title="Aún no tienes sesiones agendadas"
-          description="El módulo de agendamiento y salas de encuentro se activará en el Sprint correspondiente. Mientras tanto, mantén actualizado tu catálogo de materias en tu perfil."
-          action={
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/tutoring" className="ia-btn-primary">
-                <BookOpenIcon size={16} /> Explorar materias
-              </Link>
-              <Link to="/profile/edit" className="ia-btn-secondary">
-                <UsersIcon size={16} /> Configurar mis materias
-              </Link>
-            </div>
-          }
-        />
-      </div>
-
-      <div className="ia-card" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-          <SparklesIcon size={18} color="#2563eb" />
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>
-            Cómo funciona el intercambio en InterAula
-          </h3>
-        </div>
-        <p style={{ fontSize: '0.85rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
-          InterAula promueve el aprendizaje colaborativo horizontal entre pares universitarios. Puedes solicitar acompañamiento en asignaturas complejas y brindar apoyo en aquellas materias donde poseas mayor dominio.
+      {/* Cabecera y pestañas */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
+          Gestión de Mis Tutorías
+        </h1>
+        <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
+          Administra las sesiones que has solicitado como estudiante y atiende las peticiones recibidas como tutor.
         </p>
       </div>
+
+      {/* Alertas globales */}
+      {successMsg && (
+        <div
+          style={{
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            color: '#15803d',
+            padding: '12px 16px',
+            borderRadius: '10px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <CheckIcon size={18} color="#15803d" />
+          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{successMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div
+          style={{
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#b91c1c',
+            padding: '12px 16px',
+            borderRadius: '10px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <AlertCircleIcon size={18} color="#b91c1c" />
+          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Pestañas (Como estudiante / Como tutor) */}
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '2px solid #e2e8f0',
+          marginBottom: '24px',
+          gap: '8px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab('student')}
+          style={{
+            padding: '12px 20px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'student' ? '#2563eb' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'student' ? '2px solid #2563eb' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <BookOpenIcon size={18} color={activeTab === 'student' ? '#2563eb' : '#64748b'} />
+          Como Estudiante ({studentSessions.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('tutor')}
+          style={{
+            padding: '12px 20px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'tutor' ? '#2563eb' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'tutor' ? '2px solid #2563eb' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <UsersIcon size={18} color={activeTab === 'tutor' ? '#2563eb' : '#64748b'} />
+          Como Tutor ({tutorSessions.length})
+          {pendingTutorRequestsCount > 0 && (
+            <span
+              style={{
+                background: '#f59e0b',
+                color: '#ffffff',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: '9999px',
+              }}
+            >
+              {pendingTutorRequestsCount} pendientes
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Contenido de la pestaña activa */}
+      {loading ? (
+        <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando sesiones...</p>
+        </div>
+      ) : currentList.length === 0 ? (
+        <div className="ia-card">
+          <EmptyState
+            style={{ padding: '48px 20px' }}
+            icon={<CalendarIcon size={32} color="#2563eb" />}
+            title={
+              activeTab === 'student'
+                ? 'No tienes tutorías solicitadas como estudiante'
+                : 'No tienes solicitudes recibidas como tutor'
+            }
+            description={
+              activeTab === 'student'
+                ? 'Explora las materias disponibles y solicita apoyo a compañeros con dominio comprobado.'
+                : 'Cuando otros compañeros requieran ayuda en las asignaturas que ofreces, sus solicitudes aparecerán aquí.'
+            }
+            action={
+              activeTab === 'student' ? (
+                <Link to="/tutoring" className="ia-btn-primary">
+                  <BookOpenIcon size={16} /> Explorar Tutores
+                </Link>
+              ) : (
+                <Link to="/profile/edit" className="ia-btn-secondary">
+                  <UsersIcon size={16} /> Configurar materias que ofrezco
+                </Link>
+              )
+            }
+          />
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {currentList.map((session) => (
+            <SessionCard
+              key={session.id}
+              session={session}
+              role={activeTab}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              onCancel={handleCancelClick}
+              onComplete={handleComplete}
+              onReview={handleOpenReview}
+              actionLoading={actionLoading}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Modal de Cancelación con Motivo */}
+      {sessionToCancel && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: '16px',
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '460px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+                Cancelar Tutoría
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSessionToCancel(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: '#475569', marginTop: 0, marginBottom: '16px' }}>
+              ¿Estás seguro de que deseas cancelar esta sesión? Esta acción notificará el cambio de estado en la plataforma.
+            </p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Motivo de la cancelación (opcional)
+              </label>
+              <textarea
+                className="ia-input"
+                rows={3}
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                placeholder="Ej: Choque de horario con prueba de laboratorio..."
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="ia-btn-secondary"
+                onClick={() => setSessionToCancel(null)}
+                disabled={actionLoading}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                className="ia-btn-primary"
+                style={{ background: '#b91c1c', borderColor: '#991b1b' }}
+                onClick={handleConfirmCancel}
+                disabled={actionLoading}
+              >
+                {actionLoading ? 'Cancelando...' : 'Confirmar Cancelación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Evaluación */}
+      <ReviewModal
+        session={selectedSessionForReview}
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setSelectedSessionForReview(null);
+        }}
+        onSuccess={handleReviewSuccess}
+      />
     </div>
   );
 }
