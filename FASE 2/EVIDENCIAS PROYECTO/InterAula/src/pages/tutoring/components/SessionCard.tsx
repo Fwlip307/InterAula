@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import type { TutoringSession } from '../../../types/tutoring';
 import {
   getUserDisplayName,
@@ -123,7 +124,17 @@ export default function SessionCard({
               {initial}
             </div>
             <span>
-              {otherRoleLabel}: <strong>{displayName}</strong>
+              {otherRoleLabel}:{' '}
+              {otherPerson?.id ? (
+                <Link
+                  to={`/profile/${otherPerson.id}`}
+                  style={{ color: '#0f172a', fontWeight: 700, textDecoration: 'none' }}
+                >
+                  {displayName}
+                </Link>
+              ) : (
+                <strong>{displayName}</strong>
+              )}
               {otherPerson?.career ? ` • ${otherPerson.career}` : ''}
             </span>
           </div>

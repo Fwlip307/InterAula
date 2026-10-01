@@ -21,13 +21,22 @@ import {
   ExternalLinkIcon,
   MapPinIcon,
   GraduationCapIcon,
+  ShieldCheckIcon,
+  MailIcon,
+  PhoneIcon,
+  FileTextIcon,
+  UploadCloudIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
 import { tutoringService } from '../../services/tutoring.service';
+import { verificationService } from '../../services/verification.service';
 import type { TutorStatistics, UserBadge } from '../../types/tutoring';
+import type { TutorVerificationRequest } from '../../types/verification';
 import TutorStats from '../../components/common/TutorStats';
 import BadgeList from '../../components/common/BadgeList';
+import CertificateVerificationModal from './components/CertificateVerificationModal';
+import { formatTutorLevel } from '../../utils/pdfExtractor';
 
 export default function ProfileView() {
   const { user } = useAuth();
@@ -38,6 +47,9 @@ export default function ProfileView() {
   const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
   const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
+  const [verificationRequests, setVerificationRequests] = useState<TutorVerificationRequest[]>([]);
+  const [selectedSubjectForVerification, setSelectedSubjectForVerification] = useState<{ id: string; name: string } | null>(null);
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +59,7 @@ export default function ProfileView() {
       if (!user) return;
       try {
         setLoading(true);
-        const [p, offered, needed, sk, int, stats, uBadges] = await Promise.all([
+        const [p, offered, needed, sk, int, stats, uBadges, verifReqs] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getOfferedSubjects(user.id),
           profileService.getNeededSubjects(user.id),
@@ -55,6 +67,10 @@ export default function ProfileView() {
           profileService.getProfileProjectInterests(user.id),
           tutoringService.getTutorStats(user.id),
           tutoringService.getUserBadges(user.id),
+          verificationService.getMyVerificationRequests().catch((e) => {
+            console.error('[ProfileView] Error al cargar solicitudes de verificación:', e);
+            return [];
+          }),
         ]);
 
         if (isMounted) {
@@ -65,6 +81,7 @@ export default function ProfileView() {
           setInterests(int);
           setTutorStats(stats);
           setBadges(uBadges);
+          setVerificationRequests(verifReqs);
         }
       } catch (err) {
         console.error('[ProfileView] Error al cargar perfil:', err);
@@ -143,8 +160,14 @@ export default function ProfileView() {
             </div>
           </div>
 
-          <div className="ia-profile-actions">
-            <Link to="/profile/edit" className="ia-btn-primary">
+          <div className="ia-profile-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {user?.id && (
+              <Link to={`/profile/${user.id}`} className="ia-btn-secondary" style={{ padding: '8px 14px', fontSize: '0.85rem' }}>
+                <ExternalLinkIcon size={15} />
+                Ver perfil público
+              </Link>
+            )}
+            <Link to="/profile/edit" className="ia-btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
               <EditIcon size={16} />
               Editar perfil
             </Link>
@@ -203,9 +226,82 @@ export default function ProfileView() {
                         )}
                       </div>
                     </div>
-                    <span className="ia-badge ia-badge-blue">
-                      {formatAcademicLevel(item.level)}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      {item.is_verified ? (
+                        <span className="ia-badge" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                          <ShieldCheckIcon size={12} color="#059669" /> Tutor verificado
+                        </span>
+                      ) : (
+                        <>
+                          <span className="ia-badge ia-badge-blue">
+                            Tutor comunitario
+                          </span>
+                          {(() => {
+                            const vReq = verificationRequests.find((r) => r.subject_id === item.subject_id);
+                            if (vReq?.document_path) {
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedSubjectForVerification({
+                                      id: item.subject_id,
+                                      name: item.subject?.name || 'Materia',
+                                    });
+                                    setIsCertModalOpen(true);
+                                  }}
+                                  className="ia-badge"
+                                  style={{
+                                    background: '#eff6ff',
+                                    color: '#1d4ed8',
+                                    border: '1px solid #bfdbfe',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                  title="Ver datos extraídos del certificado"
+                                >
+                                  <FileTextIcon size={12} color="#2563eb" />
+                                  Certificado:{' '}
+                                  {vReq.matched_grade !== null && vReq.matched_grade !== undefined
+                                    ? `Nota ${vReq.matched_grade.toFixed(1)}${vReq.calculated_level ? ` (${formatTutorLevel(vReq.calculated_level)})` : ''}`
+                                    : 'Procesado'}
+                                </button>
+                              );
+                            }
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSubjectForVerification({
+                                    id: item.subject_id,
+                                    name: item.subject?.name || 'Materia',
+                                  });
+                                  setIsCertModalOpen(true);
+                                }}
+                                className="ia-btn-secondary"
+                                style={{
+                                  padding: '2px 8px',
+                                  fontSize: '0.74rem',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  cursor: 'pointer',
+                                }}
+                                title="Subir certificado académico para verificar esta materia"
+                              >
+                                <UploadCloudIcon size={12} />
+                                Verificar con PDF
+                              </button>
+                            );
+                          })()}
+                        </>
+                      )}
+                      <span className="ia-badge" style={{ background: '#f1f5f9', color: '#475569' }}>
+                        {formatAcademicLevel(item.level)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -426,8 +522,77 @@ export default function ProfileView() {
               </div>
             </div>
           </div>
+
+          {/* Información de Contacto y Privacidad */}
+          <div className="ia-card">
+            <div className="ia-card-header" style={{ marginBottom: '12px' }}>
+              <h2 className="ia-card-title">
+                <MailIcon size={18} color="#2563eb" /> Contacto y Privacidad
+              </h2>
+              <Link to="/profile/edit" className="ia-card-action">
+                Configurar
+              </Link>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MailIcon size={14} color="#64748b" /> Correo electrónico:
+                </span>
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                  {profile?.email || user?.email}
+                  <span style={{ marginLeft: '6px', fontSize: '0.72rem', color: profile?.show_email ? '#16a34a' : '#94a3b8' }}>
+                    ({profile?.show_email ? 'Público' : 'Privado'})
+                  </span>
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <PhoneIcon size={14} color="#64748b" /> Teléfono:
+                </span>
+                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                  {profile?.phone || 'No registrado'}
+                  {profile?.phone && (
+                    <span style={{ marginLeft: '6px', fontSize: '0.72rem', color: profile?.show_phone ? '#16a34a' : '#94a3b8' }}>
+                      ({profile?.show_phone ? 'Público' : 'Privado'})
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Modal de Verificación con Certificado PDF */}
+      {selectedSubjectForVerification && (
+        <CertificateVerificationModal
+          key={selectedSubjectForVerification.id}
+          isOpen={isCertModalOpen}
+          onClose={() => {
+            setIsCertModalOpen(false);
+            setSelectedSubjectForVerification(null);
+          }}
+          subjectId={selectedSubjectForVerification.id}
+          subjectName={selectedSubjectForVerification.name}
+          existingRequest={
+            verificationRequests.find((r) => r.subject_id === selectedSubjectForVerification.id) || null
+          }
+          onSuccess={(updated) => {
+            setVerificationRequests((prev) => {
+              const idx = prev.findIndex((r) => r.id === updated.id);
+              if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = updated;
+                return next;
+              }
+              return [updated, ...prev];
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
+

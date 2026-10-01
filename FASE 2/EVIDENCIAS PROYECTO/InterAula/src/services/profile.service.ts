@@ -10,6 +10,7 @@ import type {
   ProjectInterest,
   ProfileProjectInterest,
   AcademicLevel,
+  LearningPreference,
 } from '../types/profile';
 
 /**
@@ -54,19 +55,39 @@ export const profileService = {
     return data as Profile;
   },
 
-  // Obtener perfil público de cualquier estudiante por ID
+  // Obtener perfil público de cualquier estudiante por ID (respetando privacidad de contacto)
   async getProfileById(id: string): Promise<Profile | null> {
+    // 1. Consultar prioritariamente desde la vista segura public_profiles
+    const { data: publicData, error: viewError } = await supabase
+      .from('public_profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!viewError && publicData) {
+      return publicData as Profile;
+    }
+
+    // 2. Respaldo directo sobre profiles aplicando estricta política de privacidad
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (error) {
-      console.error('[profileService] Error en getProfileById:', error.message);
+    if (error || !data) {
+      console.error('[profileService] Error en getProfileById:', error?.message || viewError?.message);
       return null;
     }
-    return data as Profile;
+
+    const authUser = await getOptionalAuthUser();
+    const isOwner = authUser?.id === data.id;
+
+    return {
+      ...data,
+      email: data.show_email || isOwner ? data.email : null,
+      phone: data.show_phone || isOwner ? data.phone : null,
+    } as Profile;
   },
 
   // Actualizar datos del perfil del usuario en sesión
@@ -87,12 +108,25 @@ export const profileService = {
     return updated as Profile;
   },
 
-  // Catálogo completo de materias académicas
-  async getSubjects(): Promise<Subject[]> {
-    const { data, error } = await supabase
+  // Actualizar específicamente las preferencias de aprendizaje inclusivas
+  async updateLearningPreferences(preferences: LearningPreference[]): Promise<Profile | null> {
+    return this.updateMyProfile({ learning_preferences: preferences });
+  },
+
+  // Catálogo completo de materias académicas (con soporte para priorizar asignaturas piloto)
+  async getSubjects(onlyPilot?: boolean): Promise<Subject[]> {
+    let query = supabase
       .from('subjects')
       .select('*')
+      .order('is_pilot', { ascending: false })
+      .order('pilot_priority', { ascending: true })
       .order('name', { ascending: true });
+
+    if (onlyPilot) {
+      query = query.eq('is_pilot', true);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('[profileService] Error en getSubjects:', error.message);

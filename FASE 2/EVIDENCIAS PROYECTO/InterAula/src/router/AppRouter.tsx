@@ -68,6 +68,7 @@ export default function AppRouter() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<ProfileView />} />
         <Route path="/profile/edit" element={<ProfileEdit />} />
+        <Route path="/profile/:id" element={<PublicProfile />} />
         <Route path="/users/:id" element={<PublicProfile />} />
         <Route path="/projects" element={<ProjectsHub />} />
         <Route path="/tutoring" element={<TutoringExplore />} />

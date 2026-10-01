@@ -2,6 +2,60 @@
 
 export type AcademicLevel = 'basic' | 'intermediate' | 'advanced';
 
+// Preferencias de aprendizaje inclusivas (estrictamente pedagógicas/metodológicas)
+export type LearningPreference =
+  | 'step_by_step'
+  | 'practical_examples'
+  | 'summarized_material'
+  | 'conceptual_diagrams'
+  | 'visual_support'
+  | 'structured_sessions'
+  | 'paced_rhythm';
+
+export interface LearningPreferenceOption {
+  id: LearningPreference;
+  label: string;
+  description: string;
+}
+
+export const LEARNING_PREFERENCES: readonly LearningPreferenceOption[] = [
+  {
+    id: 'step_by_step',
+    label: 'Explicaciones paso a paso',
+    description: 'Desglose detallado y secuencial de procedimientos y conceptos.',
+  },
+  {
+    id: 'practical_examples',
+    label: 'Ejemplos prácticos',
+    description: 'Casos aplicados a situaciones reales o ejercicios guiados.',
+  },
+  {
+    id: 'summarized_material',
+    label: 'Material resumido',
+    description: 'Síntesis claras, fórmulas clave y puntos esenciales.',
+  },
+  {
+    id: 'conceptual_diagrams',
+    label: 'Esquemas conceptuales',
+    description: 'Mapas conceptuales, diagramas de flujo y relaciones lógicas.',
+  },
+  {
+    id: 'visual_support',
+    label: 'Apoyo visual',
+    description: 'Gráficos, esquemas visuales y demostraciones en pantalla.',
+  },
+  {
+    id: 'structured_sessions',
+    label: 'Sesiones estructuradas',
+    description: 'Agenda definida con objetivos concretos por bloque de tiempo.',
+  },
+  {
+    id: 'paced_rhythm',
+    label: 'Ritmo pausado / más tiempo',
+    description: 'Espacio para asimilar conceptos antes de avanzar al siguiente tema.',
+  },
+] as const;
+
 export interface Profile {
   id: string;
   email: string;
@@ -20,6 +74,10 @@ export interface Profile {
   portfolio_url: string | null;
   github_url: string | null;
   linkedin_url: string | null;
+  learning_preferences?: LearningPreference[];
+  phone?: string | null;
+  show_email?: boolean;
+  show_phone?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +90,8 @@ export interface Subject {
   id: string;
   name: string;
   category: string | null;
+  is_pilot?: boolean;
+  pilot_priority?: number;
   created_at: string;
 }
 
@@ -40,6 +100,8 @@ export interface OfferedSubject {
   subject_id: string;
   level: AcademicLevel;
   description: string | null;
+  is_verified?: boolean;
+  verified_at?: string | null;
   created_at: string;
   subject?: Subject;
 }

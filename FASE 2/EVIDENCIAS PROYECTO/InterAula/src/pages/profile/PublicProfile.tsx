@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { profileService } from '../../services/profile.service';
 import type {
   Profile,
@@ -18,8 +18,10 @@ import {
   ExternalLinkIcon,
   MapPinIcon,
   GraduationCapIcon,
-  StarIcon,
-  AwardIcon,
+  ShieldCheckIcon,
+  MailIcon,
+  PhoneIcon,
+  LockIcon,
   ArrowLeftIcon,
 } from '../../components/common/Icons';
 import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
@@ -30,6 +32,7 @@ import BadgeList from '../../components/common/BadgeList';
 
 export default function PublicProfile() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
@@ -91,7 +94,7 @@ export default function PublicProfile() {
   if (loading) {
     return (
       <div className="ia-card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <p style={{ color: '#64748b', fontSize: '1.05rem' }}>Cargando perfil público...</p>
+        <p style={{ color: '#64748b', fontSize: '1.05rem', margin: 0 }}>Cargando perfil de usuario...</p>
       </div>
     );
   }
@@ -103,8 +106,8 @@ export default function PublicProfile() {
         <p style={{ color: '#64748b', marginBottom: '20px' }}>
           El usuario solicitado no existe o no tiene un perfil disponible en InterAula.
         </p>
-        <Link to="/dashboard" className="ia-btn-primary">
-          <ArrowLeftIcon size={16} /> Volver al panel
+        <Link to="/tutoring" className="ia-btn-primary">
+          <ArrowLeftIcon size={16} /> Volver a explorar tutores
         </Link>
       </div>
     );
@@ -112,14 +115,20 @@ export default function PublicProfile() {
 
   const fullName = getUserDisplayName(profile);
   const initial = getUserInitial(fullName);
+  const hasContactInfo = Boolean(profile.email || profile.phone);
 
   return (
     <div>
       {/* Botón Volver */}
       <div style={{ marginBottom: '18px' }}>
-        <Link to="/dashboard" className="ia-btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="ia-btn-secondary"
+          style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
           <ArrowLeftIcon size={14} /> Volver
-        </Link>
+        </button>
       </div>
 
       {/* Cabecera del Perfil Público */}
@@ -170,7 +179,7 @@ export default function PublicProfile() {
           <div className="ia-profile-actions">
             {profile.available_for_tutoring && (
               <span className="ia-badge ia-badge-success">
-                <CheckIcon size={12} /> Tutorías disponibles
+                <CheckIcon size={12} /> Tutor disponible
               </span>
             )}
             {profile.available_for_projects && (
@@ -202,7 +211,7 @@ export default function PublicProfile() {
             )}
           </div>
 
-          {/* Materias que enseña */}
+          {/* Materias que puede enseñar */}
           <div className="ia-card">
             <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
               <BookOpenIcon size={20} color="#2563eb" /> Materias que puede enseñar ({offeredSubjects.length})
@@ -212,21 +221,48 @@ export default function PublicProfile() {
               <div className="ia-catalog-list">
                 {offeredSubjects.map((item) => (
                   <div key={item.subject_id} className="ia-catalog-item">
-                    <div>
-                      <div className="ia-catalog-item-title">{item.subject?.name}</div>
-                      {item.description && (
-                        <p className="ia-catalog-item-desc">{item.description}</p>
-                      )}
+                    <div className="ia-catalog-item-info">
+                      <div>
+                        <div className="ia-catalog-item-title">{item.subject?.name || 'Materia'}</div>
+                        {item.description && (
+                          <p className="ia-catalog-item-desc">{item.description}</p>
+                        )}
+                      </div>
                     </div>
-                    <span className="ia-badge ia-badge-blue">
-                      {formatAcademicLevel(item.level)}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      {item.is_verified ? (
+                        <span
+                          className="ia-badge"
+                          style={{
+                            background: '#ecfdf5',
+                            color: '#047857',
+                            border: '1px solid #a7f3d0',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          <ShieldCheckIcon size={13} color="#059669" /> Tutor verificado
+                        </span>
+                      ) : (
+                        <span
+                          className="ia-badge ia-badge-blue"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <BookOpenIcon size={12} /> Tutor comunitario
+                        </span>
+                      )}
+                      <span className="ia-badge" style={{ background: '#f1f5f9', color: '#475569' }}>
+                        {formatAcademicLevel(item.level)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>
-                No ha especificado materias para enseñar en este momento.
+                No ofrece materias de tutoría en este momento.
               </p>
             )}
           </div>
@@ -241,9 +277,11 @@ export default function PublicProfile() {
               <div className="ia-catalog-list">
                 {neededSubjects.map((item) => (
                   <div key={item.subject_id} className="ia-catalog-item">
-                    <div>
-                      <div className="ia-catalog-item-title">{item.subject?.name}</div>
-                      {item.notes && <p className="ia-catalog-item-desc">{item.notes}</p>}
+                    <div className="ia-catalog-item-info">
+                      <div>
+                        <div className="ia-catalog-item-title">{item.subject?.name || 'Materia'}</div>
+                        {item.notes && <p className="ia-catalog-item-desc">{item.notes}</p>}
+                      </div>
                     </div>
                     {item.current_level && (
                       <span className="ia-badge ia-badge-amber">
@@ -261,13 +299,52 @@ export default function PublicProfile() {
           </div>
         </div>
 
-        {/* Columna Derecha: Reputación, Insignias, Proyectos y Enlaces */}
+        {/* Columna Derecha: Reputación, Insignias, Proyectos, Habilidades y Contacto */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Reputación y Estadísticas de Tutor */}
+          {/* Reputación y Estadísticas de Tutor (Reutiliza TutorStats real) */}
           <TutorStats stats={tutorStats} />
 
-          {/* Insignias Obtenidas */}
+          {/* Insignias Obtenidas (Reutiliza BadgeList) */}
           <BadgeList badges={badges} />
+
+          {/* Contacto Público */}
+          <div className="ia-card">
+            <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
+              <MailIcon size={18} color="#2563eb" /> Contacto
+            </h2>
+
+            {hasContactInfo ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {profile.email && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
+                    <MailIcon size={16} color="#2563eb" />
+                    <a
+                      href={`mailto:${profile.email}`}
+                      style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      {profile.email}
+                    </a>
+                  </div>
+                )}
+                {profile.phone && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.88rem' }}>
+                    <PhoneIcon size={16} color="#16a34a" />
+                    <a
+                      href={`tel:${profile.phone}`}
+                      style={{ color: '#334155', fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      {profile.phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '0.85rem' }}>
+                <LockIcon size={15} color="#94a3b8" />
+                <span>Este estudiante mantiene sus datos de contacto en modo privado.</span>
+              </div>
+            )}
+          </div>
 
           {/* Proyectos y Habilidades */}
           <div className="ia-card">
@@ -365,45 +442,9 @@ export default function PublicProfile() {
                 )}
                 {!profile.portfolio_url && !profile.github_url && !profile.linkedin_url && (
                   <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                    Sin enlaces externos.
+                    Sin enlaces externos registrados.
                   </p>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* 20. Reputación e Insignias (Preparado sin datos ficticios) */}
-          <div className="ia-card">
-            <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
-              <StarIcon size={18} color="#d97706" /> Reputación e Historial
-            </h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '2px' }}>
-                  Valoraciones académicas
-                </span>
-                <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
-                  Aún sin valoraciones
-                </span>
-              </div>
-
-              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '2px' }}>
-                  <AwardIcon size={14} color="#2563eb" /> Insignias institucionales
-                </span>
-                <span style={{ fontSize: '0.84rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  Próximamente
-                </span>
-              </div>
-
-              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '2px' }}>
-                  Tutorías realizadas
-                </span>
-                <span style={{ fontSize: '0.84rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  Próximamente
-                </span>
               </div>
             </div>
           </div>

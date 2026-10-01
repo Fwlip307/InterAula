@@ -18,6 +18,7 @@ import {
   CheckIcon,
   AlertCircleIcon,
   BriefcaseIcon,
+  MailIcon,
 } from '../../components/common/Icons';
 import { isValidUrl } from '../../utils/validators';
 
@@ -46,6 +47,11 @@ export default function ProfileEdit() {
   const [portfolioUrl, setPortfolioUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
+
+  // Estados de contacto y privacidad
+  const [phone, setPhone] = useState('');
+  const [showEmail, setShowEmail] = useState(false);
+  const [showPhone, setShowPhone] = useState(false);
 
   // Catálogos generales de la base de datos
   const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
@@ -107,6 +113,9 @@ export default function ProfileEdit() {
             setPortfolioUrl(p.portfolio_url || '');
             setGithubUrl(p.github_url || '');
             setLinkedinUrl(p.linkedin_url || '');
+            setPhone(p.phone || '');
+            setShowEmail(Boolean(p.show_email));
+            setShowPhone(Boolean(p.show_phone));
           }
           setCatalogSubjects(subs);
           setCatalogSkills(skls);
@@ -179,6 +188,9 @@ export default function ProfileEdit() {
         portfolio_url: portfolioUrl.trim() || null,
         github_url: githubUrl.trim() || null,
         linkedin_url: linkedinUrl.trim() || null,
+        phone: phone.trim() || null,
+        show_email: showEmail,
+        show_phone: showPhone,
         profile_completed: isCompleted,
       });
 
@@ -564,6 +576,64 @@ export default function ProfileEdit() {
                 onChange={(e) => setPortfolioUrl(e.target.value)}
                 placeholder="https://tuportafolio.com"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Contacto y Privacidad */}
+        <div className="ia-form-section">
+          <h2 className="ia-form-section-title">
+            <MailIcon size={20} color="#2563eb" /> Información de Contacto y Privacidad
+          </h2>
+          <p className="ia-form-section-desc">
+            Controla qué datos de contacto pueden ver otros estudiantes en tu perfil público. Por defecto se mantienen en privado.
+          </p>
+
+          <div className="ia-form-grid" style={{ marginBottom: '16px' }}>
+            <div className="ia-form-group full">
+              <label className="ia-label" htmlFor="phone">
+                Teléfono de contacto (Opcional)
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                className="ia-input"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+56 9 1234 5678"
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="ia-switch-card">
+              <div className="ia-switch-info">
+                <h4>Mostrar correo electrónico en mi perfil público</h4>
+                <p>Permite que compañeros y estudiantes interesados puedan ver tu correo para coordinar tutorías o proyectos.</p>
+              </div>
+              <label className="ia-switch">
+                <input
+                  type="checkbox"
+                  checked={showEmail}
+                  onChange={(e) => setShowEmail(e.target.checked)}
+                />
+                <span className="ia-slider" />
+              </label>
+            </div>
+
+            <div className="ia-switch-card">
+              <div className="ia-switch-info">
+                <h4>Mostrar teléfono en mi perfil público</h4>
+                <p>Permite que otros estudiantes puedan ver tu número de contacto directo si lo registraste.</p>
+              </div>
+              <label className="ia-switch">
+                <input
+                  type="checkbox"
+                  checked={showPhone}
+                  onChange={(e) => setShowPhone(e.target.checked)}
+                />
+                <span className="ia-slider" />
+              </label>
             </div>
           </div>
         </div>

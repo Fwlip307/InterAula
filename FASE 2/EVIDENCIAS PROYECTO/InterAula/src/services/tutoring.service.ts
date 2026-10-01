@@ -39,6 +39,7 @@ export const tutoringService = {
   async getAvailableTutors(filters?: {
     subjectId?: string;
     search?: string;
+    onlyVerified?: boolean;
   }): Promise<AvailableTutor[]> {
     try {
       // 1. Consultar perfiles que están activos para tutorías
@@ -51,10 +52,14 @@ export const tutoringService = {
             subject_id,
             level,
             description,
+            is_verified,
+            verified_at,
             subject:subjects (
               id,
               name,
-              category
+              category,
+              is_pilot,
+              pilot_priority
             )
           )
         `)
@@ -80,6 +85,14 @@ export const tutoringService = {
         if (filters?.subjectId && filters.subjectId !== 'all') {
           const teachesSubject = offered.some((o) => o.subject_id === filters.subjectId);
           if (!teachesSubject) return false;
+        }
+
+        // Si hay filtro de tutores verificados
+        if (filters?.onlyVerified) {
+          const hasVerified = offered.some((o) =>
+            o.is_verified === true && (!filters.subjectId || filters.subjectId === 'all' || o.subject_id === filters.subjectId)
+          );
+          if (!hasVerified) return false;
         }
 
         // Si hay filtro de texto por nombre o materia
