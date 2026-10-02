@@ -19,6 +19,7 @@ import {
   StarIcon,
   BookOpenIcon,
   MessageSquareIcon,
+  ShieldCheckIcon,
 } from '../../../components/common/Icons';
 
 interface SessionCardProps {
@@ -140,18 +141,39 @@ export default function SessionCard({
           </div>
         </div>
 
-        {/* Badge de estado */}
-        <span
-          style={{
-            ...getBadgeStyle(session.status),
-            padding: '4px 12px',
-            borderRadius: '9999px',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-          }}
-        >
-          {statusInfo.label}
-        </span>
+        {/* Badges de estado y auditoría */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {session.attendance_verified && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.75rem',
+                background: '#f0fdf4',
+                color: '#15803d',
+                padding: '4px 10px',
+                borderRadius: '9999px',
+                border: '1px solid #bbf7d0',
+                fontWeight: 700,
+              }}
+            >
+              <ShieldCheckIcon size={14} color="#16a34a" /> Asistencia Auditada
+            </span>
+          )}
+
+          <span
+            style={{
+              ...getBadgeStyle(session.status),
+              padding: '4px 12px',
+              borderRadius: '9999px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+            }}
+          >
+            {statusInfo.label}
+          </span>
+        </div>
       </div>
 
       {/* Detalles de la sesión: Fecha, Hora, Duración, Modalidad */}
@@ -186,26 +208,40 @@ export default function SessionCard({
         </div>
       </div>
 
-      {/* Ubicación o Enlace */}
-      {session.location_or_link && (
-        <div style={{ fontSize: '0.84rem', color: '#475569', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-          {session.modality === 'online' ? <VideoIcon size={16} color="#64748b" /> : <MapPinIcon size={16} color="#64748b" />}
-          <div>
-            <strong>{session.modality === 'online' ? 'Plataforma / Enlace:' : 'Lugar:'}</strong>{' '}
-            {session.location_or_link.startsWith('http') ? (
-              <a
-                href={session.location_or_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#2563eb', textDecoration: 'underline', wordBreak: 'break-all' }}
-              >
-                {session.location_or_link}
-              </a>
-            ) : (
-              <span>{session.location_or_link}</span>
+      {/* Información del Aula Virtual si es Online */}
+      {session.modality === 'online' ? (
+        <div
+          style={{
+            fontSize: '0.84rem',
+            color: '#1e40af',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: '#eff6ff',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            border: '1px solid #bfdbfe',
+          }}
+        >
+          <VideoIcon size={18} color="#2563eb" />
+          <div style={{ flex: 1 }}>
+            <strong>Aula Virtual Oficial InterAula:</strong> Videollamada encriptada, pizarra colaborativa y auditoría de conexión integrada.
+            {session.location_or_link && (
+              <div style={{ marginTop: '4px', fontSize: '0.78rem', color: '#64748b' }}>
+                Enlace alternativo del solicitante: {session.location_or_link}
+              </div>
             )}
           </div>
         </div>
+      ) : (
+        session.location_or_link && (
+          <div style={{ fontSize: '0.84rem', color: '#475569', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+            <MapPinIcon size={16} color="#64748b" />
+            <div>
+              <strong>Lugar de encuentro:</strong> <span>{session.location_or_link}</span>
+            </div>
+          </div>
+        )
       )}
 
       {/* Notas o temas */}
@@ -310,6 +346,28 @@ export default function SessionCard({
         {/* Caso 3: Sesión ACEPTADA */}
         {session.status === 'accepted' && (
           <>
+            {/* Si es online, botón destacado para entrar al Aula Virtual */}
+            {session.modality === 'online' && (
+              <Link
+                to={`/tutoring/room/${session.id}`}
+                className="ia-btn ia-btn-primary"
+                style={{
+                  background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)',
+                }}
+              >
+                <VideoIcon size={16} color="#ffffff" /> Entrar al Aula Virtual
+              </Link>
+            )}
+
             {/* Ambos pueden cancelar antes */}
             <button
               type="button"
@@ -360,6 +418,22 @@ export default function SessionCard({
         {/* Caso 4: Sesión COMPLETADA */}
         {session.status === 'completed' && (
           <>
+            {session.modality === 'online' && (
+              <Link
+                to={`/tutoring/room/${session.id}`}
+                className="ia-btn ia-btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '0.8rem',
+                  textDecoration: 'none',
+                }}
+              >
+                <VideoIcon size={14} /> Ver Sala / Apuntes
+              </Link>
+            )}
+
             {role === 'student' && !session.review && (
               <button
                 type="button"

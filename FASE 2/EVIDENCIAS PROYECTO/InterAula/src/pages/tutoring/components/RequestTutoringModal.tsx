@@ -256,12 +256,37 @@ export default function RequestTutoringModal({
             <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
               {modality === 'online' ? 'Plataforma o enlace propuesto (opcional)' : 'Lugar o sala de encuentro sugerida (opcional)'}
             </label>
+            {modality === 'online' && (
+              <div
+                style={{
+                  marginBottom: '8px',
+                  padding: '10px 12px',
+                  background: '#eff6ff',
+                  borderRadius: '8px',
+                  border: '1px solid #bfdbfe',
+                  fontSize: '0.82rem',
+                  color: '#1e40af',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                }}
+              >
+                <VideoIcon size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <span>
+                  <strong>Aula Virtual InterAula integrada:</strong> Se creará automáticamente una sala privada con videollamada HD, pizarra colaborativa y control de asistencia auditada. Si prefieres un enlace externo, puedes ingresarlo a continuación.
+                </span>
+              </div>
+            )}
             <input
               type="text"
               className="ia-input"
               value={locationOrLink}
               onChange={(e) => setLocationOrLink(e.target.value)}
-              placeholder={modality === 'online' ? 'Ej: Google Meet, Discord o Teams' : 'Ej: Biblioteca Central, Sala de Estudio 3'}
+              placeholder={
+                modality === 'online'
+                  ? 'Opcional (por defecto se usará el Aula Virtual de InterAula)'
+                  : 'Ej: Biblioteca Central, Sala de Estudio 3'
+              }
               style={{ width: '100%' }}
             />
           </div>

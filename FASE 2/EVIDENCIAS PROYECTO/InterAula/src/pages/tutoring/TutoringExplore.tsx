@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profile.service';
 import { tutoringService, type AvailableTutor } from '../../services/tutoring.service';
 import type { Subject } from '../../types/profile';
+import type { TutoringWorkshop } from '../../types/tutoring';
 import {
   getUserDisplayName,
   getUserInitial,
@@ -17,12 +18,18 @@ import {
   UsersIcon,
   AlertCircleIcon,
   CheckIcon,
+  VideoIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
+import CreateWorkshopModal from './components/CreateWorkshopModal';
+import WorkshopCard from './components/WorkshopCard';
 
 export default function TutoringExplore() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'tutors' | 'workshops'>('tutors');
+
+  // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
@@ -31,11 +38,17 @@ export default function TutoringExplore() {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
 
-  // Tutor seleccionado para el modal de solicitud
+  // Tutor seleccionado para el modal de solicitud 1 a 1
   const [selectedTutorForModal, setSelectedTutorForModal] = useState<AvailableTutor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // Cargar catálogo de materias (reutilizando profileService) y lista de tutores
+  // Talleres y Clases Grupales
+  const [workshops, setWorkshops] = useState<TutoringWorkshop[]>([]);
+  const [workshopsLoading, setWorkshopsLoading] = useState<boolean>(false);
+  const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState<boolean>(false);
+  const [workshopActionLoading, setWorkshopActionLoading] = useState<boolean>(false);
+
+  // Cargar catálogo de materias
   useEffect(() => {
     async function loadCatalog() {
       try {
@@ -65,13 +78,39 @@ export default function TutoringExplore() {
     }
   }, [selectedSubjectId, searchTerm]);
 
+  const fetchWorkshops = React.useCallback(async () => {
+    setWorkshopsLoading(true);
+    try {
+      const data = await tutoringService.getUpcomingWorkshops(selectedSubjectId);
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        setWorkshops(
+          data.filter(
+            (w) =>
+              w.title.toLowerCase().includes(term) ||
+              (w.description && w.description.toLowerCase().includes(term)) ||
+              (w.tutor && getUserDisplayName(w.tutor).toLowerCase().includes(term))
+          )
+        );
+      } else {
+        setWorkshops(data);
+      }
+    } catch (err: any) {
+      console.error('[TutoringExplore] Error al cargar talleres:', err);
+    } finally {
+      setWorkshopsLoading(false);
+    }
+  }, [selectedSubjectId, searchTerm]);
+
   useEffect(() => {
     fetchTutors();
-  }, [fetchTutors]);
+    fetchWorkshops();
+  }, [fetchTutors, fetchWorkshops]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchTutors();
+    fetchWorkshops();
   };
 
   const handleOpenRequest = (tutor: AvailableTutor) => {
@@ -84,16 +123,90 @@ export default function TutoringExplore() {
     setTimeout(() => setSuccessMsg(''), 6000);
   };
 
+  const handleEnroll = async (workshopId: string) => {
+    setWorkshopActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.enrollInWorkshop(workshopId);
+      setSuccessMsg('¡Inscripción confirmada! Tu cupo en el taller grupal está asegurado.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await fetchWorkshops();
+    } catch (err: any) {
+      console.error('[TutoringExplore] Error al inscribirse en taller:', err);
+      setErrorMsg(err.message || 'No fue posible completar tu inscripción.');
+    } finally {
+      setWorkshopActionLoading(false);
+    }
+  };
+
+  const handleUnenroll = async (workshopId: string) => {
+    setWorkshopActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.unenrollFromWorkshop(workshopId);
+      setSuccessMsg('Has cancelado tu reserva en el taller.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await fetchWorkshops();
+    } catch (err: any) {
+      console.error('[TutoringExplore] Error al cancelar reserva:', err);
+      setErrorMsg(err.message || 'No fue posible cancelar la reserva.');
+    } finally {
+      setWorkshopActionLoading(false);
+    }
+  };
+
+  const handleCancelWorkshop = async (workshopId: string) => {
+    setWorkshopActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateWorkshopStatus(workshopId, 'cancelled');
+      setSuccessMsg('El taller ha sido cancelado.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await fetchWorkshops();
+    } catch (err: any) {
+      console.error('[TutoringExplore] Error al cancelar taller:', err);
+      setErrorMsg(err.message || 'No fue posible cancelar el taller.');
+    } finally {
+      setWorkshopActionLoading(false);
+    }
+  };
+
+  const handleCreateWorkshopSuccess = async () => {
+    setSuccessMsg('¡Taller grupal en vivo programado exitosamente! Tus compañeros ya pueden inscribirse.');
+    setTimeout(() => setSuccessMsg(''), 6000);
+    setActiveTab('workshops');
+    await fetchWorkshops();
+  };
+
   return (
     <div>
-      {/* Cabecera Académica */}
-      <div className="ia-page-header">
+      {/* Cabecera Académica con botón de acción */}
+      <div className="ia-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 className="ia-page-title">Explorar Tutores</h1>
+          <h1 className="ia-page-title">Explorar Tutores y Talleres en Vivo</h1>
           <p className="ia-page-subtitle">
-            Encuentra compañeros con dominio en tus asignaturas y coordina sesiones de apoyo académico.
+            Encuentra apoyo académico personalizado 1 a 1 o participa en clases grupales con Aula Virtual integrada.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setIsCreateWorkshopModalOpen(true)}
+          className="ia-btn-primary"
+          style={{
+            background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+            borderColor: '#7c3aed',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '9px 18px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            boxShadow: '0 4px 6px -1px rgba(124, 58, 237, 0.25)',
+          }}
+        >
+          <VideoIcon size={16} color="#ffffff" />
+          <span>+ Programar Taller en Vivo</span>
+        </button>
       </div>
 
       {/* Alerta de éxito si se agendó una tutoría */}
@@ -126,6 +239,77 @@ export default function TutoringExplore() {
         </div>
       )}
 
+      {/* Pestañas de Navegación: Tutores 1 a 1 vs Talleres Grupales */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          marginBottom: '20px',
+          borderBottom: '2px solid #e2e8f0',
+          paddingBottom: '2px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab('tutors')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'tutors' ? '#2563eb' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'tutors' ? '3px solid #2563eb' : '3px solid transparent',
+            marginBottom: '-4px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <UsersIcon size={18} color={activeTab === 'tutors' ? '#2563eb' : '#64748b'} />
+          <span>Tutores Individuales 1 a 1 ({tutors.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('workshops')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'workshops' ? '#7c3aed' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'workshops' ? '3px solid #7c3aed' : '3px solid transparent',
+            marginBottom: '-4px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
+          <span>Talleres y Clases en Vivo ({workshops.length})</span>
+          {workshops.length > 0 && (
+            <span
+              style={{
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                backgroundColor: '#f3e8ff',
+                color: '#7c3aed',
+                padding: '2px 8px',
+                borderRadius: '10px',
+              }}
+            >
+              En directo
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Barra de Filtros y Búsqueda */}
       <div className="ia-card" style={{ marginBottom: '24px', padding: '18px 20px' }}>
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -154,11 +338,44 @@ export default function TutoringExplore() {
               style={{ width: '100%' }}
             >
               <option value="all">Todas las materias ({subjects.length})</option>
-              {subjects.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name}{sub.category ? ` (${sub.category})` : ''}
-                </option>
-              ))}
+              <optgroup label="🔥 Ramos Clave de Inicio (Informática)">
+                {subjects
+                  .filter((s) => s.is_pilot || [
+                    'Programación de Algoritmos',
+                    'Nivelación Matemática',
+                    'Modelamiento de Base de Datos',
+                    'Consultas de Bases de Datos',
+                    'Programación Web',
+                    'Desarrollo de Software de Escritorio',
+                    'Matemática Aplicada',
+                    'Programación de Base de Datos',
+                    'Arquitectura',
+                  ].includes(s.name))
+                  .map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+              </optgroup>
+              <optgroup label="📚 Otras Asignaturas">
+                {subjects
+                  .filter((s) => !s.is_pilot && ![
+                    'Programación de Algoritmos',
+                    'Nivelación Matemática',
+                    'Modelamiento de Base de Datos',
+                    'Consultas de Bases de Datos',
+                    'Programación Web',
+                    'Desarrollo de Software de Escritorio',
+                    'Matemática Aplicada',
+                    'Programación de Base de Datos',
+                    'Arquitectura',
+                  ].includes(s.name))
+                  .map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}{sub.category ? ` (${sub.category})` : ''}
+                    </option>
+                  ))}
+              </optgroup>
             </select>
           </div>
 
@@ -170,12 +387,13 @@ export default function TutoringExplore() {
       </div>
 
       {/* Contenido Principal: Grilla de Tutores */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <UsersIcon size={20} color="#2563eb" />
-            Tutores Disponibles ({tutors.length})
-          </h2>
+      {activeTab === 'tutors' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UsersIcon size={20} color="#2563eb" />
+              Tutores Disponibles ({tutors.length})
+            </h2>
           <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
             Estudiantes activos con disponibilidad para enseñar
           </span>
@@ -442,14 +660,121 @@ export default function TutoringExplore() {
             })}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
-      {/* Modal de Solicitud de Tutoría */}
+      {/* 2. SECCIÓN: TALLERES Y CLASES EN VIVO */}
+      {activeTab === 'workshops' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <VideoIcon size={20} color="#7c3aed" />
+                Talleres y Clases Grupales ({workshops.length})
+              </h2>
+              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                Sesiones programadas con enlace al Aula Virtual integrado. Inscríbete con anticipación para asegurar tu lugar.
+              </span>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#b91c1c',
+                padding: '14px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <AlertCircleIcon size={20} color="#b91c1c" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {workshopsLoading ? (
+            <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+              <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando talleres y clases grupales en vivo...</p>
+            </div>
+          ) : workshops.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '48px 20px' }}
+                icon={<VideoIcon size={32} color="#7c3aed" />}
+                title="No hay talleres programados en este momento"
+                description={
+                  selectedSubjectId !== 'all' || searchTerm
+                    ? 'No encontramos talleres que coincidan con tus filtros. Prueba seleccionando otra asignatura o quitando los filtros de búsqueda.'
+                    : 'Aún no hay talleres en vivo programados. Si dominas alguna materia clave, ¡anímate a impartir una clase abierta para tus compañeros!'
+                }
+                action={
+                  selectedSubjectId !== 'all' || searchTerm ? (
+                    <button
+                      type="button"
+                      className="ia-btn-secondary"
+                      onClick={() => {
+                        setSelectedSubjectId('all');
+                        setSearchTerm('');
+                      }}
+                    >
+                      Restablecer filtros
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="ia-btn-primary"
+                      style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', borderColor: '#7c3aed' }}
+                      onClick={() => setIsCreateWorkshopModalOpen(true)}
+                    >
+                      + Programar el Primer Taller
+                    </button>
+                  )
+                }
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+                gap: '20px',
+              }}
+            >
+              {workshops.map((w) => (
+                <WorkshopCard
+                  key={w.id}
+                  workshop={w}
+                  currentUserId={user?.id}
+                  onEnroll={handleEnroll}
+                  onUnenroll={handleUnenroll}
+                  onCancelWorkshop={handleCancelWorkshop}
+                  actionLoading={workshopActionLoading}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal de Solicitud de Tutoría 1 a 1 */}
       <RequestTutoringModal
         tutor={selectedTutorForModal}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleSuccessRequest}
+      />
+
+      {/* Modal para Programar Nuevo Taller Grupal */}
+      <CreateWorkshopModal
+        isOpen={isCreateWorkshopModalOpen}
+        onClose={() => setIsCreateWorkshopModalOpen(false)}
+        onSuccess={handleCreateWorkshopSuccess}
+        availableSubjects={subjects}
       />
     </div>
   );

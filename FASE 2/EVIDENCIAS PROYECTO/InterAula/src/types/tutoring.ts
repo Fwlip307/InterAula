@@ -17,10 +17,26 @@ export interface TutoringSession {
   cancellation_reason: string | null;
   created_at: string;
   updated_at: string;
+  room_id?: string | null;
+  student_joined_at?: string | null;
+  tutor_joined_at?: string | null;
+  both_connected_at?: string | null;
+  actual_duration_minutes?: number;
+  attendance_verified?: boolean;
   student?: Profile;
   tutor?: Profile;
   subject?: Subject;
   review?: TutoringReview;
+}
+
+export interface SessionAttendanceResult {
+  session_id: string;
+  room_id: string | null;
+  student_joined_at: string | null;
+  tutor_joined_at: string | null;
+  both_connected_at: string | null;
+  actual_duration_minutes: number;
+  attendance_verified: boolean;
 }
 
 export interface CreateTutoringSessionDTO {
@@ -84,4 +100,46 @@ export interface TutorStatistics {
   avg_knowledge: number;
   avg_punctuality: number;
   overall_rating: number;
+}
+
+// Modelos para Talleres y Clases Grupales en Vivo
+export type WorkshopStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface TutoringWorkshop {
+  id: string;
+  tutor_id: string;
+  subject_id: string;
+  title: string;
+  description: string | null;
+  scheduled_at: string;
+  duration_minutes: number;
+  max_students: number;
+  room_id: string;
+  status: WorkshopStatus;
+  created_at: string;
+  updated_at: string;
+  tutor?: Profile;
+  subject?: Subject;
+  enrollments_count?: number;
+  is_enrolled?: boolean;
+  enrollments?: WorkshopEnrollment[];
+}
+
+export interface WorkshopEnrollment {
+  id: string;
+  workshop_id: string;
+  student_id: string;
+  enrolled_at: string;
+  attended: boolean;
+  attended_at: string | null;
+  student?: Profile;
+}
+
+export interface CreateWorkshopDTO {
+  subject_id: string;
+  title: string;
+  description?: string | null;
+  scheduled_at: string;
+  duration_minutes: number;
+  max_students?: number;
 }

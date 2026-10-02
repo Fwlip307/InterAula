@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
-import type { TutoringSession } from '../../types/tutoring';
+import { profileService } from '../../services/profile.service';
+import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
+import type { Subject } from '../../types/profile';
 import SessionCard from './components/SessionCard';
+import WorkshopCard from './components/WorkshopCard';
+import CreateWorkshopModal from './components/CreateWorkshopModal';
 import ReviewModal from './components/ReviewModal';
 import EmptyState from '../../components/common/EmptyState';
 import {
@@ -12,14 +17,20 @@ import {
   AlertCircleIcon,
   CheckIcon,
   XIcon,
+  VideoIcon,
 } from '../../components/common/Icons';
 
-type TabType = 'student' | 'tutor';
+type TabType = 'student' | 'tutor' | 'workshops';
 
 export default function MyTutoring() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('student');
   const [studentSessions, setStudentSessions] = useState<TutoringSession[]>([]);
   const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
+  const [enrolledWorkshops, setEnrolledWorkshops] = useState<TutoringWorkshop[]>([]);
+  const [hostedWorkshops, setHostedWorkshops] = useState<TutoringWorkshop[]>([]);
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -37,12 +48,18 @@ export default function MyTutoring() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [asStudent, asTutor] = await Promise.all([
+      const [asStudent, asTutor, studentWorkshops, tutorWorkshops, subs] = await Promise.all([
         tutoringService.getMySessionsAsStudent(),
         tutoringService.getMySessionsAsTutor(),
+        tutoringService.getMyWorkshopsAsStudent(),
+        tutoringService.getMyWorkshopsAsTutor(),
+        profileService.getSubjects(),
       ]);
       setStudentSessions(asStudent);
       setTutorSessions(asTutor);
+      setEnrolledWorkshops(studentWorkshops);
+      setHostedWorkshops(tutorWorkshops);
+      setAvailableSubjects(subs);
     } catch (err: any) {
       console.error('[MyTutoring] Error al cargar sesiones:', err);
       setErrorMsg(err.message || 'No fue posible cargar tus tutorías.');
@@ -138,6 +155,45 @@ export default function MyTutoring() {
     await loadSessions();
   };
 
+  const handleWorkshopUnenroll = async (workshopId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.unenrollFromWorkshop(workshopId);
+      setSuccessMsg('Has cancelado tu inscripción en el taller.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al cancelar reserva de taller:', err);
+      setErrorMsg(err.message || 'No fue posible cancelar tu reserva.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleWorkshopCancel = async (workshopId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateWorkshopStatus(workshopId, 'cancelled');
+      setSuccessMsg('El taller grupal ha sido cancelado.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al cancelar taller:', err);
+      setErrorMsg(err.message || 'No fue posible cancelar el taller.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCreateWorkshopSuccess = async () => {
+    setSuccessMsg('¡Taller grupal en vivo programado exitosamente!');
+    setTimeout(() => setSuccessMsg(''), 5000);
+    setActiveTab('workshops');
+    await loadSessions();
+  };
+
   const currentList = activeTab === 'student' ? studentSessions : tutorSessions;
 
   // Conteo de solicitudes pendientes como tutor para llamar la atención
@@ -148,10 +204,10 @@ export default function MyTutoring() {
       {/* Cabecera y pestañas */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
-          Gestión de Mis Tutorías
+          Gestión de Mis Tutorías y Clases en Vivo
         </h1>
         <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
-          Administra las sesiones que has solicitado como estudiante y atiende las peticiones recibidas como tutor.
+          Administra las sesiones que has solicitado como estudiante, atiende peticiones como tutor y gestiona tus talleres grupales.
         </p>
       </div>
 
@@ -194,13 +250,14 @@ export default function MyTutoring() {
         </div>
       )}
 
-      {/* Pestañas (Como estudiante / Como tutor) */}
+      {/* Pestañas (Como estudiante / Como tutor / Talleres en Vivo) */}
       <div
         style={{
           display: 'flex',
           borderBottom: '2px solid #e2e8f0',
           marginBottom: '24px',
           gap: '8px',
+          flexWrap: 'wrap',
         }}
       >
         <button
@@ -260,12 +317,121 @@ export default function MyTutoring() {
             </span>
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('workshops')}
+          style={{
+            padding: '12px 20px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'workshops' ? '#7c3aed' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'workshops' ? '2px solid #7c3aed' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
+          Talleres en Vivo ({enrolledWorkshops.length + hostedWorkshops.length})
+        </button>
       </div>
 
       {/* Contenido de la pestaña activa */}
       {loading ? (
         <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando sesiones...</p>
+          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando sesiones y talleres...</p>
+        </div>
+      ) : activeTab === 'workshops' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          {/* Barra superior de talleres */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 4px', color: '#0f172a' }}>
+                Mis Talleres y Aulas Virtuales Grupales
+              </h2>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+                Sesiones programadas con enlace al Aula Virtual integrado. Inscríbete o imparte una clase.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsCreateWorkshopModalOpen(true)}
+              className="ia-btn-primary"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                borderColor: '#7c3aed',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 18px',
+                fontWeight: 700,
+              }}
+            >
+              <VideoIcon size={16} color="#ffffff" /> + Programar Nuevo Taller
+            </button>
+          </div>
+
+          {/* Sección 1: Talleres que imparto como tutor */}
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UsersIcon size={18} color="#7c3aed" />
+              Talleres que imparto como Tutor ({hostedWorkshops.length})
+            </h3>
+            {hostedWorkshops.length === 0 ? (
+              <div className="ia-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
+                No has programado talleres aún. Comparte tu conocimiento programando una clase grupal para tus compañeros.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+                {hostedWorkshops.map((w) => (
+                  <WorkshopCard
+                    key={w.id}
+                    workshop={w}
+                    currentUserId={user?.id}
+                    onEnroll={async () => {}}
+                    onUnenroll={handleWorkshopUnenroll}
+                    onCancelWorkshop={handleWorkshopCancel}
+                    actionLoading={actionLoading}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sección 2: Talleres inscritos como estudiante */}
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpenIcon size={18} color="#16a34a" />
+              Talleres inscritos como Estudiante ({enrolledWorkshops.length})
+            </h3>
+            {enrolledWorkshops.length === 0 ? (
+              <div className="ia-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
+                No tienes reservas activas en talleres grupales.{' '}
+                <Link to="/tutoring" style={{ color: '#2563eb', fontWeight: 600 }}>
+                  Explora los talleres en vivo disponibles
+                </Link>
+                .
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+                {enrolledWorkshops.map((w) => (
+                  <WorkshopCard
+                    key={w.id}
+                    workshop={w}
+                    currentUserId={user?.id}
+                    onEnroll={async () => {}}
+                    onUnenroll={handleWorkshopUnenroll}
+                    actionLoading={actionLoading}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ) : currentList.length === 0 ? (
         <div className="ia-card">
@@ -301,7 +467,7 @@ export default function MyTutoring() {
             <SessionCard
               key={session.id}
               session={session}
-              role={activeTab}
+              role={activeTab as 'student' | 'tutor'}
               onAccept={handleAccept}
               onReject={handleReject}
               onCancel={handleCancelClick}
@@ -402,6 +568,14 @@ export default function MyTutoring() {
           setSelectedSessionForReview(null);
         }}
         onSuccess={handleReviewSuccess}
+      />
+
+      {/* Modal de Creación de Taller Grupal */}
+      <CreateWorkshopModal
+        isOpen={isCreateWorkshopModalOpen}
+        onClose={() => setIsCreateWorkshopModalOpen(false)}
+        onSuccess={handleCreateWorkshopSuccess}
+        availableSubjects={availableSubjects}
       />
     </div>
   );

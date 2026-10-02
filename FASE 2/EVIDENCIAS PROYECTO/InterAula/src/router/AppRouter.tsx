@@ -17,6 +17,7 @@ import PublicProfile from '../pages/profile/PublicProfile';
 import ProjectsHub from '../pages/projects/ProjectsHub';
 import TutoringExplore from '../pages/tutoring/TutoringExplore';
 import MyTutoring from '../pages/tutoring/MyTutoring';
+import VirtualClassroom from '../pages/tutoring/VirtualClassroom';
 import Resources from '../pages/resources/Resources';
 import Settings from '../pages/settings/Settings';
 
@@ -76,6 +77,16 @@ export default function AppRouter() {
         <Route path="/resources" element={<Resources />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
+
+      {/* Aula Virtual de Tutoría (experiencia full-screen dedicada) */}
+      <Route
+        path="/tutoring/room/:sessionId"
+        element={
+          <ProtectedRoute>
+            <VirtualClassroom />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Fallback para cualquier otra ruta */}
       <Route path="*" element={<Navigate to="/" replace />} />
