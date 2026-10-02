@@ -15,7 +15,6 @@ import {
   StarIcon,
   AwardIcon,
   UsersIcon,
-  GraduationCapIcon,
   AlertCircleIcon,
   CheckIcon,
 } from '../../components/common/Icons';
@@ -87,18 +86,15 @@ export default function TutoringExplore() {
 
   return (
     <div>
-      {/* Banner Superior Universitario */}
-      <section className="ia-hero-banner" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}>
-        <div className="ia-hero-text">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'rgba(255,255,255,0.15)', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px' }}>
-            <GraduationCapIcon size={14} color="#fde047" /> Red de Apoyo Académico Entre Pares
-          </div>
-          <h1>Explorar Tutores Disponibles</h1>
-          <p>
-            Encuentra compañeros con dominio comprobado en tus asignaturas y solicita sesiones de tutoría personalizadas.
+      {/* Cabecera Académica */}
+      <div className="ia-page-header">
+        <div>
+          <h1 className="ia-page-title">Explorar Tutores</h1>
+          <p className="ia-page-subtitle">
+            Encuentra compañeros con dominio en tus asignaturas y coordina sesiones de apoyo académico.
           </p>
         </div>
-      </section>
+      </div>
 
       {/* Alerta de éxito si se agendó una tutoría */}
       {successMsg && (

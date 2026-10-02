@@ -317,9 +317,8 @@ export default function ProfileEdit() {
       {/* Botón Volver y Encabezado de Página */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link to="/profile" className="ia-btn-secondary" style={{ padding: '8px 12px' }} title="Volver a mi perfil">
-            <ArrowLeftIcon size={16} />
-            Volver
+          <Link to="/profile" className="ia-btn-icon-back" aria-label="Volver a mi perfil" title="Volver a mi perfil">
+            <ArrowLeftIcon size={18} />
           </Link>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
             Editar Mi Perfil

@@ -18,7 +18,6 @@ import {
   CalendarIcon,
   TargetIcon,
   ShieldCheckIcon,
-  MegaphoneIcon,
   AlertCircleIcon,
   CheckIcon,
   XIcon,
@@ -124,12 +123,12 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Banner de Bienvenida Principal */}
+      {/* Cabecera Académica Principal */}
       <section className="ia-hero-banner">
         <div className="ia-hero-text">
-          <h1>¡Hola, {greetingName}!</h1>
+          <h1>Panel de Aprendizaje · {greetingName}</h1>
           <p>
-            Bienvenido al portal de <strong>InterAula</strong>. Conecta con tutores pares, colabora en proyectos multidisciplinarios y potencia tu aprendizaje universitario.
+            Plataforma académica para tutorías entre pares, intercambio de conocimientos y proyectos de colaboración universitaria.
           </p>
         </div>
         <div className="ia-hero-actions">
@@ -138,14 +137,21 @@ export default function Dashboard() {
             className="ia-btn-hero-primary"
             onClick={() => navigate('/tutoring')}
           >
-            Buscar Tutoría
+            Buscar tutor
+          </button>
+          <button
+            type="button"
+            className="ia-btn-hero-secondary"
+            onClick={() => navigate('/my-tutoring')}
+          >
+            Mis tutorías
           </button>
           <button
             type="button"
             className="ia-btn-hero-secondary"
             onClick={() => navigate('/profile/edit')}
           >
-            Ofrecer Materias
+            Puedo enseñar
           </button>
         </div>
       </section>
@@ -390,27 +396,40 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Avisos Académicos (Requisito 3 - Estado transparente) */}
+          {/* Acciones Académicas Reales */}
           <div className="ia-card">
-            <h2 className="ia-card-title" style={{ marginBottom: '16px' }}>
-              <MegaphoneIcon size={20} color="#d97706" /> Avisos Académicos
+            <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
+              <TargetIcon size={18} color="#2563eb" /> Acciones Rápidas
             </h2>
-            <div className="ia-notice-list">
-              <div className="ia-notice-item">
-                <h3 className="ia-notice-title">Bienvenido al Sprint 1 de InterAula</h3>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: '#475569' }}>
-                  Ya puedes configurar tus materias de tutoría y habilidades de proyectos en tu perfil.
-                </p>
-                <span className="ia-notice-date">Hoy</span>
-              </div>
-
-              <div className="ia-notice-item" style={{ borderLeftColor: '#16a34a' }}>
-                <h3 className="ia-notice-title">Próximamente: Tablón Comunitario</h3>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: '#475569' }}>
-                  Espacio en desarrollo para avisos universitarios y grupos de estudio por sede.
-                </p>
-                <span className="ia-notice-date">Módulo en desarrollo</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Link
+                to="/tutoring"
+                className="ia-btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '10px 14px', fontSize: '0.88rem' }}
+              >
+                <BookOpenIcon size={16} /> Buscar tutor de asignatura
+              </Link>
+              <Link
+                to="/my-tutoring"
+                className="ia-btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '10px 14px', fontSize: '0.88rem' }}
+              >
+                <CalendarIcon size={16} /> Mis solicitudes y sesiones
+              </Link>
+              <Link
+                to="/profile/edit"
+                className="ia-btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '10px 14px', fontSize: '0.88rem' }}
+              >
+                <EditIcon size={16} /> Actualizar asignaturas y nivel
+              </Link>
+              <Link
+                to="/projects"
+                className="ia-btn-secondary"
+                style={{ justifyContent: 'flex-start', padding: '10px 14px', fontSize: '0.88rem' }}
+              >
+                <UsersIcon size={16} /> Hub de Proyectos estudiantiles
+              </Link>
             </div>
           </div>
         </div>

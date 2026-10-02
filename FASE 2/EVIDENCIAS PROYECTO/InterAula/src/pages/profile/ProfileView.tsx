@@ -214,96 +214,72 @@ export default function ProfileView() {
 
             {offeredSubjects.length > 0 ? (
               <div className="ia-catalog-list">
-                {offeredSubjects.map((item) => (
-                  <div key={item.subject_id} className="ia-catalog-item">
-                    <div className="ia-catalog-item-info">
-                      <div>
-                        <div className="ia-catalog-item-title">
-                          {item.subject?.name || 'Materia'}
+                {offeredSubjects.map((item) => {
+                  const vReq = verificationRequests.find((r) => r.subject_id === item.subject_id);
+                  const hasGrade = vReq?.matched_grade !== null && vReq?.matched_grade !== undefined;
+                  const levelLabel = vReq?.calculated_level
+                    ? formatTutorLevel(vReq.calculated_level)
+                    : formatAcademicLevel(item.level);
+
+                  return (
+                    <div key={item.subject_id} className="ia-catalog-item">
+                      <div className="ia-catalog-item-info">
+                        <div>
+                          <div className="ia-catalog-item-title">
+                            {item.subject?.name || 'Materia'}
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+                            {hasGrade ? `${vReq.matched_grade!.toFixed(1).replace('.', ',')} · ` : ''}
+                            {levelLabel}
+                          </div>
+                          {item.description && (
+                            <p className="ia-catalog-item-desc" style={{ marginTop: '4px' }}>{item.description}</p>
+                          )}
                         </div>
-                        {item.description && (
-                          <p className="ia-catalog-item-desc">{item.description}</p>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {item.is_verified ? (
+                          <span className="ia-badge ia-badge-success">
+                            <ShieldCheckIcon size={12} /> Verificado
+                          </span>
+                        ) : vReq?.document_path ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSubjectForVerification({
+                                id: item.subject_id,
+                                name: item.subject?.name || 'Materia',
+                              });
+                              setIsCertModalOpen(true);
+                            }}
+                            className="ia-badge ia-badge-blue"
+                            style={{ cursor: 'pointer' }}
+                            title="Ver datos del certificado procesado"
+                          >
+                            <FileTextIcon size={12} /> Certificado adjunto
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSubjectForVerification({
+                                id: item.subject_id,
+                                name: item.subject?.name || 'Materia',
+                              });
+                              setIsCertModalOpen(true);
+                            }}
+                            className="ia-btn-secondary"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                            title="Subir certificado académico para verificar esta materia"
+                          >
+                            <UploadCloudIcon size={12} /> Verificar con PDF
+                          </button>
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      {item.is_verified ? (
-                        <span className="ia-badge" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
-                          <ShieldCheckIcon size={12} color="#059669" /> Tutor verificado
-                        </span>
-                      ) : (
-                        <>
-                          <span className="ia-badge ia-badge-blue">
-                            Tutor comunitario
-                          </span>
-                          {(() => {
-                            const vReq = verificationRequests.find((r) => r.subject_id === item.subject_id);
-                            if (vReq?.document_path) {
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedSubjectForVerification({
-                                      id: item.subject_id,
-                                      name: item.subject?.name || 'Materia',
-                                    });
-                                    setIsCertModalOpen(true);
-                                  }}
-                                  className="ia-badge"
-                                  style={{
-                                    background: '#eff6ff',
-                                    color: '#1d4ed8',
-                                    border: '1px solid #bfdbfe',
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                  }}
-                                  title="Ver datos extraídos del certificado"
-                                >
-                                  <FileTextIcon size={12} color="#2563eb" />
-                                  Certificado:{' '}
-                                  {vReq.matched_grade !== null && vReq.matched_grade !== undefined
-                                    ? `Nota ${vReq.matched_grade.toFixed(1)}${vReq.calculated_level ? ` (${formatTutorLevel(vReq.calculated_level)})` : ''}`
-                                    : 'Procesado'}
-                                </button>
-                              );
-                            }
-                            return (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedSubjectForVerification({
-                                    id: item.subject_id,
-                                    name: item.subject?.name || 'Materia',
-                                  });
-                                  setIsCertModalOpen(true);
-                                }}
-                                className="ia-btn-secondary"
-                                style={{
-                                  padding: '2px 8px',
-                                  fontSize: '0.74rem',
-                                  borderRadius: '6px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  cursor: 'pointer',
-                                }}
-                                title="Subir certificado académico para verificar esta materia"
-                              >
-                                <UploadCloudIcon size={12} />
-                                Verificar con PDF
-                              </button>
-                            );
-                          })()}
-                        </>
-                      )}
-                      <span className="ia-badge" style={{ background: '#f1f5f9', color: '#475569' }}>
-                        {formatAcademicLevel(item.level)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <EmptyState

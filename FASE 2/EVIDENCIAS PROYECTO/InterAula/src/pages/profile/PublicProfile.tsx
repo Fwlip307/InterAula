@@ -107,7 +107,7 @@ export default function PublicProfile() {
           El usuario solicitado no existe o no tiene un perfil disponible en InterAula.
         </p>
         <Link to="/tutoring" className="ia-btn-primary">
-          <ArrowLeftIcon size={16} /> Volver a explorar tutores
+          Volver a explorar tutores
         </Link>
       </div>
     );
@@ -120,14 +120,15 @@ export default function PublicProfile() {
   return (
     <div>
       {/* Botón Volver */}
-      <div style={{ marginBottom: '18px' }}>
+      <div style={{ marginBottom: '16px' }}>
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="ia-btn-secondary"
-          style={{ padding: '6px 14px', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          className="ia-btn-icon-back"
+          aria-label="Volver"
+          title="Volver"
         >
-          <ArrowLeftIcon size={14} /> Volver
+          <ArrowLeftIcon size={18} />
         </button>
       </div>
 
@@ -224,38 +225,24 @@ export default function PublicProfile() {
                     <div className="ia-catalog-item-info">
                       <div>
                         <div className="ia-catalog-item-title">{item.subject?.name || 'Materia'}</div>
+                        <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
+                          {formatAcademicLevel(item.level)}
+                        </div>
                         {item.description && (
-                          <p className="ia-catalog-item-desc">{item.description}</p>
+                          <p className="ia-catalog-item-desc" style={{ marginTop: '4px' }}>{item.description}</p>
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <div>
                       {item.is_verified ? (
-                        <span
-                          className="ia-badge"
-                          style={{
-                            background: '#ecfdf5',
-                            color: '#047857',
-                            border: '1px solid #a7f3d0',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          <ShieldCheckIcon size={13} color="#059669" /> Tutor verificado
+                        <span className="ia-badge ia-badge-success">
+                          <ShieldCheckIcon size={12} /> Verificado
                         </span>
                       ) : (
-                        <span
-                          className="ia-badge ia-badge-blue"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <BookOpenIcon size={12} /> Tutor comunitario
+                        <span className="ia-badge ia-badge-blue">
+                          Comunitario
                         </span>
                       )}
-                      <span className="ia-badge" style={{ background: '#f1f5f9', color: '#475569' }}>
-                        {formatAcademicLevel(item.level)}
-                      </span>
                     </div>
                   </div>
                 ))}

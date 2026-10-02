@@ -15,8 +15,8 @@ export default function Settings() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link to="/dashboard" className="ia-btn-secondary" style={{ padding: '8px 12px' }}>
-            <ArrowLeftIcon size={16} /> Volver
+          <Link to="/dashboard" className="ia-btn-icon-back" aria-label="Volver al panel" title="Volver al panel">
+            <ArrowLeftIcon size={18} />
           </Link>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
             Configuración de la Cuenta

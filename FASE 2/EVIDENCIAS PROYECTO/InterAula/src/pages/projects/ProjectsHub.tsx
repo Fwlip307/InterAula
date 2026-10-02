@@ -4,31 +4,26 @@ import {
   CodeIcon,
   UsersIcon,
   SparklesIcon,
-  ArrowLeftIcon,
-  EditIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 
 export default function ProjectsHub() {
   return (
     <div>
-      {/* Hero Banner del Hub de Proyectos */}
-      <section className="ia-hero-banner" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%)' }}>
-        <div className="ia-hero-text">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'rgba(255,255,255,0.15)', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px' }}>
-            <SparklesIcon size={14} color="#fde047" /> Módulo en desarrollo (Sprint 2)
-          </div>
-          <h1>Hub de Proyectos InterAula</h1>
-          <p>
-            Encuentra proyectos, aporta tus habilidades y forma equipos multidisciplinarios con estudiantes de distintas carreras y facultades.
+      {/* Cabecera Académica del Hub de Proyectos */}
+      <div className="ia-page-header">
+        <div>
+          <h1 className="ia-page-title">Hub de Proyectos</h1>
+          <p className="ia-page-subtitle">
+            Espacio de colaboración académica y proyectos multidisciplinarios entre estudiantes.
           </p>
         </div>
-        <div className="ia-hero-actions">
-          <Link to="/profile/edit" className="ia-btn-hero-primary">
-            <EditIcon size={16} /> Configurar mis habilidades
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Link to="/profile/edit" className="ia-btn-primary">
+            Configurar mis habilidades
           </Link>
         </div>
-      </section>
+      </div>
 
       {/* Tarjetas Informativas de la Arquitectura del Hub */}
       <div className="ia-stats-grid">
@@ -86,7 +81,7 @@ export default function ProjectsHub() {
                 Ver mi perfil actual
               </Link>
               <Link to="/dashboard" className="ia-btn-primary">
-                <ArrowLeftIcon size={16} /> Volver al panel
+                Volver al panel
               </Link>
             </div>
           }
