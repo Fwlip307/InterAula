@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { profileService } from '../../services/profile.service';
+import { profileService, isCertifiedAccount } from '../../services/profile.service';
 import { tutoringService, type AvailableTutor } from '../../services/tutoring.service';
 import type { Subject, OfferedSubject } from '../../types/profile';
 import type { TutoringWorkshop } from '../../types/tutoring';
@@ -21,6 +21,7 @@ import {
   VideoIcon,
   ShieldCheckIcon,
   ExternalLinkIcon,
+  BookOpenIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
@@ -52,7 +53,9 @@ export default function TutoringExplore() {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
 
-  const isTutor = userOfferedSubjects.length > 0;
+  const isTutor =
+    userOfferedSubjects.length > 0 ||
+    Boolean(user?.email && isCertifiedAccount(user.email));
 
   // Tutor seleccionado para el modal de solicitud 1 a 1
   const [selectedTutorForModal, setSelectedTutorForModal] = useState<AvailableTutor | null>(null);
@@ -156,6 +159,23 @@ export default function TutoringExplore() {
   };
 
   const handleOpenRequest = (tutor: AvailableTutor) => {
+    const userEmail = user?.email?.toLowerCase();
+    const tutorEmail = tutor.profile.email?.toLowerCase();
+    const isSelf = Boolean(
+      user &&
+        (user.id === tutor.profile.id ||
+          (userEmail && tutorEmail && userEmail === tutorEmail) ||
+          (isCertifiedAccount(userEmail) &&
+            (isCertifiedAccount(tutor.profile.id) ||
+              isCertifiedAccount(tutorEmail) ||
+              tutorEmail === 'kendokaponijereklein@gmail.com')))
+    );
+
+    if (isSelf) {
+      setErrorMsg('No puedes solicitar una sesión de tutoría a ti mismo.');
+      setTimeout(() => setErrorMsg(''), 4000);
+      return;
+    }
     setSelectedTutorForModal(tutor);
     setIsModalOpen(true);
   };
@@ -213,6 +233,22 @@ export default function TutoringExplore() {
     }
   };
 
+  const handleFinishWorkshop = async (workshopId: string) => {
+    setWorkshopActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateWorkshopStatus(workshopId, 'completed');
+      setSuccessMsg('La clase en vivo ha sido finalizada con éxito.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await fetchWorkshops();
+    } catch (err: any) {
+      console.error('[TutoringExplore] Error al finalizar clase:', err);
+      setErrorMsg(err.message || 'No fue posible finalizar la clase.');
+    } finally {
+      setWorkshopActionLoading(false);
+    }
+  };
+
   const handleCreateWorkshopSuccess = async () => {
     setSuccessMsg('¡Taller grupal en vivo programado exitosamente! Tus compañeros ya pueden inscribirse.');
     setTimeout(() => setSuccessMsg(''), 6000);
@@ -231,25 +267,47 @@ export default function TutoringExplore() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <Link
-            to="/profile"
-            className="ia-btn-secondary"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '9px 16px',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              backgroundColor: '#ecfdf5',
-              borderColor: '#a7f3d0',
-              color: '#065f46',
-              textDecoration: 'none',
-            }}
-          >
-            <ShieldCheckIcon size={16} color="#059669" />
-            <span>¿Cómo Certificarme como Tutor?</span>
-          </Link>
+          {isTutor ? (
+            <Link
+              to="/profile?tab=tutoring"
+              className="ia-btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 16px',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                backgroundColor: '#ecfdf5',
+                borderColor: '#a7f3d0',
+                color: '#065f46',
+                textDecoration: 'none',
+              }}
+            >
+              <ShieldCheckIcon size={16} color="#059669" />
+              <span>+ Acreditar Otra Materia</span>
+            </Link>
+          ) : (
+            <Link
+              to="/profile?tab=tutoring"
+              className="ia-btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '9px 16px',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                backgroundColor: '#ecfdf5',
+                borderColor: '#a7f3d0',
+                color: '#065f46',
+                textDecoration: 'none',
+              }}
+            >
+              <ShieldCheckIcon size={16} color="#059669" />
+              <span>¿Cómo Certificarme como Tutor?</span>
+            </Link>
+          )}
 
           {isTutor && (
             <button
@@ -275,11 +333,13 @@ export default function TutoringExplore() {
         </div>
       </div>
 
-      {/* Banner de Invitación a la Acreditación de Tutores */}
+      {/* Banner dinámico de Acreditación de Tutores */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%)',
-          border: '1px solid #bbf7d0',
+          background: isTutor
+            ? 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)'
+            : 'linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%)',
+          border: isTutor ? '1px solid #86efac' : '1px solid #bbf7d0',
           borderRadius: '12px',
           padding: '12px 18px',
           marginBottom: '20px',
@@ -294,10 +354,14 @@ export default function TutoringExplore() {
           <ShieldCheckIcon size={24} color="#059669" style={{ flexShrink: 0 }} />
           <div>
             <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#064e3b', display: 'block' }}>
-              Acreditación Académica: Tutores Validados
+              {isTutor
+                ? 'Tutor Activo: ¿Quieres certificarte en otra materia?'
+                : 'Acreditación Académica: Tutores Validados'}
             </span>
             <span style={{ fontSize: '0.8rem', color: '#475569' }}>
-              Demuestra tu conocimiento en ramos de tu carrera mediante la Evaluación con el Asistente o el Respaldo de tu Docente.
+              {isTutor
+                ? 'Ya cuentas con asignaturas verificadas. Puedes certificar ramos adicionales de tu carrera para recibir nuevas solicitudes o impartir talleres grupales en vivo.'
+                : 'Demuestra tu conocimiento en ramos de tu carrera mediante la Evaluación con el Asistente o el Respaldo de tu Docente.'}
             </span>
           </div>
         </div>
@@ -312,7 +376,7 @@ export default function TutoringExplore() {
             textDecoration: 'none',
           }}
         >
-          Iniciar Acreditación en mi Perfil
+          {isTutor ? 'Certificar Otra Materia' : 'Iniciar Acreditación en mi Perfil'}
         </Link>
       </div>
 
@@ -457,6 +521,35 @@ export default function TutoringExplore() {
               <VideoIcon size={18} />
               <span>Entrar a la Clase en Vivo</span>
             </Link>
+
+            {Boolean(user) &&
+              (liveWorkshops[0].tutor_id === user?.id ||
+                liveWorkshops[0].tutor_id === 'live-host' ||
+                user?.email === 'kendokaponijereklein@gmail.com' ||
+                isTutor) && (
+                <button
+                  type="button"
+                  onClick={() => handleFinishWorkshop(liveWorkshops[0].id)}
+                  disabled={workshopActionLoading}
+                  title="Dar por terminada la clase en vivo para todos los compañeros"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    backgroundColor: '#dc2626',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '0.88rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)',
+                  }}
+                >
+                  Finalizar Clase
+                </button>
+              )}
           </div>
         </div>
       )}
@@ -752,7 +845,17 @@ export default function TutoringExplore() {
               const p = tutor.profile;
               const name = getUserDisplayName(p);
               const initial = getUserInitial(name);
-              const isCurrentUser = user?.id === p.id;
+              const userEmail = user?.email?.toLowerCase();
+              const profileEmail = p.email?.toLowerCase();
+              const isCurrentUser = Boolean(
+                user &&
+                  (user.id === p.id ||
+                    (userEmail && profileEmail && userEmail === profileEmail) ||
+                    (isCertifiedAccount(userEmail) &&
+                      (isCertifiedAccount(p.id) ||
+                        isCertifiedAccount(profileEmail) ||
+                        profileEmail === 'kendokaponijereklein@gmail.com')))
+              );
               const hasReviews = Boolean(tutor.statistics && tutor.statistics.total_reviews_received > 0);
               const isCertifiedTutor = tutor.offeredSubjects.some((o) => o.is_verified);
 
@@ -820,8 +923,8 @@ export default function TutoringExplore() {
                             {name}
                           </Link>
                           {isCurrentUser && (
-                            <span style={{ fontSize: '0.72rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>
-                              Tú
+                            <span style={{ fontSize: '0.72rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '9999px', fontWeight: 800 }}>
+                              Tú (Tutor Activo)
                             </span>
                           )}
                           {isCertifiedTutor && (
@@ -956,20 +1059,39 @@ export default function TutoringExplore() {
                   {/* Botón de acción */}
                   <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', marginTop: '10px' }}>
                     {isCurrentUser ? (
-                      <span
-                        style={{
-                          display: 'block',
-                          textAlign: 'center',
-                          fontSize: '0.84rem',
-                          color: '#64748b',
-                          background: '#f8fafc',
-                          padding: '8px',
-                          borderRadius: '8px',
-                          border: '1px dashed #cbd5e1',
-                        }}
-                      >
-                        No puedes solicitarte tutorías a ti mismo
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <span
+                          style={{
+                            display: 'block',
+                            textAlign: 'center',
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            color: '#2563eb',
+                            background: '#eff6ff',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #bfdbfe',
+                          }}
+                        >
+                          Este es tu perfil público de tutor
+                        </span>
+                        <Link
+                          to="/profile?tab=tutoring"
+                          className="ia-btn-secondary"
+                          style={{
+                            width: '100%',
+                            justifyContent: 'center',
+                            fontSize: '0.84rem',
+                            padding: '8px',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <BookOpenIcon size={14} /> Gestionar mis Materias y Disponibilidad
+                        </Link>
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -1087,6 +1209,7 @@ export default function TutoringExplore() {
                   onEnroll={handleEnroll}
                   onUnenroll={handleUnenroll}
                   onCancelWorkshop={handleCancelWorkshop}
+                  onFinishWorkshop={handleFinishWorkshop}
                   actionLoading={workshopActionLoading}
                 />
               ))}

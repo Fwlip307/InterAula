@@ -81,18 +81,21 @@ function ensureRealtimeWorkshopsChannel() {
       })
       .on('broadcast', { event: 'workshop_status_changed' }, (event: any) => {
         if (event.payload?.id) {
-          const { id, status } = event.payload;
-          const existing = realtimeWorkshopsMap.get(id);
-          if (existing) {
-            existing.status = status;
-            realtimeWorkshopsMap.set(id, existing);
+          const { id, roomId, status } = event.payload;
+          for (const [key, ws] of realtimeWorkshopsMap.entries()) {
+            if (ws.id === id || (roomId && ws.room_id === roomId) || ws.room_id === id) {
+              ws.status = status;
+              realtimeWorkshopsMap.set(key, ws);
+            }
           }
-          const localWs = LOCAL_WORKSHOPS.find((w) => w.id === id);
+          const localWs = LOCAL_WORKSHOPS.find(
+            (w) => w.id === id || (roomId && w.room_id === roomId) || w.room_id === id
+          );
           if (localWs) {
             localWs.status = status;
             saveStoredLocalWorkshops(LOCAL_WORKSHOPS);
           }
-          window.dispatchEvent(new CustomEvent('ia_workshops_updated'));
+          window.dispatchEvent(new CustomEvent('ia_workshops_updated', { detail: { id, roomId, status } }));
         }
       })
       .on('broadcast', { event: 'request_workshops' }, () => {
@@ -276,12 +279,22 @@ export const tutoringService = {
       }));
 
       // 6. Enriquecer o incorporar al tutor certificado Kendo Kaponi con su materia de programación
+      const { data: authData } = await supabase.auth.getUser();
+      const currentAuthUser = authData?.user;
+      const isAuthKendo = Boolean(
+        currentAuthUser?.email && isCertifiedAccount(currentAuthUser.email)
+      );
+      const effectiveKendoId = isAuthKendo && currentAuthUser ? currentAuthUser.id : CERTIFIED_TUTOR_ID;
+
       const kendoIdx = results.findIndex(
         (r) => isCertifiedAccount(r.profile.id) || isCertifiedAccount(r.profile.email)
       );
 
       if (kendoIdx >= 0) {
         const target = results[kendoIdx];
+        if (isAuthKendo) {
+          target.profile.id = effectiveKendoId;
+        }
         target.profile.available_for_tutoring = true;
         const hasProg = target.offeredSubjects.some((o) =>
           o.subject?.name?.toLowerCase().includes('programación')
@@ -295,17 +308,17 @@ export const tutoringService = {
           verified_at: o.verified_at || new Date().toISOString(),
         }));
         if (target.badges.length === 0) {
-          target.badges = await this.getUserBadges(CERTIFIED_TUTOR_ID);
+          target.badges = await this.getUserBadges(effectiveKendoId);
         }
       } else if (includeKendo) {
-        const kendoBadges = await this.getUserBadges(CERTIFIED_TUTOR_ID);
+        const kendoBadges = await this.getUserBadges(effectiveKendoId);
         const kendoProfile: Profile = {
-          id: CERTIFIED_TUTOR_ID,
-          email: CERTIFIED_TUTOR_EMAIL,
-          first_name: 'Kendo',
-          last_name: 'Kaponi',
-          display_name: 'Kendo Kaponi',
-          avatar_url: null,
+          id: effectiveKendoId,
+          email: currentAuthUser?.email || CERTIFIED_TUTOR_EMAIL,
+          first_name: currentAuthUser?.user_metadata?.first_name || 'Kendo',
+          last_name: currentAuthUser?.user_metadata?.last_name || 'Kaponi',
+          display_name: currentAuthUser?.user_metadata?.display_name || 'Kendo Kaponi',
+          avatar_url: currentAuthUser?.user_metadata?.avatar_url || null,
           institution: 'Centro de Formación Técnica CENCO',
           career: 'Técnico de Nivel Superior en Informática y Ciberseguridad',
           bio: 'Tutor Verificado Oficial. Estudiante destacado de CENCO con certificación técnica en Programación Web, Algoritmos y Arquitectura.',
@@ -323,7 +336,7 @@ export const tutoringService = {
           profile: kendoProfile,
           offeredSubjects: CERTIFIED_OFFERED_SUBJECTS,
           statistics: {
-            profile_id: CERTIFIED_TUTOR_ID,
+            profile_id: effectiveKendoId,
             total_completed_tutorings: 12,
             total_reviews_received: 8,
             avg_communication: 5.0,
@@ -350,7 +363,12 @@ export const tutoringService = {
     const user = await getRequiredAuthUser();
 
     // Validaciones preventivas de capa de negocio
-    if (user.id === dto.tutor_id) {
+    if (
+      user.id === dto.tutor_id ||
+      (user.email &&
+        isCertifiedAccount(user.email) &&
+        (isCertifiedAccount(dto.tutor_id) || dto.tutor_id === user.id))
+    ) {
       throw new Error('No puedes solicitar una tutoría a ti mismo');
     }
 
@@ -906,7 +924,9 @@ export const tutoringService = {
         workshopMap.set(w.id, w);
       }
 
-      let merged = Array.from(workshopMap.values());
+      let merged = Array.from(workshopMap.values()).filter(
+        (w) => w.status === 'scheduled' || w.status === 'in_progress'
+      );
       // Ordenar: primero 'in_progress' (en vivo ahora), luego por fecha programada
       merged.sort((a, b) => {
         if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
@@ -1138,29 +1158,45 @@ export const tutoringService = {
   async updateWorkshopStatus(workshopId: string, status: WorkshopStatus): Promise<void> {
     try {
       await getRequiredAuthUser();
-      await supabase
-        .from('tutoring_workshops')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', workshopId);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(workshopId);
+      if (isUuid) {
+        await supabase
+          .from('tutoring_workshops')
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq('id', workshopId);
+      } else {
+        await supabase
+          .from('tutoring_workshops')
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq('room_id', workshopId);
+      }
     } catch {}
 
-    const localWs = LOCAL_WORKSHOPS.find((w) => w.id === workshopId);
+    const localWs = LOCAL_WORKSHOPS.find((w) => w.id === workshopId || w.room_id === workshopId);
     if (localWs) {
       localWs.status = status;
       saveStoredLocalWorkshops(LOCAL_WORKSHOPS);
     }
-    const rtWs = realtimeWorkshopsMap.get(workshopId);
+    const rtWs =
+      realtimeWorkshopsMap.get(workshopId) ||
+      Array.from(realtimeWorkshopsMap.values()).find((w) => w.id === workshopId || w.room_id === workshopId);
     if (rtWs) {
       rtWs.status = status;
+      realtimeWorkshopsMap.set(rtWs.id, rtWs);
     }
+    const effectiveRoomId = rtWs?.room_id || localWs?.room_id;
     ensureRealtimeWorkshopsChannel();
     try {
       realtimeWorkshopsChannel?.send({
         type: 'broadcast',
         event: 'workshop_status_changed',
-        payload: { id: workshopId, status },
+        payload: { id: workshopId, roomId: effectiveRoomId, status },
       });
     } catch {}
-    window.dispatchEvent(new CustomEvent('ia_workshops_updated'));
+    window.dispatchEvent(
+      new CustomEvent('ia_workshops_updated', {
+        detail: { id: workshopId, roomId: effectiveRoomId, status },
+      })
+    );
   },
 };

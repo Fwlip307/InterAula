@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
-import { profileService } from '../../services/profile.service';
+import { profileService, isCertifiedAccount } from '../../services/profile.service';
 import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
 import type { Subject, OfferedSubject } from '../../types/profile';
 import SessionCard from './components/SessionCard';
@@ -36,7 +36,9 @@ export default function MyTutoring() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const isTutor = offeredSubjects.length > 0;
+  const isTutor =
+    offeredSubjects.length > 0 ||
+    Boolean(user?.email && isCertifiedAccount(user.email));
 
   // Estado para modal de evaluación
   const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
@@ -62,7 +64,8 @@ export default function MyTutoring() {
       setEnrolledWorkshops(studentWorkshops);
       setHostedWorkshops(tutorWorkshops);
       setOfferedSubjects(offered);
-      if (offered.length === 0 && activeTab === 'tutor') {
+      const userIsTutor = offered.length > 0 || Boolean(user?.email && isCertifiedAccount(user.email));
+      if (!userIsTutor && activeTab === 'tutor') {
         setActiveTab('student');
       }
     } catch (err: any) {
@@ -187,6 +190,22 @@ export default function MyTutoring() {
     } catch (err: any) {
       console.error('[MyTutoring] Error al cancelar taller:', err);
       setErrorMsg(err.message || 'No fue posible cancelar el taller.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleWorkshopFinish = async (workshopId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.updateWorkshopStatus(workshopId, 'completed');
+      setSuccessMsg('Taller finalizado exitosamente.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al finalizar taller:', err);
+      setErrorMsg(err.message || 'No fue posible finalizar el taller.');
     } finally {
       setActionLoading(false);
     }
@@ -426,6 +445,7 @@ export default function MyTutoring() {
                       onEnroll={async () => {}}
                       onUnenroll={handleWorkshopUnenroll}
                       onCancelWorkshop={handleWorkshopCancel}
+                      onFinishWorkshop={handleWorkshopFinish}
                       actionLoading={actionLoading}
                     />
                   ))}

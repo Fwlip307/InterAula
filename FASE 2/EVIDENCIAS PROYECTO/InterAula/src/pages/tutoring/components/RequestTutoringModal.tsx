@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { isCertifiedAccount } from '../../../services/profile.service';
 import type { AvailableTutor } from '../../../services/tutoring.service';
 import type { SessionModality } from '../../../types/tutoring';
 import { tutoringService } from '../../../services/tutoring.service';
@@ -23,6 +25,7 @@ export default function RequestTutoringModal({
   onClose,
   onSuccess,
 }: RequestTutoringModalProps) {
+  const { user } = useAuth();
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('15:00');
@@ -35,6 +38,18 @@ export default function RequestTutoringModal({
 
   if (!isOpen || !tutor) return null;
 
+  const isSelf = Boolean(
+    user &&
+      (user.id === tutor.profile.id ||
+        (user.email &&
+          tutor.profile.email &&
+          user.email.toLowerCase() === tutor.profile.email.toLowerCase()) ||
+        (isCertifiedAccount(user.email) &&
+          (isCertifiedAccount(tutor.profile.id) ||
+            isCertifiedAccount(tutor.profile.email) ||
+            tutor.profile.email?.toLowerCase() === 'kendokaponijereklein@gmail.com')))
+  );
+
   const tutorName = getUserDisplayName(tutor.profile);
   const minDate = new Date().toISOString().split('T')[0];
   const activeSubjectId = selectedSubjectId || tutor.offeredSubjects[0]?.subject_id || '';
@@ -42,6 +57,11 @@ export default function RequestTutoringModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (isSelf) {
+      setErrorMessage('No puedes solicitar una sesión de tutoría a ti mismo.');
+      return;
+    }
 
     if (!activeSubjectId) {
       setErrorMessage('Por favor selecciona la materia a solicitar.');
@@ -157,6 +177,26 @@ export default function RequestTutoringModal({
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} style={{ padding: '24px', overflowY: 'auto' }}>
+          {isSelf && (
+            <div
+              style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                color: '#1d4ed8',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                fontSize: '0.88rem',
+                marginBottom: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <AlertCircleIcon size={18} color="#2563eb" />
+              <span>Este es tu perfil de tutor. No es posible solicitarte tutorías a ti mismo.</span>
+            </div>
+          )}
+
           {errorMessage && (
             <div
               style={{
@@ -370,10 +410,16 @@ export default function RequestTutoringModal({
             <button
               type="submit"
               className="ia-btn-primary"
-              disabled={submitting}
-              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              disabled={submitting || isSelf}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                opacity: isSelf ? 0.6 : 1,
+                cursor: isSelf ? 'not-allowed' : 'pointer',
+              }}
             >
-              {submitting ? 'Enviando solicitud...' : 'Enviar Solicitud'}
+              {submitting ? 'Enviando solicitud...' : isSelf ? 'No puedes solicitarte a ti mismo' : 'Enviar Solicitud'}
             </button>
           </div>
         </form>

@@ -22,6 +22,7 @@ interface WorkshopCardProps {
   onEnroll: (workshopId: string) => Promise<void>;
   onUnenroll: (workshopId: string) => Promise<void>;
   onCancelWorkshop?: (workshopId: string) => Promise<void>;
+  onFinishWorkshop?: (workshopId: string) => Promise<void>;
   actionLoading?: boolean;
 }
 
@@ -31,16 +32,18 @@ export default function WorkshopCard({
   onEnroll,
   onUnenroll,
   onCancelWorkshop,
+  onFinishWorkshop,
   actionLoading = false,
 }: WorkshopCardProps) {
   const [copiedLink, setCopiedLink] = useState(false);
-  const isTutor = currentUserId === workshop.tutor_id;
+  const isTutor = Boolean(currentUserId) && (currentUserId === workshop.tutor_id || workshop.tutor_id === 'live-host');
   const isEnrolled = Boolean(workshop.is_enrolled);
   const tutorName = getUserDisplayName(workshop.tutor);
   const initial = getUserInitial(tutorName);
   const enrolledCount = workshop.enrollments_count || 0;
   const isFull = enrolledCount >= workshop.max_students;
   const isLive = workshop.status === 'in_progress';
+  const isCompleted = workshop.status === 'completed';
 
   const handleCopyLink = () => {
     try {
@@ -79,12 +82,12 @@ export default function WorkshopCard({
                 fontWeight: 800,
                 padding: '2px 8px',
                 borderRadius: '4px',
-                backgroundColor: isLive ? '#fef2f2' : isTutor ? '#faf5ff' : '#eff6ff',
-                color: isLive ? '#dc2626' : isTutor ? '#7c3aed' : '#1d4ed8',
-                border: `1px solid ${isLive ? '#fecaca' : isTutor ? '#e9d5ff' : '#bfdbfe'}`,
+                backgroundColor: isCompleted ? '#f1f5f9' : isLive ? '#fef2f2' : isTutor ? '#faf5ff' : '#eff6ff',
+                color: isCompleted ? '#64748b' : isLive ? '#dc2626' : isTutor ? '#7c3aed' : '#1d4ed8',
+                border: `1px solid ${isCompleted ? '#cbd5e1' : isLive ? '#fecaca' : isTutor ? '#e9d5ff' : '#bfdbfe'}`,
               }}
             >
-              <VideoIcon size={12} /> {isLive ? 'EN VIVO AHORA' : 'Taller en Vivo'}
+              <VideoIcon size={12} /> {isCompleted ? 'Clase Finalizada' : isLive ? 'EN VIVO AHORA' : 'Taller en Vivo'}
             </span>
             <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
               {workshop.subject?.name}
@@ -211,43 +214,75 @@ export default function WorkshopCard({
           {/* Caso 1: El usuario es el TUTOR que imparte la clase */}
           {isTutor && (
             <>
+              {onFinishWorkshop && !isCompleted && workshop.status !== 'cancelled' && (
+                <button
+                  type="button"
+                  onClick={() => onFinishWorkshop(workshop.id)}
+                  disabled={actionLoading}
+                  className="ia-btn-secondary"
+                  title="Dar por terminada esta clase para todos los alumnos"
+                  style={{ color: '#b91c1c', borderColor: '#fecaca', fontSize: '0.82rem', padding: '6px 12px' }}
+                >
+                  Finalizar Clase
+                </button>
+              )}
+
               {onCancelWorkshop && workshop.status === 'scheduled' && (
                 <button
                   type="button"
                   onClick={() => onCancelWorkshop(workshop.id)}
                   disabled={actionLoading}
                   className="ia-btn-secondary"
-                  style={{ color: '#b91c1c', borderColor: '#fecaca', fontSize: '0.82rem', padding: '6px 12px' }}
+                  style={{ color: '#64748b', borderColor: '#cbd5e1', fontSize: '0.82rem', padding: '6px 12px' }}
                 >
                   Cancelar Taller
                 </button>
               )}
 
-              <Link
-                to={`/tutoring/room/${workshop.id}`}
-                className="ia-btn ia-btn-primary"
-                style={{
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                  color: '#ffffff',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                  boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
-                }}
-              >
-                <VideoIcon size={16} color="#ffffff" /> Entrar al Aula Virtual
-              </Link>
+              {!isCompleted && workshop.status !== 'cancelled' ? (
+                <Link
+                  to={`/tutoring/room/${workshop.id}`}
+                  className="ia-btn ia-btn-primary"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                    color: '#ffffff',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                  }}
+                >
+                  <VideoIcon size={16} color="#ffffff" /> Entrar al Aula Virtual
+                </Link>
+              ) : (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  {isCompleted ? 'Clase Finalizada' : 'Taller Cancelado'}
+                </span>
+              )}
             </>
           )}
 
           {/* Caso 2: El usuario es ESTUDIANTE */}
           {!isTutor && (
             <>
-              {isEnrolled && (
+              {isEnrolled && !isCompleted && workshop.status !== 'cancelled' && (
                 <button
                   type="button"
                   onClick={() => onUnenroll(workshop.id)}
@@ -259,7 +294,7 @@ export default function WorkshopCard({
                 </button>
               )}
 
-              {!isEnrolled && !isFull && (
+              {!isEnrolled && !isFull && !isCompleted && workshop.status !== 'cancelled' && (
                 <button
                   type="button"
                   onClick={() => onEnroll(workshop.id)}
@@ -275,24 +310,43 @@ export default function WorkshopCard({
                 </button>
               )}
 
-              <Link
-                to={`/tutoring/room/${workshop.id}`}
-                className="ia-btn ia-btn-primary"
-                style={{
-                  background: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
-                  color: '#ffffff',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                  boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)',
-                }}
-              >
-                <VideoIcon size={16} color="#ffffff" /> Unirme a la Clase en Vivo
-              </Link>
+              {!isCompleted && workshop.status !== 'cancelled' ? (
+                <Link
+                  to={`/tutoring/room/${workshop.id}`}
+                  className="ia-btn ia-btn-primary"
+                  style={{
+                    background: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
+                    color: '#ffffff',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 18px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)',
+                  }}
+                >
+                  <VideoIcon size={16} color="#ffffff" /> Unirme a la Clase en Vivo
+                </Link>
+              ) : (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  {isCompleted ? 'Clase Finalizada' : 'Taller Cancelado'}
+                </span>
+              )}
             </>
           )}
         </div>

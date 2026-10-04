@@ -180,9 +180,12 @@ export default function VirtualClassroom() {
   const [quizCategoryFilter, setQuizCategoryFilter] = useState<string>('all');
   const [showTutorSolution, setShowTutorSolution] = useState(false);
 
-  // Modal de evaluación final
+  // Modal de evaluación final y control de finalización de clase
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [finishingClass, setFinishingClass] = useState(false);
+  const [classFinishedByTutor, setClassFinishedByTutor] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   const handleCopyLink = () => {
@@ -287,7 +290,12 @@ export default function VirtualClassroom() {
     ? user?.id !== workshop?.tutor_id
     : user?.id === session?.student_id;
   const isTutor = isWorkshop
-    ? user?.id === workshop?.tutor_id
+    ? Boolean(
+        user &&
+          (user.id === workshop?.tutor_id ||
+            workshop?.tutor_id === 'live-host' ||
+            user.email === 'kendokaponijereklein@gmail.com')
+      )
     : user?.id === session?.tutor_id;
 
   const currentSubject = isWorkshop ? workshop?.subject : session?.subject;
@@ -498,35 +506,79 @@ export default function VirtualClassroom() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Manejar salida de la sesión
+  // Detectar finalización de la clase por el tutor en tiempo real
+  useEffect(() => {
+    if (!workshop) return;
+    const handleWorkshopUpdate = (e: any) => {
+      const detail = e.detail;
+      if (detail) {
+        const matchesId =
+          detail.id === workshop.id ||
+          (workshop.room_id && (detail.id === workshop.room_id || detail.roomId === workshop.room_id));
+        if (matchesId && (detail.status === 'completed' || detail.status === 'cancelled')) {
+          if (!isTutor) {
+            setClassFinishedByTutor(true);
+          }
+        }
+      }
+    };
+    window.addEventListener('ia_workshops_updated', handleWorkshopUpdate);
+    return () => window.removeEventListener('ia_workshops_updated', handleWorkshopUpdate);
+  }, [workshop, isTutor]);
+
+  // Finalizar la clase para todos los participantes (Acción exclusiva del Tutor)
+  const handleFinishClass = async () => {
+    setFinishingClass(true);
+    try {
+      if (workshop) {
+        await tutoringService.updateWorkshopStatus(workshop.id, 'completed');
+        if (workshop.room_id && workshop.room_id !== workshop.id) {
+          try {
+            await tutoringService.updateWorkshopStatus(workshop.room_id, 'completed');
+          } catch {}
+        }
+        setShowFinishConfirm(false);
+        setShowExitConfirm(false);
+        navigate('/tutoring');
+        return;
+      }
+
+      if (session) {
+        const minutes = Math.max(Math.floor(elapsedSeconds / 60), 1);
+        await tutoringService.registerClassroomAttendance(session.id, 'leave', minutes);
+        await tutoringService.updateSessionStatus(session.id, 'completed');
+        setShowFinishConfirm(false);
+        setShowExitConfirm(false);
+        navigate('/my-tutoring');
+        return;
+      }
+    } catch (err: any) {
+      console.error('[VirtualClassroom] Error al finalizar la clase:', err);
+      navigate(workshop ? '/tutoring' : '/my-tutoring');
+    } finally {
+      setFinishingClass(false);
+    }
+  };
+
+  // Manejar salida del aula virtual
   const handleExitSession = async () => {
     if (session) {
       const minutes = Math.floor(elapsedSeconds / 60);
       await tutoringService.registerClassroomAttendance(session.id, 'leave', minutes);
 
-      // Si es el estudiante y la sesión aún no estaba completada
       if (isStudent && session.status === 'accepted') {
         try {
           await tutoringService.updateSessionStatus(session.id, 'completed');
           setIsReviewModalOpen(true);
           setShowExitConfirm(false);
           return;
-        } catch {
-          // Si no se puede completar aún, redirigir
-        }
+        } catch {}
       }
       navigate('/my-tutoring');
       return;
     }
 
     if (workshop) {
-      if (isTutor && workshop.status === 'scheduled') {
-        try {
-          await tutoringService.updateWorkshopStatus(workshop.id, 'completed');
-        } catch {
-          // Continuar
-        }
-      }
       navigate('/tutoring');
       return;
     }
@@ -831,25 +883,73 @@ export default function VirtualClassroom() {
             <span>{isSidePanelOpen ? 'Ocultar Pauta' : 'Ver Pauta y Notas'}</span>
           </button>
 
-          {/* Botón Salir / Terminar */}
-          <button
-            onClick={() => setShowExitConfirm(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              borderRadius: '8px',
-              backgroundColor: '#dc2626',
-              color: '#ffffff',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-            }}
-          >
-            Salir de la Clase
-          </button>
+          {/* Si es Tutor: Botón de Finalizar Clase + Botón de Salir */}
+          {isTutor ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowFinishConfirm(true)}
+                title="Finalizar la clase en vivo para todos los participantes"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 800,
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.4)',
+                }}
+              >
+                <CheckIcon size={14} /> Finalizar Clase
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowExitConfirm(true)}
+                title="Salir del aula virtual"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: '#334155',
+                  color: '#cbd5e1',
+                  border: '1px solid #475569',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                }}
+              >
+                Salir
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowExitConfirm(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#dc2626',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+              }}
+            >
+              Salir de la Clase
+            </button>
+          )}
         </div>
       </header>
 
@@ -1655,7 +1755,96 @@ export default function VirtualClassroom() {
         )}
       </div>
 
-      {/* 3. MODAL DE CONFIRMACIÓN DE SALIDA */}
+      {/* 3. MODAL DE CONFIRMACIÓN PARA FINALIZAR CLASE (TUTOR) */}
+      {showFinishConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 110,
+            padding: '16px',
+          }}
+        >
+          <div
+            className="ia-card"
+            style={{
+              maxWidth: '460px',
+              width: '100%',
+              backgroundColor: '#1e293b',
+              color: '#ffffff',
+              border: '1px solid #ef4444',
+              padding: '26px',
+              borderRadius: '12px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ef4444',
+                  flexShrink: 0,
+                }}
+              >
+                <AlertCircleIcon size={24} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc' }}>
+                  ¿Finalizar la Clase en Vivo?
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  Tiempo transcurrido: {formatTimer(elapsedSeconds)}
+                </span>
+              </div>
+            </div>
+
+            <p style={{ margin: '0 0 20px', fontSize: '0.88rem', color: '#cbd5e1', lineHeight: 1.5 }}>
+              Esta acción concluirá la sesión académica para todos los estudiantes conectados y actualizará el estado del taller a completado en InterAula.
+            </p>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowFinishConfirm(false)}
+                disabled={finishingClass}
+                className="ia-btn ia-btn-secondary"
+                style={{ padding: '8px 16px' }}
+              >
+                Continuar en clase
+              </button>
+              <button
+                type="button"
+                onClick={handleFinishClass}
+                disabled={finishingClass}
+                className="ia-btn"
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff',
+                  padding: '8px 18px',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {finishingClass ? 'Finalizando...' : 'Finalizar Clase para Todos'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODAL DE CONFIRMACIÓN DE SALIDA */}
       {showExitConfirm && (
         <div
           style={{
@@ -1672,7 +1861,7 @@ export default function VirtualClassroom() {
           <div
             className="ia-card"
             style={{
-              maxWidth: '440px',
+              maxWidth: '460px',
               width: '100%',
               backgroundColor: '#1e293b',
               color: '#ffffff',
@@ -1687,28 +1876,114 @@ export default function VirtualClassroom() {
             <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: '#94a3b8', lineHeight: 1.5 }}>
               Tiempo acumulado en la sesión: <strong>{formatTimer(elapsedSeconds)}</strong>.
               {isWorkshop
-                ? ' Podrás volver a ingresar en cualquier momento mientras el taller continúe activo.'
+                ? isTutor
+                  ? ' Como anfitrión, puedes salir dejando la sala disponible para los alumnos, o dar la clase por terminada definitivamente.'
+                  : ' Podrás volver a ingresar en cualquier momento mientras el taller continúe activo.'
                 : isStudent && session?.status === 'accepted'
                 ? ' Al salir, la sesión se registrará como completada y podrás evaluar el desempeño pedagógico del tutor.'
                 : ' Tu asistencia quedará registrada en el historial de la sesión.'}
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
               <button
+                type="button"
                 onClick={() => setShowExitConfirm(false)}
                 className="ia-btn ia-btn-secondary"
                 style={{ padding: '8px 16px' }}
               >
                 Permanecer en clase
               </button>
+
+              {isTutor && isWorkshop && (
+                <button
+                  type="button"
+                  onClick={handleFinishClass}
+                  disabled={finishingClass}
+                  className="ia-btn"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '8px 16px', fontWeight: 700 }}
+                >
+                  Finalizar para Todos
+                </button>
+              )}
+
               <button
+                type="button"
                 onClick={handleExitSession}
                 className="ia-btn"
-                style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '8px 16px', fontWeight: 700 }}
+                style={{
+                  backgroundColor: isTutor && isWorkshop ? '#334155' : '#dc2626',
+                  color: '#ffffff',
+                  padding: '8px 16px',
+                  fontWeight: 700,
+                  border: isTutor && isWorkshop ? '1px solid #475569' : 'none',
+                }}
               >
-                Salir y Confirmar
+                {isTutor && isWorkshop ? 'Solo Salir' : 'Salir y Confirmar'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. MODAL CUANDO EL TUTOR FINALIZA LA CLASE (PARA ESTUDIANTES) */}
+      {classFinishedByTutor && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 120,
+            padding: '16px',
+          }}
+        >
+          <div
+            className="ia-card"
+            style={{
+              maxWidth: '460px',
+              width: '100%',
+              backgroundColor: '#1e293b',
+              color: '#ffffff',
+              border: '1px solid #38bdf8',
+              padding: '28px',
+              borderRadius: '12px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#38bdf8',
+                margin: '0 auto 16px',
+              }}
+            >
+              <CheckIcon size={28} />
+            </div>
+
+            <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>
+              La clase en vivo ha finalizado
+            </h3>
+
+            <p style={{ margin: '0 0 20px', fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5 }}>
+              El tutor ha concluido esta sesión académica grupal. Muchas gracias por tu asistencia y participación en el Aula Virtual de InterAula.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => navigate('/tutoring')}
+              className="ia-btn ia-btn-primary"
+              style={{ padding: '10px 24px', fontSize: '0.9rem', fontWeight: 800 }}
+            >
+              Volver a Tutorías
+            </button>
           </div>
         </div>
       )}
