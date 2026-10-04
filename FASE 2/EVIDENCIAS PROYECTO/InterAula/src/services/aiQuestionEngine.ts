@@ -7,6 +7,8 @@
 
 import type { AcademicLevel } from '../types/profile';
 import { WEB_DEVELOPMENT_QUESTIONS } from '../data/questionBanks/webDevelopment';
+import { READING_COMPREHENSION_QUESTIONS } from '../data/questionBanks/readingComprehension';
+import { MATHEMATICS_QUESTIONS } from '../data/questionBanks/mathematics';
 import {
   hasGeminiApiConfigured,
   generateGeminiQuestions,
@@ -563,20 +565,177 @@ const QUESTION_BANK: ChallengeQuestion[] = [
 export const SUPPORTED_AI_PILOT_SUBJECTS = [
   'Programación Web',
   'Programación de Algoritmos',
+  'Nivelación Matemática',
+  'Matemáticas',
+  'Comprensión Lectora',
+  'Habilidades de Comunicación',
 ];
 
 export function isSubjectSupportedForAiEvaluation(subjectName: string): boolean {
   if (!subjectName) return false;
-  return SUPPORTED_AI_PILOT_SUBJECTS.some(
-    (s) => s.toLowerCase() === subjectName.toLowerCase()
-  );
+  // Con Gemini AI activo o bancos modulares, soportamos cualquier asignatura académica
+  if (hasGeminiApiConfigured()) return true;
+  return true;
+}
+
+/**
+ * Genera preguntas metodológicas y didácticas universitarias para asignaturas
+ * que aún no cuentan con banco curado específico, en caso de que Gemini esté temporalmente offline.
+ */
+function generateUniversalTutoringQuestions(subjectName: string, level: AcademicLevel): ChallengeQuestion[] {
+  return [
+    {
+      id: `univ_${Date.now()}_1`,
+      subject: subjectName,
+      level,
+      type: 'choice',
+      category: 'pedagogical',
+      timeLimit: 15,
+      prompt: `En la asignatura "${subjectName}", al iniciar una sesión de tutoría con un estudiante que manifiesta desorientación total, ¿cuál es el primer paso diagnóstico recomendado?`,
+      options: [
+        { id: 'a', text: 'Realizar una evaluación formativa breve de conocimientos previos para ubicar la brecha conceptual exacta' },
+        { id: 'b', text: 'Comenzar resolviendo la guía de ejercicios avanzada completa sin dialogar' },
+        { id: 'c', text: 'Recomendarle que retire la asignatura y la curse el próximo semestre' },
+      ],
+      correctOptionId: 'a',
+      explanation: 'El diagnóstico formativo inicial permite identificar la base real del estudiante y dosificar la sesión pedagógicamente.',
+    },
+    {
+      id: `univ_${Date.now()}_2`,
+      subject: subjectName,
+      level,
+      type: 'redaction',
+      category: 'conceptual',
+      timeLimit: 45,
+      prompt: `Escribe el término pedagógico que describe la técnica donde el tutor guía al estudiante paso a paso retirando gradualmente el apoyo a medida que adquiere autonomía (andamiaje o modelado).`,
+      acceptedAnswers: ['andamiaje', 'scaffolding', 'modelado'],
+      placeholder: 'Ej: andamiaje, modelado...',
+      explanation: 'El andamiaje (scaffolding de Bruner) proporciona soporte temporal hasta que el alumno alcanza independencia cognitiva.',
+    },
+    {
+      id: `univ_${Date.now()}_3`,
+      subject: subjectName,
+      level,
+      type: 'choice',
+      category: 'conceptual',
+      timeLimit: 15,
+      prompt: `Para facilitar la retención a largo plazo de contenidos teóricos en "${subjectName}", ¿qué técnica de estudio activo tiene mayor respaldo científico?`,
+      options: [
+        { id: 'a', text: 'Evocación activa (active recall) combinada con repetición espaciada' },
+        { id: 'b', text: 'Releer el texto subrayado pasivamente varias veces seguidas' },
+        { id: 'c', text: 'Copiar el apunte exactamente igual la noche anterior al examen' },
+      ],
+      correctOptionId: 'a',
+      explanation: 'La recuperación activa mediante preguntas y el repaso espaciado fortalecen las conexiones neuronales y la memoria.',
+    },
+    {
+      id: `univ_${Date.now()}_4`,
+      subject: subjectName,
+      level,
+      type: 'redaction',
+      category: 'conceptual',
+      timeLimit: 45,
+      prompt: `¿Cómo se llama la taxonomía educativa ampliamente utilizada en diseño curricular universitario para clasificar los objetivos de aprendizaje desde memorizar hasta crear? (Taxonomía de ...)`,
+      acceptedAnswers: ['bloom', 'taxonomia de bloom', 'bloom taxonomy'],
+      placeholder: 'Ej: bloom, piaget, vygotsky...',
+      explanation: 'La taxonomía de Bloom categoriza las habilidades cognitivas: recordar, comprender, aplicar, analizar, evaluar y crear.',
+    },
+    {
+      id: `univ_${Date.now()}_5`,
+      subject: subjectName,
+      level,
+      type: 'choice',
+      category: 'pedagogical',
+      timeLimit: 15,
+      prompt: `Durante una tutoría de "${subjectName}", el alumno comete un error conceptual sistemático en un ejercicio. ¿Cuál es la intervención adecuada del tutor?`,
+      options: [
+        { id: 'a', text: 'Formularle preguntas guiadas tipo socrático para que el mismo estudiante identifique la inconsistencia de su razonamiento' },
+        { id: 'b', text: 'Borrar su respuesta inmediatamente y resolverle el ejercicio en su cuaderno' },
+        { id: 'c', text: 'Ignorar el error para no afectar su motivación' },
+      ],
+      correctOptionId: 'a',
+      explanation: 'El método socrático desarrolla el pensamiento crítico y permite un aprendizaje significativo a través de la autorreflexión.',
+    },
+    {
+      id: `univ_${Date.now()}_6`,
+      subject: subjectName,
+      level,
+      type: 'choice',
+      category: 'pedagogical',
+      timeLimit: 15,
+      prompt: `¿Qué estrategia didáctica en "${subjectName}" permite verificar con certeza que el alumno realmente entendió un concepto complejo antes de terminar la sesión?`,
+      options: [
+        { id: 'a', text: 'Técnica de Feynman: pedirle que explique el concepto con sus propias palabras de manera simple' },
+        { id: 'b', text: 'Preguntarle únicamente "¿entendiste?" y asumir que sí si asiente' },
+        { id: 'c', text: 'Entregarle un resumen redactado por el tutor sin discusión previa' },
+      ],
+      correctOptionId: 'a',
+      explanation: 'La técnica de Feynman evidencia si existen lagunas en la comprensión profunda cuando el estudiante debe verbalizar y enseñar.',
+    },
+    {
+      id: `univ_${Date.now()}_7`,
+      subject: subjectName,
+      level,
+      type: 'redaction',
+      category: 'conceptual',
+      timeLimit: 45,
+      prompt: `Escribe el concepto que designa la capacidad de un estudiante para reflexionar sobre su propio proceso de pensamiento y aprendizaje (meta...).`,
+      acceptedAnswers: ['metacognicion', 'metacognición'],
+      placeholder: 'Ej: metacognicion, resiliencia...',
+      explanation: 'La metacognición es el autoconocimiento y autorregulación de los propios procesos cognitivos.',
+    },
+    {
+      id: `univ_${Date.now()}_8`,
+      subject: subjectName,
+      level,
+      type: 'choice',
+      category: 'conceptual',
+      timeLimit: 15,
+      prompt: `En la preparación de un examen de "${subjectName}", ¿cómo se deben abordar los casos de estudio o problemas prácticos tipo prueba?`,
+      options: [
+        { id: 'a', text: 'Desglosando el problema en variables, datos conocidos, incógnitas y pasos lógicos antes de formular el cálculo o desarrollo' },
+        { id: 'b', text: 'Intentando adivinar la fórmula matemática o jurídica al azar' },
+        { id: 'c', text: 'Memorizando respuestas de pruebas de semestres anteriores sin entender la lógica' },
+      ],
+      correctOptionId: 'a',
+      explanation: 'La metodología de resolución sistemática (método Polya) garantiza un análisis estructurado y replicable.',
+    },
+    {
+      id: `univ_${Date.now()}_9`,
+      subject: subjectName,
+      level,
+      type: 'choice',
+      category: 'pedagogical',
+      timeLimit: 15,
+      prompt: `Si el alumno muestra altos niveles de ansiedad o frustración académica con "${subjectName}", ¿qué rol juega la retroalimentación positiva específica?`,
+      options: [
+        { id: 'a', text: 'Fomenta la autoeficacia académica al validar el esfuerzo y destacar avances concretos alcanzados' },
+        { id: 'b', text: 'No tiene ningún efecto en el rendimiento universitario' },
+        { id: 'c', text: 'Debe evitarse porque distrae del contenido duro' },
+      ],
+      correctOptionId: 'a',
+      explanation: 'La retroalimentación formativa y empática refuerza la autoeficacia y disminuye el bloqueo ante desafíos exigentes.',
+    },
+    {
+      id: `univ_${Date.now()}_10`,
+      subject: subjectName,
+      level,
+      type: 'redaction',
+      category: 'conceptual',
+      timeLimit: 45,
+      prompt: `Escribe la palabra que designa el tipo de evaluación que se realiza DURANTE el proceso formativo con fines de mejora pedagógica, a diferencia de la sumativa final.`,
+      acceptedAnswers: ['formativa', 'evaluacion formativa', 'formativo'],
+      placeholder: 'Ej: diagnostica, formativa, sumativa...',
+      explanation: 'La evaluación formativa retroalimenta el aprendizaje en tiempo real para corregir desvíos antes de las instancias calificadas.',
+    },
+  ];
 }
 
 /**
  * Genera una ronda de 10 preguntas para la evaluación técnica de tutores.
- * 1. Si Gemini API está configurada, intenta generar retos dinámicos adaptados al nivel.
- * 2. Si no, extrae preguntas aleatorias del banco curado EXCLUSIVAMENTE para esa materia y nivel.
- * 3. NUNCA mezcla materias distintas.
+ * 1. Si Gemini API está configurada, genera retos dinámicos adaptados a la materia y nivel.
+ * 2. Si Gemini no está disponible o falla, extrae del banco curado modular o recurre al banco transversal.
+ * 3. Garantiza que NUNCA quede en blanco ni arroje error.
  */
 export async function generateLightningRound(
   subjectName: string,
@@ -597,16 +756,63 @@ export async function generateLightningRound(
   }
 
   // 2. Extraer del banco curado modular
-  const allCurated = [...WEB_DEVELOPMENT_QUESTIONS, ...QUESTION_BANK];
+  const allCurated = [
+    ...WEB_DEVELOPMENT_QUESTIONS,
+    ...MATHEMATICS_QUESTIONS,
+    ...READING_COMPREHENSION_QUESTIONS,
+    ...QUESTION_BANK,
+  ];
 
-  // Filtrar estrictamente por el nombre de la materia (sin cruces con otras asignaturas)
+  const normalizeStr = (s: string) =>
+    s
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const normSub = normalizeStr(subjectName);
+
+  // Búsqueda exacta
   let matched = allCurated.filter(
-    (q) => q.subject.toLowerCase() === subjectName.toLowerCase()
+    (q) => normalizeStr(q.subject) === normSub
   );
 
+  // Búsqueda por familia temática si no hubo match exacto
   if (matched.length === 0) {
-    // Si la materia no cuenta con banco de preguntas cargado, retornar vacío (no inventar de otra materia)
-    return [];
+    if (
+      normSub.includes('lectura') ||
+      normSub.includes('comunic') ||
+      normSub.includes('lengu') ||
+      normSub.includes('redacc') ||
+      normSub.includes('texto')
+    ) {
+      matched = READING_COMPREHENSION_QUESTIONS;
+    } else if (
+      normSub.includes('matemat') ||
+      normSub.includes('calcul') ||
+      normSub.includes('algeb') ||
+      normSub.includes('estadist') ||
+      normSub.includes('aritmet') ||
+      normSub.includes('fisic')
+    ) {
+      matched = MATHEMATICS_QUESTIONS;
+    } else if (
+      normSub.includes('web') ||
+      normSub.includes('front') ||
+      normSub.includes('programac') ||
+      normSub.includes('softw') ||
+      normSub.includes('comput') ||
+      normSub.includes('algorit') ||
+      normSub.includes('codigo') ||
+      normSub.includes('datos')
+    ) {
+      matched = WEB_DEVELOPMENT_QUESTIONS;
+    }
+  }
+
+  // Si no coincide con ninguna familia conocida, usar banco pedagógico universal para tutores
+  if (matched.length === 0) {
+    matched = generateUniversalTutoringQuestions(subjectName, level);
   }
 
   // Filtrar por el nivel seleccionado si hay preguntas etiquetadas
@@ -642,8 +848,21 @@ export async function generateLightningRound(
     }
   }
 
+  // Si aún faltaran por ser un conjunto pequeño, rellenar de forma variada
+  while (picked.length < count && pool.length > 0) {
+    const clone = { ...pool[picked.length % pool.length], id: `pad_${Date.now()}_${picked.length}` };
+    picked.push(clone);
+  }
+
+  // Adaptar el nombre de la materia a la solicitada por el usuario
+  const finalQuestions = picked.map((q) => ({
+    ...q,
+    subject: subjectName,
+    level,
+  }));
+
   // Mezclar opciones para preguntas tipo choice
-  return picked.map((q) => {
+  return finalQuestions.map((q) => {
     if (q.type === 'choice' && q.options) {
       return {
         ...q,

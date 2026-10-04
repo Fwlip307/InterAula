@@ -10,56 +10,81 @@ import type { AcademicLevel } from '../types/profile';
 // Clave API provista para el motor de evaluación (se obtiene de .env.local de forma segura)
 const DEFAULT_GEMINI_API_KEY = '';
 
-// Modelos Gemini con soporte oficial ordenados por prioridad de respuesta y disponibilidad
+// Modelos Gemini optimizados por velocidad y disponibilidad
 const CANDIDATE_GEMINI_MODELS = [
-  'gemini-3.8-flash',
+  'gemini-flash-lite-latest',
   'gemini-flash-latest',
-  'gemini-3.5-flash',
-  'gemini-3-flash-preview',
-  'gemini-pro-latest',
+  'gemini-3.1-flash-lite',
 ];
 
 export function getGeminiApiKey(): string {
-  const envKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (envKey && typeof envKey === 'string' && envKey.trim().length > 10) {
-    return envKey.trim();
+  try {
+    const envKey =
+      typeof import.meta !== 'undefined' && import.meta.env
+        ? (import.meta.env as any).VITE_GEMINI_API_KEY
+        : typeof globalThis !== 'undefined' && (globalThis as any).process?.env
+        ? (globalThis as any).process.env.VITE_GEMINI_API_KEY
+        : undefined;
+
+    if (envKey && typeof envKey === 'string' && envKey.trim().length > 10) {
+      return envKey.trim();
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      const localKey = localStorage.getItem('ia_gemini_api_key');
+      if (localKey && localKey.trim().length > 10) {
+        return localKey.trim();
+      }
+    }
+  } catch (err) {
+    console.warn('[geminiAiService] Error al obtener API key:', err);
   }
-  const localKey = localStorage.getItem('ia_gemini_api_key');
-  if (localKey && localKey.trim().length > 10) {
-    return localKey.trim();
-  }
+
   return DEFAULT_GEMINI_API_KEY;
 }
 
 export function setSessionGeminiApiKey(key: string): void {
-  if (key && key.trim()) {
-    localStorage.setItem('ia_gemini_api_key', key.trim());
-    sessionStorage.setItem('ia_gemini_api_key', key.trim());
-  } else {
-    localStorage.removeItem('ia_gemini_api_key');
-    sessionStorage.removeItem('ia_gemini_api_key');
+  if (typeof localStorage === 'undefined' || typeof sessionStorage === 'undefined') return;
+  try {
+    if (key && key.trim()) {
+      localStorage.setItem('ia_gemini_api_key', key.trim());
+      sessionStorage.setItem('ia_gemini_api_key', key.trim());
+    } else {
+      localStorage.removeItem('ia_gemini_api_key');
+      sessionStorage.removeItem('ia_gemini_api_key');
+    }
+  } catch (err) {
+    console.warn('[geminiAiService] Error al guardar clave en storage:', err);
   }
 }
 
 export function hasGeminiApiConfigured(): boolean {
-  return true;
+  const key = getGeminiApiKey();
+  return Boolean(key && key.trim().length > 10);
 }
 
 /**
  * Realiza llamadas a Gemini con tolerancia a fallos mediante cascada de modelos.
- * Si un modelo tiene alta demanda (código 503) o no está disponible, salta al siguiente.
+ * Si un modelo tiene alta demanda (código 503) o no responde en 10 segundos, salta al siguiente.
  */
-async function callGeminiApiWithFallback(body: any): Promise<string | null> {
+async function callGeminiApiWithFallback(body: any, timeoutMs: number = 10000): Promise<string | null> {
   const apiKey = getGeminiApiKey();
+  if (!apiKey) return null;
 
   for (const model of CANDIDATE_GEMINI_MODELS) {
+    const controller = new AbortController();
+    const timerId = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+
+      clearTimeout(timerId);
 
       if (response.ok) {
         const data = await response.json();
@@ -68,10 +93,11 @@ async function callGeminiApiWithFallback(body: any): Promise<string | null> {
           return candidateText;
         }
       } else {
-        console.warn(`[geminiAiService] Modelo ${model} respondió status ${response.status}. Intentando siguiente modelo...`);
+        console.warn(`[geminiAiService] Modelo ${model} respondió status ${response.status}. Probando alternativo...`);
       }
     } catch (err: any) {
-      console.warn(`[geminiAiService] Error de red con modelo ${model}:`, err.message);
+      clearTimeout(timerId);
+      console.warn(`[geminiAiService] Modelo ${model} no respondió a tiempo (${err.message || 'timeout'}). Intentando siguiente...`);
     }
   }
 
@@ -156,13 +182,14 @@ REGLAS OBLIGATORIAS:
       },
     ],
     generationConfig: {
-      temperature: 0.25,
+      temperature: 0.3,
       responseMimeType: 'application/json',
+      maxOutputTokens: 4096,
     },
   };
 
   try {
-    const candidateText = await callGeminiApiWithFallback(requestBody);
+    const candidateText = await callGeminiApiWithFallback(requestBody, 22000);
     if (!candidateText) return null;
 
     const cleanedText = candidateText
@@ -171,8 +198,12 @@ REGLAS OBLIGATORIAS:
       .trim();
 
     const parsed: ChallengeQuestion[] = JSON.parse(cleanedText);
-    if (Array.isArray(parsed) && parsed.length >= count) {
-      return parsed.slice(0, count).map((q, idx) => ({
+    if (Array.isArray(parsed) && parsed.length >= 5) {
+      let fullList = [...parsed];
+      while (fullList.length < count) {
+        fullList.push({ ...parsed[fullList.length % parsed.length] });
+      }
+      return fullList.slice(0, count).map((q, idx) => ({
         ...q,
         id: `gemini_${Date.now()}_${idx + 1}`,
         subject: subjectName,
