@@ -307,3 +307,20 @@ export function searchSubjectsInCatalog(query: string, maxResults: number = 25):
   results.sort((a, b) => b.matchScore - a.matchScore);
   return results.slice(0, maxResults).map((r) => r.item);
 }
+
+/**
+ * Obtiene todas las asignaturas canónicas del catálogo unificado 2026.
+ */
+export function getAllCatalogSubjects(): ResolvedSubject[] {
+  return canonicalSubjects.map((sub) => {
+    const area = areaByIdMap.get(sub.areaId);
+    return {
+      id: sub.id,
+      name: sub.name,
+      areaId: sub.areaId,
+      areaName: area ? area.name : sub.areaId,
+      level: 'Basico a Avanzado',
+      relevance: 'troncal',
+    };
+  });
+}

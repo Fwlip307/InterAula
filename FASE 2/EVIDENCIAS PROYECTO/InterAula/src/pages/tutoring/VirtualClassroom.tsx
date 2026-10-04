@@ -183,6 +183,17 @@ export default function VirtualClassroom() {
   // Modal de evaluación final
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopyLink = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch {
+      // Fallback silencioso
+    }
+  };
 
   // Temporizador para pausa sensorial de bajo estímulo (3 min)
   useEffect(() => {
@@ -227,11 +238,37 @@ export default function VirtualClassroom() {
         return;
       } catch {
         // Si no es sesión individual, intentar como taller / clase grupal
-        const workshopData = await tutoringService.getWorkshopById(sessionId);
-        setWorkshop(workshopData);
-        setAttendanceVerified(true);
-        setStudentConnected(true);
-        setTutorConnected(true);
+        try {
+          const workshopData = await tutoringService.getWorkshopById(sessionId);
+          setWorkshop(workshopData);
+          setAttendanceVerified(true);
+          setStudentConnected(true);
+          setTutorConnected(true);
+          return;
+        } catch {
+          // Fallback dinámico: sala en vivo compartida
+          const safeRoomCode = `ia-aula-${sessionId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+          const dynamicWs: TutoringWorkshop = {
+            id: sessionId,
+            tutor_id: user?.id || 'live-host',
+            subject_id: '00000000-0000-4000-8000-000000000001',
+            title: 'Clase en Vivo InterAula',
+            description: 'Sala de clase en vivo y ayudantía compartida',
+            scheduled_at: new Date().toISOString(),
+            duration_minutes: 60,
+            max_students: 50,
+            room_id: safeRoomCode,
+            status: 'in_progress',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            enrollments_count: 1,
+            is_enrolled: true,
+          };
+          setWorkshop(dynamicWs);
+          setAttendanceVerified(true);
+          setStudentConnected(true);
+          setTutorConnected(true);
+        }
       }
     } catch (err: any) {
       console.error('[VirtualClassroom] Error cargando aula virtual:', err);
@@ -239,7 +276,7 @@ export default function VirtualClassroom() {
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, user]);
 
   useEffect(() => {
     loadSession();
@@ -263,10 +300,9 @@ export default function VirtualClassroom() {
     ? (isTutor ? `${workshop?.enrollments_count || 0} alumnos inscritos` : getUserDisplayName(workshop?.tutor))
     : (otherPerson ? getUserDisplayName(otherPerson) : 'Participante');
 
-  // Identificador canónico de sala Jitsi
-  const roomId = isWorkshop
-    ? (workshop?.room_id || `ia-taller-${sessionId?.replace(/-/g, '').slice(0, 12)}`)
-    : (session?.room_id || (sessionId ? `ia-aula-${sessionId.replace(/-/g, '').slice(0, 12)}` : 'interaula-sala'));
+  // Identificador canónico de sala Jitsi: consistente para todos los participantes que ingresen a la misma URL
+  const safeSessionCode = (sessionId || 'clase-en-vivo').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const roomId = workshop?.room_id || session?.room_id || `ia-aula-${safeSessionCode}`;
 
   // Limpieza al desmontar el componente (salir definitivamente del aula)
   useEffect(() => {
@@ -285,7 +321,7 @@ export default function VirtualClassroom() {
 
   // Inicializar Jitsi Meet (única vez por sala)
   useEffect(() => {
-    if (loading || (!session && !workshop) || !user || !jitsiContainerRef.current) return;
+    if (loading || (!session && !workshop) || !jitsiContainerRef.current) return;
     if (!roomId) return;
 
     // Evitar re-instanciar si ya está conectada esta misma sala
@@ -306,13 +342,15 @@ export default function VirtualClassroom() {
           jitsiContainerRef.current.innerHTML = '';
         }
 
-        const myDisplayName = getUserDisplayName(
-          isWorkshop
-            ? (isTutor ? workshop?.tutor : undefined)
-            : (isStudent ? session?.student : session?.tutor),
-          user.user_metadata,
-          user.email
-        );
+        const myDisplayName = user
+          ? getUserDisplayName(
+              isWorkshop
+                ? (isTutor ? workshop?.tutor : undefined)
+                : (isStudent ? session?.student : session?.tutor),
+              user.user_metadata,
+              user.email
+            )
+          : 'Compañero (Invitado)';
 
         const JITSI_DOMAIN = (import.meta.env.VITE_JITSI_DOMAIN as string) || 'meet.jit.si';
         const domain = JITSI_DOMAIN;
@@ -323,7 +361,7 @@ export default function VirtualClassroom() {
           parentNode: jitsiContainerRef.current,
           userInfo: {
             displayName: myDisplayName,
-            email: user.email || '',
+            email: user?.email || '',
           },
           configOverwrite: {
             startWithAudioMuted: false,
@@ -531,6 +569,31 @@ export default function VirtualClassroom() {
         overflow: 'hidden',
       }}
     >
+      {!user && (
+        <div
+          style={{
+            backgroundColor: '#1e293b',
+            borderBottom: '1px solid #334155',
+            padding: '6px 20px',
+            fontSize: '0.8rem',
+            color: '#94a3b8',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
+          }}
+        >
+          <span>Estás conectado como compañero invitado a esta clase en vivo.</span>
+          <Link
+            to="/login"
+            state={{ from: window.location.pathname }}
+            style={{ color: '#38bdf8', fontWeight: 700, textDecoration: 'none' }}
+          >
+            Iniciar sesión para registrar asistencia oficial
+          </Link>
+        </div>
+      )}
       {/* 1. BARRA SUPERIOR INSTITUCIONAL DEL AULA VIRTUAL */}
       <header
         style={{
@@ -697,6 +760,30 @@ export default function VirtualClassroom() {
             />
             <span style={{ color: '#cbd5e1' }}>{otherDisplayName} ({otherRoleName})</span>
           </div>
+
+          {/* Botón Copiar Enlace para invitar compañeros */}
+          <button
+            type="button"
+            onClick={handleCopyLink}
+            title="Copiar enlace directo para invitar a tus compañeros a esta clase en vivo"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '8px',
+              backgroundColor: copiedLink ? '#15803d' : '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+          >
+            {copiedLink ? <CheckIcon size={14} color="#ffffff" /> : <ExternalLinkIcon size={14} />}
+            <span>{copiedLink ? '¡Enlace Copiado!' : 'Copiar Enlace'}</span>
+          </button>
 
           {/* Botón Abrir en Pestaña Independiente */}
           <a

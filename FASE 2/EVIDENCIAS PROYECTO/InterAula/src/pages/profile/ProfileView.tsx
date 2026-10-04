@@ -338,6 +338,19 @@ export default function ProfileView() {
   };
 
   // Gestión de materias habilitadas para impartir (Apartado 2)
+  const handleAddOfferedSubject = async (
+    subjectId: string,
+    level: AcademicLevel,
+    description?: string
+  ) => {
+    const added = await profileService.addOfferedSubject(subjectId, level, description);
+    setOfferedSubjects((prev) => [...prev.filter((i) => i.subject_id !== added.subject_id), added]);
+    if (!availableForTutoring) {
+      setAvailableForTutoring(true);
+      await profileService.updateMyProfile({ available_for_tutoring: true });
+    }
+  };
+
   const handleRemoveOfferedSubject = async (subjectId: string) => {
     await profileService.removeOfferedSubject(subjectId);
     setOfferedSubjects((prev) => prev.filter((i) => i.subject_id !== subjectId));
@@ -1202,6 +1215,14 @@ export default function ProfileView() {
           <OfferedSubjectsSection
             offeredSubjects={offeredSubjects}
             onRemove={handleRemoveOfferedSubject}
+            onAddSubject={handleAddOfferedSubject}
+            catalogSubjects={availableForEvaluation.map((s) => ({
+              id: s.id,
+              name: s.name,
+              category: s.category || 'General',
+              is_pilot: s.isBoosted || false,
+              created_at: new Date().toISOString(),
+            }))}
             onStartEvaluation={() => {
               if (!isProfileInstitutionComplete) {
                 setActiveTab('personal');

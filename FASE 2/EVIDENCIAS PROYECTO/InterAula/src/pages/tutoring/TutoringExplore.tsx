@@ -20,6 +20,7 @@ import {
   CheckIcon,
   VideoIcon,
   ShieldCheckIcon,
+  ExternalLinkIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
@@ -122,9 +123,30 @@ export default function TutoringExplore() {
     }
   }, [selectedSubjectId, searchTerm]);
 
+  const liveWorkshops = React.useMemo(() => {
+    return workshops.filter((w) => w.status === 'in_progress');
+  }, [workshops]);
+
+  const [copiedLiveLink, setCopiedLiveLink] = useState(false);
+
   useEffect(() => {
     fetchTutors();
     fetchWorkshops();
+
+    const onWorkshopsUpdated = () => {
+      fetchWorkshops();
+    };
+    window.addEventListener('ia_workshops_updated', onWorkshopsUpdated);
+
+    // Sincronización continua de estado de clases en vivo cada 6 segundos
+    const syncTimer = setInterval(() => {
+      fetchWorkshops();
+    }, 6000);
+
+    return () => {
+      window.removeEventListener('ia_workshops_updated', onWorkshopsUpdated);
+      clearInterval(syncTimer);
+    };
   }, [fetchTutors, fetchWorkshops]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -324,6 +346,121 @@ export default function TutoringExplore() {
         </div>
       )}
 
+      {/* Banner Hero de Clase en Vivo Activa (Visible instantáneamente para todos los compañeros) */}
+      {liveWorkshops.length > 0 && (
+        <div
+          className="ia-card"
+          style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #2e1065 100%)',
+            border: '2px solid #818cf8',
+            borderRadius: '16px',
+            padding: '20px 24px',
+            marginBottom: '24px',
+            color: '#ffffff',
+            boxShadow: '0 10px 25px -5px rgba(99, 102, 241, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div
+              style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '12px',
+                backgroundColor: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 18px rgba(239, 68, 68, 0.7)',
+                flexShrink: 0,
+              }}
+            >
+              <VideoIcon size={26} color="#ffffff" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span
+                  style={{
+                    backgroundColor: '#ef4444',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 900,
+                    padding: '3px 10px',
+                    borderRadius: '20px',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  TRANSMISIÓN EN VIVO AHORA
+                </span>
+                <span style={{ fontSize: '0.82rem', color: '#c7d2fe', fontWeight: 600 }}>
+                  {liveWorkshops[0].subject?.name || 'Materia de Tutoría'}
+                </span>
+              </div>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                {liveWorkshops[0].title}
+              </h3>
+              <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#cbd5e1' }}>
+                Impartido por <strong>{getUserDisplayName(liveWorkshops[0].tutor)}</strong> •{' '}
+                {liveWorkshops[0].enrollments_count || 1} participante(s) en la sala
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                const url = `${window.location.origin}/tutoring/room/${liveWorkshops[0].id}`;
+                navigator.clipboard.writeText(url);
+                setCopiedLiveLink(true);
+                setTimeout(() => setCopiedLiveLink(false), 2500);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '10px 16px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {copiedLiveLink ? <CheckIcon size={16} /> : <ExternalLinkIcon size={16} />}
+              <span>{copiedLiveLink ? '¡Enlace Copiado!' : 'Copiar Enlace'}</span>
+            </button>
+
+            <Link
+              to={`/tutoring/room/${liveWorkshops[0].id}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 22px',
+                borderRadius: '10px',
+                backgroundColor: '#4f46e5',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '0.92rem',
+                fontWeight: 800,
+                textDecoration: 'none',
+                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.4)',
+              }}
+            >
+              <VideoIcon size={18} />
+              <span>Entrar a la Clase en Vivo</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Pestañas de Navegación: Tutores 1 a 1 vs Talleres Grupales */}
       <div
         style={{
@@ -378,7 +515,21 @@ export default function TutoringExplore() {
         >
           <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
           <span>Talleres y Clases en Vivo ({workshops.length})</span>
-          {workshops.length > 0 && (
+          {liveWorkshops.length > 0 ? (
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 900,
+                backgroundColor: '#ef4444',
+                color: '#ffffff',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {liveWorkshops.length} EN DIRECTO
+            </span>
+          ) : workshops.length > 0 ? (
             <span
               style={{
                 fontSize: '0.7rem',
@@ -389,9 +540,9 @@ export default function TutoringExplore() {
                 borderRadius: '10px',
               }}
             >
-              En directo
+              Programados
             </span>
-          )}
+          ) : null}
         </button>
       </div>
 

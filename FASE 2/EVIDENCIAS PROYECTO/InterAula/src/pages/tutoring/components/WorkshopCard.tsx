@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { TutoringWorkshop } from '../../../types/tutoring';
 import {
@@ -12,6 +13,7 @@ import {
   VideoIcon,
   UsersIcon,
   CheckIcon,
+  ExternalLinkIcon,
 } from '../../../components/common/Icons';
 
 interface WorkshopCardProps {
@@ -31,12 +33,23 @@ export default function WorkshopCard({
   onCancelWorkshop,
   actionLoading = false,
 }: WorkshopCardProps) {
+  const [copiedLink, setCopiedLink] = useState(false);
   const isTutor = currentUserId === workshop.tutor_id;
   const isEnrolled = Boolean(workshop.is_enrolled);
   const tutorName = getUserDisplayName(workshop.tutor);
   const initial = getUserInitial(tutorName);
   const enrolledCount = workshop.enrollments_count || 0;
   const isFull = enrolledCount >= workshop.max_students;
+  const isLive = workshop.status === 'in_progress';
+
+  const handleCopyLink = () => {
+    try {
+      const roomUrl = `${window.location.origin}/tutoring/room/${workshop.id}`;
+      navigator.clipboard.writeText(roomUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch {}
+  };
 
   // Porcentaje de ocupación para la barrita visual
   const occupancyPercent = Math.min(100, Math.round((enrolledCount / workshop.max_students) * 100));
@@ -66,12 +79,12 @@ export default function WorkshopCard({
                 fontWeight: 800,
                 padding: '2px 8px',
                 borderRadius: '4px',
-                backgroundColor: isTutor ? '#faf5ff' : '#eff6ff',
-                color: isTutor ? '#7c3aed' : '#1d4ed8',
-                border: `1px solid ${isTutor ? '#e9d5ff' : '#bfdbfe'}`,
+                backgroundColor: isLive ? '#fef2f2' : isTutor ? '#faf5ff' : '#eff6ff',
+                color: isLive ? '#dc2626' : isTutor ? '#7c3aed' : '#1d4ed8',
+                border: `1px solid ${isLive ? '#fecaca' : isTutor ? '#e9d5ff' : '#bfdbfe'}`,
               }}
             >
-              <VideoIcon size={12} /> Taller en Vivo
+              <VideoIcon size={12} /> {isLive ? 'EN VIVO AHORA' : 'Taller en Vivo'}
             </span>
             <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
               {workshop.subject?.name}
@@ -173,48 +186,68 @@ export default function WorkshopCard({
       </div>
 
       {/* Botones de Acción */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-        {/* Caso 1: El usuario es el TUTOR que imparte la clase */}
-        {isTutor && (
-          <>
-            {onCancelWorkshop && workshop.status === 'scheduled' && (
-              <button
-                type="button"
-                onClick={() => onCancelWorkshop(workshop.id)}
-                disabled={actionLoading}
-                className="ia-btn-secondary"
-                style={{ color: '#b91c1c', borderColor: '#fecaca', fontSize: '0.82rem', padding: '6px 12px' }}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+        {/* Botón copiar enlace rápido */}
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className="ia-btn-secondary"
+          title="Copiar enlace para invitar a compañeros a esta clase"
+          style={{
+            fontSize: '0.8rem',
+            padding: '6px 12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: copiedLink ? '#15803d' : '#475569',
+            borderColor: copiedLink ? '#86efac' : '#cbd5e1',
+          }}
+        >
+          {copiedLink ? <CheckIcon size={14} color="#15803d" /> : <ExternalLinkIcon size={14} />}
+          <span>{copiedLink ? '¡Enlace Copiado!' : 'Copiar Enlace'}</span>
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Caso 1: El usuario es el TUTOR que imparte la clase */}
+          {isTutor && (
+            <>
+              {onCancelWorkshop && workshop.status === 'scheduled' && (
+                <button
+                  type="button"
+                  onClick={() => onCancelWorkshop(workshop.id)}
+                  disabled={actionLoading}
+                  className="ia-btn-secondary"
+                  style={{ color: '#b91c1c', borderColor: '#fecaca', fontSize: '0.82rem', padding: '6px 12px' }}
+                >
+                  Cancelar Taller
+                </button>
+              )}
+
+              <Link
+                to={`/tutoring/room/${workshop.id}`}
+                className="ia-btn ia-btn-primary"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
+                }}
               >
-                Cancelar Taller
-              </button>
-            )}
+                <VideoIcon size={16} color="#ffffff" /> Entrar al Aula Virtual
+              </Link>
+            </>
+          )}
 
-            <Link
-              to={`/tutoring/room/${workshop.id}`}
-              className="ia-btn ia-btn-primary"
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                color: '#ffffff',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 18px',
-                borderRadius: '8px',
-                fontWeight: 700,
-                textDecoration: 'none',
-                boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)',
-              }}
-            >
-              <VideoIcon size={16} color="#ffffff" /> Iniciar Taller en Aula Virtual
-            </Link>
-          </>
-        )}
-
-        {/* Caso 2: El usuario es ESTUDIANTE */}
-        {!isTutor && (
-          <>
-            {isEnrolled ? (
-              <>
+          {/* Caso 2: El usuario es ESTUDIANTE */}
+          {!isTutor && (
+            <>
+              {isEnrolled && (
                 <button
                   type="button"
                   onClick={() => onUnenroll(workshop.id)}
@@ -224,45 +257,45 @@ export default function WorkshopCard({
                 >
                   Cancelar mi Reserva
                 </button>
+              )}
 
-                <Link
-                  to={`/tutoring/room/${workshop.id}`}
-                  className="ia-btn ia-btn-primary"
+              {!isEnrolled && !isFull && (
+                <button
+                  type="button"
+                  onClick={() => onEnroll(workshop.id)}
+                  disabled={actionLoading}
+                  className="ia-btn-secondary"
                   style={{
-                    background: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
-                    color: '#ffffff',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 18px',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)',
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
                   }}
                 >
-                  <VideoIcon size={16} color="#ffffff" /> Entrar al Aula Virtual
-                </Link>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onEnroll(workshop.id)}
-                disabled={actionLoading || isFull}
-                className="ia-btn-primary"
+                  <CheckIcon size={14} /> Reservar Cupo
+                </button>
+              )}
+
+              <Link
+                to={`/tutoring/room/${workshop.id}`}
+                className="ia-btn ia-btn-primary"
                 style={{
-                  background: isFull ? '#94a3b8' : '#2563eb',
-                  borderColor: isFull ? '#94a3b8' : '#1d4ed8',
+                  background: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
+                  color: '#ffffff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
                   padding: '8px 18px',
+                  borderRadius: '8px',
                   fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)',
                 }}
               >
-                <CheckIcon size={16} />
-                {isFull ? 'Cupos Agotados' : 'Reservar mi Cupo'}
-              </button>
-            )}
-          </>
-        )}
+                <VideoIcon size={16} color="#ffffff" /> Unirme a la Clase en Vivo
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

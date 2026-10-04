@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profile.service';
+import { tutoringService } from '../../services/tutoring.service';
 import type { Profile } from '../../types/profile';
 import {
   UserIcon,
@@ -18,6 +19,7 @@ export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [hasLiveClass, setHasLiveClass] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +39,25 @@ export default function Navbar() {
       isMounted = false;
     };
   }, [location.pathname]);
+
+  useEffect(() => {
+    async function checkLive() {
+      try {
+        const workshops = await tutoringService.getUpcomingWorkshops();
+        setHasLiveClass(workshops.some((w) => w.status === 'in_progress'));
+      } catch {}
+    }
+    checkLive();
+
+    const onUpdate = () => checkLive();
+    window.addEventListener('ia_workshops_updated', onUpdate);
+    const interval = setInterval(checkLive, 8000);
+
+    return () => {
+      window.removeEventListener('ia_workshops_updated', onUpdate);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -89,8 +110,27 @@ export default function Navbar() {
           <NavLink
             to="/tutoring"
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            Explorar Tutorías
+            <span>Explorar Tutorías</span>
+            {hasLiveClass && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  fontSize: '0.62rem',
+                  fontWeight: 900,
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  lineHeight: 1,
+                  boxShadow: '0 0 8px rgba(239, 68, 68, 0.7)',
+                }}
+              >
+                EN VIVO
+              </span>
+            )}
           </NavLink>
           <NavLink
             to="/my-tutoring"
@@ -187,8 +227,23 @@ export default function Navbar() {
             to="/tutoring"
             className={({ isActive }) => `ia-mobile-nav-item ${isActive ? 'active' : ''}`}
             onClick={closeMenus}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
-            Explorar Tutorías
+            <span>Explorar Tutorías</span>
+            {hasLiveClass && (
+              <span
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  fontSize: '0.65rem',
+                  fontWeight: 900,
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                }}
+              >
+                EN VIVO
+              </span>
+            )}
           </NavLink>
           <NavLink
             to="/my-tutoring"

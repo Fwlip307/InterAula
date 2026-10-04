@@ -76,14 +76,10 @@ export default function AppRouter() {
         <Route path="/settings" element={<Settings />} />
       </Route>
 
-      {/* Aula Virtual de Tutoría (experiencia full-screen dedicada) */}
+      {/* Aula Virtual de Tutoría (experiencia full-screen dedicada y abierta a invitados) */}
       <Route
         path="/tutoring/room/:sessionId"
-        element={
-          <ProtectedRoute>
-            <VirtualClassroom />
-          </ProtectedRoute>
-        }
+        element={<VirtualClassroom />}
       />
 
       {/* Fallback para cualquier otra ruta */}
