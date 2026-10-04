@@ -581,12 +581,13 @@ export function isSubjectSupportedForAiEvaluation(subjectName: string): boolean 
 export async function generateLightningRound(
   subjectName: string,
   level: AcademicLevel = 'intermediate',
-  count: number = 10
+  count: number = 10,
+  context?: { institution?: string; career?: string }
 ): Promise<ChallengeQuestion[]> {
   // 1. Intentar generación con Google Gemini API si la clave está disponible
   if (hasGeminiApiConfigured()) {
     try {
-      const geminiQuestions = await generateGeminiQuestions(subjectName, level, count);
+      const geminiQuestions = await generateGeminiQuestions(subjectName, level, count, context);
       if (geminiQuestions && geminiQuestions.length >= count) {
         return geminiQuestions;
       }

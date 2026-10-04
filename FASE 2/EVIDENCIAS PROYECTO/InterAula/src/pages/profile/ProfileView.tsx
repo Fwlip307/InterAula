@@ -29,6 +29,8 @@ import {
   ClockIcon,
   AwardIcon,
   EditIcon,
+  LockIcon,
+  CheckIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
@@ -47,6 +49,7 @@ import {
   getSedesForInstitution,
   findInstitutionByName,
 } from '../../data/institutionsAndCareers';
+import { getSuggestedSubjectsForCareer } from '../../services/catalogResolver';
 
 export default function ProfileView() {
   const { user } = useAuth();
@@ -130,11 +133,42 @@ export default function ProfileView() {
     }));
   }, [availableSedes]);
 
+  const isProfileInstitutionComplete = Boolean(
+    profile?.institution && profile.institution.trim() !== '' &&
+    profile?.career && profile.career.trim() !== ''
+  );
+
   const availableForEvaluation = useMemo(() => {
-    return catalogSubjects
-      .filter((s) => !offeredSubjects.some((o) => o.subject_id === s.id && o.is_verified))
-      .map((s) => ({ id: s.id, name: s.name }));
-  }, [catalogSubjects, offeredSubjects]);
+    // 1. Obtener materias sugeridas para la carrera del perfil desde el nuevo catálogo JSON chileno
+    const currentCareer = profile?.career || selectedCareer;
+    const currentInstitution = profile?.institution || selectedInstitution;
+    const suggested = getSuggestedSubjectsForCareer(currentCareer, currentInstitution, 50);
+
+    const resolvedList: { id: string; name: string; category?: string; isBoosted?: boolean }[] = suggested
+      .filter((s) => !offeredSubjects.some((o) => o.subject?.name?.toLowerCase() === s.name.toLowerCase() && o.is_verified))
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.areaName,
+        isBoosted: s.isBoosted,
+      }));
+
+    // 2. Agregar materias existentes del piloto en la BD que no se hayan acreditado aún
+    for (const catSub of catalogSubjects) {
+      if (
+        !resolvedList.some((r) => r.name.toLowerCase() === catSub.name.toLowerCase()) &&
+        !offeredSubjects.some((o) => o.subject_id === catSub.id && o.is_verified)
+      ) {
+        resolvedList.push({
+          id: catSub.id,
+          name: catSub.name,
+          category: catSub.category || undefined,
+        });
+      }
+    }
+
+    return resolvedList;
+  }, [profile?.career, selectedCareer, catalogSubjects, offeredSubjects]);
 
   // Cargar todos los datos del usuario
   useEffect(() => {
@@ -1050,15 +1084,139 @@ export default function ProfileView() {
             </div>
           )}
 
+          {/* BANNER DE IDENTIFICACIÓN INSTITUCIONAL */}
+          {!isProfileInstitutionComplete ? (
+            <div
+              style={{
+                backgroundColor: '#fffbeb',
+                border: '1.5px solid #fde68a',
+                borderRadius: '16px',
+                padding: '18px 22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', maxWidth: '680px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    backgroundColor: '#fef3c7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#d97706',
+                    flexShrink: 0,
+                  }}
+                >
+                  <LockIcon size={22} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#92400e', marginBottom: '2px' }}>
+                    Identificación Académica Requerida para Habilitarte como Tutor
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#b45309', lineHeight: 1.45 }}>
+                    Para rendir la evaluación del Asistente o tramitar respaldo docente oficial en InterAula, es necesario que indiques previamente tu <strong>Institución de Educación Superior</strong> y tu <strong>Carrera</strong> en tu perfil personal.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('personal');
+                  setIsEditingPersonal(true);
+                }}
+                className="ia-btn-primary"
+                style={{
+                  padding: '9px 18px',
+                  fontSize: '0.84rem',
+                  fontWeight: 800,
+                  background: '#d97706',
+                  borderColor: '#b45309',
+                }}
+              >
+                Completar mi Institución y Carrera
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                backgroundColor: '#f0fdf4',
+                border: '1.5px solid #86efac',
+                borderRadius: '14px',
+                padding: '12px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: '#dcfce7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#16a34a',
+                    flexShrink: 0,
+                  }}
+                >
+                  <CheckIcon size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Estudiante Acreditado
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
+                    {profile?.institution} · {profile?.career}
+                  </div>
+                </div>
+              </div>
+              <span
+                style={{
+                  backgroundColor: '#dcfce7',
+                  color: '#166534',
+                  border: '1px solid #86efac',
+                  padding: '3px 10px',
+                  borderRadius: '12px',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                }}
+              >
+                Habilitación Desbloqueada
+              </span>
+            </div>
+          )}
+
           {/* Subcomponente: Materias habilitadas para impartir */}
           <OfferedSubjectsSection
             offeredSubjects={offeredSubjects}
             onRemove={handleRemoveOfferedSubject}
             onStartEvaluation={() => {
+              if (!isProfileInstitutionComplete) {
+                setActiveTab('personal');
+                setIsEditingPersonal(true);
+                return;
+              }
               setSelectedSubjectForBot(availableForEvaluation[0] || null);
               setIsBotModalOpen(true);
             }}
             onRequestEndorsement={() => {
+              if (!isProfileInstitutionComplete) {
+                setActiveTab('personal');
+                setIsEditingPersonal(true);
+                return;
+              }
               setIsTeacherModalOpen(true);
             }}
           />
@@ -1107,6 +1265,11 @@ export default function ProfileView() {
             <button
               type="button"
               onClick={() => {
+                if (!isProfileInstitutionComplete) {
+                  setActiveTab('personal');
+                  setIsEditingPersonal(true);
+                  return;
+                }
                 setSelectedSubjectForBot(availableForEvaluation[0] || null);
                 setIsBotModalOpen(true);
               }}
@@ -1118,10 +1281,20 @@ export default function ProfileView() {
                 padding: '10px 20px',
                 fontSize: '0.88rem',
                 fontWeight: 700,
+                opacity: isProfileInstitutionComplete ? 1 : 0.8,
               }}
             >
-              <ClockIcon size={16} color="#ffffff" />
-              <span>Rendir Evaluación con el Asistente</span>
+              {!isProfileInstitutionComplete ? (
+                <>
+                  <LockIcon size={16} color="#ffffff" />
+                  <span>Requiere Institución y Carrera</span>
+                </>
+              ) : (
+                <>
+                  <ClockIcon size={16} color="#ffffff" />
+                  <span>Rendir Evaluación con el Asistente</span>
+                </>
+              )}
             </button>
           </div>
 
@@ -1192,7 +1365,14 @@ export default function ProfileView() {
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => setIsTeacherModalOpen(true)}
+                onClick={() => {
+                  if (!isProfileInstitutionComplete) {
+                    setActiveTab('personal');
+                    setIsEditingPersonal(true);
+                    return;
+                  }
+                  setIsTeacherModalOpen(true);
+                }}
                 className="ia-btn-primary"
                 style={{
                   padding: '10px 18px',
@@ -1203,10 +1383,20 @@ export default function ProfileView() {
                   gap: '8px',
                   backgroundColor: '#0f172a',
                   borderColor: '#0f172a',
+                  opacity: isProfileInstitutionComplete ? 1 : 0.8,
                 }}
               >
-                <MailIcon size={15} color="#ffffff" />
-                <span>Respaldo de Profesor</span>
+                {!isProfileInstitutionComplete ? (
+                  <>
+                    <LockIcon size={15} color="#ffffff" />
+                    <span>Requiere Institución</span>
+                  </>
+                ) : (
+                  <>
+                    <MailIcon size={15} color="#ffffff" />
+                    <span>Respaldo de Profesor</span>
+                  </>
+                )}
               </button>
 
               <button
@@ -1368,6 +1558,8 @@ export default function ProfileView() {
         onClose={() => setIsBotModalOpen(false)}
         availableSubjects={availableForEvaluation.length > 0 ? availableForEvaluation : catalogSubjects.map((s) => ({ id: s.id, name: s.name }))}
         defaultSubjectId={selectedSubjectForBot?.id || availableForEvaluation[0]?.id || catalogSubjects[0]?.id}
+        userInstitution={profile?.institution || ''}
+        userCareer={profile?.career || ''}
         onSuccess={handleBotSuccess}
       />
 

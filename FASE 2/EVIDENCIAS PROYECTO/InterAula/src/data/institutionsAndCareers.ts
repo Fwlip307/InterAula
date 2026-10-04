@@ -2,7 +2,7 @@
 // Fuente: Mineduc / SIES (Subsecretaría de Educación Superior)
 // 128 instituciones de educación superior, sedes regionales y más de 5.000 carreras
 
-import rawCatalog from './chileanInstitutionsCatalog.json';
+import rawCatalog from './chileEducationCatalog2026.json';
 
 export interface SedeItem {
   id: string;
@@ -14,8 +14,11 @@ export interface SedeItem {
 export interface CareerDetailItem {
   id: string;
   name: string;
-  area: string;
-  nivel: string;
+  area?: string;
+  genericCareerArea?: string;
+  knowledgeArea?: string;
+  profileId?: string;
+  nivel?: string;
   sedes: string[];
 }
 
@@ -31,7 +34,7 @@ export interface InstitutionItem {
   sedes?: SedeItem[];
 }
 
-export const CHILEAN_INSTITUTIONS: InstitutionItem[] = rawCatalog as InstitutionItem[];
+export const CHILEAN_INSTITUTIONS: InstitutionItem[] = (rawCatalog as any).institutions as InstitutionItem[];
 
 /**
  * Obtener lista de todas las instituciones ordenadas alfabéticamente

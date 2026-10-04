@@ -19,12 +19,9 @@ import {
   TIME_LIMIT_CHOICE,
   TIME_LIMIT_REDACTION,
   type ChallengeQuestion,
-  isSubjectSupportedForAiEvaluation,
 } from '../../../services/aiQuestionEngine';
 import {
   hasGeminiApiConfigured,
-  setSessionGeminiApiKey,
-  getGeminiApiKey,
   evaluateAnswerWithGemini,
 } from '../../../services/geminiAiService';
 
@@ -34,6 +31,8 @@ interface TutorValidationBotModalProps {
   onSuccess: (subjectId: string, subjectName: string, level?: AcademicLevel) => void;
   availableSubjects: { id: string; name: string }[];
   defaultSubjectId?: string;
+  userInstitution?: string;
+  userCareer?: string;
 }
 
 interface ChatMessage {
@@ -58,16 +57,35 @@ export default function TutorValidationBotModal({
   onSuccess,
   availableSubjects,
   defaultSubjectId,
+  userInstitution,
+  userCareer,
 }: TutorValidationBotModalProps) {
   const [selectedSubjectId, setSelectedSubjectId] = useState(
     defaultSubjectId || availableSubjects[0]?.id || ''
   );
   const [selectedLevel, setSelectedLevel] = useState<AcademicLevel>('intermediate');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationSeconds, setGenerationSeconds] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(getGeminiApiKey() || '');
-  const [aiEnabled, setAiEnabled] = useState(hasGeminiApiConfigured());
+  const [isCustomSubject, setIsCustomSubject] = useState(false);
+  const [customSubjectInput, setCustomSubjectInput] = useState('');
+  const aiEnabled = true;
+
+  // Temporizador para la fase de generación de preguntas
+  useEffect(() => {
+    let interval: any = null;
+    if (isGenerating) {
+      setGenerationSeconds(0);
+      interval = setInterval(() => {
+        setGenerationSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setGenerationSeconds(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGenerating]);
 
   useEffect(() => {
     if (isOpen) {
@@ -92,11 +110,14 @@ export default function TutorValidationBotModal({
   const [pasteWarning, setPasteWarning] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showTabWarning, setShowTabWarning] = useState(false);
+  const [isWindowBlurred, setIsWindowBlurred] = useState(false);
+  const [screenshotBlockedToast, setScreenshotBlockedToast] = useState(false);
 
   const modalOverlayRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const idCounterRef = useRef(0);
+  const questionEndTimeRef = useRef<number>(0);
 
   const getNextId = (prefix: string) => {
     idCounterRef.current += 1;
@@ -104,12 +125,14 @@ export default function TutorValidationBotModal({
   };
 
   const activeSubject = availableSubjects.find((s) => s.id === selectedSubjectId) || availableSubjects[0];
-  const subjectName = activeSubject?.name || 'Materia de Informática';
+  const subjectName = isCustomSubject && customSubjectInput.trim()
+    ? customSubjectInput.trim()
+    : activeSubject?.name || 'Materia Universitaria';
 
   // Control de pantalla completa (Modo Enfoque F11)
   const enterFullscreen = async () => {
     try {
-      const el = modalOverlayRef.current || document.documentElement;
+      const el = document.documentElement;
       if (el.requestFullscreen) {
         await el.requestFullscreen();
       } else if ((el as any).webkitRequestFullscreen) {
@@ -145,14 +168,42 @@ export default function TutorValidationBotModal({
     };
   }, []);
 
-  // Bloqueo de atajos de teclado para copia e inspección durante la evaluación
+  // Bloqueo de atajos de teclado para copia, inspección y capturas de pantalla
   useEffect(() => {
     if (!isOpen) return;
 
+    const blockScreenshot = (e: KeyboardEvent) => {
+      // Tecla Impr Pant / PrintScreen
+      if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
+        e.preventDefault();
+        try {
+          navigator.clipboard?.writeText?.('');
+        } catch {}
+        setScreenshotBlockedToast(true);
+        setTimeout(() => setScreenshotBlockedToast(false), 3000);
+      }
+
+      // Atajo de recorte de Windows (Win/Ctrl + Shift + S) y Mac (Cmd + Shift + 3/4/5)
+      if (
+        e.shiftKey &&
+        (e.metaKey || e.ctrlKey) &&
+        ['s', 'S', '3', '4', '5'].includes(e.key)
+      ) {
+        e.preventDefault();
+        try {
+          navigator.clipboard?.writeText?.('');
+        } catch {}
+        setScreenshotBlockedToast(true);
+        setTimeout(() => setScreenshotBlockedToast(false), 3000);
+      }
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      blockScreenshot(e);
+
       if (
         (e.ctrlKey || e.metaKey) &&
-        ['c', 'C', 'u', 'U', 's', 'S', 'p', 'P'].includes(e.key)
+        ['c', 'C', 'u', 'U', 's', 'S', 'p', 'P', 'a', 'A'].includes(e.key)
       ) {
         e.preventDefault();
       }
@@ -161,32 +212,50 @@ export default function TutorValidationBotModal({
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      blockScreenshot(e);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [isOpen]);
 
-  // Detección de pérdida de foco o cambio de pestaña durante la pregunta activa
+  // Detección de pérdida de foco o cambio de pestaña durante la evaluación
   useEffect(() => {
-    if (!isOpen || step !== 'answering') return;
+    if (!isOpen || (step !== 'answering' && step !== 'ready_check' && step !== 'question_feedback')) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setTabSwitchCount((prev) => prev + 1);
         setShowTabWarning(true);
+        setIsWindowBlurred(true);
+      } else {
+        setIsWindowBlurred(false);
       }
     };
 
     const handleWindowBlur = () => {
       setTabSwitchCount((prev) => prev + 1);
       setShowTabWarning(true);
+      setIsWindowBlurred(true);
+    };
+
+    const handleWindowFocus = () => {
+      setIsWindowBlurred(false);
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
     };
   }, [isOpen, step]);
 
@@ -263,38 +332,82 @@ export default function TutorValidationBotModal({
     setIsProcessingAnswer(false);
   };
 
-  // Manejo del temporizador: SOLO corre durante 'answering' (mientras responde la pregunta)
+  // Manejo del temporizador: reloj real absoluto con Date.now() (no se congela al minimizar)
   useEffect(() => {
     if (!isOpen || step !== 'answering' || isProcessingAnswer) return;
 
-    if (timeLeft <= 0) {
-      handleTimeout();
+    const checkTime = () => {
+      if (isProcessingAnswer) return;
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((questionEndTimeRef.current - now) / 1000));
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        handleTimeout();
+      }
+    };
+
+    checkTime();
+    const timer = setInterval(checkTime, 250);
+
+    const handleSync = () => {
+      checkTime();
+    };
+
+    document.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [isOpen, step, isProcessingAnswer]);
+
+  const getGenerationStatus = (sec: number) => {
+    if (sec < 2) {
+      return 'Conectando con el motor de Inteligencia Artificial...';
+    } else if (sec < 5) {
+      return `Analizando temario oficial de "${subjectName}"...`;
+    } else if (sec < 8) {
+      return 'Formulando 10 reactivos técnicos y alternativas de respuesta...';
+    } else {
+      return 'Calibrando criterios de evaluación y preparando entorno seguro...';
+    }
+  };
+
+  // Paso 1: Inicializar la prueba y comenzar inmediatamente en pantalla completa
+  const handleStartChallenge = async () => {
+    setErrorMessage(null);
+
+    if (isCustomSubject && !customSubjectInput.trim()) {
+      setErrorMessage('Por favor escribe el nombre de la asignatura que deseas evaluar.');
       return;
     }
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isOpen, step, isProcessingAnswer, timeLeft]);
-
-  // Paso 1: Inicializar la prueba y preguntar interactivamente si está listo (tiempo pausado)
-  const handleStartChallenge = async () => {
-    setErrorMessage(null);
     setIsGenerating(true);
+    setGenerationSeconds(0);
+
+    // 1. Invocar pantalla completa en el evento de clic directo del usuario (garantiza aceptación del navegador)
+    enterFullscreen();
 
     try {
-      const roundQuestions = await generateLightningRound(subjectName, selectedLevel, TOTAL_QUESTIONS);
+      const roundQuestions = await generateLightningRound(
+        subjectName,
+        selectedLevel,
+        TOTAL_QUESTIONS,
+        { institution: userInstitution, career: userCareer }
+      );
       if (!roundQuestions || roundQuestions.length === 0) {
         setErrorMessage(
-          `La materia "${subjectName}" aún no cuenta con banco de preguntas activado en el piloto. Por favor selecciona Programación Web o solicita acreditación mediante Respaldo de Profesor.`
+          `No fue posible generar las preguntas para "${subjectName}" en este momento. Por favor reintenta en unos instantes.`
         );
         setIsGenerating(false);
         return;
       }
 
+      // Reasegurar pantalla completa
       enterFullscreen();
+
       setQuestions(roundQuestions);
       setCurrentIndex(0);
       setStreak(0);
@@ -317,7 +430,7 @@ export default function TutorValidationBotModal({
         {
           id: getNextId('intro_rules'),
           sender: 'bot',
-          text: `Para que leas y respondas con calma, el tiempo solo correrá cuando tengas la pregunta en pantalla (${TIME_LIMIT_CHOICE} segundos en preguntas de alternativas y ${TIME_LIMIT_REDACTION} segundos en desarrollo técnico). Entre cada pregunta podrás tomarte una pausa para revisar la explicación.`,
+          text: `Para que leas y respondas con calma, el tiempo solo correrá cuando tengas la pregunta en pantalla (${TIME_LIMIT_CHOICE} segundos en preguntas de alternativas y ${TIME_LIMIT_REDACTION} segundos en desarrollo técnico). Entre cada pregunta podrás tomarte una pausa para revisar la retroalimentación.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
         {
@@ -350,6 +463,7 @@ export default function TutorValidationBotModal({
 
     const firstQ = questions[0];
     const initialTime = firstQ ? getQuestionTimeLimit(firstQ) : TIME_LIMIT_CHOICE;
+    questionEndTimeRef.current = Date.now() + initialTime * 1000;
 
     const qMessage: ChatMessage = {
       id: getNextId('q'),
@@ -476,6 +590,7 @@ export default function TutorValidationBotModal({
     const nextIndex = currentIndex + 1;
     const nextQ = questions[nextIndex];
     const nextQTime = nextQ ? getQuestionTimeLimit(nextQ) : TIME_LIMIT_CHOICE;
+    questionEndTimeRef.current = Date.now() + nextQTime * 1000;
 
     const userProceedMsg: ChatMessage = {
       id: getNextId('user_next'),
@@ -502,29 +617,30 @@ export default function TutorValidationBotModal({
   };
 
   const handleGrantCertification = async () => {
-    if (!selectedSubjectId) return;
+    const effectiveSubjectId = isCustomSubject ? `custom_${Date.now()}` : selectedSubjectId;
+    if (!effectiveSubjectId) return;
     try {
       setSubmittingVerification(true);
       await profileService.addOfferedSubject(
-        selectedSubjectId,
+        effectiveSubjectId,
         selectedLevel,
         `Tutor Habilitado (${selectedLevel === 'basic' ? 'Nivel Básico' : selectedLevel === 'advanced' ? 'Nivel Avanzado' : 'Nivel Intermedio'}) mediante Evaluación Técnica de Contenidos`
       );
 
       const req = await verificationService.createVerificationRequest({
-        subject_id: selectedSubjectId,
+        subject_id: effectiveSubjectId,
       });
 
       await verificationService.saveCertificateExtraction(req.id, {
         document_filename: 'evaluacion_tecnica_tutor.json',
-        document_path: `evaluations/evaluacion_${selectedSubjectId}.json`,
+        document_path: `evaluations/evaluacion_${effectiveSubjectId}.json`,
         document_size_bytes: 2048,
         document_extraction_status: 'completed',
         matched_subject_name: subjectName,
         matched_grade: 7.0,
         calculated_level: selectedLevel,
         document_extracted_data: {
-          program: 'Ingeniería en Informática',
+          program: userCareer || 'Educación Superior',
           certificate_id: `EVAL-TUTOR-${Date.now()}`,
           extracted_at: new Date().toISOString(),
           calculated_level: selectedLevel,
@@ -538,12 +654,12 @@ export default function TutorValidationBotModal({
       });
 
       exitFullscreen();
-      onSuccess(selectedSubjectId, subjectName, selectedLevel);
+      onSuccess(effectiveSubjectId, subjectName, selectedLevel);
       onClose();
     } catch (err: any) {
       console.error('[TutorValidationBotModal] Error al acreditar:', err);
       exitFullscreen();
-      onSuccess(selectedSubjectId, subjectName, selectedLevel);
+      onSuccess(effectiveSubjectId, subjectName, selectedLevel);
       onClose();
     } finally {
       setSubmittingVerification(false);
@@ -583,6 +699,21 @@ export default function TutorValidationBotModal({
         WebkitUserSelect: 'none',
       }}
     >
+      <style>{`
+        @keyframes ia-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes ia-pulse-scale {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.08); opacity: 0.88; }
+        }
+        @keyframes ia-indeterminate {
+          0% { left: -40%; width: 40%; }
+          50% { left: 25%; width: 50%; }
+          100% { left: 100%; width: 40%; }
+        }
+      `}</style>
       <div
         style={{
           backgroundColor: '#ffffff',
@@ -600,165 +731,88 @@ export default function TutorValidationBotModal({
           transition: 'all 0.2s ease',
         }}
       >
-        {/* MODAL DE CONFIGURACIÓN DE GEMINI API */}
-        {showApiKeyModal && (
+        {/* ESCUDO DE PRIVACIDAD ANTICAPTURA AL PERDER EL FOCO O MINIMIZAR */}
+        {isWindowBlurred && (step === 'answering' || step === 'question_feedback') && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(4px)',
+              backgroundColor: '#020617',
+              color: '#ffffff',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '20px',
-              zIndex: 110,
+              padding: '24px',
+              zIndex: 120,
+              textAlign: 'center',
             }}
           >
             <div
               style={{
-                backgroundColor: '#ffffff',
+                width: '56px',
+                height: '56px',
                 borderRadius: '16px',
-                padding: '24px',
-                maxWidth: '520px',
-                width: '100%',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
-                border: '1px solid #e2e8f0',
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ef4444',
+                marginBottom: '16px',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div
-                    style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '10px',
-                      backgroundColor: '#eff6ff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#2563eb',
-                    }}
-                  >
-                    <SparklesIcon size={20} />
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 800, color: '#0f172a' }}>
-                      Configurar Google Gemini IA
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '0.76rem', color: '#64748b' }}>
-                      Generador de preguntas dinámicas y evaluador semántico
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowApiKeyModal(false)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    padding: '4px',
-                  }}
-                >
-                  <XIcon size={18} />
-                </button>
-              </div>
-
-              <div style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>
-                Conectar la API gratuita de Google Gemini (2.5 Flash) dota a InterAula de:
-                <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
-                  <li>Preguntas 100% dinámicas e inéditas en cada intento.</li>
-                  <li>Evaluaciones para cualquier materia universitaria del catálogo.</li>
-                  <li>Calificación semántica inteligente para redacción abierta.</li>
-                </ul>
-              </div>
-
-              <div>
-                <label className="ia-label" style={{ display: 'block', marginBottom: '6px', fontWeight: 700 }}>
-                  Google Gemini API Key:
-                </label>
-                <input
-                  type="password"
-                  className="ia-input"
-                  placeholder="AIzaSy..."
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.88rem' }}
-                />
-                <div style={{ marginTop: '6px', fontSize: '0.76rem', color: '#64748b' }}>
-                  Obtén tu clave gratuita en{' '}
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}
-                  >
-                    Google AI Studio
-                  </a>. La clave se guarda de manera segura solo en tu navegador.
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                {aiEnabled ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSessionGeminiApiKey('');
-                      setApiKeyInput('');
-                      setAiEnabled(false);
-                      setShowApiKeyModal(false);
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#dc2626',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    Desconectar API Key
-                  </button>
-                ) : (
-                  <span />
-                )}
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKeyModal(false)}
-                    className="ia-btn-secondary"
-                    style={{ padding: '8px 14px', fontSize: '0.82rem' }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSessionGeminiApiKey(apiKeyInput);
-                      setAiEnabled(hasGeminiApiConfigured());
-                      setShowApiKeyModal(false);
-                    }}
-                    className="ia-btn-primary"
-                    style={{
-                      padding: '8px 18px',
-                      fontSize: '0.82rem',
-                      fontWeight: 800,
-                      backgroundColor: '#2563eb',
-                      borderColor: '#1d4ed8',
-                    }}
-                  >
-                    Guardar y Activar
-                  </button>
-                </div>
-              </div>
+              <ShieldCheckIcon size={32} />
             </div>
+            <div style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: '8px' }}>
+              Contenido Oculto por Seguridad
+            </div>
+            <p style={{ margin: 0, fontSize: '0.88rem', color: '#94a3b8', maxWidth: '440px', lineHeight: 1.5 }}>
+              La ventana perdió el foco o se detectó una herramienta de captura de pantalla. Para asegurar la integridad técnica, el contenido se oculta de inmediato.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsWindowBlurred(false);
+                enterFullscreen();
+              }}
+              className="ia-btn-primary"
+              style={{
+                marginTop: '20px',
+                padding: '10px 24px',
+                fontWeight: 800,
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              }}
+            >
+              Volver a la Evaluación
+            </button>
+          </div>
+        )}
+
+        {/* NOTIFICACIÓN TOAST DE CAPTURA BLOQUEADA */}
+        {screenshotBlockedToast && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '24px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#7f1d1d',
+              color: '#ffffff',
+              padding: '8px 18px',
+              borderRadius: '24px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+              zIndex: 130,
+              border: '1px solid #ef4444',
+            }}
+          >
+            <AlertCircleIcon size={16} color="#fca5a5" />
+            <span>Captura de pantalla no permitida durante la evaluación</span>
           </div>
         )}
 
@@ -852,78 +906,79 @@ export default function TutorValidationBotModal({
         )}
 
         {/* MODAL BLOQUEANTE SI EL ESTUDIANTE SALE DEL MODO PANTALLA COMPLETA */}
-        {!isFullscreen && (step === 'ready_check' || step === 'answering' || step === 'question_feedback') && !showAbandonConfirm && (
+        {!isFullscreen && (step === 'answering' || step === 'question_feedback') && !showAbandonConfirm && !isGenerating && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.88)',
-              backdropFilter: 'blur(5px)',
+              backgroundColor: 'rgba(15, 23, 42, 0.94)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '20px',
-              zIndex: 90,
+              zIndex: 110,
             }}
           >
             <div
               style={{
                 backgroundColor: '#ffffff',
                 borderRadius: '16px',
-                padding: '24px',
-                maxWidth: '460px',
+                padding: '28px 24px',
+                maxWidth: '480px',
                 width: '100%',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
-                border: '1px solid #e2e8f0',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+                border: '1px solid #cbd5e1',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '14px',
+                gap: '16px',
                 textAlign: 'center',
                 alignItems: 'center',
               }}
             >
               <div
                 style={{
-                  width: '44px',
-                  height: '44px',
-                  borderRadius: '12px',
-                  backgroundColor: '#f0fdf4',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  backgroundColor: '#fef2f2',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#059669',
+                  color: '#dc2626',
+                  border: '1px solid #fecaca',
                 }}
               >
-                <LockIcon size={24} />
+                <LockIcon size={26} />
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
-                  Pantalla Completa Requerida
+                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#0f172a' }}>
+                  Modo Pantalla Completa Obligatorio
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-                  Modo de Enfoque sin Pestañas Externas
+                <div style={{ fontSize: '0.8rem', color: '#dc2626', fontWeight: 700, marginTop: '3px' }}>
+                  No está permitido minimizar ni alternar aplicaciones
                 </div>
               </div>
 
               <p style={{ margin: 0, fontSize: '0.86rem', color: '#475569', lineHeight: 1.5 }}>
-                Para garantizar la transparencia y evitar consultas en otras pestañas, la evaluación debe rendirse en pantalla completa.
+                Esta evaluación no admite segundo plano ni minimizado: <strong>es entrar o salir</strong>. El tiempo continúa corriendo en tiempo real. Para continuar, reanuda la pantalla completa de inmediato.
               </p>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '6px', width: '100%', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '4px', width: '100%', justifyContent: 'center' }}>
                 <button
                   type="button"
                   onClick={handleFinalClose}
                   className="ia-btn-secondary"
-                  style={{ padding: '9px 16px', fontSize: '0.84rem' }}
+                  style={{ padding: '10px 18px', fontSize: '0.84rem', fontWeight: 600 }}
                 >
-                  Abandonar Evaluación
+                  Salir y Abandonar
                 </button>
                 <button
                   type="button"
                   onClick={enterFullscreen}
                   className="ia-btn-primary"
                   style={{
-                    padding: '9px 20px',
+                    padding: '10px 22px',
                     fontSize: '0.84rem',
                     fontWeight: 800,
                     background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
@@ -998,38 +1053,72 @@ export default function TutorValidationBotModal({
                 )}
               </div>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                Habilitación de Tutor Comunitario · {subjectName}
+                {userInstitution
+                  ? `${userInstitution}${userCareer ? ` · ${userCareer}` : ''}`
+                  : `Habilitación de Tutor Comunitario · ${subjectName}`}
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {step === 'idle' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setApiKeyInput(getGeminiApiKey() || '');
-                  setShowApiKeyModal(true);
-                }}
+            {isGenerating && (
+              <div
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  backgroundColor: aiEnabled ? '#1e3a8a' : '#1e293b',
-                  border: `1px solid ${aiEnabled ? '#3b82f6' : '#334155'}`,
-                  color: aiEnabled ? '#93c5fd' : '#cbd5e1',
+                  backgroundColor: '#064e3b',
+                  border: '1px solid #059669',
+                  color: '#a7f3d0',
                   borderRadius: '16px',
-                  padding: '5px 12px',
-                  fontSize: '0.74rem',
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
                   fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
                 }}
-                title="Configurar conexión con Google Gemini API"
               >
-                <SparklesIcon size={13} color={aiEnabled ? '#60a5fa' : '#94a3b8'} />
-                <span>{aiEnabled ? 'Gemini IA Activo' : 'Conectar Gemini IA'}</span>
-              </button>
+                <ClockIcon size={12} color="#34d399" />
+                <span>Generando... {generationSeconds}s</span>
+              </div>
+            )}
+
+            {step === 'idle' && !isGenerating && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#064e3b',
+                  border: '1px solid #059669',
+                  color: '#a7f3d0',
+                  borderRadius: '16px',
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                }}
+              >
+                <SparklesIcon size={12} color="#34d399" />
+                <span>Evaluador IA Activo</span>
+              </div>
+            )}
+
+            {step === 'ready_check' && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#064e3b',
+                  border: '1px solid #059669',
+                  color: '#a7f3d0',
+                  borderRadius: '16px',
+                  padding: '4px 10px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                }}
+              >
+                <SparklesIcon size={12} color="#34d399" />
+                <span>Tiempo en Pausa · Lee con calma</span>
+              </div>
             )}
 
             {step === 'answering' && (
@@ -1177,8 +1266,144 @@ export default function TutorValidationBotModal({
             backgroundColor: '#f8fafc',
           }}
         >
+          {/* ESTADO INICIAL: CARGA DINÁMICA O SELECCIÓN DE MATERIA Y NIVEL */}
+          {step === 'idle' && isGenerating && (
+            <div
+              style={{
+                padding: '48px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                gap: '22px',
+                minHeight: '420px',
+                margin: 'auto 0',
+              }}
+            >
+              {/* Spinner animado y halo central */}
+              <div style={{ position: 'relative', width: '78px', height: '78px' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    border: '4px solid #e2e8f0',
+                    borderTopColor: '#059669',
+                    animation: 'ia-spin 0.9s linear infinite',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ecfdf5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#059669',
+                    animation: 'ia-pulse-scale 2s ease-in-out infinite',
+                  }}
+                >
+                  <SparklesIcon size={32} color="#059669" />
+                </div>
+              </div>
+
+              {/* Temporizador y estado dinámico */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: '#ecfdf5',
+                    border: '1.5px solid #a7f3d0',
+                    borderRadius: '24px',
+                    padding: '6px 16px',
+                    color: '#065f46',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  <ClockIcon size={16} color="#059669" />
+                  <span>Generando preguntas:</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 800 }}>
+                    {`00:${generationSeconds < 10 ? `0${generationSeconds}` : generationSeconds}`}s
+                  </span>
+                </div>
+
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', marginTop: '4px' }}>
+                  Preparando Evaluación Técnica
+                </div>
+
+                <div
+                  style={{
+                    fontSize: '0.92rem',
+                    color: '#047857',
+                    fontWeight: 700,
+                    minHeight: '26px',
+                    maxWidth: '480px',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {getGenerationStatus(generationSeconds)}
+                </div>
+
+                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                  Materia: <strong>{subjectName}</strong> · Nivel:{' '}
+                  <strong>
+                    {selectedLevel === 'basic' ? 'Básico' : selectedLevel === 'advanced' ? 'Avanzado' : 'Intermedio'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Barra de progreso indeterminada animada */}
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '360px',
+                  height: '6px',
+                  backgroundColor: '#e2e8f0',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: '45%',
+                    background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
+                    borderRadius: '6px',
+                    animation: 'ia-indeterminate 1.6s ease-in-out infinite',
+                  }}
+                />
+              </div>
+
+              {/* Nota de contexto */}
+              <div
+                style={{
+                  padding: '12px 18px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  color: '#64748b',
+                  maxWidth: '500px',
+                  lineHeight: 1.45,
+                }}
+              >
+                El motor de Inteligencia Artificial está generando 10 preguntas adaptadas al temario oficial. La prueba comenzará automáticamente en pantalla completa al finalizar la carga.
+              </div>
+            </div>
+          )}
+
           {/* VISTA IDLE / INTRO */}
-          {step === 'idle' && (
+          {step === 'idle' && !isGenerating && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: 'auto 0' }}>
               <div
                 style={{
@@ -1212,107 +1437,95 @@ export default function TutorValidationBotModal({
 
               {/* Selector de Asignatura */}
               <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <label className="ia-label" style={{ display: 'block', marginBottom: '6px', fontWeight: 700 }}>
-                  Asignatura a evaluar:
-                </label>
-                <select
-                  className="ia-input"
-                  value={selectedSubjectId}
-                  onChange={(e) => {
-                    setSelectedSubjectId(e.target.value);
-                    setErrorMessage(null);
-                  }}
-                  style={{ width: '100%', fontWeight: 600, fontSize: '0.9rem' }}
-                >
-                  {availableSubjects.map((s) => {
-                    const isSubPilot = isSubjectSupportedForAiEvaluation(s.name);
-                    return (
-                      <option key={s.id} value={s.id}>
-                        {s.name} {isSubPilot ? ' · [Piloto IA Activo]' : ''}
-                      </option>
-                    );
-                  })}
-                </select>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="ia-label" style={{ fontWeight: 700, margin: 0 }}>
+                    Asignatura a evaluar:
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomSubject(!isCustomSubject);
+                      setErrorMessage(null);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#059669',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '2px 4px',
+                    }}
+                  >
+                    {isCustomSubject ? '← Elegir del catálogo sugerido' : '¿No está tu materia? Escríbela'}
+                  </button>
+                </div>
 
-                {/* Feedback según disponibilidad del banco o Gemini */}
+                {isCustomSubject ? (
+                  <div>
+                    <input
+                      type="text"
+                      className="ia-input"
+                      placeholder="Ej. Contabilidad General, Costos y Presupuestos, Microeconomía..."
+                      value={customSubjectInput}
+                      onChange={(e) => {
+                        setCustomSubjectInput(e.target.value);
+                        setErrorMessage(null);
+                      }}
+                      style={{ width: '100%', fontWeight: 600, fontSize: '0.92rem' }}
+                    />
+                    <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '6px' }}>
+                      El motor de IA generará 10 preguntas técnicas especializadas para esta materia.
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    className="ia-input"
+                    value={selectedSubjectId}
+                    onChange={(e) => {
+                      setSelectedSubjectId(e.target.value);
+                      setErrorMessage(null);
+                    }}
+                    style={{ width: '100%', fontWeight: 600, fontSize: '0.9rem' }}
+                  >
+                    {availableSubjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {userInstitution && (
+                  <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldCheckIcon size={13} color="#059669" />
+                    <span>
+                      Evaluación calibrada con el temario formativo de <strong>{userInstitution}</strong> {userCareer ? `[${userCareer}]` : ''}.
+                    </span>
+                  </div>
+                )}
+
+                {/* Feedback dinámico con Gemini */}
                 <div style={{ marginTop: '10px' }}>
-                  {isSubjectSupportedForAiEvaluation(subjectName) ? (
-                    <div
-                      style={{
-                        padding: '10px 12px',
-                        backgroundColor: '#f0fdf4',
-                        borderRadius: '8px',
-                        border: '1px solid #bbf7d0',
-                        fontSize: '0.82rem',
-                        color: '#166534',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <CheckIcon size={16} color="#16a34a" />
-                      <span>
-                        <strong>Piloto Activo:</strong> "{subjectName}" cuenta con temario oficial calibrado en 3 niveles de dificultad.
-                      </span>
-                    </div>
-                  ) : aiEnabled ? (
-                    <div
-                      style={{
-                        padding: '10px 12px',
-                        backgroundColor: '#eff6ff',
-                        borderRadius: '8px',
-                        border: '1px solid #bfdbfe',
-                        fontSize: '0.82rem',
-                        color: '#1e40af',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                      }}
-                    >
-                      <SparklesIcon size={16} color="#2563eb" />
-                      <span>
-                        <strong>Google Gemini Activo:</strong> Las 10 preguntas para "{subjectName}" serán generadas dinámicamente en tiempo real mediante IA.
-                      </span>
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        padding: '10px 12px',
-                        backgroundColor: '#fffbeb',
-                        borderRadius: '8px',
-                        border: '1px solid #fde68a',
-                        fontSize: '0.82rem',
-                        color: '#92400e',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '8px',
-                      }}
-                    >
-                      <AlertCircleIcon size={16} color="#d97706" style={{ marginTop: '2px', flexShrink: 0 }} />
-                      <div style={{ lineHeight: 1.45 }}>
-                        <strong>Materia en fase de incorporación:</strong> "{subjectName}" no tiene banco curado offline aún. Para evaluarla dinámicamente con IA,{' '}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setApiKeyInput(getGeminiApiKey() || '');
-                            setShowApiKeyModal(true);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#b45309',
-                            fontWeight: 700,
-                            textDecoration: 'underline',
-                            cursor: 'pointer',
-                            padding: 0,
-                          }}
-                        >
-                          conecta tu API Key de Google Gemini
-                        </button>
-                        , o selecciona una materia del piloto como <strong>Programación Web</strong> o <strong>Programación de Algoritmos</strong>.
-                      </div>
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: '#f0fdf4',
+                      borderRadius: '8px',
+                      border: '1px solid #bbf7d0',
+                      fontSize: '0.82rem',
+                      color: '#166534',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <SparklesIcon size={16} color="#059669" />
+                    <span>
+                      <strong>Evaluación Dinámica con IA:</strong> Las 10 preguntas para <strong>"{subjectName}"</strong> se generarán dinámicamente según el temario oficial y tu nivel formativo.
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1404,11 +1617,11 @@ export default function TutorValidationBotModal({
                       width: '36px',
                       height: '36px',
                       borderRadius: '8px',
-                      backgroundColor: aiEnabled ? '#dbeafe' : '#f1f5f9',
+                      backgroundColor: '#ecfdf5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: aiEnabled ? '#2563eb' : '#64748b',
+                      color: '#059669',
                       flexShrink: 0,
                     }}
                   >
@@ -1416,32 +1629,32 @@ export default function TutorValidationBotModal({
                   </div>
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
-                      {aiEnabled ? 'Motor IA Activo: Google Gemini 2.5 Flash' : 'Motor Activo: Banco Curado InterAula (Offline)'}
+                      Motor de Evaluación con Inteligencia Artificial
                     </div>
                     <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                      {aiEnabled
-                        ? 'Generación dinámica de retos inéditos y corrección semántica inteligente.'
-                        : 'Preguntas calibradas por docentes. Conecta tu API Key gratuita de Gemini para retos dinámicos.'}
+                      Generación de retos en tiempo real para cualquier materia y evaluación semántica inteligente de respuestas.
                     </div>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setApiKeyInput(getGeminiApiKey() || '');
-                    setShowApiKeyModal(true);
-                  }}
-                  className="ia-btn-secondary"
+                <span
                   style={{
-                    padding: '6px 12px',
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#dcfce7',
+                    color: '#166534',
+                    border: '1px solid #86efac',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
                     flexShrink: 0,
                   }}
                 >
-                  {aiEnabled ? 'Ajustar API' : 'Conectar API'}
-                </button>
+                  <CheckIcon size={12} color="#16a34a" />
+                  Activo
+                </span>
               </div>
 
               {/* Mensaje de error si la materia no tiene preguntas */}
@@ -1475,27 +1688,20 @@ export default function TutorValidationBotModal({
                 <button
                   type="button"
                   onClick={handleStartChallenge}
-                  disabled={isGenerating || (!isSubjectSupportedForAiEvaluation(subjectName) && !aiEnabled)}
+                  disabled={isGenerating}
                   className="ia-btn-primary"
                   style={{
                     padding: '12px 30px',
                     fontSize: '0.98rem',
                     fontWeight: 800,
-                    background:
-                      !isSubjectSupportedForAiEvaluation(subjectName) && !aiEnabled
-                        ? '#94a3b8'
-                        : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    borderColor:
-                      !isSubjectSupportedForAiEvaluation(subjectName) && !aiEnabled ? '#94a3b8' : '#047857',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    borderColor: '#047857',
                     boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.3)',
-                    cursor:
-                      !isSubjectSupportedForAiEvaluation(subjectName) && !aiEnabled
-                        ? 'not-allowed'
-                        : 'pointer',
+                    cursor: isGenerating ? 'wait' : 'pointer',
                   }}
                 >
                   {isGenerating
-                    ? 'Preparando Evaluación con IA...'
+                    ? 'Generando preguntas con IA...'
                     : `Iniciar Evaluación [Nivel ${
                         selectedLevel === 'basic'
                           ? 'Básico'
