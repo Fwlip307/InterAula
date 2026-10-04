@@ -16,6 +16,10 @@ import {
   AlertCircleIcon,
   ExternalLinkIcon,
   UsersIcon,
+  AwardIcon,
+  SparklesIcon,
+  HelpCircleIcon,
+  XIcon,
 } from '../../components/common/Icons';
 import ReviewModal from './components/ReviewModal';
 
@@ -24,6 +28,116 @@ declare global {
     JitsiMeetExternalAPI: any;
   }
 }
+
+// Banco Pedagógico de Desafíos y Quizzes en Vivo (Materias Críticas de Informática)
+interface QuizChallenge {
+  id: string;
+  subjectCategory: string;
+  difficulty: 'Básico' | 'Intermedio' | 'Avanzado';
+  question: string;
+  codeSnippet?: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+const INFORMATICS_QUIZ_BANK: QuizChallenge[] = [
+  {
+    id: 'algo-1',
+    subjectCategory: 'Programación de Algoritmos',
+    difficulty: 'Básico',
+    question: '¿Qué valor imprimirá en consola este bloque de código?',
+    codeSnippet: `total = 0\nfor i in range(1, 4):\n    total += i\nprint(total)`,
+    options: ['3', '6', '10', '4'],
+    correctIndex: 1,
+    explanation: 'El bucle for en range(1, 4) recorre 1, 2 y 3 (excluye el 4). La suma es 1 + 2 + 3 = 6.',
+  },
+  {
+    id: 'algo-2',
+    subjectCategory: 'Programación de Algoritmos',
+    difficulty: 'Básico',
+    question: '¿Cuál es la causa principal de que un bucle "while" se vuelva infinito?',
+    options: [
+      'Declarar la variable antes del bucle',
+      'Olvidar actualizar la variable de control que hace falsa la condición',
+      'Utilizar una variable de tipo entero',
+      'Imprimir mensajes dentro del cuerpo del bucle',
+    ],
+    correctIndex: 1,
+    explanation: 'Un bucle while evalúa su condición en cada ciclo; si ninguna instrucción modifica las variables evaluadas hacia un estado falso, nunca termina.',
+  },
+  {
+    id: 'web-1',
+    subjectCategory: 'Programación Web',
+    difficulty: 'Básico',
+    question: '¿Qué método previene la recarga automática de la página al enviar un formulario en JS?',
+    codeSnippet: `const handleSubmit = (event) => {\n  event.????();\n  enviarDatos();\n};`,
+    options: ['event.stopPropagation()', 'event.preventDefault()', 'event.stop()', 'event.cancel()'],
+    correctIndex: 1,
+    explanation: 'event.preventDefault() cancela la acción por defecto del navegador de recargar la página tras el submit.',
+  },
+  {
+    id: 'web-2',
+    subjectCategory: 'Programación Web',
+    difficulty: 'Intermedio',
+    question: 'En JavaScript moderno (ES6+), ¿cuál es la principal diferencia entre "const" y "let"?',
+    options: [
+      'const no permite reasignar el identificador a otro valor en memoria',
+      'const solo se puede usar con números y let con strings',
+      'let tiene alcance global obligatorio y const no',
+      'const se ejecuta de forma asíncrona',
+    ],
+    correctIndex: 0,
+    explanation: 'Las variables declaradas con const crean una referencia inmutable por reasignación (=). let sí permite reasignar.',
+  },
+  {
+    id: 'db-1',
+    subjectCategory: 'Modelamiento y Bases de Datos',
+    difficulty: 'Intermedio',
+    question: '¿Qué cláusula de SQL permite filtrar grupos generados por la cláusula GROUP BY?',
+    codeSnippet: `SELECT carrera_id, COUNT(*)\nFROM estudiantes\nGROUP BY carrera_id\n???? COUNT(*) >= 5;`,
+    options: ['WHERE', 'HAVING', 'FILTER BY', 'ORDER BY'],
+    correctIndex: 1,
+    explanation: 'HAVING actúa sobre las filas agrupadas y funciones de agregación (COUNT, SUM, AVG). WHERE solo filtra filas individuales antes de agrupar.',
+  },
+  {
+    id: 'db-2',
+    subjectCategory: 'Modelamiento y Bases de Datos',
+    difficulty: 'Básico',
+    question: '¿Cuál es la restricción fundamental de una Llave Primaria (PRIMARY KEY) en una tabla relacional?',
+    options: [
+      'Solo permite valores positivos',
+      'Garantiza unicidad en cada registro y prohíbe valores NULL',
+      'Debe ser obligatoriamente de tipo VARCHAR',
+      'Solo se puede consultar mediante INNER JOIN',
+    ],
+    correctIndex: 1,
+    explanation: 'Una clave primaria identifica unívocamente cada fila y por integridad relacional nunca admite valores NULL.',
+  },
+  {
+    id: 'poo-1',
+    subjectCategory: 'Programación Orientada a Objetos',
+    difficulty: 'Intermedio',
+    question: '¿Qué principio de la POO consiste en ocultar el estado interno y obligar a interactuar mediante métodos?',
+    options: ['Polimorfismo', 'Encapsulamiento', 'Herencia múltiple', 'Sobrecarga de operadores'],
+    correctIndex: 1,
+    explanation: 'El encapsulamiento protege los atributos de una clase declarándolos privados y proveyendo métodos públicos para su acceso y modificación.',
+  },
+  {
+    id: 'math-1',
+    subjectCategory: 'Nivelación Matemática',
+    difficulty: 'Básico',
+    question: 'En lógica proposicional y tablas de verdad, ¿cuándo es Verdadera una conjunción (P ∧ Q)?',
+    options: [
+      'Cuando al menos una de las proposiciones es verdadera',
+      'Únicamente cuando tanto P como Q son verdaderas',
+      'Cuando ambas proposiciones son falsas',
+      'Cuando P es verdadera y Q es falsa',
+    ],
+    correctIndex: 1,
+    explanation: 'La conjunción lógica (AND / ∧) requiere que todas sus partes sean verdaderas simultáneamente para dar como resultado verdadero.',
+  },
+];
 
 export default function VirtualClassroom() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -48,12 +162,42 @@ export default function VirtualClassroom() {
   const [attendanceVerified, setAttendanceVerified] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [notesText, setNotesText] = useState('');
-  const [activeSideTab, setActiveSideTab] = useState<'pedagogy' | 'attendance' | 'notes'>('pedagogy');
+  // Estados de Pestañas y Panel
+  const [activeSideTab, setActiveSideTab] = useState<'pedagogy' | 'quiz' | 'attendance' | 'notes'>('pedagogy');
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
+
+  // Estados para Concentración y Ritmo de Estudio Adaptativo
+  const [flexibleCommunication, setFlexibleCommunication] = useState(false);
+  const [sensoryBreakActive, setSensoryBreakActive] = useState(false);
+  const [sensoryBreakSeconds, setSensoryBreakSeconds] = useState(180);
+
+  // Estados para Dinámica Interactiva y Mini-Quiz en Vivo
+  const [quizQuestionIndex, setQuizQuestionIndex] = useState(0);
+  const [quizSelectedOption, setQuizSelectedOption] = useState<number | null>(null);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizCorrectCount, setQuizCorrectCount] = useState(0);
+  const [quizCategoryFilter, setQuizCategoryFilter] = useState<string>('all');
+  const [showTutorSolution, setShowTutorSolution] = useState(false);
 
   // Modal de evaluación final
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Temporizador para pausa sensorial de bajo estímulo (3 min)
+  useEffect(() => {
+    if (!sensoryBreakActive) return;
+    const timer = setInterval(() => {
+      setSensoryBreakSeconds((prev) => {
+        if (prev <= 1) {
+          setSensoryBreakActive(false);
+          return 180;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [sensoryBreakActive]);
 
   // Cargar sesión o taller grupal desde la base de datos
   const loadSession = useCallback(async () => {
@@ -718,56 +862,255 @@ export default function VirtualClassroom() {
                 onClick={() => setActiveSideTab('pedagogy')}
                 style={{
                   flex: 1,
-                  padding: '10px 8px',
-                  fontSize: '0.78rem',
+                  padding: '9px 4px',
+                  fontSize: '0.73rem',
                   fontWeight: 700,
                   border: 'none',
                   cursor: 'pointer',
                   backgroundColor: activeSideTab === 'pedagogy' ? '#1e293b' : 'transparent',
                   color: activeSideTab === 'pedagogy' ? '#38bdf8' : '#94a3b8',
                   borderBottom: activeSideTab === 'pedagogy' ? '2px solid #38bdf8' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
                 }}
               >
-                Pedagogía
+                <BookOpenIcon size={13} />
+                <span>Pauta & Foco</span>
+              </button>
+              <button
+                onClick={() => setActiveSideTab('quiz')}
+                style={{
+                  flex: 1,
+                  padding: '9px 4px',
+                  fontSize: '0.73rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: activeSideTab === 'quiz' ? '#1e293b' : 'transparent',
+                  color: activeSideTab === 'quiz' ? '#f59e0b' : '#94a3b8',
+                  borderBottom: activeSideTab === 'quiz' ? '2px solid #f59e0b' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+              >
+                <SparklesIcon size={13} color={activeSideTab === 'quiz' ? '#f59e0b' : '#94a3b8'} />
+                <span>Quiz / Retos</span>
               </button>
               <button
                 onClick={() => setActiveSideTab('attendance')}
                 style={{
                   flex: 1,
-                  padding: '10px 8px',
-                  fontSize: '0.78rem',
+                  padding: '9px 4px',
+                  fontSize: '0.73rem',
                   fontWeight: 700,
                   border: 'none',
                   cursor: 'pointer',
                   backgroundColor: activeSideTab === 'attendance' ? '#1e293b' : 'transparent',
-                  color: activeSideTab === 'attendance' ? '#38bdf8' : '#94a3b8',
-                  borderBottom: activeSideTab === 'attendance' ? '2px solid #38bdf8' : 'none',
+                  color: activeSideTab === 'attendance' ? '#4ade80' : '#94a3b8',
+                  borderBottom: activeSideTab === 'attendance' ? '2px solid #4ade80' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
                 }}
               >
-                Asistencia
+                <ShieldCheckIcon size={13} color={activeSideTab === 'attendance' ? '#4ade80' : '#94a3b8'} />
+                <span>Asistencia</span>
               </button>
               <button
                 onClick={() => setActiveSideTab('notes')}
                 style={{
                   flex: 1,
-                  padding: '10px 8px',
-                  fontSize: '0.78rem',
+                  padding: '9px 4px',
+                  fontSize: '0.73rem',
                   fontWeight: 700,
                   border: 'none',
                   cursor: 'pointer',
                   backgroundColor: activeSideTab === 'notes' ? '#1e293b' : 'transparent',
-                  color: activeSideTab === 'notes' ? '#38bdf8' : '#94a3b8',
-                  borderBottom: activeSideTab === 'notes' ? '2px solid #38bdf8' : 'none',
+                  color: activeSideTab === 'notes' ? '#a78bfa' : '#94a3b8',
+                  borderBottom: activeSideTab === 'notes' ? '2px solid #a78bfa' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
                 }}
               >
-                Apuntes
+                <MessageSquareIcon size={13} color={activeSideTab === 'notes' ? '#a78bfa' : '#94a3b8'} />
+                <span>Apuntes</span>
               </button>
             </div>
 
             {/* Contenido de la pestaña activa */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
               {activeSideTab === 'pedagogy' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* ALERTA DE PAUSA DE ASIMILACIÓN Y FOCO */}
+                  {sensoryBreakActive && (
+                    <div
+                      style={{
+                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                        border: '1px solid rgba(99, 102, 241, 0.4)',
+                        borderRadius: '10px',
+                        padding: '14px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#a5b4fc', fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>
+                        <SparklesIcon size={16} /> Pausa de Asimilación en Curso
+                      </div>
+                      <p style={{ margin: '0 0 10px', color: '#cbd5e1', fontSize: '0.76rem', lineHeight: 1.4 }}>
+                        Breve pausa para asimilar conceptos, descansar la vista y retomar la atención. La sesión se mantiene activa.
+                      </p>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace', marginBottom: '10px' }}>
+                        {Math.floor(sensoryBreakSeconds / 60).toString().padStart(2, '0')}:{(sensoryBreakSeconds % 60).toString().padStart(2, '0')}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSensoryBreakActive(false);
+                          setSensoryBreakSeconds(180);
+                        }}
+                        className="ia-btn ia-btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '4px 12px' }}
+                      >
+                        Reanudar Clase Ahora
+                      </button>
+                    </div>
+                  )}
+
+                  {/* HERRAMIENTAS DE CONCENTRACIÓN Y RITMO GUIADO */}
+                  <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <SparklesIcon size={14} /> Modo Concentración y Calma
+                      </span>
+                      {!sensoryBreakActive && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSensoryBreakSeconds(180);
+                            setSensoryBreakActive(true);
+                          }}
+                          style={{
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            color: '#a5b4fc',
+                            border: '1px solid rgba(99, 102, 241, 0.4)',
+                            borderRadius: '6px',
+                            padding: '3px 8px',
+                            fontSize: '0.72rem',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                          }}
+                          title="Iniciar pausa de asimilación de 3 minutos para afianzar el aprendizaje"
+                        >
+                          Pausa 3 min
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Toggle Comunicación Flexible */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.76rem', color: '#cbd5e1' }}>
+                      <input
+                        type="checkbox"
+                        checked={flexibleCommunication}
+                        onChange={(e) => setFlexibleCommunication(e.target.checked)}
+                        style={{ marginTop: '2px' }}
+                      />
+                      <span>
+                        <strong>Modo Concentración:</strong> Participación preferente por chat (cámara y micrófono opcionales para mayor comodidad).
+                      </span>
+                    </label>
+
+                    {flexibleCommunication && (
+                      <div style={{ marginTop: '8px', padding: '6px 8px', borderRadius: '6px', backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', fontSize: '0.72rem', color: '#4ade80' }}>
+                        Activo: Se solicita al tutor priorizar explicaciones secuenciales y dar tiempo para responder por chat o en el quiz.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AGENDA PREDECIBLE DE LA CLASE */}
+                  <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#f8fafc', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ClockIcon size={14} color="#38bdf8" /> Agenda Guiada por Fases (60 min)
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
+                      {/* Fase 1 */}
+                      <div
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: elapsedSeconds < 900 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.5)',
+                          borderLeft: `3px solid ${elapsedSeconds < 900 ? '#38bdf8' : '#22c55e'}`,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span style={{ color: '#e2e8f0' }}>1. Detección de Dudas y Diagnóstico (0-15m)</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: elapsedSeconds < 900 ? '#38bdf8' : '#22c55e' }}>
+                          {elapsedSeconds < 900 ? 'En curso' : 'Listo'}
+                        </span>
+                      </div>
+
+                      {/* Fase 2 */}
+                      <div
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: elapsedSeconds >= 900 && elapsedSeconds < 2100 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.5)',
+                          borderLeft: `3px solid ${elapsedSeconds >= 900 && elapsedSeconds < 2100 ? '#38bdf8' : elapsedSeconds >= 2100 ? '#22c55e' : '#64748b'}`,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span style={{ color: '#e2e8f0' }}>2. Ejercicio Práctico en Código (15-35m)</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: elapsedSeconds >= 900 && elapsedSeconds < 2100 ? '#38bdf8' : elapsedSeconds >= 2100 ? '#22c55e' : '#64748b' }}>
+                          {elapsedSeconds >= 900 && elapsedSeconds < 2100 ? 'En curso' : elapsedSeconds >= 2100 ? 'Listo' : 'Pendiente'}
+                        </span>
+                      </div>
+
+                      {/* Fase 3 */}
+                      <div
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: elapsedSeconds >= 2100 && elapsedSeconds < 3000 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.5)',
+                          borderLeft: `3px solid ${elapsedSeconds >= 2100 && elapsedSeconds < 3000 ? '#f59e0b' : elapsedSeconds >= 3000 ? '#22c55e' : '#64748b'}`,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span style={{ color: '#e2e8f0' }}>3. Dinámica Interactiva y Quiz (35-50m)</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: elapsedSeconds >= 2100 && elapsedSeconds < 3000 ? '#f59e0b' : elapsedSeconds >= 3000 ? '#22c55e' : '#64748b' }}>
+                          {elapsedSeconds >= 2100 && elapsedSeconds < 3000 ? 'En curso' : elapsedSeconds >= 3000 ? 'Listo' : 'Pendiente'}
+                        </span>
+                      </div>
+
+                      {/* Fase 4 */}
+                      <div
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: elapsedSeconds >= 3000 ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.5)',
+                          borderLeft: `3px solid ${elapsedSeconds >= 3000 ? '#38bdf8' : '#64748b'}`,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span style={{ color: '#e2e8f0' }}>4. Síntesis y Plan de Refuerzo (50-60m)</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: elapsedSeconds >= 3000 ? '#38bdf8' : '#64748b' }}>
+                          {elapsedSeconds >= 3000 ? 'En curso' : 'Pendiente'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {isWorkshop ? (
                     <>
                       {/* Guía para el Expositor/Moderador de la sala */}
@@ -859,6 +1202,248 @@ export default function VirtualClassroom() {
                   )}
                 </div>
               )}
+
+              {/* PESTAÑA: QUIZ & RETOS EN VIVO (DINÁMICA INTERACTIVA DE COMPRENSIÓN) */}
+              {activeSideTab === 'quiz' && (() => {
+                const filteredQuestions = quizCategoryFilter === 'all'
+                  ? INFORMATICS_QUIZ_BANK
+                  : INFORMATICS_QUIZ_BANK.filter((q) => q.subjectCategory.toLowerCase().includes(quizCategoryFilter.toLowerCase()));
+                
+                const currentQuestion = filteredQuestions[quizQuestionIndex % (filteredQuestions.length || 1)] || INFORMATICS_QUIZ_BANK[0];
+                const isCorrect = quizSelectedOption === currentQuestion.correctIndex;
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {/* Barra de Gamificación / Puntos */}
+                    <div
+                      style={{
+                        backgroundColor: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f59e0b', fontWeight: 700, fontSize: '0.82rem' }}>
+                        <AwardIcon size={16} />
+                        <span>{quizScore} pts acumulados</span>
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                        {quizCorrectCount} de {filteredQuestions.length} resueltas
+                      </span>
+                    </div>
+
+                    {/* Filtro por Materia Crítica */}
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px', fontWeight: 600 }}>
+                        Filtrar por Materia Troncal:
+                      </label>
+                      <select
+                        value={quizCategoryFilter}
+                        onChange={(e) => {
+                          setQuizCategoryFilter(e.target.value);
+                          setQuizQuestionIndex(0);
+                          setQuizSelectedOption(null);
+                          setQuizSubmitted(false);
+                          setShowTutorSolution(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#0f172a',
+                          border: '1px solid #334155',
+                          borderRadius: '6px',
+                          color: '#f8fafc',
+                          padding: '6px 8px',
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        <option value="all">Todas las materias críticas</option>
+                        <option value="Algoritmos">Programación de Algoritmos</option>
+                        <option value="Web">Programación Web</option>
+                        <option value="Bases de Datos">Modelamiento y Bases de Datos</option>
+                        <option value="Objetos">Programación Orientada a Objetos</option>
+                        <option value="Matemática">Nivelación Matemática</option>
+                      </select>
+                    </div>
+
+                    {/* Tarjeta del Desafío Actual */}
+                    <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
+                          {currentQuestion.subjectCategory}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: currentQuestion.difficulty === 'Básico' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                            color: currentQuestion.difficulty === 'Básico' ? '#4ade80' : '#fbbf24',
+                          }}
+                        >
+                          {currentQuestion.difficulty}
+                        </span>
+                      </div>
+
+                      <h4 style={{ margin: '0 0 10px', fontSize: '0.85rem', color: '#f8fafc', fontWeight: 700, lineHeight: 1.4 }}>
+                        {currentQuestion.question}
+                      </h4>
+
+                      {/* Bloque de código si aplica */}
+                      {currentQuestion.codeSnippet && (
+                        <pre
+                          style={{
+                            backgroundColor: '#020617',
+                            border: '1px solid #1e293b',
+                            borderRadius: '6px',
+                            padding: '8px 10px',
+                            fontSize: '0.75rem',
+                            color: '#38bdf8',
+                            fontFamily: 'monospace',
+                            overflowX: 'auto',
+                            marginBottom: '12px',
+                          }}
+                        >
+                          <code>{currentQuestion.codeSnippet}</code>
+                        </pre>
+                      )}
+
+                      {/* Opciones Interactivas */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {currentQuestion.options.map((opt, idx) => {
+                          const isSelected = quizSelectedOption === idx;
+                          const isThisCorrect = idx === currentQuestion.correctIndex;
+                          let btnBg = '#1e293b';
+                          let btnBorder = '#334155';
+                          let btnColor = '#cbd5e1';
+
+                          if (quizSubmitted) {
+                            if (isThisCorrect) {
+                              btnBg = 'rgba(34, 197, 94, 0.2)';
+                              btnBorder = '#22c55e';
+                              btnColor = '#4ade80';
+                            } else if (isSelected && !isThisCorrect) {
+                              btnBg = 'rgba(239, 68, 68, 0.2)';
+                              btnBorder = '#ef4444';
+                              btnColor = '#f87171';
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              disabled={quizSubmitted}
+                              onClick={() => {
+                                setQuizSelectedOption(idx);
+                                setQuizSubmitted(true);
+                                if (idx === currentQuestion.correctIndex) {
+                                  setQuizScore((prev) => prev + 100);
+                                  setQuizCorrectCount((prev) => prev + 1);
+                                }
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 10px',
+                                borderRadius: '6px',
+                                backgroundColor: btnBg,
+                                border: `1px solid ${btnBorder}`,
+                                color: btnColor,
+                                cursor: quizSubmitted ? 'default' : 'pointer',
+                                textAlign: 'left',
+                                fontSize: '0.78rem',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#0f172a',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  color: '#94a3b8',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {String.fromCharCode(65 + idx)}
+                              </span>
+                              <span style={{ flex: 1 }}>{opt}</span>
+                              {quizSubmitted && isThisCorrect && <CheckIcon size={14} color="#4ade80" />}
+                              {quizSubmitted && isSelected && !isThisCorrect && <XIcon size={14} color="#f87171" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Explicación Pedagógica Inmediata */}
+                      {(quizSubmitted || showTutorSolution) && (
+                        <div
+                          style={{
+                            marginTop: '12px',
+                            padding: '10px',
+                            borderRadius: '6px',
+                            backgroundColor: isCorrect ? 'rgba(34, 197, 94, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                            border: `1px solid ${isCorrect ? 'rgba(34, 197, 94, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                            fontSize: '0.76rem',
+                          }}
+                        >
+                          <div style={{ fontWeight: 700, color: isCorrect ? '#4ade80' : '#fbbf24', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <HelpCircleIcon size={14} />
+                            <span>{isCorrect ? '¡Excelente razonamiento! (+100 pts)' : 'Pauta Pedagógica:'}</span>
+                          </div>
+                          <p style={{ margin: 0, color: '#e2e8f0', lineHeight: 1.4 }}>
+                            {currentQuestion.explanation}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Controles de Navegación de Pregunta */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #1e293b' }}>
+                        {isTutor && (
+                          <button
+                            type="button"
+                            onClick={() => setShowTutorSolution(!showTutorSolution)}
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              color: '#94a3b8',
+                              fontSize: '0.72rem',
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            {showTutorSolution ? 'Ocultar Pauta' : 'Ver Pauta Docente'}
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuizQuestionIndex((prev) => prev + 1);
+                            setQuizSelectedOption(null);
+                            setQuizSubmitted(false);
+                            setShowTutorSolution(false);
+                          }}
+                          className="ia-btn ia-btn-primary"
+                          style={{ fontSize: '0.75rem', padding: '5px 12px', marginLeft: 'auto' }}
+                        >
+                          Siguiente Desafío
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {activeSideTab === 'attendance' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

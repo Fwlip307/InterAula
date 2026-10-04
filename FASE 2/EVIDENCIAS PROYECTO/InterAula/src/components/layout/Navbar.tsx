@@ -100,12 +100,6 @@ export default function Navbar() {
             Mis Tutorías
           </NavLink>
           <NavLink
-            to="/projects"
-            className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
-          >
-            Hub de Proyectos
-          </NavLink>
-          <NavLink
             to="/resources"
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
           >
@@ -207,13 +201,6 @@ export default function Navbar() {
             onClick={closeMenus}
           >
             Mis Tutorías
-          </NavLink>
-          <NavLink
-            to="/projects"
-            className={({ isActive }) => `ia-mobile-nav-item ${isActive ? 'active' : ''}`}
-            onClick={closeMenus}
-          >
-            Hub de Proyectos
           </NavLink>
           <NavLink
             to="/resources"

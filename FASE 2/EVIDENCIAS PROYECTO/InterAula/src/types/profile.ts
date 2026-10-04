@@ -10,7 +10,10 @@ export type LearningPreference =
   | 'conceptual_diagrams'
   | 'visual_support'
   | 'structured_sessions'
-  | 'paced_rhythm';
+  | 'paced_rhythm'
+  | 'low_stimulus'
+  | 'active_challenges'
+  | 'written_support';
 
 export interface LearningPreferenceOption {
   id: LearningPreference;
@@ -28,6 +31,21 @@ export const LEARNING_PREFERENCES: readonly LearningPreferenceOption[] = [
     id: 'practical_examples',
     label: 'Ejemplos prácticos',
     description: 'Casos aplicados a situaciones reales o ejercicios guiados.',
+  },
+  {
+    id: 'low_stimulus',
+    label: 'Modo Concentración y Calma',
+    description: 'Ambiente despejado, sin sobrecarga de estímulos y con pausas de asimilación periódicas.',
+  },
+  {
+    id: 'active_challenges',
+    label: 'Retos interactivos y Quizzes',
+    description: 'Validación dinámica mediante micro-desafíos prácticos de código y mini-juegos.',
+  },
+  {
+    id: 'written_support',
+    label: 'Apoyo escrito y pauta visual',
+    description: 'Aclaraciones secuenciales en chat o pizarra junto a la explicación oral.',
   },
   {
     id: 'summarized_material',
@@ -69,8 +87,8 @@ export interface Profile {
   location: string | null;
   profile_completed: boolean;
   available_for_tutoring: boolean;
-  available_for_projects: boolean;
-  project_bio: string | null;
+  available_for_projects?: boolean;
+  project_bio?: string | null;
   portfolio_url: string | null;
   github_url: string | null;
   linkedin_url: string | null;

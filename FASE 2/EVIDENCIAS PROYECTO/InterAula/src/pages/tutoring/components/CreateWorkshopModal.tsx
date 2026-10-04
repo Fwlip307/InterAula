@@ -5,6 +5,8 @@ import {
   XIcon,
   VideoIcon,
   AlertCircleIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
 } from '../../../components/common/Icons';
 
 interface CreateWorkshopModalProps {
@@ -190,7 +192,7 @@ export default function CreateWorkshopModal({
               required
               style={{ width: '100%' }}
             >
-              <optgroup label="🔥 Ramos Clave de Informática">
+              <optgroup label="Ramos Troncales de Informatica">
                 {availableSubjects
                   .filter((s) => s.is_pilot || [
                     'Programación de Algoritmos',
@@ -202,25 +204,8 @@ export default function CreateWorkshopModal({
                     'Matemática Aplicada',
                     'Programación de Base de Datos',
                     'Arquitectura',
-                  ].includes(s.name))
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-              </optgroup>
-              <optgroup label="📚 Otras Materias">
-                {availableSubjects
-                  .filter((s) => !s.is_pilot && ![
-                    'Programación de Algoritmos',
-                    'Nivelación Matemática',
-                    'Modelamiento de Base de Datos',
-                    'Consultas de Bases de Datos',
-                    'Programación Web',
-                    'Desarrollo de Software de Escritorio',
-                    'Matemática Aplicada',
-                    'Programación de Base de Datos',
-                    'Arquitectura',
+                    'Programación de Aplicaciones Móviles',
+                    'Ingeniería de Software',
                   ].includes(s.name))
                   .map((s) => (
                     <option key={s.id} value={s.id}>
@@ -229,6 +214,27 @@ export default function CreateWorkshopModal({
                   ))}
               </optgroup>
             </select>
+
+            {/* Garantía de Calidad Duoc UC */}
+            <div
+              style={{
+                marginTop: '8px',
+                padding: '8px 12px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.76rem',
+                color: '#475569',
+              }}
+            >
+              <ShieldCheckIcon size={16} color="#2563eb" style={{ flexShrink: 0 }} />
+              <span>
+                <strong>Sello de Calidad Duoc UC:</strong> Si validaste tu concentracion de notas en tu perfil, el taller se publicara con distintivo de calidad certificada y reporte academico.
+              </span>
+            </div>
           </div>
 
           {/* Fecha y Hora */}
@@ -316,24 +322,27 @@ export default function CreateWorkshopModal({
             />
           </div>
 
-          {/* Aviso del Aula Virtual */}
+          {/* Aviso del Aula Virtual y Pauta Guiada */}
           <div
             style={{
-              padding: '10px 14px',
+              padding: '12px 14px',
               backgroundColor: '#eff6ff',
               borderRadius: '8px',
               border: '1px solid #bfdbfe',
               fontSize: '0.78rem',
               color: '#1e40af',
               display: 'flex',
-              alignItems: 'flex-start',
-              gap: '8px',
+              flexDirection: 'column',
+              gap: '6px',
             }}
           >
-            <VideoIcon size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>
-              <strong>Aula Virtual InterAula automática:</strong> Se generará una sala segura con videollamada HD, pizarra colaborativa, chat grupal y control de asistencia para todos los inscritos.
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+              <SparklesIcon size={16} color="#2563eb" />
+              <span>Aula Virtual Interactiva con Banco de Quizzes y Pauta Guiada</span>
+            </div>
+            <div style={{ color: '#2563eb', lineHeight: 1.4 }}>
+              Tu sesion contara con pauta visual estructurada de 4 fases, pausas de asimilación de 3 minutos para afianzar conceptos a un ritmo cómodo, y retos interactivos de código.
+            </div>
           </div>
 
           {/* Acciones */}

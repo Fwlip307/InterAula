@@ -5,14 +5,11 @@ import type {
   Profile,
   OfferedSubject,
   NeededSubject,
-  ProfileSkill,
-  ProfileProjectInterest,
 } from '../../types/profile';
+import { LEARNING_PREFERENCES } from '../../types/profile';
 import {
   BookOpenIcon,
   UsersIcon,
-  BriefcaseIcon,
-  CodeIcon,
   SparklesIcon,
   CheckIcon,
   ExternalLinkIcon,
@@ -37,8 +34,6 @@ export default function PublicProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
-  const [skills, setSkills] = useState<ProfileSkill[]>([]);
-  const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
   const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +48,10 @@ export default function PublicProfile() {
         setLoading(true);
         setNotFound(false);
 
-        const [p, offered, needed, sk, int, stats, uBadges] = await Promise.all([
+        const [p, offered, needed, stats, uBadges] = await Promise.all([
           profileService.getProfileById(id),
           profileService.getOfferedSubjects(id),
           profileService.getNeededSubjects(id),
-          profileService.getProfileSkills(id),
-          profileService.getProfileProjectInterests(id),
           tutoringService.getTutorStats(id),
           tutoringService.getUserBadges(id),
         ]);
@@ -70,8 +63,6 @@ export default function PublicProfile() {
             setProfile(p);
             setOfferedSubjects(offered);
             setNeededSubjects(needed);
-            setSkills(sk);
-            setInterests(int);
             setTutorStats(stats);
             setBadges(uBadges);
           }
@@ -183,11 +174,6 @@ export default function PublicProfile() {
                 <CheckIcon size={12} /> Tutor disponible
               </span>
             )}
-            {profile.available_for_projects && (
-              <span className="ia-badge ia-badge-blue">
-                <CheckIcon size={12} /> Para proyectos
-              </span>
-            )}
           </div>
         </div>
       </section>
@@ -211,6 +197,50 @@ export default function PublicProfile() {
               </p>
             )}
           </div>
+
+          {/* Preferencias de Aprendizaje y Estilo de Estudio si existen */}
+          {profile.learning_preferences && profile.learning_preferences.length > 0 && (
+            <div className="ia-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <SparklesIcon size={18} color="#2563eb" />
+                <h2 className="ia-card-title" style={{ margin: 0 }}>
+                  Preferencia de Aprendizaje y Estilo de Estudio
+                </h2>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0' }}>
+                Métodos pedagógicos solicitados para las sesiones de tutoría en el Aula Virtual:
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {profile.learning_preferences.map((prefId) => {
+                  const match = LEARNING_PREFERENCES.find((p) => p.id === prefId);
+                  const isHighlighted = prefId === 'low_stimulus' || prefId === 'active_challenges' || prefId === 'written_support';
+                  return (
+                    <div
+                      key={prefId}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${isHighlighted ? '#bfdbfe' : '#e2e8f0'}`,
+                        backgroundColor: isHighlighted ? '#eff6ff' : '#f8fafc',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                      }}
+                    >
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isHighlighted ? '#1d4ed8' : '#334155' }}>
+                        {match?.label || prefId}
+                      </span>
+                      {match?.description && (
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          {match.description}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Materias que puede enseñar */}
           <div className="ia-card">
@@ -333,106 +363,51 @@ export default function PublicProfile() {
             )}
           </div>
 
-          {/* Proyectos y Habilidades */}
+          {/* Enlaces y Portafolio */}
           <div className="ia-card">
             <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
-              <BriefcaseIcon size={20} color="#2563eb" /> Proyectos y Habilidades
+              <ExternalLinkIcon size={18} color="#2563eb" /> Enlaces y Portafolio
             </h2>
 
-            {profile.project_bio && (
-              <div style={{ marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
-                  Enfoque en Proyectos
-                </span>
-                <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
-                  {profile.project_bio}
-                </p>
-              </div>
-            )}
-
-            <div style={{ marginBottom: '16px' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-                <CodeIcon size={14} color="#d97706" /> Habilidades técnicas
-              </span>
-              {skills.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {skills.map((sk) => (
-                    <span key={sk.skill_id} className="ia-badge ia-badge-amber">
-                      {sk.skill?.name} · {formatAcademicLevel(sk.level)}
-                    </span>
-                  ))}
-                </div>
-              ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {profile.portfolio_url && (
+                <a
+                  href={profile.portfolio_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ia-card-action"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ExternalLinkIcon size={14} /> Sitio web / Portafolio
+                </a>
+              )}
+              {profile.github_url && (
+                <a
+                  href={profile.github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ia-card-action"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ExternalLinkIcon size={14} /> GitHub
+                </a>
+              )}
+              {profile.linkedin_url && (
+                <a
+                  href={profile.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ia-card-action"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <ExternalLinkIcon size={14} /> LinkedIn
+                </a>
+              )}
+              {!profile.portfolio_url && !profile.github_url && !profile.linkedin_url && (
                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  Sin habilidades registradas.
+                  Sin enlaces externos registrados.
                 </p>
               )}
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-                <SparklesIcon size={14} color="#9333ea" /> Áreas de interés
-              </span>
-              {interests.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {interests.map((int) => (
-                    <span key={int.interest_id} className="ia-badge ia-badge-purple">
-                      {int.interest?.name}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  Sin intereses especificados.
-                </p>
-              )}
-            </div>
-
-            {/* Enlaces externos */}
-            <div>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-                Portafolio y Redes
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {profile.portfolio_url && (
-                  <a
-                    href={profile.portfolio_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ia-card-action"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <ExternalLinkIcon size={14} /> Sitio web / Portafolio
-                  </a>
-                )}
-                {profile.github_url && (
-                  <a
-                    href={profile.github_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ia-card-action"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <ExternalLinkIcon size={14} /> GitHub
-                  </a>
-                )}
-                {profile.linkedin_url && (
-                  <a
-                    href={profile.linkedin_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ia-card-action"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <ExternalLinkIcon size={14} /> LinkedIn
-                  </a>
-                )}
-                {!profile.portfolio_url && !profile.github_url && !profile.linkedin_url && (
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                    Sin enlaces externos registrados.
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         </div>

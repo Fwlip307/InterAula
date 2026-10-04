@@ -14,7 +14,6 @@ import Dashboard from '../pages/Dashboard';
 import ProfileView from '../pages/profile/ProfileView';
 import ProfileEdit from '../pages/profile/ProfileEdit';
 import PublicProfile from '../pages/profile/PublicProfile';
-import ProjectsHub from '../pages/projects/ProjectsHub';
 import TutoringExplore from '../pages/tutoring/TutoringExplore';
 import MyTutoring from '../pages/tutoring/MyTutoring';
 import VirtualClassroom from '../pages/tutoring/VirtualClassroom';
@@ -71,7 +70,7 @@ export default function AppRouter() {
         <Route path="/profile/edit" element={<ProfileEdit />} />
         <Route path="/profile/:id" element={<PublicProfile />} />
         <Route path="/users/:id" element={<PublicProfile />} />
-        <Route path="/projects" element={<ProjectsHub />} />
+        <Route path="/projects" element={<Navigate to="/tutoring" replace />} />
         <Route path="/tutoring" element={<TutoringExplore />} />
         <Route path="/my-tutoring" element={<MyTutoring />} />
         <Route path="/resources" element={<Resources />} />

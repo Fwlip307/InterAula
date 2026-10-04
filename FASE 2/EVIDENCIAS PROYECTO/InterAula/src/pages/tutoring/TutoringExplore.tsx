@@ -19,11 +19,22 @@ import {
   AlertCircleIcon,
   CheckIcon,
   VideoIcon,
+  ShieldCheckIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
 import CreateWorkshopModal from './components/CreateWorkshopModal';
 import WorkshopCard from './components/WorkshopCard';
+
+// 6 Materias Críticas de Inicio en Informática (Foco Vertical Duoc UC)
+const CRITICAL_INFORMATICS_SUBJECTS = [
+  'Programación de Algoritmos',
+  'Programación Web',
+  'Modelamiento de Base de Datos',
+  'Consultas de Bases de Datos',
+  'Nivelación Matemática',
+  'Programación Orientada a Objetos',
+];
 
 export default function TutoringExplore() {
   const { user } = useAuth();
@@ -34,6 +45,7 @@ export default function TutoringExplore() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [onlyCertified, setOnlyCertified] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
@@ -68,6 +80,7 @@ export default function TutoringExplore() {
       const data = await tutoringService.getAvailableTutors({
         subjectId: selectedSubjectId,
         search: searchTerm,
+        onlyVerified: onlyCertified,
       });
       setTutors(data);
     } catch (err: any) {
@@ -76,7 +89,7 @@ export default function TutoringExplore() {
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, searchTerm]);
+  }, [selectedSubjectId, searchTerm, onlyCertified]);
 
   const fetchWorkshops = React.useCallback(async () => {
     setWorkshopsLoading(true);
@@ -188,25 +201,88 @@ export default function TutoringExplore() {
             Encuentra apoyo académico personalizado 1 a 1 o participa en clases grupales con Aula Virtual integrada.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsCreateWorkshopModalOpen(true)}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link
+            to="/profile"
+            className="ia-btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '9px 16px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              backgroundColor: '#ecfdf5',
+              borderColor: '#a7f3d0',
+              color: '#065f46',
+              textDecoration: 'none',
+            }}
+          >
+            <ShieldCheckIcon size={16} color="#059669" />
+            <span>¿Cómo Certificarme como Tutor?</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setIsCreateWorkshopModalOpen(true)}
+            className="ia-btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+              borderColor: '#7c3aed',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              boxShadow: '0 4px 6px -1px rgba(124, 58, 237, 0.25)',
+            }}
+          >
+            <VideoIcon size={16} color="#ffffff" />
+            <span>+ Programar Taller en Vivo</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Banner de Invitación a la Certificación Docente */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%)',
+          border: '1px solid #bbf7d0',
+          borderRadius: '12px',
+          padding: '12px 18px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <ShieldCheckIcon size={24} color="#059669" style={{ flexShrink: 0 }} />
+          <div>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#064e3b', display: 'block' }}>
+              Modelo de Calidad Duoc UC: Tutores Validados
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#475569' }}>
+              Demuestra tu conocimiento en ramos troncales de Informática mediante la Mini-Evaluación con Bot o tu Concentración de Notas oficial.
+            </span>
+          </div>
+        </div>
+        <Link
+          to="/profile"
           className="ia-btn-primary"
           style={{
-            background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-            borderColor: '#7c3aed',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '9px 18px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            boxShadow: '0 4px 6px -1px rgba(124, 58, 237, 0.25)',
+            padding: '6px 14px',
+            fontSize: '0.8rem',
+            background: '#059669',
+            borderColor: '#047857',
+            textDecoration: 'none',
           }}
         >
-          <VideoIcon size={16} color="#ffffff" />
-          <span>+ Programar Taller en Vivo</span>
-        </button>
+          Iniciar Certificación en mi Perfil
+        </Link>
       </div>
 
       {/* Alerta de éxito si se agendó una tutoría */}
@@ -338,7 +414,7 @@ export default function TutoringExplore() {
               style={{ width: '100%' }}
             >
               <option value="all">Todas las materias ({subjects.length})</option>
-              <optgroup label="🔥 Ramos Clave de Inicio (Informática)">
+              <optgroup label="Ramos Criticos de Informatica (Prioritarios)">
                 {subjects
                   .filter((s) => s.is_pilot || [
                     'Programación de Algoritmos',
@@ -357,25 +433,6 @@ export default function TutoringExplore() {
                     </option>
                   ))}
               </optgroup>
-              <optgroup label="📚 Otras Asignaturas">
-                {subjects
-                  .filter((s) => !s.is_pilot && ![
-                    'Programación de Algoritmos',
-                    'Nivelación Matemática',
-                    'Modelamiento de Base de Datos',
-                    'Consultas de Bases de Datos',
-                    'Programación Web',
-                    'Desarrollo de Software de Escritorio',
-                    'Matemática Aplicada',
-                    'Programación de Base de Datos',
-                    'Arquitectura',
-                  ].includes(s.name))
-                  .map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}{sub.category ? ` (${sub.category})` : ''}
-                    </option>
-                  ))}
-              </optgroup>
             </select>
           </div>
 
@@ -384,6 +441,76 @@ export default function TutoringExplore() {
             <SearchIcon size={16} /> Buscar
           </button>
         </form>
+
+        {/* Filtro de Calidad Académica y Asignaturas Críticas de Informática */}
+        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setOnlyCertified(!onlyCertified)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                border: `1px solid ${onlyCertified ? '#2563eb' : '#cbd5e1'}`,
+                backgroundColor: onlyCertified ? '#eff6ff' : '#ffffff',
+                color: onlyCertified ? '#1d4ed8' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <ShieldCheckIcon size={16} color={onlyCertified ? '#2563eb' : '#94a3b8'} />
+              <span>Solo Tutores Certificados</span>
+              {onlyCertified && <CheckIcon size={14} color="#2563eb" />}
+            </button>
+
+            <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+              Foco Piloto: Asignaturas Filtro de Informática
+            </span>
+          </div>
+
+          {/* Pastillas de Selección Rápida */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Ramos Troncales:</span>
+            {CRITICAL_INFORMATICS_SUBJECTS.map((subName) => {
+              const matchedSub = subjects.find((s) => s.name.toLowerCase().includes(subName.toLowerCase()));
+              const isSelected = matchedSub && selectedSubjectId === matchedSub.id;
+
+              return (
+                <button
+                  key={subName}
+                  type="button"
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedSubjectId('all');
+                    } else if (matchedSub) {
+                      setSelectedSubjectId(matchedSub.id);
+                    } else {
+                      setSearchTerm(subName);
+                    }
+                  }}
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: '14px',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: isSelected ? '1px solid #2563eb' : '1px solid #e2e8f0',
+                    backgroundColor: isSelected ? '#2563eb' : '#f8fafc',
+                    color: isSelected ? '#ffffff' : '#334155',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {subName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Contenido Principal: Grilla de Tutores */}
@@ -467,6 +594,7 @@ export default function TutoringExplore() {
               const initial = getUserInitial(name);
               const isCurrentUser = user?.id === p.id;
               const hasReviews = Boolean(tutor.statistics && tutor.statistics.total_reviews_received > 0);
+              const isCertifiedTutor = tutor.offeredSubjects.some((o) => o.is_verified);
 
               return (
                 <div
@@ -478,6 +606,7 @@ export default function TutoringExplore() {
                     justifyContent: 'space-between',
                     padding: '20px',
                     transition: 'box-shadow 0.15s ease',
+                    border: isCertifiedTutor ? '1.5px solid #bfdbfe' : undefined,
                   }}
                 >
                   <div>
@@ -492,7 +621,7 @@ export default function TutoringExplore() {
                             height: '54px',
                             borderRadius: '14px',
                             objectFit: 'cover',
-                            border: '2px solid #e2e8f0',
+                            border: isCertifiedTutor ? '2px solid #3b82f6' : '2px solid #e2e8f0',
                           }}
                         />
                       ) : (
@@ -501,7 +630,9 @@ export default function TutoringExplore() {
                             width: '54px',
                             height: '54px',
                             borderRadius: '14px',
-                            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                            background: isCertifiedTutor
+                              ? 'linear-gradient(135deg, #1d4ed8, #1e40af)'
+                              : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
                             color: '#ffffff',
                             display: 'flex',
                             alignItems: 'center',
@@ -516,7 +647,7 @@ export default function TutoringExplore() {
                       )}
 
                       <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                           <Link
                             to={`/profile/${p.id}`}
                             style={{
@@ -531,6 +662,26 @@ export default function TutoringExplore() {
                           {isCurrentUser && (
                             <span style={{ fontSize: '0.72rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>
                               Tú
+                            </span>
+                          )}
+                          {isCertifiedTutor && (
+                            <span
+                              style={{
+                                fontSize: '0.70rem',
+                                backgroundColor: '#ecfdf5',
+                                color: '#065f46',
+                                border: '1px solid #a7f3d0',
+                                padding: '2px 7px',
+                                borderRadius: '9999px',
+                                fontWeight: 800,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                              }}
+                              title="Tutor con validación docente y concentración de notas aprobada"
+                            >
+                              <ShieldCheckIcon size={12} color="#059669" />
+                              Certificado Duoc UC
                             </span>
                           )}
                         </div>
@@ -588,21 +739,36 @@ export default function TutoringExplore() {
                           <div
                             key={item.subject_id}
                             style={{
-                              background: '#eff6ff',
-                              border: '1px solid #bfdbfe',
+                              background: item.is_verified ? '#f0fdf4' : '#eff6ff',
+                              border: `1px solid ${item.is_verified ? '#bbf7d0' : '#bfdbfe'}`,
                               borderRadius: '6px',
                               padding: '4px 8px',
                               fontSize: '0.78rem',
-                              color: '#1e40af',
+                              color: item.is_verified ? '#166534' : '#1e40af',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '6px',
                             }}
                           >
+                            {item.is_verified && <ShieldCheckIcon size={12} color="#16a34a" />}
                             <strong>{item.subject?.name}</strong>
-                            <span style={{ color: '#3b82f6', fontSize: '0.72rem' }}>
+                            <span style={{ color: item.is_verified ? '#15803d' : '#3b82f6', fontSize: '0.72rem' }}>
                               ({formatAcademicLevel(item.level)})
                             </span>
+                            {item.is_verified && (
+                              <span
+                                style={{
+                                  fontSize: '0.66rem',
+                                  background: '#dcfce7',
+                                  color: '#15803d',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Aprobado
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

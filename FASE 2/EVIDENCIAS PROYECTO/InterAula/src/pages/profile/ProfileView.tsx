@@ -6,15 +6,12 @@ import type {
   Profile,
   OfferedSubject,
   NeededSubject,
-  ProfileSkill,
-  ProfileProjectInterest,
 } from '../../types/profile';
+import { LEARNING_PREFERENCES } from '../../types/profile';
 import {
   EditIcon,
   BookOpenIcon,
   UsersIcon,
-  BriefcaseIcon,
-  CodeIcon,
   SparklesIcon,
   CheckIcon,
   XIcon,
@@ -24,8 +21,8 @@ import {
   ShieldCheckIcon,
   MailIcon,
   PhoneIcon,
-  FileTextIcon,
   UploadCloudIcon,
+  ClockIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import { formatAcademicLevel, getUserDisplayName, getUserInitial } from '../../utils/formatters';
@@ -36,6 +33,7 @@ import type { TutorVerificationRequest } from '../../types/verification';
 import TutorStats from '../../components/common/TutorStats';
 import BadgeList from '../../components/common/BadgeList';
 import CertificateVerificationModal from './components/CertificateVerificationModal';
+import TutorValidationBotModal from './components/TutorValidationBotModal';
 import { formatTutorLevel } from '../../utils/pdfExtractor';
 
 export default function ProfileView() {
@@ -43,14 +41,25 @@ export default function ProfileView() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
-  const [skills, setSkills] = useState<ProfileSkill[]>([]);
-  const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
   const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [verificationRequests, setVerificationRequests] = useState<TutorVerificationRequest[]>([]);
   const [selectedSubjectForVerification, setSelectedSubjectForVerification] = useState<{ id: string; name: string } | null>(null);
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [isBotModalOpen, setIsBotModalOpen] = useState(false);
+  const [selectedSubjectForBot, setSelectedSubjectForBot] = useState<{ id: string; name: string } | null>(null);
+  const [botSuccessToast, setBotSuccessToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleBotSuccess = (subId: string, subName: string) => {
+    setOfferedSubjects((prev) =>
+      prev.map((item) =>
+        item.subject_id === subId ? { ...item, is_verified: true } : item
+      )
+    );
+    setBotSuccessToast(`Acreditación confirmada: ahora eres Tutor Certificado en ${subName}.`);
+    setTimeout(() => setBotSuccessToast(null), 5000);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -59,12 +68,10 @@ export default function ProfileView() {
       if (!user) return;
       try {
         setLoading(true);
-        const [p, offered, needed, sk, int, stats, uBadges, verifReqs] = await Promise.all([
+        const [p, offered, needed, stats, uBadges, verifReqs] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getOfferedSubjects(user.id),
           profileService.getNeededSubjects(user.id),
-          profileService.getProfileSkills(user.id),
-          profileService.getProfileProjectInterests(user.id),
           tutoringService.getTutorStats(user.id),
           tutoringService.getUserBadges(user.id),
           verificationService.getMyVerificationRequests().catch((e) => {
@@ -77,8 +84,6 @@ export default function ProfileView() {
           setProfile(p);
           setOfferedSubjects(offered);
           setNeededSubjects(needed);
-          setSkills(sk);
-          setInterests(int);
           setTutorStats(stats);
           setBadges(uBadges);
           setVerificationRequests(verifReqs);
@@ -113,6 +118,29 @@ export default function ProfileView() {
 
   return (
     <div>
+      {/* Mensaje de éxito de acreditación */}
+      {botSuccessToast && (
+        <div
+          style={{
+            backgroundColor: '#ecfdf5',
+            border: '1.5px solid #a7f3d0',
+            color: '#065f46',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.15)',
+          }}
+        >
+          <ShieldCheckIcon size={20} color="#059669" />
+          <span>{botSuccessToast}</span>
+        </div>
+      )}
+
       {/* Cabecera del Perfil */}
       <section className="ia-profile-header-card">
         <div className="ia-profile-cover" />
@@ -201,6 +229,176 @@ export default function ProfileView() {
             )}
           </div>
 
+          {/* Sección de Preferencias de Aprendizaje y Estilo de Estudio */}
+          <div className="ia-card">
+            <div className="ia-card-header" style={{ marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <SparklesIcon size={18} color="#2563eb" />
+                <h2 className="ia-card-title" style={{ margin: 0 }}>
+                  Preferencia de Aprendizaje y Estilo de Estudio
+                </h2>
+              </div>
+              <Link to="/profile/edit" className="ia-card-action">
+                Modificar
+              </Link>
+            </div>
+
+            {profile?.learning_preferences && profile.learning_preferences.length > 0 ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {profile.learning_preferences.map((prefId) => {
+                  const match = LEARNING_PREFERENCES.find((p) => p.id === prefId);
+                  const isHighlighted = prefId === 'low_stimulus' || prefId === 'active_challenges' || prefId === 'written_support';
+                  return (
+                    <div
+                      key={prefId}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: `1px solid ${isHighlighted ? '#bfdbfe' : '#e2e8f0'}`,
+                        backgroundColor: isHighlighted ? '#eff6ff' : '#f8fafc',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px',
+                      }}
+                    >
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isHighlighted ? '#1d4ed8' : '#334155' }}>
+                        {match?.label || prefId}
+                      </span>
+                      {match?.description && (
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          {match.description}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b', lineHeight: 1.5 }}>
+                Aún no has configurado tus preferencias de aprendizaje. Puedes indicar métodos pedagógicos (modo concentración y calma, explicaciones paso a paso o mini-retos) para que los tutores preparen la sesión a tu medida.
+              </p>
+            )}
+          </div>
+
+          {/* TARJETA 1: HABILITACIÓN DE TUTOR COMUNITARIO (DESAFÍO RELÁMPAGO ANTI-IA) */}
+          <div
+            className="ia-card"
+            style={{
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+              border: '1.5px solid #86efac',
+              borderRadius: '14px',
+              padding: '20px',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.74rem', background: '#059669', color: '#ffffff', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                    Habilitación Rápida Estudiantil
+                  </span>
+                  <span style={{ fontSize: '0.74rem', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                    10 Preguntas · 10s · Muerte Súbita
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#064e3b', margin: '0 0 6px' }}>
+                  Desafío Anti-IA para Tutores Comunitarios
+                </h2>
+                <p style={{ fontSize: '0.84rem', color: '#166534', margin: 0, lineHeight: 1.5, maxWidth: '560px' }}>
+                  Diseñado para estudiantes que quieren enseñar de forma comunitaria. Nuestro Chatbot Evaluador te pondrá a prueba con <strong>10 preguntas técnicas</strong> con un límite estricto de <strong>10 segundos por pregunta</strong> (selección rápida y redacción técnica corta). Si aciertas sigues, pero si fallas o el reloj llega a cero, ¡el reto termina de inmediato!
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubjectForBot(
+                    offeredSubjects[0]
+                      ? { id: offeredSubjects[0].subject_id, name: offeredSubjects[0].subject?.name || 'Materia' }
+                      : null
+                  );
+                  setIsBotModalOpen(true);
+                }}
+                className="ia-btn-primary"
+                style={{
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  borderColor: '#047857',
+                  padding: '10px 16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.25)',
+                }}
+                title="Rendir reto de 10 preguntas en 10s con muerte súbita"
+              >
+                <ClockIcon size={16} color="#ffffff" />
+                <span>Rendir Desafío Anti-IA (10s)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TARJETA 2: ACREDITACIÓN INSTITUCIONAL OFICIAL DUOC UC (NOTAS O DOCENTE) */}
+          <div
+            className="ia-card"
+            style={{
+              background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
+              border: '1.5px solid #93c5fd',
+              borderRadius: '14px',
+              padding: '20px',
+              marginBottom: '20px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.74rem', background: '#1d4ed8', color: '#ffffff', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                    Sello Oficial Duoc UC
+                  </span>
+                  <span style={{ fontSize: '0.74rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                    Máxima Distinción Académica
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e3a8a', margin: '0 0 6px' }}>
+                  Certificación Institucional con Concentración de Notas o Docente
+                </h2>
+                <p style={{ fontSize: '0.84rem', color: '#1e40af', margin: 0, lineHeight: 1.5, maxWidth: '560px' }}>
+                  El reconocimiento de mayor confianza para tutores de excelencia. Se valida formalmente cargando tu <strong>Concentración de Notas oficial de Duoc UC</strong> (nota 5.5 o superior) o mediante la aprobación directa de un profesor titular de tu sede. Otorga la insignia institucional destacada en tu perfil público.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubjectForVerification(
+                    offeredSubjects[0]
+                      ? { id: offeredSubjects[0].subject_id, name: offeredSubjects[0].subject?.name || 'Materia' }
+                      : null
+                  );
+                  setIsCertModalOpen(true);
+                }}
+                className="ia-btn-secondary"
+                style={{
+                  padding: '10px 16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#ffffff',
+                  borderColor: '#93c5fd',
+                  color: '#1e40af',
+                  boxShadow: '0 2px 4px rgba(30, 64, 175, 0.1)',
+                }}
+                title="Cargar Concentración de Notas oficial emitida por Duoc UC (nota >= 5.5)"
+              >
+                <UploadCloudIcon size={16} color="#2563eb" />
+                <span>Certificación Duoc UC (Notas PDF)</span>
+              </button>
+            </div>
+          </div>
+
           {/* Sección Puedo Enseñar */}
           <div className="ia-card">
             <div className="ia-card-header">
@@ -221,6 +419,11 @@ export default function ProfileView() {
                     ? formatTutorLevel(vReq.calculated_level)
                     : formatAcademicLevel(item.level);
 
+                  const isPdfVerified = Boolean(
+                    vReq?.document_filename?.toLowerCase().endsWith('.pdf') ||
+                    vReq?.document_path?.toLowerCase().endsWith('.pdf')
+                  );
+
                   return (
                     <div key={item.subject_id} className="ia-catalog-item">
                       <div className="ia-catalog-item-info">
@@ -238,43 +441,68 @@ export default function ProfileView() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         {item.is_verified ? (
-                          <span className="ia-badge ia-badge-success">
-                            <ShieldCheckIcon size={12} /> Verificado
-                          </span>
-                        ) : vReq?.document_path ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedSubjectForVerification({
-                                id: item.subject_id,
-                                name: item.subject?.name || 'Materia',
-                              });
-                              setIsCertModalOpen(true);
-                            }}
-                            className="ia-badge ia-badge-blue"
-                            style={{ cursor: 'pointer' }}
-                            title="Ver datos del certificado procesado"
-                          >
-                            <FileTextIcon size={12} /> Certificado adjunto
-                          </button>
+                          isPdfVerified ? (
+                            <span className="ia-badge ia-badge-success" title="Certificado formalmente con Concentración de Notas oficial de Duoc UC">
+                              <ShieldCheckIcon size={12} /> Tutor Certificado Duoc UC
+                            </span>
+                          ) : (
+                            <span className="ia-badge ia-badge-blue" title="Habilitado mediante evaluación técnica contrarreloj (Test Anti-IA)">
+                              <SparklesIcon size={12} /> Tutor Comunitario Habilitado
+                            </span>
+                          )
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedSubjectForVerification({
-                                id: item.subject_id,
-                                name: item.subject?.name || 'Materia',
-                              });
-                              setIsCertModalOpen(true);
-                            }}
-                            className="ia-btn-secondary"
-                            style={{ padding: '4px 10px', fontSize: '0.78rem' }}
-                            title="Subir certificado académico para verificar esta materia"
-                          >
-                            <UploadCloudIcon size={12} /> Verificar con PDF
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSubjectForBot({
+                                  id: item.subject_id,
+                                  name: item.subject?.name || 'Materia',
+                                });
+                                setIsBotModalOpen(true);
+                              }}
+                              className="ia-btn-primary"
+                              style={{
+                                padding: '5px 10px',
+                                fontSize: '0.76rem',
+                                background: '#059669',
+                                borderColor: '#047857',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontWeight: 700,
+                              }}
+                              title="Rendir reto de 10 preguntas en 10s con muerte súbita para habilitar como tutor comunitario"
+                            >
+                              <ClockIcon size={12} color="#ffffff" />
+                              Reto Anti-IA (10s)
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSubjectForVerification({
+                                  id: item.subject_id,
+                                  name: item.subject?.name || 'Materia',
+                                });
+                                setIsCertModalOpen(true);
+                              }}
+                              className="ia-btn-secondary"
+                              style={{
+                                padding: '5px 10px',
+                                fontSize: '0.76rem',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                              title="Subir Concentración de Notas oficial emitida por Duoc UC (nota >= 5.5)"
+                            >
+                              <UploadCloudIcon size={12} /> Certificado Duoc UC (PDF)
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -352,100 +580,34 @@ export default function ProfileView() {
           <BadgeList badges={badges} />
 
           {/* Proyectos y Colaboración */}
+          {/* Disponibilidad y Enlaces */}
           <div className="ia-card">
             <div className="ia-card-header" style={{ marginBottom: '14px' }}>
               <h2 className="ia-card-title">
-                <BriefcaseIcon size={20} color="#2563eb" /> Proyectos y Colaboración
+                <ShieldCheckIcon size={20} color="#2563eb" /> Estado de Tutoría y Enlaces
               </h2>
               <Link to="/profile/edit" className="ia-card-action">
                 Editar
               </Link>
             </div>
 
-            {/* Disponibilidad */}
+            {/* Disponibilidad para Tutorías */}
             <div style={{ marginBottom: '18px' }}>
               <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
                 Disponibilidad
               </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.85rem', color: '#334155' }}>Para tutorías:</span>
-                  {profile?.available_for_tutoring ? (
-                    <span className="ia-badge ia-badge-success">
-                      <CheckIcon size={12} /> Disponible
-                    </span>
-                  ) : (
-                    <span className="ia-badge ia-badge-neutral">
-                      <XIcon size={12} /> No disponible
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.85rem', color: '#334155' }}>Para proyectos:</span>
-                  {profile?.available_for_projects ? (
-                    <span className="ia-badge ia-badge-blue">
-                      <CheckIcon size={12} /> Disponible
-                    </span>
-                  ) : (
-                    <span className="ia-badge ia-badge-neutral">
-                      <XIcon size={12} /> No disponible
-                    </span>
-                  )}
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 600 }}>Tutorías Comunitarias:</span>
+                {profile?.available_for_tutoring ? (
+                  <span className="ia-badge ia-badge-success">
+                    <CheckIcon size={12} /> Disponible
+                  </span>
+                ) : (
+                  <span className="ia-badge ia-badge-neutral">
+                    <XIcon size={12} /> No disponible
+                  </span>
+                )}
               </div>
-            </div>
-
-            {/* Bio de Proyectos si existe */}
-            {profile?.project_bio && (
-              <div style={{ marginBottom: '18px' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-                  Enfoque en Proyectos
-                </span>
-                <p style={{ margin: 0, fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
-                  {profile.project_bio}
-                </p>
-              </div>
-            )}
-
-            {/* Habilidades para proyectos */}
-            <div style={{ marginBottom: '18px' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-                <CodeIcon size={14} color="#d97706" /> Habilidades que puedo aportar
-              </span>
-              {skills.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {skills.map((sk) => (
-                    <span key={sk.skill_id} className="ia-badge ia-badge-amber">
-                      {sk.skill?.name} · {formatAcademicLevel(sk.level)}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  No has especificado habilidades técnicas aún.
-                </p>
-              )}
-            </div>
-
-            {/* Intereses de proyectos */}
-            <div style={{ marginBottom: '18px' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
-                <SparklesIcon size={14} color="#9333ea" /> Me interesan proyectos de
-              </span>
-              {interests.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {interests.map((int) => (
-                    <span key={int.interest_id} className="ia-badge ia-badge-purple">
-                      {int.interest?.name}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                  No has seleccionado áreas de interés para proyectos.
-                </p>
-              )}
             </div>
 
             {/* Enlaces de Portfolio y Redes */}
@@ -566,6 +728,30 @@ export default function ProfileView() {
               return [updated, ...prev];
             });
           }}
+        />
+      )}
+
+      {/* Modal de Mini-Evaluación con Asistente Bot */}
+      {isBotModalOpen && (
+        <TutorValidationBotModal
+          isOpen={isBotModalOpen}
+          onClose={() => {
+            setIsBotModalOpen(false);
+            setSelectedSubjectForBot(null);
+          }}
+          onSuccess={handleBotSuccess}
+          defaultSubjectId={selectedSubjectForBot?.id}
+          availableSubjects={
+            offeredSubjects.length > 0
+              ? offeredSubjects.map((o) => ({ id: o.subject_id, name: o.subject?.name || 'Materia' }))
+              : [
+                  { id: '1', name: 'Programación de Algoritmos' },
+                  { id: '2', name: 'Modelamiento de Base de Datos' },
+                  { id: '3', name: 'Consultas de Bases de Datos' },
+                  { id: '4', name: 'Programación Web' },
+                  { id: '5', name: 'Nivelación Matemática' },
+                ]
+          }
         />
       )}
     </div>

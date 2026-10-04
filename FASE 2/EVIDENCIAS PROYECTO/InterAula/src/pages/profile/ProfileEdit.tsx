@@ -7,36 +7,32 @@ import type {
   Subject,
   OfferedSubject,
   NeededSubject,
-  Skill,
-  ProfileSkill,
-  ProjectInterest,
-  ProfileProjectInterest,
   AcademicLevel,
+  LearningPreference,
 } from '../../types/profile';
+import { LEARNING_PREFERENCES } from '../../types/profile';
 import {
   ArrowLeftIcon,
   CheckIcon,
   AlertCircleIcon,
-  BriefcaseIcon,
   BookOpenIcon,
   UserIcon,
+  SparklesIcon,
 } from '../../components/common/Icons';
 import { isValidUrl } from '../../utils/validators';
 
 // Subcomponentes modulares de catálogos
 import OfferedSubjectsSection from './components/OfferedSubjectsSection';
 import NeededSubjectsSection from './components/NeededSubjectsSection';
-import SkillsSection from './components/SkillsSection';
-import InterestsSection from './components/InterestsSection';
 
 export default function ProfileEdit() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Pestaña activa ('essential' | 'subjects' | 'projects')
-  const [activeTab, setActiveTab] = useState<'essential' | 'subjects' | 'projects'>('essential');
+  // Pestaña activa ('essential' | 'subjects')
+  const [activeTab, setActiveTab] = useState<'essential' | 'subjects'>('essential');
 
-  // Estados del perfil principal (Solo lo esencial)
+  // Estados del perfil principal (Solo lo esencial para tutorías y estudio)
   const [_profile, setProfile] = useState<Profile | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -45,21 +41,17 @@ export default function ProfileEdit() {
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
   const [availableForTutoring, setAvailableForTutoring] = useState(true);
-  const [availableForProjects, setAvailableForProjects] = useState(true);
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [showPhone, setShowPhone] = useState(false);
+  const [learningPreferences, setLearningPreferences] = useState<LearningPreference[]>([]);
 
-  // Catálogos generales de la base de datos
+  // Catálogo de asignaturas críticas de Informática
   const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
-  const [catalogSkills, setCatalogSkills] = useState<Skill[]>([]);
-  const [catalogInterests, setCatalogInterests] = useState<ProjectInterest[]>([]);
 
   // Listas asociadas al perfil del usuario
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
-  const [userSkills, setUserSkills] = useState<ProfileSkill[]>([]);
-  const [userInterests, setUserInterests] = useState<ProfileProjectInterest[]>([]);
 
   // Estados de carga y mensajes
   const [loading, setLoading] = useState(true);
@@ -74,24 +66,11 @@ export default function ProfileEdit() {
       if (!user) return;
       try {
         setLoading(true);
-        const [
-          p,
-          subs,
-          skls,
-          ints,
-          offered,
-          needed,
-          uSkills,
-          uInterests,
-        ] = await Promise.all([
+        const [p, subs, offered, needed] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getSubjects(),
-          profileService.getSkills(),
-          profileService.getProjectInterests(),
           profileService.getOfferedSubjects(user.id),
           profileService.getNeededSubjects(user.id),
-          profileService.getProfileSkills(user.id),
-          profileService.getProfileProjectInterests(user.id),
         ]);
 
         if (isMounted) {
@@ -104,18 +83,14 @@ export default function ProfileEdit() {
             setBio(p.bio || '');
             setPhone(p.phone || '');
             setAvailableForTutoring(p.available_for_tutoring ?? true);
-            setAvailableForProjects(p.available_for_projects ?? true);
             setGithubUrl(p.github_url || '');
             setLinkedinUrl(p.linkedin_url || '');
             setShowPhone(Boolean(p.show_phone));
+            setLearningPreferences(p.learning_preferences || []);
           }
           setCatalogSubjects(subs);
-          setCatalogSkills(skls);
-          setCatalogInterests(ints);
           setOfferedSubjects(offered);
           setNeededSubjects(needed);
-          setUserSkills(uSkills);
-          setUserInterests(uInterests);
         }
       } catch (err) {
         console.error('[ProfileEdit] Error al cargar información:', err);
@@ -135,6 +110,14 @@ export default function ProfileEdit() {
       isMounted = false;
     };
   }, [user]);
+
+  const togglePreference = (prefId: LearningPreference) => {
+    setLearningPreferences((prev) =>
+      prev.includes(prefId)
+        ? prev.filter((id) => id !== prefId)
+        : [...prev, prefId]
+    );
+  };
 
   // Guardar datos esenciales
   const handleSaveGeneral = async (e: React.FormEvent) => {
@@ -169,16 +152,16 @@ export default function ProfileEdit() {
         bio: bio.trim() || null,
         phone: phone.trim() || null,
         available_for_tutoring: availableForTutoring,
-        available_for_projects: availableForProjects,
         github_url: githubUrl.trim() || null,
         linkedin_url: linkedinUrl.trim() || null,
         show_phone: showPhone,
+        learning_preferences: learningPreferences,
         profile_completed: isCompleted,
       });
 
       if (updated) {
         setProfile(updated);
-        setSuccessMessage('¡Datos esenciales guardados correctamente!');
+        setSuccessMessage('Datos guardados correctamente.');
         setTimeout(() => setSuccessMessage(null), 3500);
       }
     } catch (err) {
@@ -190,36 +173,44 @@ export default function ProfileEdit() {
   };
 
   // Agregar materia que puedo enseñar
-  const handleAddOfferedSubject = async (subjectId: string, level: AcademicLevel, description: string) => {
+  const handleAddOfferedSubject = async (
+    subjectId: string,
+    level: AcademicLevel,
+    description?: string
+  ) => {
     try {
       setErrorMessage(null);
       const added = await profileService.addOfferedSubject(subjectId, level, description);
       setOfferedSubjects((prev) => [...prev.filter((i) => i.subject_id !== added.subject_id), added]);
     } catch (err) {
       console.error('[ProfileEdit] Error al agregar materia ofrecida:', err);
-      setErrorMessage('No se pudo agregar la materia ofrecida.');
+      setErrorMessage('No se pudo agregar la materia. Revisa que no esté duplicada.');
       throw err;
     }
   };
 
-  // Eliminar materia que puedo enseñar
+  // Eliminar materia ofrecida
   const handleRemoveOfferedSubject = async (subjectId: string) => {
     try {
       setErrorMessage(null);
       await profileService.removeOfferedSubject(subjectId);
       setOfferedSubjects((prev) => prev.filter((i) => i.subject_id !== subjectId));
     } catch (err) {
-      console.error('[ProfileEdit] Error al eliminar materia:', err);
-      setErrorMessage('No se pudo eliminar la materia.');
+      console.error('[ProfileEdit] Error al eliminar materia ofrecida:', err);
+      setErrorMessage('No se pudo eliminar la materia ofrecida.');
       throw err;
     }
   };
 
-  // Agregar materia que quiero aprender
-  const handleAddNeededSubject = async (subjectId: string, level: AcademicLevel, notes: string) => {
+  // Agregar materia que necesito aprender
+  const handleAddNeededSubject = async (
+    subjectId: string,
+    currentLevel?: AcademicLevel,
+    notes?: string
+  ) => {
     try {
       setErrorMessage(null);
-      const added = await profileService.addNeededSubject(subjectId, level, notes);
+      const added = await profileService.addNeededSubject(subjectId, currentLevel, notes);
       setNeededSubjects((prev) => [...prev.filter((i) => i.subject_id !== added.subject_id), added]);
     } catch (err) {
       console.error('[ProfileEdit] Error al agregar materia necesaria:', err);
@@ -237,51 +228,6 @@ export default function ProfileEdit() {
     } catch (err) {
       console.error('[ProfileEdit] Error al eliminar materia:', err);
       setErrorMessage('No se pudo eliminar la materia solicitada.');
-      throw err;
-    }
-  };
-
-  // Agregar habilidad de proyecto
-  const handleAddSkill = async (skillId: string, level: AcademicLevel) => {
-    try {
-      setErrorMessage(null);
-      const added = await profileService.addProfileSkill(skillId, level);
-      setUserSkills((prev) => [...prev.filter((s) => s.skill_id !== added.skill_id), added]);
-    } catch (err) {
-      console.error('[ProfileEdit] Error al agregar habilidad:', err);
-      setErrorMessage('No se pudo agregar la habilidad.');
-      throw err;
-    }
-  };
-
-  // Eliminar habilidad de proyecto
-  const handleRemoveSkill = async (skillId: string) => {
-    try {
-      setErrorMessage(null);
-      await profileService.removeProfileSkill(skillId);
-      setUserSkills((prev) => prev.filter((s) => s.skill_id !== skillId));
-    } catch (err) {
-      console.error('[ProfileEdit] Error al eliminar habilidad:', err);
-      setErrorMessage('No se pudo eliminar la habilidad.');
-      throw err;
-    }
-  };
-
-  // Alternar interés de proyectos
-  const handleToggleInterest = async (interestId: string) => {
-    const isSelected = userInterests.some((i) => i.interest_id === interestId);
-    try {
-      setErrorMessage(null);
-      if (isSelected) {
-        await profileService.removeProjectInterest(interestId);
-        setUserInterests((prev) => prev.filter((i) => i.interest_id !== interestId));
-      } else {
-        const added = await profileService.addProjectInterest(interestId);
-        setUserInterests((prev) => [...prev, added]);
-      }
-    } catch (err) {
-      console.error('[ProfileEdit] Error al alternar interés:', err);
-      setErrorMessage('No se pudo actualizar el área de interés.');
       throw err;
     }
   };
@@ -336,7 +282,7 @@ export default function ProfileEdit() {
         </div>
       )}
 
-      {/* PESTAÑAS COMPACTAS (Organización limpia en vez de lista vertical interminable) */}
+      {/* PESTAÑAS */}
       <div
         style={{
           display: 'flex',
@@ -369,7 +315,7 @@ export default function ProfileEdit() {
             color: activeTab === 'essential' ? '#ffffff' : '#64748b',
           }}
         >
-          <UserIcon size={16} /> Datos Esenciales
+          <UserIcon size={16} /> Datos Esenciales y Preferencias
         </button>
 
         <button
@@ -394,73 +340,47 @@ export default function ProfileEdit() {
         >
           <BookOpenIcon size={16} /> Mis Asignaturas ({offeredSubjects.length + neededSubjects.length})
         </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('projects')}
-          style={{
-            flex: 1,
-            padding: '10px 16px',
-            borderRadius: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '0.88rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-            backgroundColor: activeTab === 'projects' ? '#2563eb' : 'transparent',
-            color: activeTab === 'projects' ? '#ffffff' : '#64748b',
-          }}
-        >
-          <BriefcaseIcon size={16} /> Proyectos (Opcional)
-        </button>
       </div>
 
       {/* CONTENIDO DE PESTAÑA 1: DATOS ESENCIALES */}
       {activeTab === 'essential' && (
         <form onSubmit={handleSaveGeneral}>
-          <div className="ia-form-section" style={{ padding: '20px' }}>
-            <h2 className="ia-form-section-title" style={{ fontSize: '1rem', marginBottom: '4px' }}>
-              Identificación y Carrera
+          <div className="ia-card" style={{ padding: '20px 24px' }}>
+            <h2 className="ia-card-title" style={{ marginBottom: '16px', fontSize: '1.05rem' }}>
+              Información Básica y Académica
             </h2>
-            <p className="ia-form-section-desc" style={{ marginBottom: '14px', fontSize: '0.82rem' }}>
-              Información básica para que otros compañeros de la carrera puedan coordinar contigo.
-            </p>
 
-            <div className="ia-form-grid" style={{ gap: '12px' }}>
+            <div className="ia-form-grid" style={{ gap: '14px' }}>
               {/* Nombres y Apellidos */}
               <div className="ia-form-group">
-                <label className="ia-label" htmlFor="firstName">Nombres *</label>
+                <label className="ia-label" htmlFor="firstName">Nombres</label>
                 <input
                   id="firstName"
                   type="text"
                   className="ia-input"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Ej. Miguel Ángel"
+                  placeholder="Tu nombre"
                   required
                 />
               </div>
 
               <div className="ia-form-group">
-                <label className="ia-label" htmlFor="lastName">Apellidos *</label>
+                <label className="ia-label" htmlFor="lastName">Apellidos</label>
                 <input
                   id="lastName"
                   type="text"
                   className="ia-input"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Ej. Aravena"
+                  placeholder="Tus apellidos"
                   required
                 />
               </div>
 
               {/* Institución y Carrera */}
               <div className="ia-form-group">
-                <label className="ia-label" htmlFor="institution">Institución *</label>
+                <label className="ia-label" htmlFor="institution">Institución Educativa</label>
                 <input
                   id="institution"
                   type="text"
@@ -473,7 +393,7 @@ export default function ProfileEdit() {
               </div>
 
               <div className="ia-form-group">
-                <label className="ia-label" htmlFor="career">Carrera *</label>
+                <label className="ia-label" htmlFor="career">Carrera</label>
                 <input
                   id="career"
                   type="text"
@@ -550,69 +470,93 @@ export default function ProfileEdit() {
               </div>
             </div>
 
-            {/* Disponibilidad rápida en 1 sola fila */}
+            {/* Disponibilidad para Tutorías */}
             <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
               <label className="ia-label" style={{ marginBottom: '8px', display: 'block' }}>
                 Disponibilidad en la Plataforma
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <div
-                  onClick={() => setAvailableForTutoring(!availableForTutoring)}
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: `1.5px solid ${availableForTutoring ? '#2563eb' : '#e2e8f0'}`,
-                    background: availableForTutoring ? '#eff6ff' : '#ffffff',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 700, color: availableForTutoring ? '#1d4ed8' : '#334155' }}>
-                      Ofrecer Tutorías
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                      Aparecer como tutor disponible
-                    </div>
+              <div
+                onClick={() => setAvailableForTutoring(!availableForTutoring)}
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  border: `1.5px solid ${availableForTutoring ? '#2563eb' : '#e2e8f0'}`,
+                  background: availableForTutoring ? '#eff6ff' : '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  maxWidth: '380px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: availableForTutoring ? '#1d4ed8' : '#334155' }}>
+                    Ofrecer Tutorías
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={availableForTutoring}
-                    onChange={() => {}}
-                    style={{ accentColor: '#2563eb', pointerEvents: 'none' }}
-                  />
+                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    Aparecer en el catálogo de tutores disponibles
+                  </div>
                 </div>
+                <input
+                  type="checkbox"
+                  checked={availableForTutoring}
+                  onChange={() => {}}
+                  style={{ accentColor: '#2563eb', pointerEvents: 'none' }}
+                />
+              </div>
+            </div>
 
-                <div
-                  onClick={() => setAvailableForProjects(!availableForProjects)}
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: `1.5px solid ${availableForProjects ? '#2563eb' : '#e2e8f0'}`,
-                    background: availableForProjects ? '#eff6ff' : '#ffffff',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 700, color: availableForProjects ? '#1d4ed8' : '#334155' }}>
-                      Proyectos en Equipo
+            {/* Preferencias de Aprendizaje y Estilo de Estudio */}
+            <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                <label className="ia-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <SparklesIcon size={16} color="#2563eb" />
+                  Preferencias de Aprendizaje y Estilo de Estudio
+                </label>
+                <span style={{ fontSize: '0.74rem', background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                  Adaptación en Aula Virtual
+                </span>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 12px 0' }}>
+                Selecciona tus métodos pedagógicos preferidos. Los tutores verán estas pautas en la sala de clases para adaptar el ritmo, activar pausas de asimilación o usar retos interactivos.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+                {LEARNING_PREFERENCES.map((opt) => {
+                  const isSelected = learningPreferences.includes(opt.id);
+                  return (
+                    <div
+                      key={opt.id}
+                      onClick={() => togglePreference(opt.id)}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: `1.5px solid ${isSelected ? '#2563eb' : '#e2e8f0'}`,
+                        background: isSelected ? '#eff6ff' : '#ffffff',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '3px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: isSelected ? '#1d4ed8' : '#1e293b' }}>
+                          {opt.label}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}}
+                          style={{ accentColor: '#2563eb', pointerEvents: 'none' }}
+                        />
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.3 }}>
+                        {opt.description}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                      Disponible para colaborar
-                    </div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={availableForProjects}
-                    onChange={() => {}}
-                    style={{ accentColor: '#2563eb', pointerEvents: 'none' }}
-                  />
-                </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -643,24 +587,6 @@ export default function ProfileEdit() {
             catalogSubjects={catalogSubjects}
             onAdd={handleAddNeededSubject}
             onRemove={handleRemoveNeededSubject}
-          />
-        </div>
-      )}
-
-      {/* CONTENIDO DE PESTAÑA 3: PROYECTOS Y HABILIDADES */}
-      {activeTab === 'projects' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <SkillsSection
-            userSkills={userSkills}
-            catalogSkills={catalogSkills}
-            onAdd={handleAddSkill}
-            onRemove={handleRemoveSkill}
-          />
-
-          <InterestsSection
-            userInterests={userInterests}
-            catalogInterests={catalogInterests}
-            onToggle={handleToggleInterest}
           />
         </div>
       )}

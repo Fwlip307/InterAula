@@ -6,14 +6,11 @@ import type {
   Profile,
   OfferedSubject,
   NeededSubject,
-  ProfileSkill,
-  ProfileProjectInterest,
   Subject,
 } from '../types/profile';
 import {
   BookOpenIcon,
   UsersIcon,
-  CodeIcon,
   SparklesIcon,
   CalendarIcon,
   TargetIcon,
@@ -36,8 +33,6 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
-  const [skills, setSkills] = useState<ProfileSkill[]>([]);
-  const [interests, setInterests] = useState<ProfileProjectInterest[]>([]);
   const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<TutoringSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +48,6 @@ export default function Dashboard() {
           profileData,
           offeredData,
           neededData,
-          skillsData,
-          interestsData,
           subjectsData,
           studentSessions,
           tutorSessions,
@@ -62,8 +55,6 @@ export default function Dashboard() {
           profileService.getMyProfile(),
           profileService.getOfferedSubjects(user.id),
           profileService.getNeededSubjects(user.id),
-          profileService.getProfileSkills(user.id),
-          profileService.getProfileProjectInterests(user.id),
           profileService.getSubjects(),
           tutoringService.getMySessionsAsStudent().catch(() => []),
           tutoringService.getMySessionsAsTutor().catch(() => []),
@@ -73,9 +64,7 @@ export default function Dashboard() {
           setProfile(profileData);
           setOfferedSubjects(offeredData);
           setNeededSubjects(neededData);
-          setSkills(skillsData);
-          setInterests(interestsData);
-          setCatalogSubjects(subjectsData.slice(0, 8)); // Top 8 materias del catálogo real
+          setCatalogSubjects(subjectsData.slice(0, 8)); // Top 8 materias críticas de Informática
           const activeSessions = [...(studentSessions || []), ...(tutorSessions || [])]
             .filter((s) => s.status === 'pending' || s.status === 'accepted')
             .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
@@ -180,25 +169,27 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Habilidades para proyectos */}
+        {/* Asignaturas Certificadas */}
         <div className="ia-stat-card">
           <div className="ia-stat-icon amber">
-            <CodeIcon size={22} color="#d97706" />
+            <ShieldCheckIcon size={22} color="#d97706" />
           </div>
           <div>
-            <div className="ia-stat-value">{loading ? '...' : skills.length}</div>
-            <div className="ia-stat-label">Habilidades para proyectos</div>
+            <div className="ia-stat-value">
+              {loading ? '...' : offeredSubjects.filter((s) => s.is_verified).length}
+            </div>
+            <div className="ia-stat-label">Asignaturas Certificadas</div>
           </div>
         </div>
 
-        {/* Intereses de proyectos */}
+        {/* Tutorías Agendadas */}
         <div className="ia-stat-card">
           <div className="ia-stat-icon purple">
-            <SparklesIcon size={22} color="#9333ea" />
+            <CalendarIcon size={22} color="#9333ea" />
           </div>
           <div>
-            <div className="ia-stat-value">{loading ? '...' : interests.length}</div>
-            <div className="ia-stat-label">Intereses de proyectos</div>
+            <div className="ia-stat-value">{loading ? '...' : upcomingSessions.length}</div>
+            <div className="ia-stat-label">Tutorías Agendadas</div>
           </div>
         </div>
       </section>
@@ -378,19 +369,6 @@ export default function Dashboard() {
                       </span>
                     )}
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.84rem', color: '#334155' }}>Para proyectos:</span>
-                    {profile?.available_for_projects ? (
-                      <span className="ia-badge ia-badge-blue">
-                        <CheckIcon size={12} /> Disponible
-                      </span>
-                    ) : (
-                      <span className="ia-badge ia-badge-neutral">
-                        <XIcon size={12} /> No disponible
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -424,11 +402,11 @@ export default function Dashboard() {
                 <EditIcon size={16} /> Actualizar asignaturas y nivel
               </Link>
               <Link
-                to="/projects"
+                to="/tutoring"
                 className="ia-btn-secondary"
                 style={{ justifyContent: 'flex-start', padding: '10px 14px', fontSize: '0.88rem' }}
               >
-                <UsersIcon size={16} /> Hub de Proyectos estudiantiles
+                <SparklesIcon size={16} /> Clases grupales y talleres
               </Link>
             </div>
           </div>

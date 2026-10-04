@@ -113,7 +113,7 @@ export const profileService = {
     return this.updateMyProfile({ learning_preferences: preferences });
   },
 
-  // Catálogo completo de materias académicas (con soporte para priorizar asignaturas piloto)
+  // Catálogo enfocado en las materias críticas de Informática
   async getSubjects(onlyPilot?: boolean): Promise<Subject[]> {
     let query = supabase
       .from('subjects')
@@ -132,7 +132,15 @@ export const profileService = {
       console.error('[profileService] Error en getSubjects:', error.message);
       return [];
     }
-    return (data || []) as Subject[];
+
+    const legacyCategoriesToExclude = ['Idiomas', 'Formación General', 'Gestión y Negocios'];
+    const filtered = (data || []).filter((s: Subject) => {
+      if (onlyPilot) return s.is_pilot;
+      if (s.category && legacyCategoriesToExclude.includes(s.category)) return false;
+      return true;
+    });
+
+    return filtered as Subject[];
   },
 
   // Materias que un perfil enseña / ofrece
@@ -247,132 +255,36 @@ export const profileService = {
     }
   },
 
-  // Catálogo completo de habilidades de proyectos
+  // Métodos de habilidades e intereses (desacoplados tras migración 009)
   async getSkills(): Promise<Skill[]> {
-    const { data, error } = await supabase
-      .from('skills')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('[profileService] Error en getSkills:', error.message);
-      return [];
-    }
-    return (data || []) as Skill[];
+    return [];
   },
 
-  // Habilidades asociadas a un perfil
-  async getProfileSkills(profileId: string): Promise<ProfileSkill[]> {
-    const { data, error } = await supabase
-      .from('profile_skills')
-      .select('*, skill:skills(*)')
-      .eq('profile_id', profileId);
-
-    if (error) {
-      console.error('[profileService] Error en getProfileSkills:', error.message);
-      return [];
-    }
-    return (data || []) as ProfileSkill[];
+  async getProfileSkills(_profileId: string): Promise<ProfileSkill[]> {
+    return [];
   },
 
-  // Agregar habilidad al perfil
-  async addProfileSkill(skillId: string, level: AcademicLevel): Promise<ProfileSkill> {
-    const user = await getRequiredAuthUser();
-
-    const { data, error } = await supabase
-      .from('profile_skills')
-      .upsert({
-        profile_id: user.id,
-        skill_id: skillId,
-        level,
-      })
-      .select('*, skill:skills(*)')
-      .single();
-
-    if (error) {
-      console.error('[profileService] Error en addProfileSkill:', error.message);
-      throw error;
-    }
-    return data as ProfileSkill;
+  async addProfileSkill(_skillId: string, _level: AcademicLevel): Promise<ProfileSkill> {
+    return {} as ProfileSkill;
   },
 
-  // Eliminar habilidad del perfil
-  async removeProfileSkill(skillId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('profile_skills')
-      .delete()
-      .eq('profile_id', user.id)
-      .eq('skill_id', skillId);
-
-    if (error) {
-      console.error('[profileService] Error en removeProfileSkill:', error.message);
-      throw error;
-    }
+  async removeProfileSkill(_skillId: string): Promise<void> {
+    return;
   },
 
-  // Catálogo de intereses de proyectos
   async getProjectInterests(): Promise<ProjectInterest[]> {
-    const { data, error } = await supabase
-      .from('project_interests')
-      .select('*')
-      .order('name', { ascending: true });
-
-    if (error) {
-      console.error('[profileService] Error en getProjectInterests:', error.message);
-      return [];
-    }
-    return (data || []) as ProjectInterest[];
+    return [];
   },
 
-  // Áreas de interés del perfil
-  async getProfileProjectInterests(profileId: string): Promise<ProfileProjectInterest[]> {
-    const { data, error } = await supabase
-      .from('profile_project_interests')
-      .select('*, interest:project_interests(*)')
-      .eq('profile_id', profileId);
-
-    if (error) {
-      console.error('[profileService] Error en getProfileProjectInterests:', error.message);
-      return [];
-    }
-    return (data || []) as ProfileProjectInterest[];
+  async getProfileProjectInterests(_profileId: string): Promise<ProfileProjectInterest[]> {
+    return [];
   },
 
-  // Agregar área de interés al perfil
-  async addProjectInterest(interestId: string): Promise<ProfileProjectInterest> {
-    const user = await getRequiredAuthUser();
-
-    const { data, error } = await supabase
-      .from('profile_project_interests')
-      .upsert({
-        profile_id: user.id,
-        interest_id: interestId,
-      })
-      .select('*, interest:project_interests(*)')
-      .single();
-
-    if (error) {
-      console.error('[profileService] Error en addProjectInterest:', error.message);
-      throw error;
-    }
-    return data as ProfileProjectInterest;
+  async addProjectInterest(_interestId: string): Promise<ProfileProjectInterest> {
+    return {} as ProfileProjectInterest;
   },
 
-  // Eliminar área de interés del perfil
-  async removeProjectInterest(interestId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('profile_project_interests')
-      .delete()
-      .eq('profile_id', user.id)
-      .eq('interest_id', interestId);
-
-    if (error) {
-      console.error('[profileService] Error en removeProjectInterest:', error.message);
-      throw error;
-    }
+  async removeProjectInterest(_interestId: string): Promise<void> {
+    return;
   },
 };
