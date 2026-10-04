@@ -19,8 +19,8 @@ export default function ProjectsHub() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Link to="/profile/edit" className="ia-btn-primary">
-            Configurar mis habilidades
+          <Link to="/profile" className="ia-btn-primary">
+            Ver mi perfil
           </Link>
         </div>
       </div>

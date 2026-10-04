@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { NeededSubject, Subject, AcademicLevel } from '../../../types/profile';
 import { UsersIcon, PlusIcon, TrashIcon, TargetIcon } from '../../../components/common/Icons';
 import { formatAcademicLevel } from '../../../utils/formatters';
+import SearchableCombobox from '../../../components/common/SearchableCombobox';
 
 interface NeededSubjectsSectionProps {
   neededSubjects: NeededSubject[];
@@ -63,6 +64,15 @@ export default function NeededSubjectsSection({
         return availableCatalog;
     }
   }, [availableCatalog, hurdleSubjects, filterCategory]);
+
+  const subjectOptions = useMemo(() => {
+    return displayedCatalog.map((s) => ({
+      value: s.id,
+      label: s.name,
+      subLabel: s.category || undefined,
+      group: s.category || 'General',
+    }));
+  }, [displayedCatalog]);
 
   const handleAdd = async () => {
     if (!newSubjectId || isSubmitting) return;
@@ -193,20 +203,15 @@ export default function NeededSubjectsSection({
         }}
       >
         <div>
-          <label className="ia-label" style={{ marginBottom: '4px', fontSize: '0.78rem' }}>Materia a reforzar</label>
-          <select
-            className="ia-select"
+          <label className="ia-label" htmlFor="new-needed-subject" style={{ marginBottom: '4px', fontSize: '0.78rem' }}>Materia a reforzar</label>
+          <SearchableCombobox
+            id="new-needed-subject"
+            options={subjectOptions}
             value={newSubjectId}
-            onChange={(e) => setNewSubjectId(e.target.value)}
-            style={{ fontSize: '0.84rem', padding: '6px 10px' }}
-          >
-            <option value="">-- Selecciona asignatura --</option>
-            {displayedCatalog.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} {s.category ? `(${s.category})` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={setNewSubjectId}
+            placeholder="Escribe para buscar materia..."
+            emptyMessage="No hay materias en esta categoría"
+          />
         </div>
 
         <div>

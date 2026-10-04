@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
+import InclusiveHelpBot from '../common/InclusiveHelpBot';
 import '../../styles/dashboard.css';
 
 export default function AppLayout() {
@@ -9,6 +10,7 @@ export default function AppLayout() {
       <main className="ia-main">
         <Outlet />
       </main>
+      <InclusiveHelpBot />
       <footer className="ia-footer">
         <p style={{ margin: 0 }}>
           <strong>InterAula</strong> — Red de Intercambio Académico y Tutorías Universitarias • 2026

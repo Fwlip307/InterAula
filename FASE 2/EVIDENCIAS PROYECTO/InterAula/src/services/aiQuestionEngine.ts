@@ -2,16 +2,25 @@
  * aiQuestionEngine.ts
  * Motor de Generación y Evaluación de Preguntas Técnicas para el Bot de InterAula.
  * Incluye soporte para preguntas de opción rápida y preguntas de redacción técnica corta,
- * con evaluador semántico y soporte opcional para Gemini API.
+ * con evaluador semántico y soporte para Gemini API y bancos modulares por nivel.
  */
+
+import type { AcademicLevel } from '../types/profile';
+import { WEB_DEVELOPMENT_QUESTIONS } from '../data/questionBanks/webDevelopment';
+import {
+  hasGeminiApiConfigured,
+  generateGeminiQuestions,
+} from './geminiAiService';
 
 export interface ChallengeQuestion {
   id: string;
   subject: string;
+  level?: AcademicLevel;
   type: 'choice' | 'redaction';
   category: 'conceptual' | 'debugging' | 'pedagogical';
   prompt: string;
   codeSnippet?: string;
+  timeLimit?: number; // Tiempo específico en segundos (ej. 15s alternativas, 45s desarrollo)
   // Para preguntas de selección rápida
   options?: {
     id: string;
@@ -24,6 +33,15 @@ export interface ChallengeQuestion {
   // Explicación técnica del bot
   explanation: string;
 }
+
+export const TIME_LIMIT_CHOICE = 15; // 15 segundos para alternativas rápidas
+export const TIME_LIMIT_REDACTION = 45; // 45 segundos para desarrollo técnico y redacción
+
+export function getQuestionTimeLimit(q: ChallengeQuestion): number {
+  if (q.timeLimit && q.timeLimit > 0) return q.timeLimit;
+  return q.type === 'choice' ? TIME_LIMIT_CHOICE : TIME_LIMIT_REDACTION;
+}
+
 
 // Evaluador semántico y difuso para respuestas redactadas por el estudiante
 export function evaluateRedactionAnswer(userAnswer: string, acceptedAnswers: string[]): boolean {
@@ -541,28 +559,63 @@ const QUESTION_BANK: ChallengeQuestion[] = [
   },
 ];
 
+// Materias soportadas en el Piloto de Evaluación con Inteligencia Artificial
+export const SUPPORTED_AI_PILOT_SUBJECTS = [
+  'Programación Web',
+  'Programación de Algoritmos',
+];
+
+export function isSubjectSupportedForAiEvaluation(subjectName: string): boolean {
+  if (!subjectName) return false;
+  return SUPPORTED_AI_PILOT_SUBJECTS.some(
+    (s) => s.toLowerCase() === subjectName.toLowerCase()
+  );
+}
+
 /**
- * Genera una ronda de 10 preguntas aleatorias para el reto relámpago Anti-IA.
- * Garantiza un mix de preguntas de opción múltiple y preguntas redactadas.
+ * Genera una ronda de 10 preguntas para la evaluación técnica de tutores.
+ * 1. Si Gemini API está configurada, intenta generar retos dinámicos adaptados al nivel.
+ * 2. Si no, extrae preguntas aleatorias del banco curado EXCLUSIVAMENTE para esa materia y nivel.
+ * 3. NUNCA mezcla materias distintas.
  */
-export function generateLightningRound(subjectName: string, count: number = 10): ChallengeQuestion[] {
-  // Filtrar banco por materia o por materias afines de informática
-  let matched = QUESTION_BANK.filter(
+export async function generateLightningRound(
+  subjectName: string,
+  level: AcademicLevel = 'intermediate',
+  count: number = 10
+): Promise<ChallengeQuestion[]> {
+  // 1. Intentar generación con Google Gemini API si la clave está disponible
+  if (hasGeminiApiConfigured()) {
+    try {
+      const geminiQuestions = await generateGeminiQuestions(subjectName, level, count);
+      if (geminiQuestions && geminiQuestions.length >= count) {
+        return geminiQuestions;
+      }
+    } catch (e) {
+      console.warn('[aiQuestionEngine] Falló generación con Gemini, recurriendo al banco curado:', e);
+    }
+  }
+
+  // 2. Extraer del banco curado modular
+  const allCurated = [...WEB_DEVELOPMENT_QUESTIONS, ...QUESTION_BANK];
+
+  // Filtrar estrictamente por el nombre de la materia (sin cruces con otras asignaturas)
+  let matched = allCurated.filter(
     (q) => q.subject.toLowerCase() === subjectName.toLowerCase()
   );
 
-  if (matched.length < count) {
-    // Si la materia tiene pocas preguntas, incluir preguntas troncales de algoritmia y web
-    const fallback = QUESTION_BANK.filter(
-      (q) => q.subject !== subjectName
-    );
-    matched = [...matched, ...fallback];
+  if (matched.length === 0) {
+    // Si la materia no cuenta con banco de preguntas cargado, retornar vacío (no inventar de otra materia)
+    return [];
   }
 
-  // Barajar todo el conjunto aleatoriamente
-  const shuffled = [...matched].sort(() => Math.random() - 0.5);
+  // Filtrar por el nivel seleccionado si hay preguntas etiquetadas
+  const levelMatched = matched.filter((q) => !q.level || q.level === level);
+  const pool = levelMatched.length >= count ? levelMatched : matched;
 
-  // Asegurar una mezcla entre 'redaction' y 'choice'
+  // Barajar todo el conjunto aleatoriamente
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+
+  // Separar desarrollo técnico (redaction) y selección rápida (choice)
   const redactions = shuffled.filter((q) => q.type === 'redaction');
   const choices = shuffled.filter((q) => q.type === 'choice');
 
@@ -580,7 +633,7 @@ export function generateLightningRound(subjectName: string, count: number = 10):
     }
   }
 
-  // Si aún faltan, rellenar con lo que quede
+  // Si faltan, completar con lo que quede del grupo barajado de la MISMA materia
   for (const q of shuffled) {
     if (picked.length >= count) break;
     if (!picked.some((p) => p.id === q.id)) {
@@ -588,7 +641,7 @@ export function generateLightningRound(subjectName: string, count: number = 10):
     }
   }
 
-  // Para preguntas choice, mezclar el orden de las opciones
+  // Mezclar opciones para preguntas tipo choice
   return picked.map((q) => {
     if (q.type === 'choice' && q.options) {
       return {

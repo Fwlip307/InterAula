@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profile.service';
 import { tutoringService, type AvailableTutor } from '../../services/tutoring.service';
-import type { Subject } from '../../types/profile';
+import type { Subject, OfferedSubject } from '../../types/profile';
 import type { TutoringWorkshop } from '../../types/tutoring';
 import {
   getUserDisplayName,
@@ -26,7 +26,7 @@ import RequestTutoringModal from './components/RequestTutoringModal';
 import CreateWorkshopModal from './components/CreateWorkshopModal';
 import WorkshopCard from './components/WorkshopCard';
 
-// 6 Materias Críticas de Inicio en Informática (Foco Vertical Duoc UC)
+// 6 Materias Críticas de Inicio en Informática (Foco Vertical)
 const CRITICAL_INFORMATICS_SUBJECTS = [
   'Programación de Algoritmos',
   'Programación Web',
@@ -43,12 +43,15 @@ export default function TutoringExplore() {
   // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [userOfferedSubjects, setUserOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [onlyCertified, setOnlyCertified] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
+
+  const isTutor = userOfferedSubjects.length > 0;
 
   // Tutor seleccionado para el modal de solicitud 1 a 1
   const [selectedTutorForModal, setSelectedTutorForModal] = useState<AvailableTutor | null>(null);
@@ -60,18 +63,22 @@ export default function TutoringExplore() {
   const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState<boolean>(false);
   const [workshopActionLoading, setWorkshopActionLoading] = useState<boolean>(false);
 
-  // Cargar catálogo de materias
+  // Cargar catálogo de materias y asignaturas acreditadas del usuario
   useEffect(() => {
     async function loadCatalog() {
       try {
-        const subs = await profileService.getSubjects();
+        const [subs, offered] = await Promise.all([
+          profileService.getSubjects(),
+          user ? profileService.getOfferedSubjects(user.id) : Promise.resolve([]),
+        ]);
         setSubjects(subs);
+        setUserOfferedSubjects(offered);
       } catch (err) {
         console.error('[TutoringExplore] Error al cargar catálogo de materias:', err);
       }
     }
     loadCatalog();
-  }, []);
+  }, [user]);
 
   const fetchTutors = React.useCallback(async () => {
     setLoading(true);
@@ -222,29 +229,31 @@ export default function TutoringExplore() {
             <span>¿Cómo Certificarme como Tutor?</span>
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setIsCreateWorkshopModalOpen(true)}
-            className="ia-btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-              borderColor: '#7c3aed',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              boxShadow: '0 4px 6px -1px rgba(124, 58, 237, 0.25)',
-            }}
-          >
-            <VideoIcon size={16} color="#ffffff" />
-            <span>+ Programar Taller en Vivo</span>
-          </button>
+          {isTutor && (
+            <button
+              type="button"
+              onClick={() => setIsCreateWorkshopModalOpen(true)}
+              className="ia-btn-primary"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                borderColor: '#7c3aed',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 18px',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                boxShadow: '0 4px 6px -1px rgba(124, 58, 237, 0.25)',
+              }}
+            >
+              <VideoIcon size={16} color="#ffffff" />
+              <span>+ Programar Taller en Vivo</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Banner de Invitación a la Certificación Docente */}
+      {/* Banner de Invitación a la Acreditación de Tutores */}
       <div
         style={{
           background: 'linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%)',
@@ -263,15 +272,15 @@ export default function TutoringExplore() {
           <ShieldCheckIcon size={24} color="#059669" style={{ flexShrink: 0 }} />
           <div>
             <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#064e3b', display: 'block' }}>
-              Modelo de Calidad Duoc UC: Tutores Validados
+              Acreditación Académica: Tutores Validados
             </span>
             <span style={{ fontSize: '0.8rem', color: '#475569' }}>
-              Demuestra tu conocimiento en ramos troncales de Informática mediante la Mini-Evaluación con Bot o tu Concentración de Notas oficial.
+              Demuestra tu conocimiento en ramos de tu carrera mediante la Evaluación con el Asistente o el Respaldo de tu Docente.
             </span>
           </div>
         </div>
         <Link
-          to="/profile"
+          to="/profile?tab=tutoring"
           className="ia-btn-primary"
           style={{
             padding: '6px 14px',
@@ -281,7 +290,7 @@ export default function TutoringExplore() {
             textDecoration: 'none',
           }}
         >
-          Iniciar Certificación en mi Perfil
+          Iniciar Acreditación en mi Perfil
         </Link>
       </div>
 
@@ -573,7 +582,7 @@ export default function TutoringExplore() {
                     Restablecer filtros
                   </button>
                 ) : (
-                  <Link to="/profile/edit" className="ia-btn-primary">
+                  <Link to="/profile?tab=tutoring" className="ia-btn-primary">
                     Ofrecer mis materias en mi perfil
                   </Link>
                 )
@@ -890,7 +899,7 @@ export default function TutoringExplore() {
                     >
                       Restablecer filtros
                     </button>
-                  ) : (
+                  ) : isTutor ? (
                     <button
                       type="button"
                       className="ia-btn-primary"
@@ -899,6 +908,14 @@ export default function TutoringExplore() {
                     >
                       + Programar el Primer Taller
                     </button>
+                  ) : (
+                    <Link
+                      to="/profile?tab=tutoring"
+                      className="ia-btn-secondary"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      Habilitarme como Tutor para Dictar Talleres
+                    </Link>
                   )
                 }
               />
@@ -940,7 +957,11 @@ export default function TutoringExplore() {
         isOpen={isCreateWorkshopModalOpen}
         onClose={() => setIsCreateWorkshopModalOpen(false)}
         onSuccess={handleCreateWorkshopSuccess}
-        availableSubjects={subjects}
+        availableSubjects={
+          userOfferedSubjects
+            .map((o) => o.subject)
+            .filter((s): s is Subject => Boolean(s))
+        }
       />
     </div>
   );

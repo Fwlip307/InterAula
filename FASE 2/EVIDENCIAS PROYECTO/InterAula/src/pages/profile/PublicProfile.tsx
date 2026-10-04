@@ -169,7 +169,7 @@ export default function PublicProfile() {
           </div>
 
           <div className="ia-profile-actions">
-            {profile.available_for_tutoring && (
+            {profile.available_for_tutoring && offeredSubjects.length > 0 && (
               <span className="ia-badge ia-badge-success">
                 <CheckIcon size={12} /> Tutor disponible
               </span>
@@ -242,13 +242,13 @@ export default function PublicProfile() {
             </div>
           )}
 
-          {/* Materias que puede enseñar */}
-          <div className="ia-card">
-            <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
-              <BookOpenIcon size={20} color="#2563eb" /> Materias que puede enseñar ({offeredSubjects.length})
-            </h2>
+          {/* Materias que puede enseñar (Solo visible si es tutor acreditado) */}
+          {offeredSubjects.length > 0 && (
+            <div className="ia-card">
+              <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
+                <BookOpenIcon size={20} color="#2563eb" /> Materias que puede enseñar ({offeredSubjects.length})
+              </h2>
 
-            {offeredSubjects.length > 0 ? (
               <div className="ia-catalog-list">
                 {offeredSubjects.map((item) => (
                   <div key={item.subject_id} className="ia-catalog-item">
@@ -277,12 +277,8 @@ export default function PublicProfile() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>
-                No ofrece materias de tutoría en este momento.
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Materias en las que busca apoyo */}
           <div className="ia-card">
@@ -318,11 +314,11 @@ export default function PublicProfile() {
 
         {/* Columna Derecha: Reputación, Insignias, Proyectos, Habilidades y Contacto */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Reputación y Estadísticas de Tutor (Reutiliza TutorStats real) */}
-          <TutorStats stats={tutorStats} />
+          {/* Reputación y Estadísticas de Tutor (Solo para tutores habilitados) */}
+          {offeredSubjects.length > 0 && <TutorStats stats={tutorStats} />}
 
-          {/* Insignias Obtenidas (Reutiliza BadgeList) */}
-          <BadgeList badges={badges} />
+          {/* Insignias Obtenidas (Solo si tiene insignias) */}
+          {badges.length > 0 && <BadgeList badges={badges} />}
 
           {/* Contacto Público */}
           <div className="ia-card">

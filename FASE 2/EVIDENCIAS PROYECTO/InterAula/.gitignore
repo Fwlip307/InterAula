@@ -27,5 +27,8 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+
+# Data files
+*.csv
+catalogo_anidado.json
 

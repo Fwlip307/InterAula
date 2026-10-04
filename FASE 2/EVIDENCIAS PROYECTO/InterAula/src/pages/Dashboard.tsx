@@ -105,7 +105,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-          <Link to="/profile/edit" className="ia-banner-alert-btn">
+          <Link to="/profile?edit=true" className="ia-banner-alert-btn">
             <EditIcon size={16} color="#ffffff" />
             Completar perfil
           </Link>
@@ -138,23 +138,25 @@ export default function Dashboard() {
           <button
             type="button"
             className="ia-btn-hero-secondary"
-            onClick={() => navigate('/profile/edit')}
+            onClick={() => navigate('/profile?tab=tutoring')}
           >
-            Puedo enseñar
+            {offeredSubjects.length > 0 ? 'Materias que imparto' : 'Habilitarme como tutor'}
           </button>
         </div>
       </section>
 
       {/* Tarjetas de Métricas Reales del Sprint 1 (Requisito 5) */}
       <section className="ia-stats-grid">
-        {/* Materias que puedo enseñar */}
+        {/* Materias que puedo enseñar / Estado de acreditación */}
         <div className="ia-stat-card">
           <div className="ia-stat-icon blue">
             <BookOpenIcon size={22} color="#2563eb" />
           </div>
           <div>
-            <div className="ia-stat-value">{loading ? '...' : offeredSubjects.length}</div>
-            <div className="ia-stat-label">Materias que puedo enseñar</div>
+            <div className="ia-stat-value">{loading ? '...' : (offeredSubjects.length > 0 ? offeredSubjects.length : 0)}</div>
+            <div className="ia-stat-label">
+              {offeredSubjects.length > 0 ? 'Materias que imparto' : 'Materias habilitadas (Sin prueba)'}
+            </div>
           </div>
         </div>
 
@@ -274,7 +276,7 @@ export default function Dashboard() {
                     <Link to="/tutoring" className="ia-btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                       Explorar Tutorías
                     </Link>
-                    <Link to="/profile/edit" className="ia-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                    <Link to="/profile?tab=tutoring" className="ia-btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                       Gestionar Materias
                     </Link>
                   </div>
@@ -325,8 +327,8 @@ export default function Dashboard() {
               <h2 className="ia-card-title">
                 <ShieldCheckIcon size={20} color="#16a34a" /> Estado de Cuenta
               </h2>
-              <Link to="/profile/edit" className="ia-card-action" title="Editar preferencias">
-                Configurar
+              <Link to="/profile" className="ia-card-action" title="Ver mi perfil">
+                Mi Perfil
               </Link>
             </div>
             <div style={{ fontSize: '0.88rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -359,13 +361,13 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.84rem', color: '#334155' }}>Para tutorías:</span>
-                    {profile?.available_for_tutoring ? (
+                    {profile?.available_for_tutoring && offeredSubjects.length > 0 ? (
                       <span className="ia-badge ia-badge-success">
                         <CheckIcon size={12} /> Disponible
                       </span>
                     ) : (
                       <span className="ia-badge ia-badge-neutral">
-                        <XIcon size={12} /> No disponible
+                        <XIcon size={12} /> {offeredSubjects.length === 0 ? 'Requiere evaluación previa' : 'No disponible'}
                       </span>
                     )}
                   </div>
@@ -395,11 +397,11 @@ export default function Dashboard() {
                 <CalendarIcon size={16} /> Mis solicitudes y sesiones
               </Link>
               <Link
-                to="/profile/edit"
+                to="/profile?tab=tutoring"
                 className="ia-btn-secondary"
                 style={{ justifyContent: 'flex-start', padding: '10px 14px', fontSize: '0.88rem' }}
               >
-                <EditIcon size={16} /> Actualizar asignaturas y nivel
+                <EditIcon size={16} /> {offeredSubjects.length > 0 ? 'Gestionar materias que imparto' : 'Habilitarme como tutor de materias'}
               </Link>
               <Link
                 to="/tutoring"

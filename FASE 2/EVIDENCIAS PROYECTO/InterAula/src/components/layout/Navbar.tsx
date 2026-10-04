@@ -5,7 +5,6 @@ import { profileService } from '../../services/profile.service';
 import type { Profile } from '../../types/profile';
 import {
   UserIcon,
-  EditIcon,
   SettingsIcon,
   ChevronDownIcon,
 } from '../common/Icons';
@@ -145,10 +144,6 @@ export default function Navbar() {
                 <UserIcon size={16} color="#2563eb" />
                 Mi Perfil
               </NavLink>
-              <NavLink to="/profile/edit" className="ia-dropdown-item" onClick={closeMenus}>
-                <EditIcon size={16} color="#16a34a" />
-                Editar Perfil
-              </NavLink>
               <NavLink to="/settings" className="ia-dropdown-item" onClick={closeMenus}>
                 <SettingsIcon size={16} color="#64748b" />
                 Configuración
@@ -212,9 +207,6 @@ export default function Navbar() {
           <div className="ia-dropdown-divider" />
           <NavLink to="/profile" className="ia-mobile-nav-item" onClick={closeMenus}>
             Mi Perfil
-          </NavLink>
-          <NavLink to="/profile/edit" className="ia-mobile-nav-item" onClick={closeMenus}>
-            Editar Perfil
           </NavLink>
           <NavLink to="/settings" className="ia-mobile-nav-item" onClick={closeMenus}>
             Configuración

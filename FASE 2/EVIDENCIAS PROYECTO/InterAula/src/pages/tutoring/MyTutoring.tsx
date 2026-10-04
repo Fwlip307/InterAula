@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
 import { profileService } from '../../services/profile.service';
 import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
-import type { Subject } from '../../types/profile';
+import type { Subject, OfferedSubject } from '../../types/profile';
 import SessionCard from './components/SessionCard';
 import WorkshopCard from './components/WorkshopCard';
 import CreateWorkshopModal from './components/CreateWorkshopModal';
@@ -29,12 +29,14 @@ export default function MyTutoring() {
   const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
   const [enrolledWorkshops, setEnrolledWorkshops] = useState<TutoringWorkshop[]>([]);
   const [hostedWorkshops, setHostedWorkshops] = useState<TutoringWorkshop[]>([]);
-  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const isTutor = offeredSubjects.length > 0;
 
   // Estado para modal de evaluación
   const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
@@ -48,18 +50,21 @@ export default function MyTutoring() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [asStudent, asTutor, studentWorkshops, tutorWorkshops, subs] = await Promise.all([
+      const [asStudent, asTutor, studentWorkshops, tutorWorkshops, offered] = await Promise.all([
         tutoringService.getMySessionsAsStudent(),
         tutoringService.getMySessionsAsTutor(),
         tutoringService.getMyWorkshopsAsStudent(),
         tutoringService.getMyWorkshopsAsTutor(),
-        profileService.getSubjects(),
+        user ? profileService.getOfferedSubjects(user.id) : Promise.resolve([]),
       ]);
       setStudentSessions(asStudent);
       setTutorSessions(asTutor);
       setEnrolledWorkshops(studentWorkshops);
       setHostedWorkshops(tutorWorkshops);
-      setAvailableSubjects(subs);
+      setOfferedSubjects(offered);
+      if (offered.length === 0 && activeTab === 'tutor') {
+        setActiveTab('student');
+      }
     } catch (err: any) {
       console.error('[MyTutoring] Error al cargar sesiones:', err);
       setErrorMsg(err.message || 'No fue posible cargar tus tutorías.');
@@ -207,7 +212,9 @@ export default function MyTutoring() {
           Gestión de Mis Tutorías y Clases en Vivo
         </h1>
         <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
-          Administra las sesiones que has solicitado como estudiante, atiende peticiones como tutor y gestiona tus talleres grupales.
+          {isTutor
+            ? 'Administra las sesiones que has solicitado como estudiante, atiende peticiones como tutor y gestiona tus talleres grupales.'
+            : 'Administra tus solicitudes y sesiones de tutoría agendadas, además de tus talleres grupales inscritos.'}
         </p>
       </div>
 
@@ -282,41 +289,43 @@ export default function MyTutoring() {
           Como Estudiante ({studentSessions.length})
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('tutor')}
-          style={{
-            padding: '12px 20px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'tutor' ? '#2563eb' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'tutor' ? '2px solid #2563eb' : '2px solid transparent',
-            marginBottom: '-2px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <UsersIcon size={18} color={activeTab === 'tutor' ? '#2563eb' : '#64748b'} />
-          Como Tutor ({tutorSessions.length})
-          {pendingTutorRequestsCount > 0 && (
-            <span
-              style={{
-                background: '#f59e0b',
-                color: '#ffffff',
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                padding: '2px 8px',
-                borderRadius: '9999px',
-              }}
-            >
-              {pendingTutorRequestsCount} pendientes
-            </span>
-          )}
-        </button>
+        {isTutor && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('tutor')}
+            style={{
+              padding: '12px 20px',
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              color: activeTab === 'tutor' ? '#2563eb' : '#64748b',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'tutor' ? '2px solid #2563eb' : '2px solid transparent',
+              marginBottom: '-2px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <UsersIcon size={18} color={activeTab === 'tutor' ? '#2563eb' : '#64748b'} />
+            Como Tutor ({tutorSessions.length})
+            {pendingTutorRequestsCount > 0 && (
+              <span
+                style={{
+                  background: '#f59e0b',
+                  color: '#ffffff',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '9999px',
+                }}
+              >
+                {pendingTutorRequestsCount} pendientes
+              </span>
+            )}
+          </button>
+        )}
 
         <button
           type="button"
@@ -337,7 +346,7 @@ export default function MyTutoring() {
           }}
         >
           <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
-          Talleres en Vivo ({enrolledWorkshops.length + hostedWorkshops.length})
+          Talleres en Vivo ({enrolledWorkshops.length + (isTutor ? hostedWorkshops.length : 0)})
         </button>
       </div>
 
@@ -355,53 +364,75 @@ export default function MyTutoring() {
                 Mis Talleres y Aulas Virtuales Grupales
               </h2>
               <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                Sesiones programadas con enlace al Aula Virtual integrado. Inscríbete o imparte una clase.
+                {isTutor
+                  ? 'Sesiones programadas con enlace al Aula Virtual integrado. Inscríbete o imparte una clase.'
+                  : 'Talleres grupales en vivo en los que estás inscrito para reforzar materias.'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsCreateWorkshopModalOpen(true)}
-              className="ia-btn-primary"
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                borderColor: '#7c3aed',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 18px',
-                fontWeight: 700,
-              }}
-            >
-              <VideoIcon size={16} color="#ffffff" /> + Programar Nuevo Taller
-            </button>
-          </div>
-
-          {/* Sección 1: Talleres que imparto como tutor */}
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UsersIcon size={18} color="#7c3aed" />
-              Talleres que imparto como Tutor ({hostedWorkshops.length})
-            </h3>
-            {hostedWorkshops.length === 0 ? (
-              <div className="ia-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
-                No has programado talleres aún. Comparte tu conocimiento programando una clase grupal para tus compañeros.
-              </div>
+            {isTutor ? (
+              <button
+                type="button"
+                onClick={() => setIsCreateWorkshopModalOpen(true)}
+                className="ia-btn-primary"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                  borderColor: '#7c3aed',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 18px',
+                  fontWeight: 700,
+                }}
+              >
+                <VideoIcon size={16} color="#ffffff" /> + Programar Nuevo Taller
+              </button>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
-                {hostedWorkshops.map((w) => (
-                  <WorkshopCard
-                    key={w.id}
-                    workshop={w}
-                    currentUserId={user?.id}
-                    onEnroll={async () => {}}
-                    onUnenroll={handleWorkshopUnenroll}
-                    onCancelWorkshop={handleWorkshopCancel}
-                    actionLoading={actionLoading}
-                  />
-                ))}
-              </div>
+              <Link
+                to="/profile?tab=tutoring"
+                className="ia-btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                <span>Habilitarme como Tutor para Dictar Talleres</span>
+              </Link>
             )}
           </div>
+
+          {/* Sección 1: Talleres que imparto como tutor (Solo tutores habilitados) */}
+          {isTutor && (
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UsersIcon size={18} color="#7c3aed" />
+                Talleres que imparto como Tutor ({hostedWorkshops.length})
+              </h3>
+              {hostedWorkshops.length === 0 ? (
+                <div className="ia-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
+                  No has programado talleres aún. Comparte tu conocimiento programando una clase grupal para tus compañeros.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+                  {hostedWorkshops.map((w) => (
+                    <WorkshopCard
+                      key={w.id}
+                      workshop={w}
+                      currentUserId={user?.id}
+                      onEnroll={async () => {}}
+                      onUnenroll={handleWorkshopUnenroll}
+                      onCancelWorkshop={handleWorkshopCancel}
+                      actionLoading={actionLoading}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Sección 2: Talleres inscritos como estudiante */}
           <div>
@@ -454,7 +485,7 @@ export default function MyTutoring() {
                   <BookOpenIcon size={16} /> Explorar Tutores
                 </Link>
               ) : (
-                <Link to="/profile/edit" className="ia-btn-secondary">
+                <Link to="/profile?tab=tutoring" className="ia-btn-secondary">
                   <UsersIcon size={16} /> Configurar materias que ofrezco
                 </Link>
               )
@@ -575,7 +606,11 @@ export default function MyTutoring() {
         isOpen={isCreateWorkshopModalOpen}
         onClose={() => setIsCreateWorkshopModalOpen(false)}
         onSuccess={handleCreateWorkshopSuccess}
-        availableSubjects={availableSubjects}
+        availableSubjects={
+          offeredSubjects
+            .map((o) => o.subject)
+            .filter((s): s is Subject => Boolean(s))
+        }
       />
     </div>
   );

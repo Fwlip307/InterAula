@@ -12,7 +12,6 @@ import UpdatePassword from '../pages/auth/UpdatePassword';
 import AuthCallback from '../pages/auth/AuthCallback';
 import Dashboard from '../pages/Dashboard';
 import ProfileView from '../pages/profile/ProfileView';
-import ProfileEdit from '../pages/profile/ProfileEdit';
 import PublicProfile from '../pages/profile/PublicProfile';
 import TutoringExplore from '../pages/tutoring/TutoringExplore';
 import MyTutoring from '../pages/tutoring/MyTutoring';
@@ -67,7 +66,7 @@ export default function AppRouter() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<ProfileView />} />
-        <Route path="/profile/edit" element={<ProfileEdit />} />
+        <Route path="/profile/edit" element={<Navigate to="/profile?edit=true" replace />} />
         <Route path="/profile/:id" element={<PublicProfile />} />
         <Route path="/users/:id" element={<PublicProfile />} />
         <Route path="/projects" element={<Navigate to="/tutoring" replace />} />

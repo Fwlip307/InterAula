@@ -1,285 +1,286 @@
-import { useState, useMemo } from 'react';
-import type { OfferedSubject, Subject, AcademicLevel } from '../../../types/profile';
-import { BookOpenIcon, PlusIcon, TrashIcon, TargetIcon } from '../../../components/common/Icons';
+import type { OfferedSubject } from '../../../types/profile';
+import {
+  BookOpenIcon,
+  ShieldCheckIcon,
+  ClockIcon,
+  AwardIcon,
+  CheckIcon,
+  TrashIcon,
+} from '../../../components/common/Icons';
 import { formatAcademicLevel } from '../../../utils/formatters';
 
 interface OfferedSubjectsSectionProps {
   offeredSubjects: OfferedSubject[];
-  catalogSubjects: Subject[];
-  onAdd: (subjectId: string, level: AcademicLevel, description: string) => Promise<void>;
   onRemove: (subjectId: string) => Promise<void>;
+  onStartEvaluation?: () => void;
+  onRequestEndorsement?: () => void;
 }
-
-// Asignaturas críticas de alta demanda en los primeros semestres de Informática
-const CORE_INFORMATICS_HURDLES = [
-  'Programación de Algoritmos',
-  'Nivelación Matemática',
-  'Modelamiento de Base de Datos',
-  'Consultas de Bases de Datos',
-  'Programación Web',
-  'Desarrollo de Software de Escritorio',
-  'Matemática Aplicada',
-  'Programación de Base de Datos',
-  'Arquitectura',
-];
 
 export default function OfferedSubjectsSection({
   offeredSubjects,
-  catalogSubjects,
-  onAdd,
   onRemove,
+  onStartEvaluation,
+  onRequestEndorsement,
 }: OfferedSubjectsSectionProps) {
-  const [newSubjectId, setNewSubjectId] = useState('');
-  const [newLevel, setNewLevel] = useState<AcademicLevel>('intermediate');
-  const [newDesc, setNewDesc] = useState('');
-  const [filterCategory, setFilterCategory] = useState<'hurdles' | 'all' | 'programming' | 'db' | 'math'>('hurdles');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Filtrar materias del catálogo no agregadas aún
-  const availableCatalog = useMemo(() => {
-    return catalogSubjects.filter(
-      (s) => !offeredSubjects.some((o) => o.subject_id === s.id)
-    );
-  }, [catalogSubjects, offeredSubjects]);
-
-  // Clasificación para el selector y filtros
-  const hurdleSubjects = useMemo(() => {
-    return availableCatalog.filter((s) => CORE_INFORMATICS_HURDLES.includes(s.name) || s.is_pilot);
-  }, [availableCatalog]);
-
-  const displayedCatalog = useMemo(() => {
-    switch (filterCategory) {
-      case 'hurdles':
-        return hurdleSubjects;
-      case 'programming':
-        return availableCatalog.filter(
-          (s) => s.category === 'Tecnología e Informática' && !s.name.toLowerCase().includes('base de datos')
-        );
-      case 'db':
-        return availableCatalog.filter((s) => s.name.toLowerCase().includes('base de datos'));
-      case 'math':
-        return availableCatalog.filter((s) => s.category === 'Ciencias Básicas');
-      default:
-        return availableCatalog;
-    }
-  }, [availableCatalog, hurdleSubjects, filterCategory]);
-
-  const handleAdd = async () => {
-    if (!newSubjectId || isSubmitting) return;
-    try {
-      setIsSubmitting(true);
-      await onAdd(newSubjectId, newLevel, newDesc.trim());
-      setNewSubjectId('');
-      setNewDesc('');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="ia-form-section" id="offered-subjects">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-        <h2 className="ia-form-section-title" style={{ margin: 0 }}>
-          <BookOpenIcon size={20} color="#2563eb" /> Materias que Puedo Enseñar ({offeredSubjects.length})
-        </h2>
-        <span style={{ fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8', padding: '3px 8px', borderRadius: '6px', fontWeight: 600 }}>
-          Enfocado en Informática
-        </span>
-      </div>
-      <p className="ia-form-section-desc" style={{ marginBottom: '12px' }}>
-        Elige materias clave que domines para apoyar a compañeros de cursos inferiores.
-      </p>
-
-      {/* Chips de filtro rápido para concentrar las materias */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-        <button
-          type="button"
-          onClick={() => setFilterCategory('hurdles')}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
+          marginBottom: '6px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <BookOpenIcon size={20} color="#2563eb" />
+          <h2 className="ia-form-section-title" style={{ margin: 0, fontSize: '1.15rem' }}>
+            Materias Habilitadas para Impartir ({offeredSubjects.length})
+          </h2>
+        </div>
+        <span
           style={{
-            fontSize: '0.76rem',
-            padding: '4px 10px',
-            borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'hurdles' ? '#2563eb' : '#e2e8f0'}`,
-            background: filterCategory === 'hurdles' ? '#eff6ff' : '#ffffff',
-            color: filterCategory === 'hurdles' ? '#1d4ed8' : '#64748b',
-            fontWeight: filterCategory === 'hurdles' ? 700 : 500,
-            cursor: 'pointer',
+            fontSize: '0.72rem',
+            background: '#ecfdf5',
+            color: '#065f46',
+            border: '1px solid #a7f3d0',
+            padding: '3px 9px',
+            borderRadius: '12px',
+            fontWeight: 700,
             display: 'inline-flex',
             alignItems: 'center',
             gap: '4px',
           }}
         >
-          <TargetIcon size={12} color={filterCategory === 'hurdles' ? '#1d4ed8' : '#64748b'} />
-          Ramos Clave de Inicio
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterCategory('programming')}
-          style={{
-            fontSize: '0.76rem',
-            padding: '4px 10px',
-            borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'programming' ? '#2563eb' : '#e2e8f0'}`,
-            background: filterCategory === 'programming' ? '#eff6ff' : '#ffffff',
-            color: filterCategory === 'programming' ? '#1d4ed8' : '#64748b',
-            fontWeight: filterCategory === 'programming' ? 700 : 500,
-            cursor: 'pointer',
-          }}
-        >
-          Programación
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterCategory('db')}
-          style={{
-            fontSize: '0.76rem',
-            padding: '4px 10px',
-            borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'db' ? '#2563eb' : '#e2e8f0'}`,
-            background: filterCategory === 'db' ? '#eff6ff' : '#ffffff',
-            color: filterCategory === 'db' ? '#1d4ed8' : '#64748b',
-            fontWeight: filterCategory === 'db' ? 700 : 500,
-            cursor: 'pointer',
-          }}
-        >
-          Bases de Datos
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterCategory('math')}
-          style={{
-            fontSize: '0.76rem',
-            padding: '4px 10px',
-            borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'math' ? '#2563eb' : '#e2e8f0'}`,
-            background: filterCategory === 'math' ? '#eff6ff' : '#ffffff',
-            color: filterCategory === 'math' ? '#1d4ed8' : '#64748b',
-            fontWeight: filterCategory === 'math' ? 700 : 500,
-            cursor: 'pointer',
-          }}
-        >
-          Matemáticas
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilterCategory('all')}
-          style={{
-            fontSize: '0.76rem',
-            padding: '4px 10px',
-            borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'all' ? '#2563eb' : '#e2e8f0'}`,
-            background: filterCategory === 'all' ? '#eff6ff' : '#ffffff',
-            color: filterCategory === 'all' ? '#1d4ed8' : '#64748b',
-            fontWeight: filterCategory === 'all' ? 700 : 500,
-            cursor: 'pointer',
-          }}
-        >
-          Todas ({availableCatalog.length})
-        </button>
+          <ShieldCheckIcon size={13} color="#059669" />
+          Acreditación Requerida
+        </span>
       </div>
 
-      {/* Formulario compacto para añadir */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(200px, 2.5fr) minmax(130px, 1.2fr) minmax(180px, 2fr) auto',
-          gap: '8px',
-          alignItems: 'end',
-          marginBottom: '14px',
-          background: '#f8fafc',
-          padding: '12px 14px',
-          borderRadius: '10px',
-          border: '1px solid #e2e8f0',
-        }}
-      >
-        <div>
-          <label className="ia-label" style={{ marginBottom: '4px', fontSize: '0.78rem' }}>Materia a enseñar</label>
-          <select
-            className="ia-select"
-            value={newSubjectId}
-            onChange={(e) => setNewSubjectId(e.target.value)}
-            style={{ fontSize: '0.84rem', padding: '6px 10px' }}
-          >
-            <option value="">-- Selecciona asignatura --</option>
-            {displayedCatalog.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} {s.category ? `(${s.category})` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
+      <p className="ia-form-section-desc" style={{ marginBottom: '16px', lineHeight: 1.5 }}>
+        Listado de asignaturas donde has validado tus conocimientos. En InterAula las materias no se agregan manualmente: se desbloquean automáticamente al aprobar la evaluación de 10 preguntas o presentar respaldo docente oficial.
+      </p>
 
-        <div>
-          <label className="ia-label" style={{ marginBottom: '4px', fontSize: '0.78rem' }}>Nivel de Dominio</label>
-          <select
-            className="ia-select"
-            value={newLevel}
-            onChange={(e) => setNewLevel(e.target.value as AcademicLevel)}
-            style={{ fontSize: '0.84rem', padding: '6px 10px' }}
-          >
-            <option value="basic">Básico</option>
-            <option value="intermediate">Intermedio</option>
-            <option value="advanced">Avanzado</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="ia-label" style={{ marginBottom: '4px', fontSize: '0.78rem' }}>Enfoque (Opcional)</label>
-          <input
-            type="text"
-            className="ia-input"
-            value={newDesc}
-            onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="Ej. Ejercicios prácticos de certamen"
-            style={{ fontSize: '0.84rem', padding: '6px 10px' }}
-          />
-        </div>
-
-        <button
-          type="button"
-          className="ia-btn-primary"
-          onClick={handleAdd}
-          disabled={!newSubjectId || isSubmitting}
-          style={{ height: '36px', padding: '0 14px', fontSize: '0.82rem' }}
-        >
-          <PlusIcon size={14} /> {isSubmitting ? '...' : 'Agregar'}
-        </button>
-      </div>
-
-      {/* Listado de materias añadidas */}
+      {/* Listado de materias habilitadas */}
       {offeredSubjects.length > 0 ? (
-        <div className="ia-catalog-list">
-          {offeredSubjects.map((item) => (
-            <div key={item.subject_id} className="ia-catalog-item" style={{ padding: '8px 12px' }}>
-              <div className="ia-catalog-item-info">
-                <div>
-                  <span className="ia-catalog-item-title" style={{ fontSize: '0.86rem' }}>{item.subject?.name}</span>
+        <div>
+          <div className="ia-catalog-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {offeredSubjects.map((item) => (
+              <div
+                key={item.subject_id}
+                className="ia-catalog-item"
+                style={{
+                  padding: '14px 16px',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: '220px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                    <strong style={{ fontSize: '0.96rem', color: '#0f172a' }}>
+                      {item.subject?.name || 'Asignatura'}
+                    </strong>
+                    {item.subject?.category && (
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          backgroundColor: '#f1f5f9',
+                          color: '#475569',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {item.subject.category}
+                      </span>
+                    )}
+                    {item.is_verified ? (
+                      <span
+                        className="ia-badge ia-badge-success"
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '2px 8px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        <ShieldCheckIcon size={12} color="#16a34a" />
+                        Acreditada para Enseñar
+                      </span>
+                    ) : (
+                      <span
+                        className="ia-badge ia-badge-blue"
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '2px 8px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        <CheckIcon size={12} />
+                        Habilitada
+                      </span>
+                    )}
+                  </div>
                   {item.description && (
-                    <p className="ia-catalog-item-desc" style={{ fontSize: '0.76rem' }}>{item.description}</p>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
+                      {item.description}
+                    </p>
                   )}
                 </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      padding: '3px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: '#eff6ff',
+                      color: '#1e40af',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Nivel {formatAcademicLevel(item.level)}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="ia-btn-icon-danger"
+                    onClick={() => onRemove(item.subject_id)}
+                    title="Dar de baja esta materia de mis tutorías"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <TrashIcon size={15} />
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="ia-badge ia-badge-blue" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
-                  {formatAcademicLevel(item.level)}
-                </span>
-                <button
-                  type="button"
-                  className="ia-btn-icon-danger"
-                  onClick={() => onRemove(item.subject_id)}
-                  title="Eliminar materia"
-                  style={{ width: '28px', height: '28px' }}
-                >
-                  <TrashIcon size={14} />
-                </button>
-              </div>
+            ))}
+          </div>
+
+          {onStartEvaluation && (
+            <div
+              style={{
+                marginTop: '14px',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                onClick={onStartEvaluation}
+                className="ia-btn-secondary"
+                style={{
+                  fontSize: '0.82rem',
+                  padding: '7px 14px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <ClockIcon size={14} color="#2563eb" />
+                <span>Habilitar otra materia con el Asistente</span>
+              </button>
             </div>
-          ))}
+          )}
         </div>
       ) : (
-        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', fontStyle: 'italic' }}>
-          Aún no has agregado materias que puedas enseñar.
-        </p>
+        /* ESTADO INICIAL CUANDO AÚN NO HA RENDIDO EXÁMENES */
+        <div
+          style={{
+            backgroundColor: '#f8fafc',
+            border: '1.5px dashed #cbd5e1',
+            borderRadius: '14px',
+            padding: '24px 20px',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          <div
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '50%',
+              backgroundColor: '#eff6ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#2563eb',
+            }}
+          >
+            <ShieldCheckIcon size={24} />
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a', marginBottom: '4px' }}>
+              Aún no tienes materias habilitadas para impartir
+            </div>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b', maxWidth: '580px', lineHeight: 1.5 }}>
+              Para asegurar la calidad pedagógica en InterAula, debes acreditar tus conocimientos mediante la evaluación de preguntas o presentando respaldo institucional antes de recibir solicitudes de estudiantes.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
+            {onStartEvaluation && (
+              <button
+                type="button"
+                onClick={onStartEvaluation}
+                className="ia-btn-primary"
+                style={{
+                  fontSize: '0.84rem',
+                  padding: '9px 18px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 700,
+                }}
+              >
+                <ClockIcon size={15} color="#ffffff" />
+                <span>Rendir Evaluación de 10 Preguntas</span>
+              </button>
+            )}
+
+            {onRequestEndorsement && (
+              <button
+                type="button"
+                onClick={onRequestEndorsement}
+                className="ia-btn-secondary"
+                style={{
+                  fontSize: '0.84rem',
+                  padding: '9px 18px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 700,
+                }}
+              >
+                <AwardIcon size={15} color="#2563eb" />
+                <span>Solicitar Respaldo de Profesor</span>
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

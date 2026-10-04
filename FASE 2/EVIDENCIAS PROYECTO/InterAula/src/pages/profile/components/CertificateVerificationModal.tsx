@@ -541,7 +541,7 @@ export default function CertificateVerificationModal({
             /* VISTA 2: Carga y Procesamiento de Certificado */
             <div>
               <p style={{ fontSize: '0.88rem', color: '#475569', marginTop: 0, marginBottom: '16px', lineHeight: 1.5 }}>
-                Adjunta tu <strong>Certificado de Concentración de Notas</strong> emitido por Duoc UC (formato PDF).
+                Adjunta tu <strong>Certificado de Concentración de Notas</strong> oficial emitido por tu institución de educación superior (formato PDF).
                 El sistema extraerá tus datos y cruzará la nota de <strong>{subjectName}</strong> de manera local en tu navegador antes de enviarlo al repositorio seguro.
               </p>
 
