@@ -112,6 +112,7 @@ export default function TutorValidationBotModal({
   const [showTabWarning, setShowTabWarning] = useState(false);
   const [isWindowBlurred, setIsWindowBlurred] = useState(false);
   const [screenshotBlockedToast, setScreenshotBlockedToast] = useState(false);
+  const [eliminationReason, setEliminationReason] = useState<'timeout' | 'wrong_answer' | null>(null);
 
   const modalOverlayRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -273,6 +274,7 @@ export default function TutorValidationBotModal({
     setShowAbandonConfirm(false);
     setShowTabWarning(false);
     setPasteWarning(false);
+    setEliminationReason(null);
     setStep('idle');
     setQuestions([]);
     setCurrentIndex(0);
@@ -328,6 +330,7 @@ export default function TutorValidationBotModal({
     };
 
     setMessages((prev) => [...prev, timeoutMsg, finalNoticeMsg]);
+    setEliminationReason('timeout');
     setStep('eliminated');
     setIsProcessingAnswer(false);
   };
@@ -580,6 +583,7 @@ export default function TutorValidationBotModal({
       };
 
       setMessages((prev) => [...prev, userMsg, botFailResponse, finalFailMsg]);
+      setEliminationReason('wrong_answer');
       setStep('eliminated');
       setIsProcessingAnswer(false);
     }
@@ -719,9 +723,9 @@ export default function TutorValidationBotModal({
           backgroundColor: '#ffffff',
           borderRadius: isFullscreen ? '0' : '18px',
           width: '100%',
-          maxWidth: isFullscreen ? '100vw' : '740px',
-          height: isFullscreen ? '100vh' : '88vh',
-          maxHeight: isFullscreen ? '100vh' : '820px',
+          maxWidth: isFullscreen ? '100vw' : '860px',
+          height: isFullscreen ? '100vh' : '92vh',
+          maxHeight: isFullscreen ? '100vh' : '920px',
           boxShadow: isFullscreen ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
           border: isFullscreen ? 'none' : '1px solid #e2e8f0',
           display: 'flex',
@@ -764,10 +768,10 @@ export default function TutorValidationBotModal({
             >
               <ShieldCheckIcon size={32} />
             </div>
-            <div style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: '8px' }}>
+            <div style={{ fontWeight: 800, fontSize: '1.35rem', marginBottom: '10px', letterSpacing: '-0.01em' }}>
               Contenido Oculto por Seguridad
             </div>
-            <p style={{ margin: 0, fontSize: '0.88rem', color: '#94a3b8', maxWidth: '440px', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, fontSize: '1rem', color: '#94a3b8', maxWidth: '480px', lineHeight: 1.6 }}>
               La ventana perdió el foco o se detectó una herramienta de captura de pantalla. Para asegurar la integridad técnica, el contenido se oculta de inmediato.
             </p>
             <button
@@ -801,7 +805,7 @@ export default function TutorValidationBotModal({
               color: '#ffffff',
               padding: '8px 18px',
               borderRadius: '24px',
-              fontSize: '0.82rem',
+              fontSize: '0.92rem',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
@@ -862,16 +866,16 @@ export default function TutorValidationBotModal({
                   <AlertCircleIcon size={22} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
+                  <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
                     ¿Deseas salir de la evaluación?
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  <div style={{ fontSize: '0.88rem', color: '#64748b' }}>
                     Puedes retomar la prueba en otro momento
                   </div>
                 </div>
               </div>
 
-              <p style={{ margin: 0, fontSize: '0.86rem', color: '#475569', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', lineHeight: 1.55 }}>
                 Si abandonas ahora, el progreso de la sesión actual no se guardará. No tendrás penalizaciones ni registro negativo en tu cuenta, y podrás volver a realizar la evaluación cuando lo desees.
               </p>
 
@@ -880,7 +884,7 @@ export default function TutorValidationBotModal({
                   type="button"
                   onClick={() => setShowAbandonConfirm(false)}
                   className="ia-btn-secondary"
-                  style={{ padding: '9px 16px', fontSize: '0.84rem' }}
+                  style={{ padding: '10px 18px', fontSize: '0.92rem' }}
                 >
                   Continuar Evaluación
                 </button>
@@ -888,8 +892,8 @@ export default function TutorValidationBotModal({
                   type="button"
                   onClick={handleFinalClose}
                   style={{
-                    padding: '9px 18px',
-                    fontSize: '0.84rem',
+                    padding: '10px 20px',
+                    fontSize: '0.92rem',
                     fontWeight: 700,
                     backgroundColor: '#dc2626',
                     color: '#ffffff',
@@ -952,15 +956,15 @@ export default function TutorValidationBotModal({
                 <LockIcon size={26} />
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#0f172a' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
                   Modo Pantalla Completa Obligatorio
                 </div>
-                <div style={{ fontSize: '0.8rem', color: '#dc2626', fontWeight: 700, marginTop: '3px' }}>
+                <div style={{ fontSize: '0.9rem', color: '#dc2626', fontWeight: 700, marginTop: '4px' }}>
                   No está permitido minimizar ni alternar aplicaciones
                 </div>
               </div>
 
-              <p style={{ margin: 0, fontSize: '0.86rem', color: '#475569', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', lineHeight: 1.55 }}>
                 Esta evaluación no admite segundo plano ni minimizado: <strong>es entrar o salir</strong>. El tiempo continúa corriendo en tiempo real. Para continuar, reanuda la pantalla completa de inmediato.
               </p>
 
@@ -969,7 +973,7 @@ export default function TutorValidationBotModal({
                   type="button"
                   onClick={handleFinalClose}
                   className="ia-btn-secondary"
-                  style={{ padding: '10px 18px', fontSize: '0.84rem', fontWeight: 600 }}
+                  style={{ padding: '11px 20px', fontSize: '0.92rem', fontWeight: 600 }}
                 >
                   Salir y Abandonar
                 </button>
@@ -979,7 +983,7 @@ export default function TutorValidationBotModal({
                   className="ia-btn-primary"
                   style={{
                     padding: '10px 22px',
-                    fontSize: '0.84rem',
+                    fontSize: '0.92rem',
                     fontWeight: 800,
                     background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
                     borderColor: '#047857',
@@ -995,7 +999,7 @@ export default function TutorValidationBotModal({
         {/* ENCABEZADO CHATBOT */}
         <div
           style={{
-            padding: '16px 20px',
+            padding: '18px 24px',
             backgroundColor: '#0f172a',
             color: '#ffffff',
             display: 'flex',
@@ -1021,7 +1025,7 @@ export default function TutorValidationBotModal({
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.98rem' }}>Asistente Evaluador de Tutores</span>
+                <span style={{ fontWeight: 800, fontSize: '1.12rem', letterSpacing: '-0.01em' }}>Asistente Evaluador de Tutores</span>
                 <span
                   style={{
                     display: 'inline-block',
@@ -1042,7 +1046,7 @@ export default function TutorValidationBotModal({
                       color: '#a7f3d0',
                       padding: '2px 7px',
                       borderRadius: '10px',
-                      fontSize: '0.68rem',
+                      fontSize: '0.78rem',
                       fontWeight: 700,
                       border: '1px solid #059669',
                     }}
@@ -1052,7 +1056,7 @@ export default function TutorValidationBotModal({
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '0.88rem', color: '#94a3b8' }}>
                 {userInstitution
                   ? `${userInstitution}${userCareer ? ` · ${userCareer}` : ''}`
                   : `Habilitación de Tutor Comunitario · ${subjectName}`}
@@ -1072,7 +1076,7 @@ export default function TutorValidationBotModal({
                   color: '#a7f3d0',
                   borderRadius: '16px',
                   padding: '4px 10px',
-                  fontSize: '0.72rem',
+                  fontSize: '0.82rem',
                   fontWeight: 700,
                 }}
               >
@@ -1092,7 +1096,7 @@ export default function TutorValidationBotModal({
                   color: '#a7f3d0',
                   borderRadius: '16px',
                   padding: '4px 10px',
-                  fontSize: '0.72rem',
+                  fontSize: '0.82rem',
                   fontWeight: 700,
                 }}
               >
@@ -1112,7 +1116,7 @@ export default function TutorValidationBotModal({
                   color: '#a7f3d0',
                   borderRadius: '16px',
                   padding: '4px 10px',
-                  fontSize: '0.72rem',
+                  fontSize: '0.82rem',
                   fontWeight: 700,
                 }}
               >
@@ -1144,7 +1148,7 @@ export default function TutorValidationBotModal({
                 >
                   {timeLeft}s
                 </span>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
                   ({currentQ?.type === 'choice' ? 'Alternativa' : 'Desarrollo'})
                 </span>
               </div>
@@ -1159,9 +1163,9 @@ export default function TutorValidationBotModal({
                   background: 'rgba(239, 68, 68, 0.1)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   color: '#fca5a5',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  padding: '5px 12px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  padding: '6px 14px',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
@@ -1211,7 +1215,7 @@ export default function TutorValidationBotModal({
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '12px',
-              fontSize: '0.82rem',
+              fontSize: '0.92rem',
               color: '#92400e',
             }}
           >
@@ -1230,7 +1234,7 @@ export default function TutorValidationBotModal({
                 border: 'none',
                 borderRadius: '4px',
                 padding: '3px 10px',
-                fontSize: '0.74rem',
+                fontSize: '0.82rem',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -1242,7 +1246,7 @@ export default function TutorValidationBotModal({
 
         {/* BARRA DE TIEMPO (SOLO CORRE MIENTRAS RESPONDE) */}
         {step === 'answering' && (
-          <div style={{ height: '4px', backgroundColor: '#334155', width: '100%', overflow: 'hidden' }}>
+          <div style={{ height: '5px', backgroundColor: '#334155', width: '100%', overflow: 'hidden' }}>
             <div
               style={{
                 width: `${timePercent}%`,
@@ -1259,10 +1263,10 @@ export default function TutorValidationBotModal({
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '20px',
+            padding: '24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '14px',
+            gap: '16px',
             backgroundColor: '#f8fafc',
           }}
         >
@@ -1419,13 +1423,13 @@ export default function TutorValidationBotModal({
                   <ShieldCheckIcon size={24} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, color: '#065f46', fontSize: '1rem', marginBottom: '4px' }}>
+                  <div style={{ fontWeight: 800, color: '#065f46', fontSize: '1.1rem', marginBottom: '6px', letterSpacing: '-0.01em' }}>
                     Evaluación Práctica para Acreditación de Tutores
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.86rem', color: '#166534', lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: '0.95rem', color: '#166534', lineHeight: 1.55 }}>
                     Para habilitarte como tutor y apoyar a tus compañeros en InterAula, necesitas rendir esta evaluación práctica con nuestro Asistente Evaluador:
                   </p>
-                  <ul style={{ margin: '8px 0 0 18px', padding: 0, fontSize: '0.84rem', color: '#15803d', lineHeight: 1.5 }}>
+                  <ul style={{ margin: '10px 0 0 18px', padding: 0, fontSize: '0.92rem', color: '#15803d', lineHeight: 1.6 }}>
                     <li><strong>10 preguntas prácticas</strong> calibradas estrictamente con el temario oficial de la materia.</li>
                     <li><strong>3 niveles formativos</strong>: elige entre Básico, Intermedio o Avanzado según tu dominio.</li>
                     <li><strong>Tiempos específicos por pregunta</strong>: 15 segundos en alternativas y 45 segundos en desarrollo técnico para agilidad.</li>
@@ -1451,7 +1455,7 @@ export default function TutorValidationBotModal({
                       background: 'none',
                       border: 'none',
                       color: '#059669',
-                      fontSize: '0.78rem',
+                      fontSize: '0.88rem',
                       fontWeight: 700,
                       cursor: 'pointer',
                       textDecoration: 'underline',
@@ -1473,9 +1477,9 @@ export default function TutorValidationBotModal({
                         setCustomSubjectInput(e.target.value);
                         setErrorMessage(null);
                       }}
-                      style={{ width: '100%', fontWeight: 600, fontSize: '0.92rem' }}
+                      style={{ width: '100%', fontWeight: 600, fontSize: '0.98rem' }}
                     />
-                    <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '6px' }}>
+                    <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '6px' }}>
                       El motor de IA generará 10 preguntas técnicas especializadas para esta materia.
                     </div>
                   </div>
@@ -1487,7 +1491,7 @@ export default function TutorValidationBotModal({
                       setSelectedSubjectId(e.target.value);
                       setErrorMessage(null);
                     }}
-                    style={{ width: '100%', fontWeight: 600, fontSize: '0.9rem' }}
+                    style={{ width: '100%', fontWeight: 600, fontSize: '0.98rem' }}
                   >
                     {availableSubjects.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -1498,7 +1502,7 @@ export default function TutorValidationBotModal({
                 )}
 
                 {userInstitution && (
-                  <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ShieldCheckIcon size={13} color="#059669" />
                     <span>
                       Evaluación calibrada con el temario formativo de <strong>{userInstitution}</strong> {userCareer ? `[${userCareer}]` : ''}.
