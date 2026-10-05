@@ -14,6 +14,7 @@ import {
   UsersIcon,
   CheckIcon,
   ExternalLinkIcon,
+  TrashIcon,
 } from '../../../components/common/Icons';
 
 interface WorkshopCardProps {
@@ -23,6 +24,7 @@ interface WorkshopCardProps {
   onUnenroll: (workshopId: string) => Promise<void>;
   onCancelWorkshop?: (workshopId: string) => Promise<void>;
   onFinishWorkshop?: (workshopId: string) => Promise<void>;
+  onDeleteWorkshop?: (workshopId: string) => Promise<void>;
   actionLoading?: boolean;
 }
 
@@ -33,9 +35,11 @@ export default function WorkshopCard({
   onUnenroll,
   onCancelWorkshop,
   onFinishWorkshop,
+  onDeleteWorkshop,
   actionLoading = false,
 }: WorkshopCardProps) {
   const [copiedLink, setCopiedLink] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const isTutor = Boolean(currentUserId) && (currentUserId === workshop.tutor_id || workshop.tutor_id === 'live-host');
   const isEnrolled = Boolean(workshop.is_enrolled);
   const tutorName = getUserDisplayName(workshop.tutor);
@@ -275,6 +279,84 @@ export default function WorkshopCard({
                 >
                   {isCompleted ? 'Clase Finalizada' : 'Taller Cancelado'}
                 </span>
+              )}
+
+              {/* Confirmación y Botón de Eliminación */}
+              {onDeleteWorkshop && (
+                confirmDelete ? (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: 600 }}>
+                      ¿Eliminar clase?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await onDeleteWorkshop(workshop.id);
+                        setConfirmDelete(false);
+                      }}
+                      disabled={actionLoading}
+                      style={{
+                        background: '#dc2626',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Sí, eliminar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      disabled={actionLoading}
+                      style={{
+                        background: '#ffffff',
+                        color: '#475569',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
+                        fontSize: '0.76rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    disabled={actionLoading}
+                    className="ia-btn-secondary"
+                    title="Eliminar esta clase del historial para no acumular registros"
+                    style={{
+                      color: '#b91c1c',
+                      borderColor: '#fecaca',
+                      fontSize: '0.82rem',
+                      padding: '6px 12px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <TrashIcon size={14} color="#b91c1c" />
+                    <span>Eliminar</span>
+                  </button>
+                )
               )}
             </>
           )}

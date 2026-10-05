@@ -1199,4 +1199,57 @@ export const tutoringService = {
       })
     );
   },
+
+  /**
+   * Elimina un taller o clase en vivo creado por el tutor para mantener limpio el historial.
+   */
+  async deleteWorkshop(workshopId: string): Promise<void> {
+    try {
+      await getRequiredAuthUser();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(workshopId);
+      if (isUuid) {
+        // Eliminar inscripciones asociadas si existen
+        await supabase.from('workshop_enrollments').delete().eq('workshop_id', workshopId);
+        await supabase.from('tutoring_workshops').delete().eq('id', workshopId);
+      } else {
+        await supabase.from('tutoring_workshops').delete().eq('room_id', workshopId);
+      }
+    } catch (err: any) {
+      console.warn('[tutoringService] Error en deleteWorkshop supabase:', err?.message);
+    }
+
+    // Limpiar de LOCAL_WORKSHOPS
+    const idx = LOCAL_WORKSHOPS.findIndex((w) => w.id === workshopId || w.room_id === workshopId);
+    let removedRoomId: string | undefined;
+    if (idx !== -1) {
+      removedRoomId = LOCAL_WORKSHOPS[idx].room_id;
+      LOCAL_WORKSHOPS.splice(idx, 1);
+      saveStoredLocalWorkshops(LOCAL_WORKSHOPS);
+    }
+
+    // Limpiar de realtimeWorkshopsMap
+    const rtWs =
+      realtimeWorkshopsMap.get(workshopId) ||
+      Array.from(realtimeWorkshopsMap.values()).find((w) => w.id === workshopId || w.room_id === workshopId);
+    if (rtWs) {
+      removedRoomId = removedRoomId || rtWs.room_id;
+      realtimeWorkshopsMap.delete(rtWs.id);
+    }
+
+    const effectiveRoomId = removedRoomId || workshopId;
+    ensureRealtimeWorkshopsChannel();
+    try {
+      realtimeWorkshopsChannel?.send({
+        type: 'broadcast',
+        event: 'workshop_deleted',
+        payload: { id: workshopId, roomId: effectiveRoomId },
+      });
+    } catch {}
+
+    window.dispatchEvent(
+      new CustomEvent('ia_workshops_updated', {
+        detail: { id: workshopId, roomId: effectiveRoomId, deleted: true },
+      })
+    );
+  },
 };

@@ -249,6 +249,22 @@ export default function TutoringExplore() {
     }
   };
 
+  const handleDeleteWorkshop = async (workshopId: string) => {
+    setWorkshopActionLoading(true);
+    setErrorMsg('');
+    try {
+      await tutoringService.deleteWorkshop(workshopId);
+      setSuccessMsg('La clase o taller ha sido eliminado correctamente.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      await fetchWorkshops();
+    } catch (err: any) {
+      console.error('[TutoringExplore] Error al eliminar clase:', err);
+      setErrorMsg(err.message || 'No fue posible eliminar la clase.');
+    } finally {
+      setWorkshopActionLoading(false);
+    }
+  };
+
   const handleCreateWorkshopSuccess = async () => {
     setSuccessMsg('¡Taller grupal en vivo programado exitosamente! Tus compañeros ya pueden inscribirse.');
     setTimeout(() => setSuccessMsg(''), 6000);
@@ -1210,6 +1226,7 @@ export default function TutoringExplore() {
                   onUnenroll={handleUnenroll}
                   onCancelWorkshop={handleCancelWorkshop}
                   onFinishWorkshop={handleFinishWorkshop}
+                  onDeleteWorkshop={handleDeleteWorkshop}
                   actionLoading={workshopActionLoading}
                 />
               ))}
