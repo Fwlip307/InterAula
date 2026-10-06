@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
+import { isCertifiedAccount } from '../../services/profile.service';
 import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
 import { getUserDisplayName, formatTutoringDuration } from '../../utils/formatters';
 import {
@@ -294,7 +295,9 @@ export default function VirtualClassroom() {
         user &&
           (user.id === workshop?.tutor_id ||
             workshop?.tutor_id === 'live-host' ||
-            user.email === 'kendokaponijereklein@gmail.com')
+            isCertifiedAccount(user.email) ||
+            user.email === 'kendokaponijereklein@gmail.com' ||
+            user.email === 'lukasdonoso1911@gmail.com')
       )
     : user?.id === session?.tutor_id;
 

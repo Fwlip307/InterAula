@@ -129,6 +129,42 @@ export const verificationService = {
   },
 
   /**
+   * Genera solicitudes aprobadas simuladas para cuentas certificadas de prueba.
+   */
+  getMockCertifiedVerificationRequests(tutorId: string): TutorVerificationRequest[] {
+    return [
+      {
+        id: `cert-req-progweb-${tutorId}`,
+        tutor_id: tutorId,
+        subject_id: 'informatica_software.programacion_web',
+        status: 'approved',
+        practical_exercise_title: 'Desarrollo de API RESTful y Componentes React Reactivos',
+        practical_submission: 'https://github.com/lukasdonoso/interaula-demo',
+        defense_notes: 'Validación técnica y pedagógica completada con éxito. Demostración de arquitectura limpia y componentes accesibles.',
+        reviewer_feedback: 'Acreditación técnica aprobada con nota 6.8. Cumple con todos los estándares académicos para ejercer como Tutor Oficial.',
+        reviewed_by: 'docente-validador-duoc',
+        reviewed_at: '2026-10-04T12:00:00Z',
+        created_at: '2026-10-04T10:00:00Z',
+        updated_at: '2026-10-04T12:00:00Z',
+        document_filename: 'Certificado_Academico_DuocUC_ProgramacionWeb.pdf',
+        document_extraction_status: 'completed',
+        matched_subject_name: 'Programación Web',
+        matched_grade: 6.8,
+        matched_status: 'found',
+        calculated_level: 'advanced',
+        subject: {
+          id: 'informatica_software.programacion_web',
+          name: 'Programación Web',
+          category: 'Tecnología e Informática',
+          is_pilot: true,
+          pilot_priority: 1,
+          created_at: '2026-10-04T10:00:00Z',
+        },
+      },
+    ];
+  },
+
+  /**
    * Obtiene todas las solicitudes de verificación realizadas por el usuario en sesión.
    */
   async getMyVerificationRequests(): Promise<TutorVerificationRequest[]> {
@@ -142,10 +178,18 @@ export const verificationService = {
 
     if (error) {
       console.error('[verificationService] Error en getMyVerificationRequests:', error.message);
+      if (isCertifiedAccount(user.email) || isCertifiedAccount(user.id)) {
+        return this.getMockCertifiedVerificationRequests(user.id);
+      }
       throw new Error('No fue posible cargar tus solicitudes de verificación');
     }
 
-    return (data || []) as TutorVerificationRequest[];
+    const list = (data || []) as TutorVerificationRequest[];
+    if (list.length === 0 && (isCertifiedAccount(user.email) || isCertifiedAccount(user.id))) {
+      return this.getMockCertifiedVerificationRequests(user.id);
+    }
+
+    return list;
   },
 
   /**

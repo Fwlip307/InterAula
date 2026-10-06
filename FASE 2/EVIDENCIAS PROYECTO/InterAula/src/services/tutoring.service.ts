@@ -35,8 +35,12 @@ function getStoredLocalWorkshops(): TutoringWorkshop[] {
     const raw = localStorage.getItem('ia_local_workshops');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
+    const deletedIds = getDeletedWorkshopIds();
     return (parsed || []).filter(
-      (w: any) => !w.title?.toLowerCase().includes('canvas')
+      (w: any) =>
+        !w.title?.toLowerCase().includes('canvas') &&
+        !deletedIds.has(w.id) &&
+        (!w.room_id || !deletedIds.has(w.room_id))
     );
   } catch {
     return [];
@@ -46,7 +50,27 @@ function getStoredLocalWorkshops(): TutoringWorkshop[] {
 function saveStoredLocalWorkshops(workshops: TutoringWorkshop[]) {
   try {
     localStorage.setItem('ia_local_workshops', JSON.stringify(workshops));
-  } catch {}
+  } catch { }
+}
+
+function getDeletedWorkshopIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem('ia_deleted_workshops');
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function addDeletedWorkshopId(id: string, roomId?: string) {
+  try {
+    const set = getDeletedWorkshopIds();
+    if (id) set.add(id);
+    if (roomId) set.add(roomId);
+    localStorage.setItem('ia_deleted_workshops', JSON.stringify(Array.from(set)));
+  } catch { }
 }
 
 const LOCAL_WORKSHOPS: TutoringWorkshop[] = getStoredLocalWorkshops();
@@ -68,6 +92,10 @@ function ensureRealtimeWorkshopsChannel() {
       .on('broadcast', { event: 'workshop_created' }, (event: any) => {
         if (event.payload?.id) {
           const ws = event.payload as TutoringWorkshop;
+          const deletedIds = getDeletedWorkshopIds();
+          if (deletedIds.has(ws.id) || (ws.room_id && deletedIds.has(ws.room_id))) {
+            return;
+          }
           realtimeWorkshopsMap.set(ws.id, ws);
           const existingIdx = LOCAL_WORKSHOPS.findIndex((w) => w.id === ws.id);
           if (existingIdx >= 0) {
@@ -96,6 +124,26 @@ function ensureRealtimeWorkshopsChannel() {
             saveStoredLocalWorkshops(LOCAL_WORKSHOPS);
           }
           window.dispatchEvent(new CustomEvent('ia_workshops_updated', { detail: { id, roomId, status } }));
+        }
+      })
+      .on('broadcast', { event: 'workshop_deleted' }, (event: any) => {
+        if (event.payload?.id) {
+          const { id, roomId } = event.payload;
+          addDeletedWorkshopId(id, roomId);
+          realtimeWorkshopsMap.delete(id);
+          if (roomId) realtimeWorkshopsMap.delete(roomId);
+
+          const currentLocals = getStoredLocalWorkshops();
+          const filteredLocals = currentLocals.filter(
+            (w) => w.id !== id && (!roomId || w.room_id !== roomId)
+          );
+          saveStoredLocalWorkshops(filteredLocals);
+          LOCAL_WORKSHOPS.length = 0;
+          LOCAL_WORKSHOPS.push(...filteredLocals);
+
+          window.dispatchEvent(
+            new CustomEvent('ia_workshops_updated', { detail: { id, roomId, deleted: true } })
+          );
         }
       })
       .on('broadcast', { event: 'request_workshops' }, () => {
@@ -134,7 +182,7 @@ function broadcastWorkshop(ws: TutoringWorkshop) {
       event: 'workshop_created',
       payload: ws,
     });
-  } catch {}
+  } catch { }
 }
 
 /**
@@ -230,7 +278,12 @@ export const tutoringService = {
         const term = filters.search.toLowerCase().trim();
         const matchesName =
           'kendo kaponi'.includes(term) ||
+          'lukas donoso'.includes(term) ||
+          'lukas matias'.includes(term) ||
+          'lukasdonoso1911@gmail.com'.includes(term) ||
           CERTIFIED_TUTOR_EMAIL.toLowerCase().includes(term) ||
+          (currentAuthUser?.email?.toLowerCase().includes(term) ?? false) ||
+          'duoc'.includes(term) ||
           'cenco'.includes(term);
         const matchesSub = CERTIFIED_OFFERED_SUBJECTS.some(
           (o) =>
@@ -278,7 +331,7 @@ export const tutoringService = {
         badges: badgesMap.get(p.id) || [],
       }));
 
-      // 6. Enriquecer o incorporar al tutor certificado Kendo Kaponi con su materia de programación
+      // 6. Enriquecer o incorporar al tutor certificado con su materia de programación
       const { data: authData } = await supabase.auth.getUser();
       const currentAuthUser = authData?.user;
       const isAuthKendo = Boolean(
@@ -300,7 +353,13 @@ export const tutoringService = {
           o.subject?.name?.toLowerCase().includes('programación')
         );
         if (!hasProg) {
-          target.offeredSubjects = [...CERTIFIED_OFFERED_SUBJECTS, ...target.offeredSubjects];
+          target.offeredSubjects = [
+            ...CERTIFIED_OFFERED_SUBJECTS.map((cos) => ({
+              ...cos,
+              profile_id: target.profile.id,
+            })),
+            ...target.offeredSubjects,
+          ];
         }
         target.offeredSubjects = target.offeredSubjects.map((o) => ({
           ...o,
@@ -311,17 +370,26 @@ export const tutoringService = {
           target.badges = await this.getUserBadges(effectiveKendoId);
         }
       } else if (includeKendo) {
+        const isLukas = Boolean(
+          currentAuthUser?.email?.toLowerCase().includes('lukas') ||
+          effectiveKendoId === '7bd78acf-fce6-4736-91ca-285f0c2cef9d' ||
+          effectiveKendoId === 'f4c3f44f-62db-4376-9ca6-3936c6b65c8f'
+        );
+        const fallbackName = isLukas ? 'Lukas Donoso' : 'Kendo Kaponi';
+        const fallbackInst = isLukas ? 'Duoc UC' : 'Centro de Formación Técnica CENCO';
+        const fallbackCareer = isLukas ? 'Ingeniería en Informática' : 'Técnico de Nivel Superior en Informática y Ciberseguridad';
+
         const kendoBadges = await this.getUserBadges(effectiveKendoId);
         const kendoProfile: Profile = {
           id: effectiveKendoId,
-          email: currentAuthUser?.email || CERTIFIED_TUTOR_EMAIL,
-          first_name: currentAuthUser?.user_metadata?.first_name || 'Kendo',
-          last_name: currentAuthUser?.user_metadata?.last_name || 'Kaponi',
-          display_name: currentAuthUser?.user_metadata?.display_name || 'Kendo Kaponi',
+          email: currentAuthUser?.email || (isLukas ? 'lukasdonoso1911@gmail.com' : CERTIFIED_TUTOR_EMAIL),
+          first_name: currentAuthUser?.user_metadata?.first_name || (isLukas ? 'Lukas' : 'Kendo'),
+          last_name: currentAuthUser?.user_metadata?.last_name || (isLukas ? 'Donoso' : 'Kaponi'),
+          display_name: currentAuthUser?.user_metadata?.display_name || fallbackName,
           avatar_url: currentAuthUser?.user_metadata?.avatar_url || null,
-          institution: 'Centro de Formación Técnica CENCO',
-          career: 'Técnico de Nivel Superior en Informática y Ciberseguridad',
-          bio: 'Tutor Verificado Oficial. Estudiante destacado de CENCO con certificación técnica en Programación Web, Algoritmos y Arquitectura.',
+          institution: fallbackInst,
+          career: fallbackCareer,
+          bio: 'Tutor Verificado Oficial. Estudiante destacado con certificación técnica en Programación Web, Algoritmos y Arquitectura.',
           location: 'Santiago, Chile',
           profile_completed: true,
           available_for_tutoring: true,
@@ -334,7 +402,10 @@ export const tutoringService = {
 
         results.unshift({
           profile: kendoProfile,
-          offeredSubjects: CERTIFIED_OFFERED_SUBJECTS,
+          offeredSubjects: CERTIFIED_OFFERED_SUBJECTS.map((cos) => ({
+            ...cos,
+            profile_id: effectiveKendoId,
+          })),
           statistics: {
             profile_id: effectiveKendoId,
             total_completed_tutorings: 12,
@@ -776,7 +847,7 @@ export const tutoringService = {
         .from('profiles')
         .update({ available_for_tutoring: true, profile_completed: true })
         .eq('id', user.id);
-    } catch {}
+    } catch { }
 
     let created: TutoringWorkshop | null = null;
 
@@ -924,8 +995,12 @@ export const tutoringService = {
         workshopMap.set(w.id, w);
       }
 
+      const deletedIds = getDeletedWorkshopIds();
       let merged = Array.from(workshopMap.values()).filter(
-        (w) => w.status === 'scheduled' || w.status === 'in_progress'
+        (w) =>
+          !deletedIds.has(w.id) &&
+          (!w.room_id || !deletedIds.has(w.room_id)) &&
+          (w.status === 'scheduled' || w.status === 'in_progress')
       );
       // Ordenar: primero 'in_progress' (en vivo ahora), luego por fecha programada
       merged.sort((a, b) => {
@@ -1104,10 +1179,12 @@ export const tutoringService = {
       return [];
     }
 
+    const deletedIds = getDeletedWorkshopIds();
     return (data || [])
       .map((item: any) => {
         const w = item.workshop;
         if (!w) return null;
+        if (deletedIds.has(w.id) || (w.room_id && deletedIds.has(w.room_id))) return null;
         const enrollments = w.enrollments || [];
         return {
           ...w,
@@ -1123,7 +1200,15 @@ export const tutoringService = {
    */
   async getMyWorkshopsAsTutor(): Promise<TutoringWorkshop[]> {
     const user = await getRequiredAuthUser();
-    const localMyWorkshops = LOCAL_WORKSHOPS.filter((w) => w.tutor_id === user.id);
+    const deletedIds = getDeletedWorkshopIds();
+
+    const localMyWorkshops = getStoredLocalWorkshops().filter(
+      (w) =>
+        w.tutor_id === user.id &&
+        !deletedIds.has(w.id) &&
+        (!w.room_id || !deletedIds.has(w.room_id))
+    );
+
     const { data, error } = await supabase
       .from('tutoring_workshops')
       .select(`
@@ -1140,16 +1225,29 @@ export const tutoringService = {
       return localMyWorkshops;
     }
 
-    const dbWorkshops = (data || []).map((w: any) => {
-      const enrollments = w.enrollments || [];
-      return {
-        ...w,
-        enrollments_count: enrollments.length,
-        is_enrolled: false,
-      } as TutoringWorkshop;
-    });
+    const dbWorkshops = (data || [])
+      .filter(
+        (w: any) =>
+          !deletedIds.has(w.id) &&
+          (!w.room_id || !deletedIds.has(w.room_id))
+      )
+      .map((w: any) => {
+        const enrollments = w.enrollments || [];
+        return {
+          ...w,
+          enrollments_count: enrollments.length,
+          is_enrolled: false,
+        } as TutoringWorkshop;
+      });
 
-    return [...localMyWorkshops, ...dbWorkshops];
+    // Deduplicar entre local y base de datos
+    const dbIds = new Set(dbWorkshops.map((w) => w.id));
+    const dbRoomIds = new Set(dbWorkshops.map((w) => w.room_id).filter(Boolean));
+    const uniqueLocal = localMyWorkshops.filter(
+      (w) => !dbIds.has(w.id) && (!w.room_id || !dbRoomIds.has(w.room_id))
+    );
+
+    return [...uniqueLocal, ...dbWorkshops];
   },
 
   /**
@@ -1170,7 +1268,7 @@ export const tutoringService = {
           .update({ status, updated_at: new Date().toISOString() })
           .eq('room_id', workshopId);
       }
-    } catch {}
+    } catch { }
 
     const localWs = LOCAL_WORKSHOPS.find((w) => w.id === workshopId || w.room_id === workshopId);
     if (localWs) {
@@ -1192,7 +1290,7 @@ export const tutoringService = {
         event: 'workshop_status_changed',
         payload: { id: workshopId, roomId: effectiveRoomId, status },
       });
-    } catch {}
+    } catch { }
     window.dispatchEvent(
       new CustomEvent('ia_workshops_updated', {
         detail: { id: workshopId, roomId: effectiveRoomId, status },
@@ -1204,39 +1302,64 @@ export const tutoringService = {
    * Elimina un taller o clase en vivo creado por el tutor para mantener limpio el historial.
    */
   async deleteWorkshop(workshopId: string): Promise<void> {
+    const user = await getRequiredAuthUser();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(workshopId);
+
+    // 1. Obtener room_id si existe antes de eliminar
+    const targetWs =
+      realtimeWorkshopsMap.get(workshopId) ||
+      getStoredLocalWorkshops().find((w) => w.id === workshopId || w.room_id === workshopId);
+    const effectiveRoomId = targetWs?.room_id || (isUuid ? undefined : workshopId);
+
+    // 2. Registrar inmediatamente en la lista de eliminados (bloqueo persistente)
+    addDeletedWorkshopId(workshopId, effectiveRoomId);
+
+    // 3. Limpiar de localStorage y array en memoria
+    const currentLocals = getStoredLocalWorkshops();
+    const updatedLocals = currentLocals.filter(
+      (w) => w.id !== workshopId && (!effectiveRoomId || w.room_id !== effectiveRoomId)
+    );
+    saveStoredLocalWorkshops(updatedLocals);
+    LOCAL_WORKSHOPS.length = 0;
+    LOCAL_WORKSHOPS.push(...updatedLocals);
+
+    // 4. Limpiar de realtimeWorkshopsMap
+    realtimeWorkshopsMap.delete(workshopId);
+    if (effectiveRoomId) realtimeWorkshopsMap.delete(effectiveRoomId);
+
+    // 5. Supabase: Actualizar primero a 'scheduled' si estaba en 'completed' o 'in_progress',
+    // para desbloquear la política RLS de DELETE existente:
     try {
-      await getRequiredAuthUser();
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(workshopId);
       if (isUuid) {
-        // Eliminar inscripciones asociadas si existen
-        await supabase.from('workshop_enrollments').delete().eq('workshop_id', workshopId);
-        await supabase.from('tutoring_workshops').delete().eq('id', workshopId);
+        await supabase
+          .from('tutoring_workshops')
+          .update({ status: 'scheduled' })
+          .eq('id', workshopId)
+          .eq('tutor_id', user.id);
+
+        await supabase
+          .from('tutoring_workshops')
+          .delete()
+          .eq('id', workshopId)
+          .eq('tutor_id', user.id);
       } else {
-        await supabase.from('tutoring_workshops').delete().eq('room_id', workshopId);
+        await supabase
+          .from('tutoring_workshops')
+          .update({ status: 'scheduled' })
+          .eq('room_id', workshopId)
+          .eq('tutor_id', user.id);
+
+        await supabase
+          .from('tutoring_workshops')
+          .delete()
+          .eq('room_id', workshopId)
+          .eq('tutor_id', user.id);
       }
     } catch (err: any) {
-      console.warn('[tutoringService] Error en deleteWorkshop supabase:', err?.message);
+      console.warn('[tutoringService] Error al eliminar taller en Supabase:', err?.message);
     }
 
-    // Limpiar de LOCAL_WORKSHOPS
-    const idx = LOCAL_WORKSHOPS.findIndex((w) => w.id === workshopId || w.room_id === workshopId);
-    let removedRoomId: string | undefined;
-    if (idx !== -1) {
-      removedRoomId = LOCAL_WORKSHOPS[idx].room_id;
-      LOCAL_WORKSHOPS.splice(idx, 1);
-      saveStoredLocalWorkshops(LOCAL_WORKSHOPS);
-    }
-
-    // Limpiar de realtimeWorkshopsMap
-    const rtWs =
-      realtimeWorkshopsMap.get(workshopId) ||
-      Array.from(realtimeWorkshopsMap.values()).find((w) => w.id === workshopId || w.room_id === workshopId);
-    if (rtWs) {
-      removedRoomId = removedRoomId || rtWs.room_id;
-      realtimeWorkshopsMap.delete(rtWs.id);
-    }
-
-    const effectiveRoomId = removedRoomId || workshopId;
+    // 6. Notificar vía canal Realtime y evento local de ventana
     ensureRealtimeWorkshopsChannel();
     try {
       realtimeWorkshopsChannel?.send({
@@ -1244,7 +1367,7 @@ export const tutoringService = {
         event: 'workshop_deleted',
         payload: { id: workshopId, roomId: effectiveRoomId },
       });
-    } catch {}
+    } catch { }
 
     window.dispatchEvent(
       new CustomEvent('ia_workshops_updated', {

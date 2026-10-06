@@ -167,8 +167,7 @@ export default function TutoringExplore() {
           (userEmail && tutorEmail && userEmail === tutorEmail) ||
           (isCertifiedAccount(userEmail) &&
             (isCertifiedAccount(tutor.profile.id) ||
-              isCertifiedAccount(tutorEmail) ||
-              tutorEmail === 'kendokaponijereklein@gmail.com')))
+              isCertifiedAccount(tutorEmail))))
     );
 
     if (isSelf) {
@@ -252,6 +251,8 @@ export default function TutoringExplore() {
   const handleDeleteWorkshop = async (workshopId: string) => {
     setWorkshopActionLoading(true);
     setErrorMsg('');
+    setWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
+    setLiveWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
     try {
       await tutoringService.deleteWorkshop(workshopId);
       setSuccessMsg('La clase o taller ha sido eliminado correctamente.');
@@ -260,6 +261,7 @@ export default function TutoringExplore() {
     } catch (err: any) {
       console.error('[TutoringExplore] Error al eliminar clase:', err);
       setErrorMsg(err.message || 'No fue posible eliminar la clase.');
+      await fetchWorkshops();
     } finally {
       setWorkshopActionLoading(false);
     }
@@ -541,7 +543,7 @@ export default function TutoringExplore() {
             {Boolean(user) &&
               (liveWorkshops[0].tutor_id === user?.id ||
                 liveWorkshops[0].tutor_id === 'live-host' ||
-                user?.email === 'kendokaponijereklein@gmail.com' ||
+                isCertifiedAccount(user?.email) ||
                 isTutor) && (
                 <button
                   type="button"
@@ -869,8 +871,7 @@ export default function TutoringExplore() {
                     (userEmail && profileEmail && userEmail === profileEmail) ||
                     (isCertifiedAccount(userEmail) &&
                       (isCertifiedAccount(p.id) ||
-                        isCertifiedAccount(profileEmail) ||
-                        profileEmail === 'kendokaponijereklein@gmail.com')))
+                        isCertifiedAccount(profileEmail))))
               );
               const hasReviews = Boolean(tutor.statistics && tutor.statistics.total_reviews_received > 0);
               const isCertifiedTutor = tutor.offeredSubjects.some((o) => o.is_verified);

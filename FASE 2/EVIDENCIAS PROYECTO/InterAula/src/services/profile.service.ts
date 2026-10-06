@@ -37,16 +37,26 @@ async function getOptionalAuthUser() {
   return authData.user;
 }
 
-export const CERTIFIED_TUTOR_EMAIL = 'kendokaponijereklein@gmail.com';
+export const CERTIFIED_TUTOR_EMAILS = [
+  'kendokaponijereklein@gmail.com',
+  'lukasdonoso1911@gmail.com',
+];
+export const CERTIFIED_TUTOR_EMAIL = 'lukasdonoso1911@gmail.com';
 export const CERTIFIED_TUTOR_ID = 'e163f6ae-03e1-4688-a4ee-36ab9ed91e3c';
+export const KNOWN_CERTIFIED_USER_IDS = [
+  'e163f6ae-03e1-4688-a4ee-36ab9ed91e3c',
+  '7bd78acf-fce6-4736-91ca-285f0c2cef9d',
+  'f4c3f44f-62db-4376-9ca6-3936c6b65c8f',
+];
 
 export function isCertifiedAccount(emailOrId?: string | null): boolean {
   if (!emailOrId) return false;
   const clean = emailOrId.toLowerCase().trim();
   return (
-    clean === CERTIFIED_TUTOR_EMAIL ||
-    clean === CERTIFIED_TUTOR_ID ||
-    clean.includes('kendokaponijereklein')
+    CERTIFIED_TUTOR_EMAILS.some((e) => clean === e || clean.includes(e.split('@')[0])) ||
+    KNOWN_CERTIFIED_USER_IDS.includes(clean) ||
+    clean.includes('kendokaponijereklein') ||
+    clean.includes('lukasdonoso1911')
   );
 }
 
@@ -88,17 +98,26 @@ export const profileService = {
       if (profile && !profile.available_for_tutoring) {
         supabase.from('profiles').update({ available_for_tutoring: true }).eq('id', user.id).then();
       }
+      const isLukas = Boolean(
+        user.email?.toLowerCase().includes('lukas') ||
+        user.id === '7bd78acf-fce6-4736-91ca-285f0c2cef9d' ||
+        user.id === 'f4c3f44f-62db-4376-9ca6-3936c6b65c8f'
+      );
+      const fallbackName = isLukas ? 'Lukas Donoso' : 'Kendo Kaponi';
+      const fallbackInst = isLukas ? 'Duoc UC' : 'Centro de Formación Técnica CENCO';
+      const fallbackCareer = isLukas ? 'Ingeniería en Informática' : 'Técnico de Nivel Superior en Informática y Ciberseguridad';
+
       profile = {
         id: user.id,
-        email: user.email || CERTIFIED_TUTOR_EMAIL,
-        first_name: profile?.first_name || '',
-        last_name: profile?.last_name || '',
-        display_name: profile?.display_name || profile?.first_name || 'Estudiante',
-        avatar_url: profile?.avatar_url || null,
-        institution: profile?.institution || '',
-        career: profile?.career || '',
-        bio: profile?.bio || '',
-        location: profile?.location || '',
+        email: user.email || (isLukas ? 'lukasdonoso1911@gmail.com' : CERTIFIED_TUTOR_EMAIL),
+        first_name: profile?.first_name || user.user_metadata?.first_name || (isLukas ? 'Lukas' : ''),
+        last_name: profile?.last_name || user.user_metadata?.last_name || (isLukas ? 'Donoso' : ''),
+        display_name: profile?.display_name || user.user_metadata?.display_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : fallbackName),
+        avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
+        institution: profile?.institution || fallbackInst,
+        career: profile?.career || fallbackCareer,
+        bio: profile?.bio || 'Tutor Verificado Oficial en Programación Web.',
+        location: profile?.location || 'Santiago, Chile',
         profile_completed: profile?.profile_completed ?? true,
         available_for_tutoring: true,
         available_for_projects: profile?.available_for_projects ?? true,
@@ -256,7 +275,10 @@ export const profileService = {
         verifiedDb.map((s) => s.subject?.name?.toLowerCase().trim() || s.subject_id)
       );
 
-      const missingCertified = CERTIFIED_OFFERED_SUBJECTS.filter((cos) => {
+      const missingCertified = CERTIFIED_OFFERED_SUBJECTS.map((cos) => ({
+        ...cos,
+        profile_id: profileId,
+      })).filter((cos) => {
         const subName = cos.subject?.name?.toLowerCase().trim();
         return (subName ? !existingNames.has(subName) : true) && !existingNames.has(cos.subject_id);
       });

@@ -214,6 +214,9 @@ export default function MyTutoring() {
   const handleWorkshopDelete = async (workshopId: string) => {
     setActionLoading(true);
     setErrorMsg('');
+    // Actualización optimista inmediata en la interfaz
+    setHostedWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
+    setEnrolledWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
     try {
       await tutoringService.deleteWorkshop(workshopId);
       setSuccessMsg('Clase o taller eliminado correctamente del historial.');
@@ -222,6 +225,7 @@ export default function MyTutoring() {
     } catch (err: any) {
       console.error('[MyTutoring] Error al eliminar taller:', err);
       setErrorMsg(err.message || 'No fue posible eliminar la clase.');
+      await loadSessions();
     } finally {
       setActionLoading(false);
     }

@@ -300,8 +300,12 @@ export default function WorkshopCard({
                     </span>
                     <button
                       type="button"
-                      onClick={async () => {
-                        await onDeleteWorkshop(workshop.id);
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (onDeleteWorkshop) {
+                          await onDeleteWorkshop(workshop.id);
+                        }
                         setConfirmDelete(false);
                       }}
                       disabled={actionLoading}
@@ -320,7 +324,11 @@ export default function WorkshopCard({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setConfirmDelete(false)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setConfirmDelete(false);
+                      }}
                       disabled={actionLoading}
                       style={{
                         background: '#ffffff',
@@ -339,7 +347,11 @@ export default function WorkshopCard({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setConfirmDelete(true)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setConfirmDelete(true);
+                    }}
                     disabled={actionLoading}
                     className="ia-btn-secondary"
                     title="Eliminar esta clase del historial para no acumular registros"

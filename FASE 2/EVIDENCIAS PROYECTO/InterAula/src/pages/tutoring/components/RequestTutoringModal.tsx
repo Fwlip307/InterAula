@@ -46,8 +46,7 @@ export default function RequestTutoringModal({
           user.email.toLowerCase() === tutor.profile.email.toLowerCase()) ||
         (isCertifiedAccount(user.email) &&
           (isCertifiedAccount(tutor.profile.id) ||
-            isCertifiedAccount(tutor.profile.email) ||
-            tutor.profile.email?.toLowerCase() === 'kendokaponijereklein@gmail.com')))
+            isCertifiedAccount(tutor.profile.email))))
   );
 
   const tutorName = getUserDisplayName(tutor.profile);
