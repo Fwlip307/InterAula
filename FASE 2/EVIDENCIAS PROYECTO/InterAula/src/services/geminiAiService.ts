@@ -67,7 +67,7 @@ export function hasGeminiApiConfigured(): boolean {
  * Realiza llamadas a Gemini con tolerancia a fallos mediante cascada de modelos.
  * Si un modelo tiene alta demanda (código 503) o no responde en 10 segundos, salta al siguiente.
  */
-async function callGeminiApiWithFallback(body: any, timeoutMs: number = 10000): Promise<string | null> {
+export async function callGeminiApiWithFallback(body: any, timeoutMs: number = 10000): Promise<string | null> {
   const apiKey = getGeminiApiKey();
   if (!apiKey) return null;
 

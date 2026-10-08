@@ -244,15 +244,65 @@ export default function SessionCard({
         )
       )}
 
-      {/* Notas o temas */}
-      {session.notes && (
-        <div style={{ fontSize: '0.84rem', color: '#475569', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-          <MessageSquareIcon size={16} color="#64748b" />
-          <div>
-            <strong>Temas a reforzar:</strong> {session.notes}
-          </div>
-        </div>
-      )}
+      {/* Pautas de Acompañamiento Empático / Confort */}
+      {(() => {
+        const comfortMatch = session.notes?.match(/\[Pautas de Confort:\s*([^\]]+)\]/i);
+        const comfortTags = comfortMatch
+          ? comfortMatch[1].split(',').map((s) => s.trim())
+          : [];
+        const cleanNotes = session.notes
+          ? session.notes.replace(/\[Pautas de Confort:\s*[^\]]+\]/i, '').trim()
+          : '';
+
+        return (
+          <>
+            {comfortTags.length > 0 && (
+              <div
+                style={{
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 800, color: '#166534' }}>
+                  <span>🌱 Guía de Sesión Empática (Preferencias de Aprendizaje del Alumno):</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {comfortTags.map((tag, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        color: '#15803d',
+                        border: '1px solid #86efac',
+                        fontSize: '0.76rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                      }}
+                    >
+                      ✓ {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {cleanNotes && (
+              <div style={{ fontSize: '0.84rem', color: '#475569', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <MessageSquareIcon size={16} color="#64748b" />
+                <div>
+                  <strong>Temas a reforzar:</strong> {cleanNotes}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Motivo de cancelación si aplica */}
       {session.status === 'cancelled' && session.cancellation_reason && (

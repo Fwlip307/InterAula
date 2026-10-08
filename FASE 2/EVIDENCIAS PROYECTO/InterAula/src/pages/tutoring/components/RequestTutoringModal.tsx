@@ -19,6 +19,13 @@ interface RequestTutoringModalProps {
   onSuccess: () => void;
 }
 
+export const COMFORT_OPTIONS = [
+  { id: 'camera_optional', label: 'Cámara opcional', desc: 'Interactuar por voz, chat o pizarra' },
+  { id: 'processing_pause', label: 'Pausas de asimilación', desc: 'Tiempo para procesar preguntas' },
+  { id: 'step_by_step_visual', label: 'Explicación paso a paso', desc: 'Apoyo visual y ejemplos prácticos' },
+  { id: 'written_summary', label: 'Resumen o apuntes clave', desc: 'Síntesis escrita al terminar la sesión' },
+];
+
 export default function RequestTutoringModal({
   tutor,
   isOpen,
@@ -33,6 +40,7 @@ export default function RequestTutoringModal({
   const [modality, setModality] = useState<SessionModality>('online');
   const [locationOrLink, setLocationOrLink] = useState('');
   const [notes, setNotes] = useState('');
+  const [comfortPreferences, setComfortPreferences] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -86,6 +94,17 @@ export default function RequestTutoringModal({
 
     setSubmitting(true);
     try {
+      const selectedLabels = COMFORT_OPTIONS.filter((c) =>
+        comfortPreferences.includes(c.id)
+      ).map((c) => c.label);
+
+      const comfortHeader =
+        selectedLabels.length > 0
+          ? `[Pautas de Confort: ${selectedLabels.join(', ')}]`
+          : '';
+
+      const combinedNotes = [comfortHeader, notes.trim()].filter(Boolean).join('\n\n');
+
       await tutoringService.requestTutoring({
         tutor_id: tutor.profile.id,
         subject_id: activeSubjectId,
@@ -93,7 +112,7 @@ export default function RequestTutoringModal({
         duration_minutes: durationMinutes,
         modality,
         location_or_link: locationOrLink.trim() || undefined,
-        notes: notes.trim() || undefined,
+        notes: combinedNotes || undefined,
       });
 
       onSuccess();
@@ -379,6 +398,54 @@ export default function RequestTutoringModal({
               <option value={90}>90 minutos (1 hora y media)</option>
               <option value={120}>120 minutos (2 horas)</option>
             </select>
+          </div>
+
+          {/* Pautas de Confort y Aprendizaje (Inclusión DUA) */}
+          <div style={{ marginBottom: '18px', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', marginBottom: '4px' }}>
+              🌱 Pautas de Confort en la Sesión (Opcional)
+            </label>
+            <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#64748b' }}>
+              Selecciona cómo te sientes más cómodo aprendiendo para que el tutor adapte el ritmo a tus necesidades (sin etiquetas):
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+              {COMFORT_OPTIONS.map((opt) => {
+                const checked = comfortPreferences.includes(opt.id);
+                return (
+                  <label
+                    key={opt.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: checked ? '#f0fdf4' : '#ffffff',
+                      border: `1px solid ${checked ? '#86efac' : '#e2e8f0'}`,
+                      cursor: 'pointer',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setComfortPreferences((prev) => [...prev, opt.id]);
+                        } else {
+                          setComfortPreferences((prev) => prev.filter((id) => id !== opt.id));
+                        }
+                      }}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 700, color: checked ? '#166534' : '#1e293b' }}>{opt.label}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{opt.desc}</div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           {/* Notas / Temas */}

@@ -23,7 +23,7 @@ import {
   DownloadIcon,
 } from '../../components/common/Icons';
 
-type TutorTabType = 'requests' | 'confirmed' | 'workshops' | 'materials';
+type TutorTabType = 'requests' | 'confirmed' | 'workshops' | 'offerings' | 'materials';
 
 export interface TutorUploadedMaterial {
   id: string;
@@ -68,11 +68,20 @@ export default function MyTutoring() {
   const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
   const [hostedWorkshops, setHostedWorkshops] = useState<TutoringWorkshop[]>([]);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
+  const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
   const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Publicar / Ofrecer nueva tutoría
+  const [isPublishTutoringModalOpen, setIsPublishTutoringModalOpen] = useState(false);
+  const [pubSubjectId, setPubSubjectId] = useState('');
+  const [pubLevel, setPubLevel] = useState<'basic' | 'intermediate' | 'advanced'>('intermediate');
+  const [pubModality, setPubModality] = useState<'online' | 'in_person' | 'hybrid'>('online');
+  const [pubDescription, setPubDescription] = useState('');
+  const [pubSubmitting, setPubSubmitting] = useState(false);
 
   // Subir apuntes
   const [materials, setMaterials] = useState<TutorUploadedMaterial[]>(() => {
@@ -106,19 +115,73 @@ export default function MyTutoring() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [asTutor, tutorWorkshops, offered] = await Promise.all([
+      const [asTutor, tutorWorkshops, offered, subjects] = await Promise.all([
         tutoringService.getMySessionsAsTutor(),
         tutoringService.getMyWorkshopsAsTutor(),
         user ? profileService.getOfferedSubjects(user.id) : Promise.resolve([]),
+        profileService.getSubjects(),
       ]);
       setTutorSessions(asTutor);
       setHostedWorkshops(tutorWorkshops);
       setOfferedSubjects(offered);
+      setCatalogSubjects(subjects);
+      if (subjects.length > 0 && !pubSubjectId) {
+        setPubSubjectId(subjects[0].id);
+      }
     } catch (err: any) {
       console.error('[MyTutoring] Error al cargar sesiones:', err);
       setErrorMsg(err.message || 'No fue posible cargar tus tutorías.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePublishTutoringSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pubSubjectId) return;
+
+    setPubSubmitting(true);
+    setErrorMsg('');
+    try {
+      const descWithExtra = [
+        pubDescription.trim(),
+        pubModality === 'online' ? 'Modalidad: Online (Aula Virtual)' : pubModality === 'in_person' ? 'Modalidad: Presencial en Sede' : 'Modalidad: Híbrida',
+      ].filter(Boolean).join(' · ');
+
+      await profileService.addOfferedSubject(
+        pubSubjectId,
+        pubLevel,
+        descWithExtra
+      );
+      await profileService.updateMyProfile({ available_for_tutoring: true });
+
+      setSuccessMsg('¡Materia publicada exitosamente! Ya está disponible en Aprendizaje para todos los estudiantes.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      setIsPublishTutoringModalOpen(false);
+      setPubDescription('');
+      setActiveTab('offerings');
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al publicar materia:', err);
+      setErrorMsg(err.message || 'No fue posible publicar la materia.');
+    } finally {
+      setPubSubmitting(false);
+    }
+  };
+
+  const handleRemoveOfferedSubject = async (subjectId: string) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      await profileService.removeOfferedSubject(subjectId);
+      setSuccessMsg('Materia dada de baja de tus asignaturas ofertadas.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+      await loadSessions();
+    } catch (err: any) {
+      console.error('[MyTutoring] Error al eliminar materia:', err);
+      setErrorMsg(err.message || 'No fue posible eliminar la materia.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -353,6 +416,25 @@ export default function MyTutoring() {
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
+            onClick={() => setIsPublishTutoringModalOpen(true)}
+            className="ia-btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+              borderColor: '#15803d',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '9px 18px',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+            }}
+          >
+            <PlusIcon size={16} color="#ffffff" />
+            <span>+ Publicar Tutoría</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsUploadModalOpen(true)}
             className="ia-btn-secondary"
             style={{
@@ -582,7 +664,30 @@ export default function MyTutoring() {
           <span>Talleres que Imparto ({hostedWorkshops.length})</span>
         </button>
 
-        {/* Pestaña 4: Subir Apuntes y Recursos */}
+        {/* Pestaña 4: Materias que Imparto */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('offerings')}
+          style={{
+            padding: '12px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'offerings' ? '#059669' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'offerings' ? '2px solid #059669' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <BookOpenIcon size={18} color={activeTab === 'offerings' ? '#059669' : '#64748b'} />
+          <span>Materias que Imparto ({offeredSubjects.length})</span>
+        </button>
+
+        {/* Pestaña 5: Subir Apuntes y Recursos */}
         <button
           type="button"
           onClick={() => setActiveTab('materials')}
@@ -727,7 +832,167 @@ export default function MyTutoring() {
         </div>
       )}
 
-      {/* 4. SUBIR Y GESTIONAR APUNTES DEL TUTOR */}
+      {/* 4. MATERIAS QUE IMPARTO Y PUBLICAR TUTORÍAS */}
+      {activeTab === 'offerings' && (
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '10px',
+            }}
+          >
+            <div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Materias y Asignaturas que Impartes ({offeredSubjects.length})
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '2px 0 0' }}>
+                Estas asignaturas están publicadas en Aprendizaje para que los estudiantes puedan solicitarte sesiones de tutoría 1 a 1.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsPublishTutoringModalOpen(true)}
+              className="ia-btn-primary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                fontSize: '0.86rem',
+                fontWeight: 700,
+                background: '#16a34a',
+                borderColor: '#15803d',
+              }}
+            >
+              <PlusIcon size={16} color="#ffffff" />
+              <span>+ Publicar Nueva Asignatura</span>
+            </button>
+          </div>
+
+          {offeredSubjects.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '40px 20px' }}
+                icon={<BookOpenIcon size={32} color="#16a34a" />}
+                title="Aún no has publicado materias para enseñar"
+                description="Selecciona del catálogo institucional de Duoc UC las asignaturas que ya aprobaste para ofrecer tutorías a tus compañeros."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setIsPublishTutoringModalOpen(true)}
+                    className="ia-btn-primary"
+                    style={{ background: '#16a34a', borderColor: '#15803d' }}
+                  >
+                    + Publicar mi Primera Materia
+                  </button>
+                }
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+              {offeredSubjects.map((offered) => {
+                const subName = offered.subject?.name || offered.subject_id;
+                const subCategory = offered.subject?.category || 'Área General';
+
+                return (
+                  <div
+                    key={offered.subject_id}
+                    className="ia-card"
+                    style={{
+                      padding: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase',
+                            background: '#dcfce7',
+                            color: '#166534',
+                          }}
+                        >
+                          {subCategory}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            color: offered.is_verified ? '#15803d' : '#64748b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          {offered.is_verified ? (
+                            <>
+                              <ShieldCheckIcon size={14} color="#15803d" />
+                              <span>Validado Duoc UC</span>
+                            </>
+                          ) : (
+                            <span>Nivel {offered.level === 'advanced' ? 'Avanzado' : offered.level === 'intermediate' ? 'Intermedio' : 'Básico'}</span>
+                          )}
+                        </span>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.12rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+                        {subName}
+                      </h3>
+
+                      {offered.description ? (
+                        <p style={{ fontSize: '0.84rem', color: '#475569', margin: '0 0 12px 0', lineHeight: 1.45 }}>
+                          {offered.description}
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: '0.84rem', color: '#94a3b8', fontStyle: 'italic', margin: '0 0 12px 0' }}>
+                          Sin descripción personalizada.
+                        </p>
+                      )}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700 }}>
+                        ● Activa para solicitudes 1 a 1
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOfferedSubject(offered.subject_id)}
+                        disabled={actionLoading}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#dc2626',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        Dejar de ofrecer
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. SUBIR Y GESTIONAR APUNTES DEL TUTOR */}
       {activeTab === 'materials' && (
         <div>
           <div
@@ -1191,6 +1456,205 @@ export default function MyTutoring() {
             .filter((s): s is Subject => Boolean(s))
         }
       />
+
+      {/* Modal para Publicar Nueva Tutoría / Ofrecer Materia Directamente */}
+      {isPublishTutoringModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '16px',
+          }}
+        >
+          <div
+            className="ia-card"
+            style={{
+              maxWidth: '540px',
+              width: '100%',
+              padding: '26px',
+              borderRadius: '16px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Publicar Asignatura de Tutoría
+                </h2>
+                <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '2px 0 0' }}>
+                  Habilita una materia para recibir solicitudes directas de estudiantes.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPublishTutoringModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePublishTutoringSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Asignatura a Impartir *
+                </label>
+                <select
+                  required
+                  value={pubSubjectId}
+                  onChange={(e) => setPubSubjectId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    backgroundColor: '#ffffff',
+                  }}
+                >
+                  <option value="" disabled>Selecciona una asignatura del catálogo...</option>
+                  <optgroup label="Ramos Críticos de Informática (Prioritarios)">
+                    {catalogSubjects
+                      .filter((s) => s.is_pilot)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          ⭐ {s.name} ({s.category || 'Informática'})
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Todas las Asignaturas Disponibles">
+                    {catalogSubjects
+                      .filter((s) => !s.is_pilot)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.category || 'General'})
+                        </option>
+                      ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Nivel de Dominio
+                  </label>
+                  <select
+                    value={pubLevel}
+                    onChange={(e: any) => setPubLevel(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                      backgroundColor: '#ffffff',
+                    }}
+                  >
+                    <option value="intermediate">Intermedio (Aprobado)</option>
+                    <option value="advanced">Avanzado (Distinción)</option>
+                    <option value="basic">Básico</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Modalidad Preferida
+                  </label>
+                  <select
+                    value={pubModality}
+                    onChange={(e: any) => setPubModality(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                      backgroundColor: '#ffffff',
+                    }}
+                  >
+                    <option value="online">Online (Aula Virtual InterAula)</option>
+                    <option value="in_person">Presencial en Sede Duoc UC</option>
+                    <option value="hybrid">Híbrida (Online o Presencial)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.84rem',
+                  color: '#15803d',
+                  fontWeight: 600,
+                }}
+              >
+                <CheckIcon size={16} color="#15803d" />
+                <span>Apoyo Académico 100% Gratuito y Solidario entre Pares Duoc UC</span>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Descripción de tu Metodología o Disponibilidad
+                </label>
+                <textarea
+                  rows={3}
+                  value={pubDescription}
+                  onChange={(e) => setPubDescription(e.target.value)}
+                  placeholder="ej: Apoyo en resolución de guías de ejercicios, dudas de laboratorio y preparación de certámenes. Horarios flexibles en las tardes..."
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.88rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsPublishTutoringModalOpen(false)}
+                  className="ia-btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={pubSubmitting}
+                  className="ia-btn-primary"
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    background: '#16a34a',
+                    borderColor: '#15803d',
+                  }}
+                >
+                  {pubSubmitting ? 'Publicando...' : 'Publicar Tutoría'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

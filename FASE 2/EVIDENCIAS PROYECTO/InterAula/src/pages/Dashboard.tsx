@@ -21,6 +21,7 @@ import {
   SearchIcon,
   ArrowLeftIcon,
   VideoIcon,
+  BriefcaseIcon,
 } from '../components/common/Icons';
 import EmptyState from '../components/common/EmptyState';
 import { getUserDisplayName, formatTutoringDateTime, formatTutoringStatus } from '../utils/formatters';
@@ -306,19 +307,19 @@ export default function Dashboard() {
           <ArrowLeftIcon size={18} color="#94a3b8" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
         </div>
 
-        {/* Módulo 4: Recursos de Aprendizaje */}
+        {/* Módulo 4: Hub de Proyectos */}
         <div
           className="ia-quick-card"
-          onClick={() => navigate('/resources')}
+          onClick={() => navigate('/projects')}
           role="button"
           tabIndex={0}
         >
           <div className="ia-quick-card-icon purple">
-            <SparklesIcon size={24} color="#7c3aed" />
+            <BriefcaseIcon size={24} color="#7c3aed" />
           </div>
           <div className="ia-quick-card-body">
-            <h3>Materiales de estudio</h3>
-            <p>Guías, apuntes, resúmenes y banco colaborativo</p>
+            <h3>Hub de Proyectos</h3>
+            <p>Forma equipos, postula a vacantes o crea proyectos</p>
           </div>
           <ArrowLeftIcon size={18} color="#94a3b8" style={{ transform: 'rotate(180deg)', flexShrink: 0 }} />
         </div>

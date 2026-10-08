@@ -23,12 +23,18 @@ import {
   ExternalLinkIcon,
   BookOpenIcon,
   DownloadIcon,
+  CalendarIcon,
+  SparklesIcon,
 } from '../../components/common/Icons';
 import { STUDY_RESOURCES } from '../learning/data/studyBank';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
 import CreateWorkshopModal from './components/CreateWorkshopModal';
 import WorkshopCard from './components/WorkshopCard';
+import ReviewModal from './components/ReviewModal';
+import LearningClassesTab from '../learning/components/LearningClassesTab';
+import AdaptiveQuizHub from '../learning/components/AdaptiveQuizHub';
+import type { TutoringSession } from '../../types/tutoring';
 
 // 6 Materias Críticas de Inicio en Informática (Foco Vertical)
 const CRITICAL_INFORMATICS_SUBJECTS = [
@@ -42,7 +48,14 @@ const CRITICAL_INFORMATICS_SUBJECTS = [
 
 export default function TutoringExplore() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'tutors' | 'workshops' | 'materials'>('tutors');
+  const [activeTab, setActiveTab] = useState<'tutors' | 'workshops' | 'my_classes' | 'quizzes' | 'materials'>('tutors');
+  const [isCalmMode, setIsCalmMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ia_calm_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
@@ -54,6 +67,14 @@ export default function TutoringExplore() {
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
+
+  // Clases e Inscripciones del Estudiante
+  const [studentSessions, setStudentSessions] = useState<TutoringSession[]>([]);
+  const [enrolledWorkshops, setEnrolledWorkshops] = useState<TutoringWorkshop[]>([]);
+  const [sessionToCancel, setSessionToCancel] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState<string>('');
+  const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
 
   const isTutor =
     userOfferedSubjects.length > 0 ||
@@ -134,12 +155,28 @@ export default function TutoringExplore() {
 
   const [copiedLiveLink, setCopiedLiveLink] = useState(false);
 
+  const fetchStudentData = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const [asStudent, studentWorkshops] = await Promise.all([
+        tutoringService.getMySessionsAsStudent(),
+        tutoringService.getMyWorkshopsAsStudent(),
+      ]);
+      setStudentSessions(asStudent);
+      setEnrolledWorkshops(studentWorkshops);
+    } catch (err) {
+      console.error('[TutoringExplore] Error al cargar clases del estudiante:', err);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchTutors();
     fetchWorkshops();
+    fetchStudentData();
 
     const onWorkshopsUpdated = () => {
       fetchWorkshops();
+      fetchStudentData();
     };
     window.addEventListener('ia_workshops_updated', onWorkshopsUpdated);
 
@@ -152,7 +189,7 @@ export default function TutoringExplore() {
       window.removeEventListener('ia_workshops_updated', onWorkshopsUpdated);
       clearInterval(syncTimer);
     };
-  }, [fetchTutors, fetchWorkshops]);
+  }, [fetchTutors, fetchWorkshops, fetchStudentData]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,8 +219,48 @@ export default function TutoringExplore() {
   };
 
   const handleSuccessRequest = () => {
-    setSuccessMsg('¡Solicitud de tutoría enviada con éxito! Puedes consultar su estado en "Mis Tutorías".');
+    setSuccessMsg('¡Solicitud de tutoría enviada con éxito! Puedes revisarla en la pestaña "Mis Clases e Inscripciones".');
     setTimeout(() => setSuccessMsg(''), 6000);
+    fetchStudentData();
+  };
+
+  // Acciones de Estudiante (Cancelar sesión y evaluar tutor)
+  const handleCancelStudentSessionClick = (sessionId: string) => {
+    setSessionToCancel(sessionId);
+    setCancellationReason('');
+  };
+
+  const handleConfirmCancelStudentSession = async () => {
+    if (!sessionToCancel) return;
+    setWorkshopActionLoading(true);
+    try {
+      await tutoringService.updateSessionStatus(sessionToCancel, 'cancelled', cancellationReason);
+      setSuccessMsg('Tu solicitud de tutoría ha sido cancelada.');
+      setTimeout(() => setSuccessMsg(''), 5000);
+      setSessionToCancel(null);
+      setCancellationReason('');
+      await fetchStudentData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'No fue posible cancelar la tutoría.');
+    } finally {
+      setWorkshopActionLoading(false);
+    }
+  };
+
+  const handleOpenStudentReview = (session: TutoringSession) => {
+    setSelectedSessionForReview(session);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewSuccess = async () => {
+    setSuccessMsg('¡Evaluación registrada exitosamente! Gracias por calificar la tutoría.');
+    setTimeout(() => setSuccessMsg(''), 5000);
+    await fetchStudentData();
+  };
+
+  const handleUnenrollFromClasses = async (workshopId: string) => {
+    await handleUnenroll(workshopId);
+    await fetchStudentData();
   };
 
   const handleEnroll = async (workshopId: string) => {
@@ -286,6 +363,36 @@ export default function TutoringExplore() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Botón Accesibilidad Neuroinclusiva: Modo Calma */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsCalmMode((prev) => {
+                const next = !prev;
+                localStorage.setItem('ia_calm_mode', String(next));
+                return next;
+              });
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              backgroundColor: isCalmMode ? '#ecfdf5' : '#f8fafc',
+              borderColor: isCalmMode ? '#a7f3d0' : '#cbd5e1',
+              color: isCalmMode ? '#065f46' : '#475569',
+              borderRadius: '8px',
+              border: '1px solid',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            title="Ajusta contrastes suaves y reduce sobrecargas visuales"
+          >
+            <span>{isCalmMode ? '🍃 Modo Calma Activo' : '🍃 Modo Calma y Foco'}</span>
+          </button>
+
           {!isTutor ? (
             <Link
               to="/profile?tab=tutoring"
@@ -610,6 +717,78 @@ export default function TutoringExplore() {
 
         <button
           type="button"
+          onClick={() => setActiveTab('my_classes')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'my_classes' ? '#2563eb' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'my_classes' ? '3px solid #2563eb' : '3px solid transparent',
+            marginBottom: '-4px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <CalendarIcon size={18} color={activeTab === 'my_classes' ? '#2563eb' : '#64748b'} />
+          <span>Mis Clases e Inscripciones ({studentSessions.length + enrolledWorkshops.length})</span>
+          {studentSessions.length + enrolledWorkshops.length > 0 && (
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                padding: '2px 8px',
+                borderRadius: '10px',
+              }}
+            >
+              {studentSessions.length + enrolledWorkshops.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('quizzes')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'quizzes' ? '#7c3aed' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'quizzes' ? '3px solid #7c3aed' : '3px solid transparent',
+            marginBottom: '-4px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <SparklesIcon size={18} color={activeTab === 'quizzes' ? '#7c3aed' : '#64748b'} />
+          <span>Quizzes & Retos IA</span>
+          <span
+            style={{
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              backgroundColor: '#f3e8ff',
+              color: '#7c3aed',
+              padding: '2px 8px',
+              borderRadius: '10px',
+            }}
+          >
+            DUA
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('materials')}
           style={{
             padding: '10px 18px',
@@ -633,7 +812,8 @@ export default function TutoringExplore() {
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="ia-card" style={{ marginBottom: '24px', padding: '18px 20px' }}>
+      {activeTab !== 'my_classes' && activeTab !== 'quizzes' && (
+        <div className="ia-card" style={{ marginBottom: '24px', padding: '18px 20px' }}>
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Campo de búsqueda por texto */}
           <div style={{ position: 'relative', flex: 2, minWidth: '240px' }}>
@@ -758,6 +938,7 @@ export default function TutoringExplore() {
           </div>
         </div>
       </div>
+    )}
 
       {/* Contenido Principal: Grilla de Tutores */}
       {activeTab === 'tutors' && (
@@ -1378,6 +1559,28 @@ export default function TutoringExplore() {
         </div>
       )}
 
+      {/* 4. SECCIÓN: QUIZZES Y RETOS IA ADAPTATIVOS POR INTERESES */}
+      {activeTab === 'quizzes' && (
+        <div style={{ marginTop: '12px' }}>
+          <AdaptiveQuizHub isCalmMode={isCalmMode} />
+        </div>
+      )}
+
+      {/* Pestaña: Mis Clases e Inscripciones (Rol Estudiante) */}
+      {activeTab === 'my_classes' && (
+        <div style={{ marginTop: '12px' }}>
+          <LearningClassesTab
+            studentSessions={studentSessions}
+            enrolledWorkshops={enrolledWorkshops}
+            currentUserId={user?.id}
+            onCancelSession={handleCancelStudentSessionClick}
+            onReviewSession={handleOpenStudentReview}
+            onUnenrollWorkshop={handleUnenrollFromClasses}
+            actionLoading={workshopActionLoading}
+          />
+        </div>
+      )}
+
       {/* Modal de Solicitud de Tutoría 1 a 1 */}
       <RequestTutoringModal
         tutor={selectedTutorForModal}
@@ -1397,6 +1600,78 @@ export default function TutoringExplore() {
             .filter((s): s is Subject => Boolean(s))
         }
       />
+
+      {/* Modal de Cancelación para Estudiante */}
+      {sessionToCancel && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '16px',
+          }}
+        >
+          <div className="ia-card" style={{ maxWidth: '440px', width: '100%', padding: '24px' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 10px 0', color: '#0f172a' }}>
+              Cancelar Solicitud de Tutoría
+            </h3>
+            <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 16px 0' }}>
+              Indica el motivo de cancelación para liberar el horario del tutor.
+            </p>
+            <textarea
+              rows={3}
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              placeholder="Ej: Ya resolví la duda con el docente o cambio de horario..."
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.88rem',
+                marginBottom: '16px',
+                outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setSessionToCancel(null)}
+                className="ia-btn-secondary"
+                style={{ padding: '7px 14px', fontSize: '0.85rem' }}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancelStudentSession}
+                disabled={workshopActionLoading}
+                className="ia-btn-primary"
+                style={{ background: '#dc2626', borderColor: '#b91c1c', padding: '7px 16px', fontSize: '0.85rem' }}
+              >
+                {workshopActionLoading ? 'Cancelando...' : 'Confirmar Cancelación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Evaluación para Estudiante */}
+      {selectedSessionForReview && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedSessionForReview(null);
+          }}
+          session={selectedSessionForReview}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
     </div>
   );
 }

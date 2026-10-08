@@ -145,10 +145,10 @@ export default function Navbar() {
             Foro
           </NavLink>
           <NavLink
-            to="/resources"
+            to="/projects"
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
           >
-            Recursos
+            Proyectos
           </NavLink>
         </nav>
 
@@ -266,11 +266,11 @@ export default function Navbar() {
             Foro
           </NavLink>
           <NavLink
-            to="/resources"
+            to="/projects"
             className={({ isActive }) => `ia-mobile-nav-item ${isActive ? 'active' : ''}`}
             onClick={closeMenus}
           >
-            Recursos y Apuntes
+            Proyectos
           </NavLink>
           <div className="ia-dropdown-divider" />
           <NavLink to="/profile" className="ia-mobile-nav-item" onClick={closeMenus}>
