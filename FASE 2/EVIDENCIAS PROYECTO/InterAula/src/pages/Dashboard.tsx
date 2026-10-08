@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { profileService } from '../services/profile.service';
+import { profileService, isCertifiedAccount } from '../services/profile.service';
 import type {
   Profile,
   OfferedSubject,
@@ -100,9 +100,86 @@ export default function Dashboard() {
   };
 
   const verifiedCount = offeredSubjects.filter((s) => s.is_verified).length;
+  const isVerifiedTutor = verifiedCount > 0 || Boolean(user?.email && isCertifiedAccount(user.email));
 
   return (
     <div>
+      {/* Barra de Acceso Rápido al Inicio Principal y Estado de Tutor */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <Link
+          to="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '0.86rem',
+            fontWeight: 700,
+            color: '#2563eb',
+            textDecoration: 'none',
+            background: '#ffffff',
+            border: '1px solid #cbd5e1',
+            padding: '7px 14px',
+            borderRadius: '8px',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <ArrowLeftIcon size={14} color="#2563eb" />
+          <span>Volver al Inicio / Portada de InterAula</span>
+        </Link>
+
+        {/* Botón de certificación para el Dashboard */}
+        {!isVerifiedTutor ? (
+          <Link
+            to="/profile?tab=tutoring"
+            className="ia-btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              backgroundColor: '#ecfdf5',
+              borderColor: '#a7f3d0',
+              color: '#065f46',
+              textDecoration: 'none',
+              borderRadius: '8px',
+            }}
+          >
+            <ShieldCheckIcon size={16} color="#059669" />
+            <span>¿Cómo Certificarme como Tutor?</span>
+          </Link>
+        ) : (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #86efac',
+              color: '#166534',
+              borderRadius: '8px',
+            }}
+          >
+            <CheckIcon size={14} color="#16a34a" />
+            <span>Tutor Verificado Oficial</span>
+          </div>
+        )}
+      </div>
+
       {/* Banner de Perfil Incompleto */}
       {!loading && profile && !profile.profile_completed && (
         <section className="ia-banner-alert">

@@ -1049,6 +1049,222 @@ export default function ProfileView() {
       {/* ========================================================================= */}
       {activeTab === 'tutoring' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* GUÍA PASO A PASO PARA CERTIFICARSE COMO TUTOR */}
+          <div
+            className="ia-card"
+            style={{
+              padding: '24px',
+              backgroundColor: '#ffffff',
+              border: '1.5px solid #bbf7d0',
+              borderRadius: '16px',
+              boxShadow: '0 2px 8px rgba(22, 163, 74, 0.06)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: '#dcfce7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#15803d',
+                  }}
+                >
+                  <ShieldCheckIcon size={22} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.22rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    ¿Cómo Certificarme como Tutor en InterAula?
+                  </h2>
+                  <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '2px 0 0' }}>
+                    Guía oficial paso a paso para acreditar tus conocimientos y ser reconocido en la comunidad universitaria.
+                  </p>
+                </div>
+              </div>
+
+              <span
+                style={{
+                  fontSize: '0.76rem',
+                  fontWeight: 800,
+                  backgroundColor: '#ecfdf5',
+                  color: '#065f46',
+                  border: '1px solid #a7f3d0',
+                  padding: '4px 12px',
+                  borderRadius: '9999px',
+                }}
+              >
+                Proceso Oficial en 4 Pasos
+              </span>
+            </div>
+
+            {/* Grilla de los 4 pasos */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '14px',
+                marginBottom: '16px',
+              }}
+            >
+              {/* Paso 1 */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    1
+                  </span>
+                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Identificación Académica</strong>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                  Configura tu <strong>Institución</strong> (ej: Duoc UC) y tu <strong>Carrera</strong> en tus datos personales para desbloquear la habilitación.
+                </p>
+              </div>
+
+              {/* Paso 2 */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: '#16a34a',
+                      color: '#ffffff',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    2
+                  </span>
+                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Selecciona tu Materia</strong>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                  Elige una o más materias de tu malla curricular que hayas cursado y aprobado con buen rendimiento para impartir.
+                </p>
+              </div>
+
+              {/* Paso 3 */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: '#d97706',
+                      color: '#ffffff',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    3
+                  </span>
+                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Certificado de Notas (PDF)</strong>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                  Sube tu <strong>Certificado Académico oficial en PDF</strong> para que el sistema extraiga y valide curricularmente tu aprobación.
+                </p>
+              </div>
+
+              {/* Paso 4 */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: '#7c3aed',
+                      color: '#ffffff',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    4
+                  </span>
+                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Evaluación IA o Docente</strong>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                  Rinde la prueba técnica interactiva con el <strong>Asistente IA</strong> en tiempo real o solicita el respaldo directo de tu profesor.
+                </p>
+              </div>
+            </div>
+
+            {/* Beneficios obtenidos */}
+            <div
+              style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#166534', fontWeight: 600 }}>
+                <CheckIcon size={16} color="#16a34a" />
+                <span>
+                  Al certificarte obtienes la <strong>Insignia de Tutor Verificado</strong>, apareces en el catálogo para recibir alumnos y puedes crear talleres grupales.
+                </span>
+              </div>
+            </div>
+          </div>
           {/* Tarjeta de Disponibilidad para Tutorías (Solo visible si ya tiene materias acreditadas) */}
           {offeredSubjects.length > 0 && (
             <div

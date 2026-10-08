@@ -18,16 +18,54 @@ import {
   CheckIcon,
   XIcon,
   VideoIcon,
+  ShieldCheckIcon,
+  PlusIcon,
+  DownloadIcon,
 } from '../../components/common/Icons';
 
-type TabType = 'student' | 'tutor' | 'workshops';
+type TutorTabType = 'requests' | 'confirmed' | 'workshops' | 'materials';
+
+export interface TutorUploadedMaterial {
+  id: string;
+  title: string;
+  subjectName: string;
+  format: 'png' | 'word' | 'pdf' | 'text';
+  fileName?: string;
+  textContent?: string;
+  uploadedAt: string;
+}
+
+const DEFAULT_MATERIALS: TutorUploadedMaterial[] = [
+  {
+    id: 'mat-1',
+    title: 'Resumen de Algoritmos de Búsqueda y Ordenamiento',
+    subjectName: 'Programación de Algoritmos',
+    format: 'word',
+    fileName: 'algoritmos_ordenamiento_guia.docx',
+    uploadedAt: 'Hace 2 días',
+  },
+  {
+    id: 'mat-2',
+    title: 'Esquema de Diagrama Entidad-Relación y Reglas de Negocio',
+    subjectName: 'Modelamiento de Base de Datos',
+    format: 'png',
+    fileName: 'diagrama_er_ejemplo.png',
+    uploadedAt: 'Hace 4 días',
+  },
+  {
+    id: 'mat-3',
+    title: 'Síntesis de Comandos Git & GitHub para Proyectos en Equipo',
+    subjectName: 'Programación Web',
+    format: 'text',
+    textContent: 'Comandos esenciales: git clone, git branch feature, git checkout, git pull origin main, git merge...',
+    uploadedAt: 'Hace 1 semana',
+  },
+];
 
 export default function MyTutoring() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('student');
-  const [studentSessions, setStudentSessions] = useState<TutoringSession[]>([]);
+  const [activeTab, setActiveTab] = useState<TutorTabType>('requests');
   const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
-  const [enrolledWorkshops, setEnrolledWorkshops] = useState<TutoringWorkshop[]>([]);
   const [hostedWorkshops, setHostedWorkshops] = useState<TutoringWorkshop[]>([]);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState(false);
@@ -36,9 +74,21 @@ export default function MyTutoring() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const isTutor =
-    offeredSubjects.length > 0 ||
-    Boolean(user?.email && isCertifiedAccount(user.email));
+  // Subir apuntes
+  const [materials, setMaterials] = useState<TutorUploadedMaterial[]>(() => {
+    try {
+      const saved = localStorage.getItem('ia_tutor_uploaded_materials');
+      return saved ? JSON.parse(saved) : DEFAULT_MATERIALS;
+    } catch {
+      return DEFAULT_MATERIALS;
+    }
+  });
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [matTitle, setMatTitle] = useState('');
+  const [matSubject, setMatSubject] = useState('');
+  const [matFormat, setMatFormat] = useState<'png' | 'word' | 'pdf' | 'text'>('word');
+  const [matFileName, setMatFileName] = useState('');
+  const [matTextContent, setMatTextContent] = useState('');
 
   // Estado para modal de evaluación
   const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
@@ -48,26 +98,22 @@ export default function MyTutoring() {
   const [sessionToCancel, setSessionToCancel] = useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
 
+  const isTutor =
+    offeredSubjects.length > 0 ||
+    Boolean(user?.email && isCertifiedAccount(user.email));
+
   const loadSessions = async () => {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [asStudent, asTutor, studentWorkshops, tutorWorkshops, offered] = await Promise.all([
-        tutoringService.getMySessionsAsStudent(),
+      const [asTutor, tutorWorkshops, offered] = await Promise.all([
         tutoringService.getMySessionsAsTutor(),
-        tutoringService.getMyWorkshopsAsStudent(),
         tutoringService.getMyWorkshopsAsTutor(),
         user ? profileService.getOfferedSubjects(user.id) : Promise.resolve([]),
       ]);
-      setStudentSessions(asStudent);
       setTutorSessions(asTutor);
-      setEnrolledWorkshops(studentWorkshops);
       setHostedWorkshops(tutorWorkshops);
       setOfferedSubjects(offered);
-      const userIsTutor = offered.length > 0 || Boolean(user?.email && isCertifiedAccount(user.email));
-      if (!userIsTutor && activeTab === 'tutor') {
-        setActiveTab('student');
-      }
     } catch (err: any) {
       console.error('[MyTutoring] Error al cargar sesiones:', err);
       setErrorMsg(err.message || 'No fue posible cargar tus tutorías.');
@@ -85,7 +131,7 @@ export default function MyTutoring() {
     setErrorMsg('');
     try {
       await tutoringService.updateSessionStatus(sessionId, 'accepted');
-      setSuccessMsg('Solicitud de tutoría aceptada correctamente.');
+      setSuccessMsg('¡Solicitud de tutoría aceptada! El estudiante ha sido notificado.');
       setTimeout(() => setSuccessMsg(''), 5000);
       await loadSessions();
     } catch (err: any) {
@@ -123,7 +169,7 @@ export default function MyTutoring() {
     setErrorMsg('');
     try {
       await tutoringService.updateSessionStatus(sessionToCancel, 'cancelled', cancellationReason);
-      setSuccessMsg('La sesión ha sido cancelada.');
+      setSuccessMsg('La sesión de tutoría ha sido cancelada.');
       setTimeout(() => setSuccessMsg(''), 5000);
       setSessionToCancel(null);
       setCancellationReason('');
@@ -141,12 +187,12 @@ export default function MyTutoring() {
     setErrorMsg('');
     try {
       await tutoringService.updateSessionStatus(sessionId, 'completed');
-      setSuccessMsg('¡Tutoría marcada como completada! Ahora puedes calificar a tu tutor.');
-      setTimeout(() => setSuccessMsg(''), 6000);
+      setSuccessMsg('Tutoría marcada como completada con éxito.');
+      setTimeout(() => setSuccessMsg(''), 5000);
       await loadSessions();
     } catch (err: any) {
       console.error('[MyTutoring] Error al completar sesión:', err);
-      setErrorMsg(err.message || 'No fue posible confirmar la realización de la sesión.');
+      setErrorMsg(err.message || 'No fue posible marcar la sesión como completada.');
     } finally {
       setActionLoading(false);
     }
@@ -158,33 +204,17 @@ export default function MyTutoring() {
   };
 
   const handleReviewSuccess = async () => {
-    setSuccessMsg('¡Evaluación registrada exitosamente! Muchas gracias por colaborar.');
+    setSuccessMsg('Evaluación registrada exitosamente.');
     setTimeout(() => setSuccessMsg(''), 5000);
     await loadSessions();
   };
 
-  const handleWorkshopUnenroll = async (workshopId: string) => {
-    setActionLoading(true);
-    setErrorMsg('');
-    try {
-      await tutoringService.unenrollFromWorkshop(workshopId);
-      setSuccessMsg('Has cancelado tu inscripción en el taller.');
-      setTimeout(() => setSuccessMsg(''), 5000);
-      await loadSessions();
-    } catch (err: any) {
-      console.error('[MyTutoring] Error al cancelar reserva de taller:', err);
-      setErrorMsg(err.message || 'No fue posible cancelar tu reserva.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleWorkshopCancel = async (workshopId: string) => {
+  const handleCancelWorkshop = async (workshopId: string) => {
     setActionLoading(true);
     setErrorMsg('');
     try {
       await tutoringService.updateWorkshopStatus(workshopId, 'cancelled');
-      setSuccessMsg('El taller grupal ha sido cancelado.');
+      setSuccessMsg('El taller ha sido cancelado.');
       setTimeout(() => setSuccessMsg(''), 5000);
       await loadSessions();
     } catch (err: any) {
@@ -195,7 +225,7 @@ export default function MyTutoring() {
     }
   };
 
-  const handleWorkshopFinish = async (workshopId: string) => {
+  const handleFinishWorkshop = async (workshopId: string) => {
     setActionLoading(true);
     setErrorMsg('');
     try {
@@ -214,9 +244,7 @@ export default function MyTutoring() {
   const handleWorkshopDelete = async (workshopId: string) => {
     setActionLoading(true);
     setErrorMsg('');
-    // Actualización optimista inmediata en la interfaz
     setHostedWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
-    setEnrolledWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
     try {
       await tutoringService.deleteWorkshop(workshopId);
       setSuccessMsg('Clase o taller eliminado correctamente del historial.');
@@ -238,65 +266,230 @@ export default function MyTutoring() {
     await loadSessions();
   };
 
-  const currentList = activeTab === 'student' ? studentSessions : tutorSessions;
+  // Guardar nuevo apunte
+  const handleUploadMaterialSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!matTitle.trim()) return;
 
-  // Conteo de solicitudes pendientes como tutor para llamar la atención
-  const pendingTutorRequestsCount = tutorSessions.filter((s) => s.status === 'pending').length;
+    const newMat: TutorUploadedMaterial = {
+      id: `mat-${Date.now()}`,
+      title: matTitle.trim(),
+      subjectName: matSubject.trim() || (offeredSubjects[0]?.subject?.name || 'Materia General'),
+      format: matFormat,
+      fileName: matFileName || (matFormat === 'word' ? `${matTitle.toLowerCase().replace(/\s+/g, '_')}.docx` : matFormat === 'png' ? `${matTitle.toLowerCase().replace(/\s+/g, '_')}.png` : `${matTitle.toLowerCase().replace(/\s+/g, '_')}.pdf`),
+      textContent: matFormat === 'text' ? matTextContent : undefined,
+      uploadedAt: 'Recién subido',
+    };
+
+    const updated = [newMat, ...materials];
+    setMaterials(updated);
+    try {
+      localStorage.setItem('ia_tutor_uploaded_materials', JSON.stringify(updated));
+    } catch {}
+
+    setIsUploadModalOpen(false);
+    setMatTitle('');
+    setMatSubject('');
+    setMatFileName('');
+    setMatTextContent('');
+    setSuccessMsg('¡Apunte publicado exitosamente para tus estudiantes!');
+    setTimeout(() => setSuccessMsg(''), 5000);
+  };
+
+  const handleDeleteMaterial = (id: string) => {
+    const updated = materials.filter((m) => m.id !== id);
+    setMaterials(updated);
+    try {
+      localStorage.setItem('ia_tutor_uploaded_materials', JSON.stringify(updated));
+    } catch {}
+    setSuccessMsg('El apunte ha sido eliminado.');
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  // Filtrado de sesiones del tutor
+  const pendingRequests = tutorSessions.filter((s) => s.status === 'pending');
+  const confirmedSessions = tutorSessions.filter((s) => s.status === 'accepted');
 
   return (
     <div>
-      {/* Cabecera y pestañas */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
-          Gestión de Mis Tutorías y Clases en Vivo
-        </h1>
-        <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
-          {isTutor
-            ? 'Administra las sesiones que has solicitado como estudiante, atiende peticiones como tutor y gestiona tus talleres grupales.'
-            : 'Administra tus solicitudes y sesiones de tutoría agendadas, además de tus talleres grupales inscritos.'}
-        </p>
+      {/* Cabecera del Panel de Tutor */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          marginBottom: '24px',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span
+              style={{
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: '#15803d',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                background: '#f0fdf4',
+                padding: '3px 10px',
+                borderRadius: '9999px',
+                border: '1px solid #bbf7d0',
+              }}
+            >
+              Rol Tutor
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>· Gestión de Sesiones y Material</span>
+          </div>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0' }}>
+            Panel del Tutor
+          </h1>
+          <p style={{ fontSize: '0.92rem', color: '#64748b', margin: 0, maxWidth: '680px' }}>
+            Atiende solicitudes de estudiantes, coordina tus tutorías 1 a 1, imparte talleres grupales y publica apuntes de estudio.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setIsUploadModalOpen(true)}
+            className="ia-btn-secondary"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '9px 16px',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+            }}
+          >
+            <PlusIcon size={16} />
+            <span>+ Subir Apunte o Guía</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsCreateWorkshopModalOpen(true)}
+            className="ia-btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+              borderColor: '#7c3aed',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+            }}
+          >
+            <VideoIcon size={16} color="#ffffff" />
+            <span>+ Programar Taller Grupal</span>
+          </button>
+        </div>
       </div>
 
       {/* Alertas globales */}
-      {successMsg && (
-        <div
-          style={{
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            color: '#15803d',
-            padding: '12px 16px',
-            borderRadius: '10px',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <CheckIcon size={18} color="#15803d" />
-          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{successMsg}</span>
-        </div>
-      )}
-
       {errorMsg && (
         <div
           style={{
             background: '#fef2f2',
             border: '1px solid #fecaca',
             color: '#b91c1c',
-            padding: '12px 16px',
+            padding: '12px 18px',
             borderRadius: '10px',
-            marginBottom: '16px',
+            marginBottom: '20px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '10px',
+            fontSize: '0.9rem',
           }}
         >
           <AlertCircleIcon size={18} color="#b91c1c" />
-          <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{errorMsg}</span>
+          <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Pestañas (Como estudiante / Como tutor / Talleres en Vivo) */}
+      {successMsg && (
+        <div
+          style={{
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            color: '#15803d',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+          }}
+        >
+          <CheckIcon size={18} color="#15803d" />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {/* Si el usuario NO es tutor aún, mostrar invitación con pasos */}
+      {!isTutor && !loading && (
+        <div
+          className="ia-card"
+          style={{
+            padding: '32px 24px',
+            marginBottom: '24px',
+            border: '1.5px solid #bbf7d0',
+            backgroundColor: '#f0fdf4',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                backgroundColor: '#dcfce7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#15803d',
+                flexShrink: 0,
+              }}
+            >
+              <ShieldCheckIcon size={24} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#166534', margin: '0 0 6px 0' }}>
+                Habilítate como Tutor Académico
+              </h2>
+              <p style={{ fontSize: '0.9rem', color: '#15803d', margin: '0 0 16px 0', lineHeight: 1.5, maxWidth: '720px' }}>
+                Para comenzar a recibir solicitudes de estudiantes, dictar talleres en vivo y compartir material validado,
+                acredita tu rendimiento en los ramos aprobados mediante tu certificado de notas o la prueba técnica con IA.
+              </p>
+              <Link
+                to="/profile?tab=tutoring"
+                className="ia-btn-primary"
+                style={{
+                  padding: '9px 20px',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  background: '#16a34a',
+                  borderColor: '#15803d',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <ShieldCheckIcon size={16} color="#ffffff" />
+                <span>¿Cómo Certificarme como Tutor? (Ver Guía y Pasos)</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pestañas del Panel del Tutor */}
       <div
         style={{
           display: 'flex',
@@ -306,17 +499,18 @@ export default function MyTutoring() {
           flexWrap: 'wrap',
         }}
       >
+        {/* Pestaña 1: Solicitudes Recibidas */}
         <button
           type="button"
-          onClick={() => setActiveTab('student')}
+          onClick={() => setActiveTab('requests')}
           style={{
-            padding: '12px 20px',
+            padding: '12px 18px',
             fontSize: '0.95rem',
             fontWeight: 700,
-            color: activeTab === 'student' ? '#2563eb' : '#64748b',
+            color: activeTab === 'requests' ? '#2563eb' : '#64748b',
             background: 'none',
             border: 'none',
-            borderBottom: activeTab === 'student' ? '2px solid #2563eb' : '2px solid transparent',
+            borderBottom: activeTab === 'requests' ? '2px solid #2563eb' : '2px solid transparent',
             marginBottom: '-2px',
             cursor: 'pointer',
             display: 'flex',
@@ -324,53 +518,53 @@ export default function MyTutoring() {
             gap: '8px',
           }}
         >
-          <BookOpenIcon size={18} color={activeTab === 'student' ? '#2563eb' : '#64748b'} />
-          Como Estudiante ({studentSessions.length})
+          <CalendarIcon size={18} color={activeTab === 'requests' ? '#2563eb' : '#64748b'} />
+          <span>Solicitudes Recibidas ({pendingRequests.length})</span>
+          {pendingRequests.length > 0 && (
+            <span
+              style={{
+                background: '#f59e0b',
+                color: '#ffffff',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: '9999px',
+              }}
+            >
+              {pendingRequests.length} nuevas
+            </span>
+          )}
         </button>
 
-        {isTutor && (
-          <button
-            type="button"
-            onClick={() => setActiveTab('tutor')}
-            style={{
-              padding: '12px 20px',
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              color: activeTab === 'tutor' ? '#2563eb' : '#64748b',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'tutor' ? '2px solid #2563eb' : '2px solid transparent',
-              marginBottom: '-2px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <UsersIcon size={18} color={activeTab === 'tutor' ? '#2563eb' : '#64748b'} />
-            Como Tutor ({tutorSessions.length})
-            {pendingTutorRequestsCount > 0 && (
-              <span
-                style={{
-                  background: '#f59e0b',
-                  color: '#ffffff',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                }}
-              >
-                {pendingTutorRequestsCount} pendientes
-              </span>
-            )}
-          </button>
-        )}
+        {/* Pestaña 2: Mis Tutorías Confirmadas */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('confirmed')}
+          style={{
+            padding: '12px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'confirmed' ? '#16a34a' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'confirmed' ? '2px solid #16a34a' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <UsersIcon size={18} color={activeTab === 'confirmed' ? '#16a34a' : '#64748b'} />
+          <span>Tutorías Confirmadas ({confirmedSessions.length})</span>
+        </button>
 
+        {/* Pestaña 3: Talleres Grupales */}
         <button
           type="button"
           onClick={() => setActiveTab('workshops')}
           style={{
-            padding: '12px 20px',
+            padding: '12px 18px',
             fontSize: '0.95rem',
             fontWeight: 700,
             color: activeTab === 'workshops' ? '#7c3aed' : '#64748b',
@@ -385,173 +579,539 @@ export default function MyTutoring() {
           }}
         >
           <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
-          Talleres en Vivo ({enrolledWorkshops.length + (isTutor ? hostedWorkshops.length : 0)})
+          <span>Talleres que Imparto ({hostedWorkshops.length})</span>
+        </button>
+
+        {/* Pestaña 4: Subir Apuntes y Recursos */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('materials')}
+          style={{
+            padding: '12px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'materials' ? '#d97706' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'materials' ? '2px solid #d97706' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <BookOpenIcon size={18} color={activeTab === 'materials' ? '#d97706' : '#64748b'} />
+          <span>Apuntes del Tutor ({materials.length})</span>
         </button>
       </div>
 
-      {/* Contenido de la pestaña activa */}
-      {loading ? (
-        <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-          <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando sesiones y talleres...</p>
-        </div>
-      ) : activeTab === 'workshops' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          {/* Barra superior de talleres */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 4px', color: '#0f172a' }}>
-                Mis Talleres y Aulas Virtuales Grupales
-              </h2>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
-                {isTutor
-                  ? 'Sesiones programadas con enlace al Aula Virtual integrado. Inscríbete o imparte una clase.'
-                  : 'Talleres grupales en vivo en los que estás inscrito para reforzar materias.'}
-              </p>
-            </div>
-            {isTutor ? (
-              <button
-                type="button"
-                onClick={() => setIsCreateWorkshopModalOpen(true)}
-                className="ia-btn-primary"
-                style={{
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                  borderColor: '#7c3aed',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 18px',
-                  fontWeight: 700,
-                }}
-              >
-                <VideoIcon size={16} color="#ffffff" /> + Programar Nuevo Taller
-              </button>
-            ) : (
-              <Link
-                to="/profile?tab=tutoring"
-                className="ia-btn-secondary"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  fontSize: '0.84rem',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                <span>Habilitarme como Tutor para Dictar Talleres</span>
-              </Link>
-            )}
-          </div>
+      {/* CONTENIDO DE PESTAÑAS */}
 
-          {/* Sección 1: Talleres que imparto como tutor (Solo tutores habilitados) */}
-          {isTutor && (
-            <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <UsersIcon size={18} color="#7c3aed" />
-                Talleres que imparto como Tutor ({hostedWorkshops.length})
-              </h3>
-              {hostedWorkshops.length === 0 ? (
-                <div className="ia-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
-                  No has programado talleres aún. Comparte tu conocimiento programando una clase grupal para tus compañeros.
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
-                  {hostedWorkshops.map((w) => (
-                    <WorkshopCard
-                      key={w.id}
-                      workshop={w}
-                      currentUserId={user?.id}
-                      onEnroll={async () => {}}
-                      onUnenroll={handleWorkshopUnenroll}
-                      onCancelWorkshop={handleWorkshopCancel}
-                      onFinishWorkshop={handleWorkshopFinish}
-                      onDeleteWorkshop={handleWorkshopDelete}
-                      actionLoading={actionLoading}
-                    />
-                  ))}
-                </div>
-              )}
+      {/* 1. SOLICITUDES RECIBIDAS */}
+      {activeTab === 'requests' && (
+        <div>
+          {loading ? (
+            <div className="ia-card" style={{ padding: '50px 20px', textAlign: 'center' }}>
+              <p style={{ color: '#64748b', margin: 0 }}>Cargando solicitudes de tutoría...</p>
+            </div>
+          ) : pendingRequests.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '40px 20px' }}
+                icon={<CalendarIcon size={32} color="#2563eb" />}
+                title="No tienes solicitudes pendientes"
+                description="Cuando un estudiante de tu carrera solicite apoyo en las materias que impartes, podrás revisar sus datos, motivo y agendar la sesión aquí."
+                action={
+                  <Link to="/profile?tab=tutoring" className="ia-btn-secondary" style={{ textDecoration: 'none' }}>
+                    Ver mis materias impartidas
+                  </Link>
+                }
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+              {pendingRequests.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  role="tutor"
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  onCancel={handleCancelClick}
+                  onComplete={handleComplete}
+                  onReview={handleOpenReview}
+                  actionLoading={actionLoading}
+                />
+              ))}
             </div>
           )}
-
-          {/* Sección 2: Talleres inscritos como estudiante */}
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpenIcon size={18} color="#16a34a" />
-              Talleres inscritos como Estudiante ({enrolledWorkshops.length})
-            </h3>
-            {enrolledWorkshops.length === 0 ? (
-              <div className="ia-card" style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.88rem' }}>
-                No tienes reservas activas en talleres grupales.{' '}
-                <Link to="/tutoring" style={{ color: '#2563eb', fontWeight: 600 }}>
-                  Explora los talleres en vivo disponibles
-                </Link>
-                .
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
-                {enrolledWorkshops.map((w) => (
-                  <WorkshopCard
-                    key={w.id}
-                    workshop={w}
-                    currentUserId={user?.id}
-                    onEnroll={async () => {}}
-                    onUnenroll={handleWorkshopUnenroll}
-                    actionLoading={actionLoading}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : currentList.length === 0 ? (
-        <div className="ia-card">
-          <EmptyState
-            style={{ padding: '48px 20px' }}
-            icon={<CalendarIcon size={32} color="#2563eb" />}
-            title={
-              activeTab === 'student'
-                ? 'No tienes tutorías solicitadas como estudiante'
-                : 'No tienes solicitudes recibidas como tutor'
-            }
-            description={
-              activeTab === 'student'
-                ? 'Explora las materias disponibles y solicita apoyo a compañeros con dominio comprobado.'
-                : 'Cuando otros compañeros requieran ayuda en las asignaturas que ofreces, sus solicitudes aparecerán aquí.'
-            }
-            action={
-              activeTab === 'student' ? (
-                <Link to="/tutoring" className="ia-btn-primary">
-                  <BookOpenIcon size={16} /> Explorar Tutores
-                </Link>
-              ) : (
-                <Link to="/profile?tab=tutoring" className="ia-btn-secondary">
-                  <UsersIcon size={16} /> Configurar materias que ofrezco
-                </Link>
-              )
-            }
-          />
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {currentList.map((session) => (
-            <SessionCard
-              key={session.id}
-              session={session}
-              role={activeTab as 'student' | 'tutor'}
-              onAccept={handleAccept}
-              onReject={handleReject}
-              onCancel={handleCancelClick}
-              onComplete={handleComplete}
-              onReview={handleOpenReview}
-              actionLoading={actionLoading}
-            />
-          ))}
         </div>
       )}
 
-      {/* Modal de Cancelación con Motivo */}
+      {/* 2. TUTORÍAS CONFIRMADAS */}
+      {activeTab === 'confirmed' && (
+        <div>
+          {loading ? (
+            <div className="ia-card" style={{ padding: '50px 20px', textAlign: 'center' }}>
+              <p style={{ color: '#64748b', margin: 0 }}>Cargando sesiones confirmadas...</p>
+            </div>
+          ) : confirmedSessions.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '40px 20px' }}
+                icon={<UsersIcon size={32} color="#16a34a" />}
+                title="Sin tutorías confirmadas por impartir"
+                description="Acepta solicitudes pendientes para programar y habilitar la sala virtual para tu alumno."
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+              {confirmedSessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  role="tutor"
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  onCancel={handleCancelClick}
+                  onComplete={handleComplete}
+                  onReview={handleOpenReview}
+                  actionLoading={actionLoading}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. TALLERES GRUPALES QUE IMPARTO */}
+      {activeTab === 'workshops' && (
+        <div>
+          {hostedWorkshops.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '40px 20px' }}
+                icon={<VideoIcon size={32} color="#7c3aed" />}
+                title="Aún no has creado talleres grupales"
+                description="Como tutor acreditado puedes abrir aulas virtuales para preparar certámenes con varios estudiantes a la vez."
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateWorkshopModalOpen(true)}
+                    className="ia-btn-primary"
+                    style={{ background: '#7c3aed', borderColor: '#6d28d9' }}
+                  >
+                    + Programar mi Primer Taller
+                  </button>
+                }
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+              {hostedWorkshops.map((w) => (
+                <WorkshopCard
+                  key={w.id}
+                  workshop={w}
+                  currentUserId={user?.id}
+                  onEnroll={async () => {}}
+                  onUnenroll={async () => {}}
+                  onCancelWorkshop={handleCancelWorkshop}
+                  onFinishWorkshop={handleFinishWorkshop}
+                  onDeleteWorkshop={handleWorkshopDelete}
+                  actionLoading={actionLoading}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. SUBIR Y GESTIONAR APUNTES DEL TUTOR */}
+      {activeTab === 'materials' && (
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '10px',
+            }}
+          >
+            <div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Material de Estudio Publicado por Ti
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '2px 0 0' }}>
+                Comparte guías de ejercicios, resúmenes en Word o diagramas en imagen PNG con los estudiantes.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsUploadModalOpen(true)}
+              className="ia-btn-primary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                fontSize: '0.86rem',
+                fontWeight: 700,
+                background: '#d97706',
+                borderColor: '#b45309',
+              }}
+            >
+              <PlusIcon size={16} color="#ffffff" />
+              <span>Publicar Nuevo Material</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+            {materials.map((mat) => (
+              <div
+                key={mat.id}
+                className="ia-card"
+                style={{
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        textTransform: 'uppercase',
+                        background:
+                          mat.format === 'word'
+                            ? '#dbeafe'
+                            : mat.format === 'png'
+                            ? '#dcfce7'
+                            : mat.format === 'pdf'
+                            ? '#fee2e2'
+                            : '#f1f5f9',
+                        color:
+                          mat.format === 'word'
+                            ? '#1e40af'
+                            : mat.format === 'png'
+                            ? '#166534'
+                            : mat.format === 'pdf'
+                            ? '#991b1b'
+                            : '#334155',
+                      }}
+                    >
+                      {mat.format === 'word'
+                        ? 'Documento Word'
+                        : mat.format === 'png'
+                        ? 'Imagen PNG'
+                        : mat.format === 'pdf'
+                        ? 'Archivo PDF'
+                        : 'Nota de Texto'}
+                    </span>
+                    <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>{mat.uploadedAt}</span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.02rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                    {mat.title}
+                  </h3>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2563eb', marginBottom: '8px' }}>
+                    {mat.subjectName}
+                  </div>
+
+                  {mat.fileName && (
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BookOpenIcon size={14} color="#64748b" />
+                      <span>{mat.fileName}</span>
+                    </div>
+                  )}
+
+                  {mat.textContent && (
+                    <div
+                      style={{
+                        background: '#f8fafc',
+                        padding: '10px',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        color: '#475569',
+                        marginTop: '8px',
+                        maxHeight: '80px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {mat.textContent}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSuccessMsg(`Descargando copia de "${mat.title}"`);
+                      setTimeout(() => setSuccessMsg(''), 4000);
+                    }}
+                    className="ia-btn-secondary"
+                    style={{ flex: 1, justifyContent: 'center', padding: '6px 10px', fontSize: '0.8rem' }}
+                  >
+                    <DownloadIcon size={14} /> Descargar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMaterial(mat.id)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca',
+                      background: '#fef2f2',
+                      color: '#dc2626',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Subir Nuevo Apunte del Tutor */}
+      {isUploadModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '16px',
+          }}
+        >
+          <div
+            className="ia-card"
+            style={{
+              maxWidth: '540px',
+              width: '100%',
+              padding: '26px',
+              borderRadius: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Subir Apunte o Material para Estudiantes
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsUploadModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadMaterialSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Título del material / apunte *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={matTitle}
+                  onChange={(e) => setMatTitle(e.target.value)}
+                  placeholder="ej: Guía de Ejercicios Resueltos de POO"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Asignatura relacionada
+                </label>
+                <input
+                  type="text"
+                  value={matSubject}
+                  onChange={(e) => setMatSubject(e.target.value)}
+                  placeholder="ej: Programación de Algoritmos, Bases de Datos..."
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Formato del recurso *
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMatFormat('word')}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: matFormat === 'word' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                      background: matFormat === 'word' ? '#eff6ff' : '#ffffff',
+                      color: matFormat === 'word' ? '#1d4ed8' : '#475569',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📄 Documento Word (.docx)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMatFormat('png')}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: matFormat === 'png' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                      background: matFormat === 'png' ? '#f0fdf4' : '#ffffff',
+                      color: matFormat === 'png' ? '#15803d' : '#475569',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🖼️ Imagen PNG / Captura
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMatFormat('pdf')}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: matFormat === 'pdf' ? '2px solid #dc2626' : '1px solid #cbd5e1',
+                      background: matFormat === 'pdf' ? '#fef2f2' : '#ffffff',
+                      color: matFormat === 'pdf' ? '#b91c1c' : '#475569',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📑 Archivo PDF
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMatFormat('text')}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: matFormat === 'text' ? '2px solid #7c3aed' : '1px solid #cbd5e1',
+                      background: matFormat === 'text' ? '#faf5ff' : '#ffffff',
+                      color: matFormat === 'text' ? '#6d28d9' : '#475569',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✍️ Notas de Texto Directo
+                  </button>
+                </div>
+              </div>
+
+              {matFormat !== 'text' ? (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Seleccionar Archivo ({matFormat === 'word' ? '.docx, .doc' : matFormat === 'png' ? '.png, .jpg' : '.pdf'})
+                  </label>
+                  <input
+                    type="file"
+                    accept={matFormat === 'word' ? '.docx,.doc' : matFormat === 'png' ? '.png,.jpg,.jpeg' : '.pdf'}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setMatFileName(e.target.files[0].name);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                  {matFileName && (
+                    <div style={{ fontSize: '0.78rem', color: '#16a34a', marginTop: '4px', fontWeight: 600 }}>
+                      ✓ Archivo seleccionado: {matFileName}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    Contenido escrito del apunte
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={matTextContent}
+                    onChange={(e) => setMatTextContent(e.target.value)}
+                    placeholder="Escribe aquí las fórmulas, definiciones o explicaciones que deseas compartir..."
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="ia-btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="ia-btn-primary"
+                  style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700 }}
+                >
+                  Publicar Material
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cancelación */}
       {sessionToCancel && (
         <div
           style={{
@@ -561,68 +1121,47 @@ export default function MyTutoring() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 50,
+            zIndex: 100,
             padding: '16px',
           }}
-          role="dialog"
-          aria-modal="true"
         >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              maxWidth: '460px',
-              width: '100%',
-              padding: '24px',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
-                Cancelar Tutoría
-              </h3>
-              <button
-                type="button"
-                onClick={() => setSessionToCancel(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-              >
-                <XIcon size={20} />
-              </button>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: '#475569', marginTop: 0, marginBottom: '16px' }}>
-              ¿Estás seguro de que deseas cancelar esta sesión? Esta acción notificará el cambio de estado en la plataforma.
+          <div className="ia-card" style={{ maxWidth: '440px', width: '100%', padding: '24px' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 10px 0', color: '#0f172a' }}>
+              Cancelar Sesión de Tutoría
+            </h3>
+            <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 16px 0' }}>
+              Indica el motivo de cancelación para notificar al estudiante.
             </p>
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                Motivo de la cancelación (opcional)
-              </label>
-              <textarea
-                className="ia-input"
-                rows={3}
-                value={cancellationReason}
-                onChange={(e) => setCancellationReason(e.target.value)}
-                placeholder="Ej: Choque de horario con prueba de laboratorio..."
-                style={{ width: '100%', resize: 'vertical' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <textarea
+              rows={3}
+              value={cancellationReason}
+              onChange={(e) => setCancellationReason(e.target.value)}
+              placeholder="Ej: Incompatibilidad de horario de última hora..."
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.88rem',
+                marginBottom: '16px',
+                outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button
                 type="button"
-                className="ia-btn-secondary"
                 onClick={() => setSessionToCancel(null)}
-                disabled={actionLoading}
+                className="ia-btn-secondary"
+                style={{ padding: '7px 14px', fontSize: '0.85rem' }}
               >
                 Volver
               </button>
               <button
                 type="button"
-                className="ia-btn-primary"
-                style={{ background: '#b91c1c', borderColor: '#991b1b' }}
                 onClick={handleConfirmCancel}
                 disabled={actionLoading}
+                className="ia-btn-primary"
+                style={{ background: '#dc2626', borderColor: '#b91c1c', padding: '7px 16px', fontSize: '0.85rem' }}
               >
                 {actionLoading ? 'Cancelando...' : 'Confirmar Cancelación'}
               </button>
@@ -632,17 +1171,16 @@ export default function MyTutoring() {
       )}
 
       {/* Modal de Evaluación */}
-      <ReviewModal
-        session={selectedSessionForReview}
-        isOpen={isReviewModalOpen}
-        onClose={() => {
-          setIsReviewModalOpen(false);
-          setSelectedSessionForReview(null);
-        }}
-        onSuccess={handleReviewSuccess}
-      />
+      {selectedSessionForReview && (
+        <ReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          session={selectedSessionForReview}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
 
-      {/* Modal de Creación de Taller Grupal */}
+      {/* Modal de Crear Taller Grupal */}
       <CreateWorkshopModal
         isOpen={isCreateWorkshopModalOpen}
         onClose={() => setIsCreateWorkshopModalOpen(false)}

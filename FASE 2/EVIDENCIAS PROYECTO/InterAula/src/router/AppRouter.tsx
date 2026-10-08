@@ -18,6 +18,7 @@ import MyTutoring from '../pages/tutoring/MyTutoring';
 import VirtualClassroom from '../pages/tutoring/VirtualClassroom';
 import Resources from '../pages/resources/Resources';
 import Settings from '../pages/settings/Settings';
+import Forum from '../pages/forum/Forum';
 
 // Configuración de enrutamiento para InterAula (Sprint 1: Autenticación y Perfiles)
 export default function AppRouter() {
@@ -71,7 +72,10 @@ export default function AppRouter() {
         <Route path="/users/:id" element={<PublicProfile />} />
         <Route path="/projects" element={<Navigate to="/tutoring" replace />} />
         <Route path="/tutoring" element={<TutoringExplore />} />
+        <Route path="/learning" element={<Navigate to="/tutoring" replace />} />
         <Route path="/my-tutoring" element={<MyTutoring />} />
+        <Route path="/tutor" element={<Navigate to="/my-tutoring" replace />} />
+        <Route path="/forum" element={<Forum />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/settings" element={<Settings />} />
       </Route>

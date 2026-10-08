@@ -112,7 +112,7 @@ export default function Navbar() {
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            <span>Explorar Tutorías</span>
+            <span>Aprendizaje</span>
             {hasLiveClass && (
               <span
                 style={{
@@ -136,13 +136,19 @@ export default function Navbar() {
             to="/my-tutoring"
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
           >
-            Mis Tutorías
+            Tutor
+          </NavLink>
+          <NavLink
+            to="/forum"
+            className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
+          >
+            Foro
           </NavLink>
           <NavLink
             to="/resources"
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
           >
-            Recursos y Apuntes
+            Recursos
           </NavLink>
         </nav>
 
@@ -229,7 +235,7 @@ export default function Navbar() {
             onClick={closeMenus}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
-            <span>Explorar Tutorías</span>
+            <span>Aprendizaje</span>
             {hasLiveClass && (
               <span
                 style={{
@@ -250,7 +256,14 @@ export default function Navbar() {
             className={({ isActive }) => `ia-mobile-nav-item ${isActive ? 'active' : ''}`}
             onClick={closeMenus}
           >
-            Mis Tutorías
+            Tutor
+          </NavLink>
+          <NavLink
+            to="/forum"
+            className={({ isActive }) => `ia-mobile-nav-item ${isActive ? 'active' : ''}`}
+            onClick={closeMenus}
+          >
+            Foro
           </NavLink>
           <NavLink
             to="/resources"

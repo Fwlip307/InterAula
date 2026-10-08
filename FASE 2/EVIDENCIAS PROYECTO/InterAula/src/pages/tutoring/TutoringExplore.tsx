@@ -22,7 +22,9 @@ import {
   ShieldCheckIcon,
   ExternalLinkIcon,
   BookOpenIcon,
+  DownloadIcon,
 } from '../../components/common/Icons';
+import { STUDY_RESOURCES } from '../learning/data/studyBank';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
 import CreateWorkshopModal from './components/CreateWorkshopModal';
@@ -40,7 +42,7 @@ const CRITICAL_INFORMATICS_SUBJECTS = [
 
 export default function TutoringExplore() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'tutors' | 'workshops'>('tutors');
+  const [activeTab, setActiveTab] = useState<'tutors' | 'workshops' | 'materials'>('tutors');
 
   // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
@@ -275,36 +277,16 @@ export default function TutoringExplore() {
 
   return (
     <div>
-      {/* Cabecera Académica con botón de acción */}
-      <div className="ia-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      {/* Cabecera Académica - Centro de Aprendizaje */}
+      <div className="ia-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '22px' }}>
         <div>
-          <h1 className="ia-page-title">Explorar Tutores y Talleres en Vivo</h1>
+          <h1 className="ia-page-title">Centro de Aprendizaje</h1>
           <p className="ia-page-subtitle">
-            Encuentra apoyo académico personalizado 1 a 1 o participa en clases grupales con Aula Virtual integrada.
+            Encuentra apoyo académico personalizado 1 a 1, participa en clases grupales en vivo o accede al banco de apuntes.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {isTutor ? (
-            <Link
-              to="/profile?tab=tutoring"
-              className="ia-btn-secondary"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '9px 16px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
-                backgroundColor: '#ecfdf5',
-                borderColor: '#a7f3d0',
-                color: '#065f46',
-                textDecoration: 'none',
-              }}
-            >
-              <ShieldCheckIcon size={16} color="#059669" />
-              <span>+ Acreditar Otra Materia</span>
-            </Link>
-          ) : (
+          {!isTutor ? (
             <Link
               to="/profile?tab=tutoring"
               className="ia-btn-secondary"
@@ -324,6 +306,24 @@ export default function TutoringExplore() {
               <ShieldCheckIcon size={16} color="#059669" />
               <span>¿Cómo Certificarme como Tutor?</span>
             </Link>
+          ) : (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 14px',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #86efac',
+                color: '#166534',
+                borderRadius: '8px',
+              }}
+            >
+              <CheckIcon size={14} color="#16a34a" />
+              <span>Tutor Acreditado</span>
+            </div>
           )}
 
           {isTutor && (
@@ -348,53 +348,6 @@ export default function TutoringExplore() {
             </button>
           )}
         </div>
-      </div>
-
-      {/* Banner dinámico de Acreditación de Tutores */}
-      <div
-        style={{
-          background: isTutor
-            ? 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)'
-            : 'linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%)',
-          border: isTutor ? '1px solid #86efac' : '1px solid #bbf7d0',
-          borderRadius: '12px',
-          padding: '12px 18px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ShieldCheckIcon size={24} color="#059669" style={{ flexShrink: 0 }} />
-          <div>
-            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#064e3b', display: 'block' }}>
-              {isTutor
-                ? 'Tutor Activo: ¿Quieres certificarte en otra materia?'
-                : 'Acreditación Académica: Tutores Validados'}
-            </span>
-            <span style={{ fontSize: '0.8rem', color: '#475569' }}>
-              {isTutor
-                ? 'Ya cuentas con asignaturas verificadas. Puedes certificar ramos adicionales de tu carrera para recibir nuevas solicitudes o impartir talleres grupales en vivo.'
-                : 'Demuestra tu conocimiento en ramos de tu carrera mediante la Evaluación con el Asistente o el Respaldo de tu Docente.'}
-            </span>
-          </div>
-        </div>
-        <Link
-          to="/profile?tab=tutoring"
-          className="ia-btn-primary"
-          style={{
-            padding: '6px 14px',
-            fontSize: '0.8rem',
-            background: '#059669',
-            borderColor: '#047857',
-            textDecoration: 'none',
-          }}
-        >
-          {isTutor ? 'Certificar Otra Materia' : 'Iniciar Acreditación en mi Perfil'}
-        </Link>
       </div>
 
       {/* Alerta de éxito si se agendó una tutoría */}
@@ -653,6 +606,29 @@ export default function TutoringExplore() {
               Programados
             </span>
           ) : null}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('materials')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            color: activeTab === 'materials' ? '#16a34a' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'materials' ? '3px solid #16a34a' : '3px solid transparent',
+            marginBottom: '-4px',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <BookOpenIcon size={18} color={activeTab === 'materials' ? '#16a34a' : '#64748b'} />
+          <span>Apuntes y Recursos ({STUDY_RESOURCES.length})</span>
         </button>
       </div>
 
@@ -1232,6 +1208,173 @@ export default function TutoringExplore() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 3. SECCIÓN: APUNTES Y RECURSOS DE ESTUDIO */}
+      {activeTab === 'materials' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BookOpenIcon size={20} color="#16a34a" />
+                Banco de Apuntes y Recursos de Estudio
+              </h2>
+              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                Materiales, resúmenes de certámenes, guías con ejercicios resueltos y formularios compartidos por tutores y estudiantes.
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+              gap: '20px',
+            }}
+          >
+            {STUDY_RESOURCES.filter((res) => {
+              const term = searchTerm.toLowerCase().trim();
+              const matchesSearch =
+                term === '' ||
+                res.title.toLowerCase().includes(term) ||
+                res.subject.toLowerCase().includes(term) ||
+                res.description.toLowerCase().includes(term) ||
+                res.topics.some((t) => t.toLowerCase().includes(term));
+              const selectedSubjectObj = subjects.find((s) => s.id === selectedSubjectId);
+              const matchesSubject =
+                selectedSubjectId === 'all' ||
+                (selectedSubjectObj && res.subject.toLowerCase().includes(selectedSubjectObj.name.toLowerCase()));
+              return matchesSearch && matchesSubject;
+            }).map((res) => (
+              <div
+                key={res.id}
+                className="ia-card"
+                style={{
+                  padding: '22px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '16px',
+                  transition: 'all 0.18s ease',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 800,
+                        padding: '3px 10px',
+                        borderRadius: '9999px',
+                        background:
+                          res.category === 'Resumen'
+                            ? '#eff6ff'
+                            : res.category === 'Guia de Ejercicios'
+                            ? '#f0fdf4'
+                            : res.category === 'Cheatsheet'
+                            ? '#faf5ff'
+                            : '#fffbeb',
+                        color:
+                          res.category === 'Resumen'
+                            ? '#1d4ed8'
+                            : res.category === 'Guia de Ejercicios'
+                            ? '#15803d'
+                            : res.category === 'Cheatsheet'
+                            ? '#7c3aed'
+                            : '#b45309',
+                      }}
+                    >
+                      {res.category}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                      {res.semester}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0', lineHeight: 1.35 }}>
+                    {res.title}
+                  </h3>
+
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2563eb', marginBottom: '8px' }}>
+                    {res.subject}
+                  </div>
+
+                  <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                    {res.description}
+                  </p>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                    {res.topics.map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: '0.72rem',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          color: '#475569',
+                        }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                      Por <strong>{res.author}</strong>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', fontWeight: 700, color: '#d97706' }}>
+                      <StarIcon size={14} color="#f59e0b" style={{ fill: '#f59e0b' }} />
+                      <span>{res.rating}</span>
+                      <span style={{ color: '#94a3b8', fontWeight: 500 }}>({res.downloadsCount} descargas)</span>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      fontSize: '0.8rem',
+                      color: '#475569',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <strong>Contenido clave:</strong> {res.contentSummary}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSuccessMsg(`Descargando apunte "${res.title}". Documento disponible en tu dispositivo.`);
+                      setTimeout(() => setSuccessMsg(''), 5000);
+                    }}
+                    className="ia-btn-primary"
+                    style={{
+                      width: '100%',
+                      justifyContent: 'center',
+                      padding: '9px',
+                      fontSize: '0.85rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: '#16a34a',
+                      borderColor: '#15803d',
+                    }}
+                  >
+                    <DownloadIcon size={16} color="#ffffff" />
+                    <span>Descargar Apunte / Guía</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
