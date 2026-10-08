@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import AppRouter from './router/AppRouter';
 import './styles/auth.css';
 import './styles/dashboard.css';
+import './styles/home.css';
 
 export default function App() {
   return (

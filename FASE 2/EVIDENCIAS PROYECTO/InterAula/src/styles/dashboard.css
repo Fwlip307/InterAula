@@ -422,6 +422,238 @@
   border-color: var(--ia-text-muted);
 }
 
+/* ===== Welcome Hero - Pagina de inicio ===== */
+.ia-welcome-hero {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #faf5ff 100%);
+  border: 1px solid var(--ia-border);
+  border-radius: 16px;
+  padding: 36px 32px;
+  margin-bottom: 24px;
+  box-shadow: var(--ia-shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.ia-welcome-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.05);
+  pointer-events: none;
+}
+
+.ia-welcome-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  left: -40px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.04);
+  pointer-events: none;
+}
+
+.ia-welcome-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.ia-welcome-hero-greeting {
+  flex: 1;
+}
+
+.ia-welcome-hero-time {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ia-primary);
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ia-welcome-hero-name {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--ia-text-main);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.ia-welcome-hero-desc {
+  font-size: 0.92rem;
+  color: var(--ia-text-muted);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 560px;
+}
+
+.ia-welcome-hero-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ia-welcome-cta-primary {
+  background-color: var(--ia-primary);
+  color: #ffffff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: var(--ia-radius);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.ia-welcome-cta-primary:hover {
+  background-color: var(--ia-primary-hover);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.ia-welcome-cta-secondary {
+  background-color: var(--ia-bg-card);
+  color: var(--ia-text-body);
+  border: 1px solid var(--ia-border-strong);
+  padding: 10px 22px;
+  border-radius: var(--ia-radius);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ia-welcome-cta-secondary:hover {
+  background-color: var(--ia-bg-subtle);
+  border-color: var(--ia-primary-border);
+  color: var(--ia-primary);
+}
+
+/* ===== Quick Access Cards ===== */
+.ia-quick-access {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.ia-quick-card {
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  border-radius: var(--ia-radius-card);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: var(--ia-shadow-sm);
+}
+
+.ia-quick-card:hover {
+  border-color: var(--ia-primary-border);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+  transform: translateY(-2px);
+}
+
+.ia-quick-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ia-quick-card-icon.blue { background-color: var(--ia-primary-subtle); }
+.ia-quick-card-icon.green { background-color: var(--ia-success-bg); }
+.ia-quick-card-icon.amber { background-color: var(--ia-amber-bg); }
+.ia-quick-card-icon.purple { background-color: #faf5ff; }
+
+/* Grilla de 4 tarjetas para el inicio del portal */
+.ia-quick-access-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .ia-quick-access-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .ia-quick-access-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Insignias de metadatos integradas en el Hero */
+.ia-portal-meta-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.ia-portal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--ia-border);
+  padding: 4px 10px;
+  border-radius: var(--ia-radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ia-text-body);
+}
+
+.ia-quick-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ia-quick-card-body h3 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ia-text-main);
+  margin: 0 0 2px 0;
+}
+
+.ia-quick-card-body p {
+  font-size: 0.8rem;
+  color: var(--ia-text-muted);
+  margin: 0;
+  line-height: 1.35;
+}
+
 /* Grilla de métricas */
 .ia-stats-grid {
   display: grid;

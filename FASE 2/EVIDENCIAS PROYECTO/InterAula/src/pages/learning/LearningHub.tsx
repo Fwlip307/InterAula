@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
 import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
@@ -109,7 +108,7 @@ export default function LearningHub() {
     }
   };
 
-  const tabs: { key: LearningTab; label: string; icon: JSX.Element; color: string }[] = [
+  const tabs: { key: LearningTab; label: string; icon: React.ReactNode; color: string }[] = [
     { key: 'classes', label: `Mis Clases (${studentSessions.length + enrolledWorkshops.length})`, icon: <CalendarIcon size={18} />, color: '#2563eb' },
     { key: 'materials', label: 'Material de Estudio', icon: <BookOpenIcon size={18} />, color: '#16a34a' },
     { key: 'quizzes', label: 'Quizzes de Practica', icon: <SparklesIcon size={18} />, color: '#7c3aed' },

@@ -265,6 +265,9 @@ export const tutoringService = {
       });
 
       // Evaluar si Kendo Kaponi cumple con los filtros para incluirlo como tutor certificado destacado
+      const { data: authData } = await supabase.auth.getUser();
+      const currentAuthUser = authData?.user;
+
       let includeKendo = true;
       if (filters?.subjectId && filters.subjectId !== 'all') {
         const targetSub = filters.subjectId.toLowerCase();
@@ -332,8 +335,6 @@ export const tutoringService = {
       }));
 
       // 6. Enriquecer o incorporar al tutor certificado con su materia de programación
-      const { data: authData } = await supabase.auth.getUser();
-      const currentAuthUser = authData?.user;
       const isAuthKendo = Boolean(
         currentAuthUser?.email && isCertifiedAccount(currentAuthUser.email)
       );

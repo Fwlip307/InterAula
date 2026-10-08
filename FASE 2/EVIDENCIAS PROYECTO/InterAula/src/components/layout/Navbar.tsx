@@ -105,7 +105,7 @@ export default function Navbar() {
             to="/dashboard"
             className={({ isActive }) => `ia-nav-item ${isActive ? 'active' : ''}`}
           >
-            Mi Panel
+            Inicio
           </NavLink>
           <NavLink
             to="/tutoring"
@@ -221,7 +221,7 @@ export default function Navbar() {
             className={({ isActive }) => `ia-mobile-nav-item ${isActive ? 'active' : ''}`}
             onClick={closeMenus}
           >
-            Mi Panel
+            Inicio
           </NavLink>
           <NavLink
             to="/tutoring"

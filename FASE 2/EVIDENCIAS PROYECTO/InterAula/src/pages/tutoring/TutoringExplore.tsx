@@ -252,7 +252,6 @@ export default function TutoringExplore() {
     setWorkshopActionLoading(true);
     setErrorMsg('');
     setWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
-    setLiveWorkshops((prev) => prev.filter((w) => w.id !== workshopId && w.room_id !== workshopId));
     try {
       await tutoringService.deleteWorkshop(workshopId);
       setSuccessMsg('La clase o taller ha sido eliminado correctamente.');

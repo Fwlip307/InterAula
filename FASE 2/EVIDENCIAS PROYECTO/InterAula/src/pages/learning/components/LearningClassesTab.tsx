@@ -31,7 +31,6 @@ export default function LearningClassesTab({
 }: LearningClassesTabProps) {
   const pendingSessions = studentSessions.filter((s) => s.status === 'pending');
   const acceptedSessions = studentSessions.filter((s) => s.status === 'accepted');
-  const pastSessions = studentSessions.filter((s) => s.status === 'completed' || s.status === 'cancelled' || s.status === 'rejected');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>

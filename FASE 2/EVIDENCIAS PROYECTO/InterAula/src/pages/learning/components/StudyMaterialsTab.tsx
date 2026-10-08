@@ -106,7 +106,7 @@ function ResourceCard({
   renderStars,
 }: {
   resource: StudyResource;
-  renderStars: (rating: number) => JSX.Element;
+  renderStars: (rating: number) => React.ReactNode;
 }) {
   const categoryColors: Record<string, { bg: string; color: string; border: string }> = {
     Resumen: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },

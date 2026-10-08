@@ -2091,7 +2091,7 @@ export default function TutorValidationBotModal({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertCircleIcon size={20} color="#dc2626" />
                 <span style={{ fontSize: '0.86rem', color: '#991b1b', fontWeight: 700 }}>
-                  Evaluación finalizada: {streak} de {TOTAL_QUESTIONS} aciertos.
+                  Evaluación finalizada ({eliminationReason === 'timeout' ? 'Tiempo agotado' : 'Respuesta incorrecta'}): {streak} de {TOTAL_QUESTIONS} aciertos.
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
