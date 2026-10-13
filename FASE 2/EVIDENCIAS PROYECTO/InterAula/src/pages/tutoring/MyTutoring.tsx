@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
-import { profileService, isCertifiedAccount } from '../../services/profile.service';
+import { profileService } from '../../services/profile.service';
 import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
 import type { Subject, OfferedSubject } from '../../types/profile';
 import SessionCard from './components/SessionCard';
@@ -107,9 +107,7 @@ export default function MyTutoring() {
   const [sessionToCancel, setSessionToCancel] = useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = useState('');
 
-  const isTutor =
-    offeredSubjects.length > 0 ||
-    Boolean(user?.email && isCertifiedAccount(user.email));
+  const isTutor = offeredSubjects.length > 0;
 
   const loadSessions = async () => {
     setLoading(true);

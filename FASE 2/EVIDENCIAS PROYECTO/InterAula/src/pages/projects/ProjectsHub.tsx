@@ -223,6 +223,7 @@ export default function ProjectsHub() {
   const [selectedPositionId, setSelectedPositionId] = useState<string>('');
   const [applicationPitch, setApplicationPitch] = useState('');
   const [isApplying, setIsApplying] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Cargar proyectos (desde Supabase + persistencia local fallback)
   const loadProjectsData = async () => {
@@ -289,71 +290,74 @@ export default function ProjectsHub() {
       .map((p) => p.trim())
       .filter(Boolean);
 
-    const newProjId = `proj-${Date.now()}`;
-    const createdPositions: ProjectPosition[] = positionsList.map((pTitle, idx) => ({
-      id: `pos-${Date.now()}-${idx}`,
-      project_id: newProjId,
-      title: pTitle,
-      description: `Participación activa en el rol de ${pTitle} para el proyecto.`,
-      skill_id: null,
-      level_required: 'intermediate',
-      slots: 1,
-      status: 'open',
-      created_at: new Date().toISOString(),
-    }));
-
-    const newProj: SampleProjectWithPositions = {
-      id: newProjId,
-      owner_id: user?.id || 'current-user',
-      title: newTitle.trim(),
-      short_description: newShortDesc.trim() || newFullDesc.slice(0, 100),
-      description: newFullDesc.trim() || newShortDesc.trim(),
-      category: newCategory,
-      status: 'recruiting',
-      visibility: 'public',
-      max_members: Number(newMaxMembers) || 4,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      owner: {
-        id: user?.id || 'current-user',
-        email: user?.email || '',
-        first_name: user?.user_metadata?.first_name || 'Estudiante',
-        last_name: user?.user_metadata?.last_name || '',
-        display_name: getUserDisplayName(null, user?.user_metadata, user?.email),
-        institution: 'Duoc UC',
-        career: 'Informática y Telecomunicaciones',
-        avatar_url: user?.user_metadata?.avatar_url || null,
-        bio: null,
-        location: 'Santiago, Chile',
-        profile_completed: true,
-        available_for_tutoring: false,
-        portfolio_url: null,
-        github_url: null,
-        linkedin_url: null,
-        created_at: '',
-        updated_at: '',
-      },
-      positions: createdPositions,
-    };
-
-    const updatedProjects = [newProj, ...projects];
-    setProjects(updatedProjects);
-
-    // Guardar localmente
+    setIsCreating(true);
     try {
-      const raw = localStorage.getItem('ia_local_custom_projects');
-      const existing = raw ? JSON.parse(raw) : [];
-      localStorage.setItem('ia_local_custom_projects', JSON.stringify([newProj, ...existing]));
-    } catch {}
+      if (user) {
+        // Persistencia directa en base de datos PostgreSQL/Supabase
+        const created = await projectService.createProject({
+          title: newTitle.trim(),
+          short_description: newShortDesc.trim() || newFullDesc.slice(0, 100),
+          description: newFullDesc.trim() || newShortDesc.trim(),
+          category: newCategory,
+          max_members: Number(newMaxMembers) || 4,
+          positions: positionsList,
+        });
 
-    setIsCreateModalOpen(false);
-    setNewTitle('');
-    setNewShortDesc('');
-    setNewFullDesc('');
-    setNewPositions('Frontend Developer, Backend Developer');
-    setSuccessMsg('¡Proyecto colaborativo publicado exitosamente en el Hub!');
-    setActiveTab('my_projects');
-    setTimeout(() => setSuccessMsg(''), 5000);
+        setProjects((prev) => [created as SampleProjectWithPositions, ...prev]);
+        setSuccessMsg('¡Proyecto colaborativo publicado exitosamente en el Hub!');
+      } else {
+        // Fallback local para modo no autenticado
+        const newProjId = `proj-${Date.now()}`;
+        const createdPositions: ProjectPosition[] = positionsList.map((pTitle, idx) => ({
+          id: `pos-${Date.now()}-${idx}`,
+          project_id: newProjId,
+          title: pTitle,
+          description: `Participación activa en el rol de ${pTitle} para el proyecto.`,
+          skill_id: null,
+          level_required: 'intermediate',
+          slots: 1,
+          status: 'open',
+          created_at: new Date().toISOString(),
+        }));
+
+        const newProj: SampleProjectWithPositions = {
+          id: newProjId,
+          owner_id: 'guest-user',
+          title: newTitle.trim(),
+          short_description: newShortDesc.trim() || newFullDesc.slice(0, 100),
+          description: newFullDesc.trim() || newShortDesc.trim(),
+          category: newCategory,
+          status: 'recruiting',
+          visibility: 'public',
+          max_members: Number(newMaxMembers) || 4,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          owner: undefined,
+          positions: createdPositions,
+        };
+
+        setProjects((prev) => [newProj, ...prev]);
+        try {
+          const raw = localStorage.getItem('ia_local_custom_projects');
+          const existing = raw ? JSON.parse(raw) : [];
+          localStorage.setItem('ia_local_custom_projects', JSON.stringify([newProj, ...existing]));
+        } catch {}
+        setSuccessMsg('¡Proyecto colaborativo publicado exitosamente en el Hub!');
+      }
+
+      setIsCreateModalOpen(false);
+      setNewTitle('');
+      setNewShortDesc('');
+      setNewFullDesc('');
+      setNewPositions('Frontend Developer, Backend Developer');
+      setActiveTab('my_projects');
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (err: any) {
+      console.error('[ProjectsHub] Error al publicar proyecto:', err);
+      setErrorMsg('No fue posible publicar el proyecto. Por favor, intenta nuevamente.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   // Abrir modal de postulación
@@ -371,30 +375,43 @@ export default function ProjectsHub() {
 
     setIsApplying(true);
     try {
-      const pos = applyingToProject.positions.find((p) => p.id === selectedPositionId);
-      const newApp: ProjectApplication = {
-        id: `app-${Date.now()}`,
-        project_id: applyingToProject.id,
-        position_id: selectedPositionId,
-        applicant_id: user?.id || 'user-me',
-        message: applicationPitch.trim() || 'Me gustaría unirme al equipo para aportar mis conocimientos en esta iniciativa.',
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        project: applyingToProject,
-        position: pos,
-      };
+      const isDbProject = !applyingToProject.id.startsWith('proj-sample-') && !applyingToProject.id.startsWith('proj-');
+      const isDbPosition = !selectedPositionId.startsWith('pos-');
 
-      const updatedApps = [newApp, ...myApplications];
-      setMyApplications(updatedApps);
-      try {
-        localStorage.setItem('ia_local_user_applications', JSON.stringify(updatedApps));
-      } catch {}
+      if (user && isDbProject && isDbPosition) {
+        const dbApp = await projectService.applyToPosition(
+          applyingToProject.id,
+          selectedPositionId,
+          applicationPitch.trim()
+        );
+        setMyApplications((prev) => [dbApp, ...prev]);
+      } else {
+        const pos = applyingToProject.positions.find((p) => p.id === selectedPositionId);
+        const newApp: ProjectApplication = {
+          id: `app-${Date.now()}`,
+          project_id: applyingToProject.id,
+          position_id: selectedPositionId,
+          applicant_id: user?.id || 'user-me',
+          message: applicationPitch.trim() || 'Me gustaría unirme al equipo para aportar mis conocimientos en esta iniciativa.',
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          project: applyingToProject,
+          position: pos,
+        };
 
-      setSuccessMsg(`¡Postulación enviada exitosamente para la vacante "${pos?.title || 'del proyecto'}"! El creador revisará tu solicitud.`);
+        const updatedApps = [newApp, ...myApplications];
+        setMyApplications(updatedApps);
+        try {
+          localStorage.setItem('ia_local_user_applications', JSON.stringify(updatedApps));
+        } catch {}
+      }
+
+      setSuccessMsg('¡Postulación enviada exitosamente! El creador del proyecto revisará tu solicitud.');
       setTimeout(() => setSuccessMsg(''), 6000);
       setApplyingToProject(null);
     } catch (err: any) {
+      console.error('[ProjectsHub] Error al enviar postulación:', err);
       setErrorMsg('No fue posible enviar tu postulación.');
     } finally {
       setIsApplying(false);
@@ -402,7 +419,14 @@ export default function ProjectsHub() {
   };
 
   // Retirar postulación
-  const handleWithdrawApplication = (appId: string) => {
+  const handleWithdrawApplication = async (appId: string) => {
+    try {
+      if (!appId.startsWith('app-')) {
+        await projectService.withdrawApplication(appId);
+      }
+    } catch (err) {
+      console.warn('[ProjectsHub] Error al retirar postulación en base de datos:', err);
+    }
     const updated = myApplications.filter((a) => a.id !== appId);
     setMyApplications(updated);
     try {
@@ -1327,10 +1351,17 @@ export default function ProjectsHub() {
                 </button>
                 <button
                   type="submit"
+                  disabled={isCreating}
                   className="ia-btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700 }}
+                  style={{
+                    padding: '8px 18px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    opacity: isCreating ? 0.7 : 1,
+                    cursor: isCreating ? 'not-allowed' : 'pointer',
+                  }}
                 >
-                  Publicar Proyecto
+                  {isCreating ? 'Publicando...' : 'Publicar Proyecto'}
                 </button>
               </div>
             </form>

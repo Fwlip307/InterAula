@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import { isCertifiedAccount } from './profile.service';
 import type {
   TutorVerificationRequest,
   AcademicValidator,
@@ -178,18 +177,10 @@ export const verificationService = {
 
     if (error) {
       console.error('[verificationService] Error en getMyVerificationRequests:', error.message);
-      if (isCertifiedAccount(user.email) || isCertifiedAccount(user.id)) {
-        return this.getMockCertifiedVerificationRequests(user.id);
-      }
-      throw new Error('No fue posible cargar tus solicitudes de verificación');
+      return [];
     }
 
-    const list = (data || []) as TutorVerificationRequest[];
-    if (list.length === 0 && (isCertifiedAccount(user.email) || isCertifiedAccount(user.id))) {
-      return this.getMockCertifiedVerificationRequests(user.id);
-    }
-
-    return list;
+    return (data || []) as TutorVerificationRequest[];
   },
 
   /**
@@ -335,10 +326,6 @@ export const verificationService = {
    * Consulta si un tutor está verificado en una asignatura específica consultando profile_offered_subjects.
    */
   async isTutorVerifiedForSubject(tutorId: string, subjectId: string): Promise<boolean> {
-    if (isCertifiedAccount(tutorId)) {
-      return true;
-    }
-
     const { data, error } = await supabase
       .from('profile_offered_subjects')
       .select('is_verified')
@@ -360,10 +347,6 @@ export const verificationService = {
     const user = await getOptionalAuthUser();
     if (!user) return false;
 
-    if (isCertifiedAccount(user.email) || isCertifiedAccount(user.id)) {
-      return true;
-    }
-
     const { data, error } = await supabase
       .from('academic_validators')
       .select('profile_id')
@@ -383,15 +366,6 @@ export const verificationService = {
   async getAcademicValidatorProfile(profileId?: string): Promise<AcademicValidator | null> {
     const targetId = profileId || (await getOptionalAuthUser())?.id;
     if (!targetId) return null;
-
-    if (isCertifiedAccount(targetId)) {
-      return {
-        profile_id: targetId,
-        role_title: 'Docente Validador / Tutor Master',
-        department: 'Administración e Informática',
-        created_at: '2026-10-01T10:00:00Z',
-      } as AcademicValidator;
-    }
 
     const { data, error } = await supabase
       .from('academic_validators')

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   SearchIcon,
   CheckIcon,
@@ -6,97 +6,34 @@ import {
   BookOpenIcon,
   PlusIcon,
 } from '../../components/common/Icons';
-
-interface ForumQuestion {
-  id: string;
-  title: string;
-  description: string;
-  author: string;
-  authorInstitution: string;
-  category: string;
-  tags: string[];
-  repliesCount: number;
-  votesCount: number;
-  timeAgo: string;
-  isSolved: boolean;
-}
-
-const INITIAL_QUESTIONS: ForumQuestion[] = [
-  {
-    id: 'f-1',
-    title: '¿Cómo implementar correctamente la herencia y polimorfismo en Java sin acoplamiento?',
-    description: 'Estoy preparando el certamen de Programación Orientada a Objetos y tengo dudas sobre cuándo conviene usar una clase abstracta en vez de una interfaz al diseñar modelos de dominio.',
-    author: 'Matías González',
-    authorInstitution: 'Duoc UC · San Joaquín',
-    category: 'Programación',
-    tags: ['Java', 'POO', 'Herencia', 'Interfaces'],
-    repliesCount: 4,
-    votesCount: 12,
-    timeAgo: 'Hace 2 horas',
-    isSolved: true,
-  },
-  {
-    id: 'f-2',
-    title: 'Duda con subconsultas correlacionadas vs JOINs en PostgreSQL',
-    description: 'En el ramo de Consultas de Bases de Datos, el profesor pide optimizar una query de reportes mensuales. ¿En qué casos una subconsulta correlated rinde peor que un LEFT JOIN con GROUP BY?',
-    author: 'Camila Soto',
-    authorInstitution: 'Duoc UC · Plaza Vespucio',
-    category: 'Bases de Datos',
-    tags: ['PostgreSQL', 'SQL', 'JOIN', 'Optimización'],
-    repliesCount: 6,
-    votesCount: 18,
-    timeAgo: 'Hace 5 horas',
-    isSolved: true,
-  },
-  {
-    id: 'f-3',
-    title: 'Ayuda con demostración de límites indeterminados 0/0 con factorización',
-    description: 'En Nivelación Matemática y Cálculo nos pasaron ejercicios con raíces cuadradas en el denominador. ¿Cuál es el paso a paso recomendado para racionalizar antes de evaluar el límite?',
-    author: 'Lucas Ramírez',
-    authorInstitution: 'Duoc UC · Viña del Mar',
-    category: 'Matemáticas',
-    tags: ['Cálculo', 'Límites', 'Álgebra'],
-    repliesCount: 2,
-    votesCount: 8,
-    timeAgo: 'Hace 1 día',
-    isSolved: false,
-  },
-  {
-    id: 'f-4',
-    title: '¿Qué patrón de arquitectura recomiendan para una API REST modular en Node/TypeScript?',
-    description: 'Estamos armando el proyecto semestral de Arquitectura de Software y queremos estructurar por capas (Controller - Service - Repository). ¿Algún tutor con apuntes o ejemplo de referencia?',
-    author: 'Nicolás Tapia',
-    authorInstitution: 'Duoc UC · Antonio Varas',
-    category: 'Arquitectura',
-    tags: ['TypeScript', 'Node.js', 'Clean Architecture', 'API REST'],
-    repliesCount: 5,
-    votesCount: 15,
-    timeAgo: 'Hace 1 día',
-    isSolved: false,
-  },
-  {
-    id: 'f-5',
-    title: 'Recomendaciones y tips para el examen transversal de Algoritmos',
-    description: '¿Qué temas suelen tener mayor ponderación en el examen transversal? ¿Arreglos multidimensionales o recursión?',
-    author: 'Valentina Muñoz',
-    authorInstitution: 'Duoc UC · Maipú',
-    category: 'General',
-    tags: ['Algoritmos', 'Examen', 'Estudio'],
-    repliesCount: 7,
-    votesCount: 21,
-    timeAgo: 'Hace 2 días',
-    isSolved: true,
-  },
-];
+import {
+  forumService,
+  INITIAL_FORUM_QUESTIONS,
+  type ForumQuestion,
+} from '../../services/forum.service';
 
 const CATEGORIES = ['Todas', 'Programación', 'Bases de Datos', 'Matemáticas', 'Arquitectura', 'General'];
 
 export default function Forum() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const [questions, setQuestions] = useState<ForumQuestion[]>(INITIAL_QUESTIONS);
+  const [questions, setQuestions] = useState<ForumQuestion[]>(INITIAL_FORUM_QUESTIONS);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [successToast, setSuccessToast] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Cargar publicaciones persistidas desde Supabase
+  useEffect(() => {
+    let isMounted = true;
+    forumService.getPosts().then((posts) => {
+      if (isMounted && posts.length > 0) {
+        setQuestions(posts);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Formulario de nueva consulta
   const [newTitle, setNewTitle] = useState('');
@@ -115,34 +52,57 @@ export default function Forum() {
     return matchesCategory && matchesSearch;
   });
 
-  const handleCreateQuestion = (e: React.FormEvent) => {
+  const handleCreateQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newDescription.trim()) return;
+    if (!newTitle.trim() || !newDescription.trim() || isSubmitting) return;
 
-    const newQ: ForumQuestion = {
-      id: `f-${Date.now()}`,
-      title: newTitle.trim(),
-      description: newDescription.trim(),
-      author: 'Tú (Estudiante)',
-      authorInstitution: 'Mi Institución Académica',
+    setIsSubmitting(true);
+    const tagsArray = newTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const res = await forumService.createPost({
+      title: newTitle,
+      description: newDescription,
       category: newCategory,
-      tags: newTags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-      repliesCount: 0,
-      votesCount: 1,
-      timeAgo: 'Recién publicado',
-      isSolved: false,
-    };
+      tags: tagsArray,
+    });
 
-    setQuestions([newQ, ...questions]);
+    if (res.success && res.post) {
+      setQuestions([res.post, ...questions]);
+    } else {
+      // Fallback local seguro si la tabla aún no se ha desplegado en remoto
+      const fallbackQ: ForumQuestion = {
+        id: `f-${Date.now()}`,
+        title: newTitle.trim(),
+        description: newDescription.trim(),
+        author: 'Tú (Estudiante)',
+        authorInstitution: 'Duoc UC',
+        category: newCategory,
+        tags: tagsArray,
+        repliesCount: 0,
+        votesCount: 1,
+        timeAgo: 'Recién publicado',
+        isSolved: false,
+      };
+      setQuestions([fallbackQ, ...questions]);
+    }
+
+    setIsSubmitting(false);
     setIsNewModalOpen(false);
     setNewTitle('');
     setNewDescription('');
     setNewTags('');
     setSuccessToast('¡Tu consulta ha sido publicada en el foro!');
     setTimeout(() => setSuccessToast(''), 4500);
+  };
+
+  const handleUpvote = (postId: string, currentVotes: number) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === postId ? { ...q, votesCount: q.votesCount + 1 } : q))
+    );
+    forumService.upvotePost(postId, currentVotes);
   };
 
   return (
@@ -407,14 +367,30 @@ export default function Forum() {
                   }}
                 >
                   <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
-                        {q.votesCount}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUpvote(q.id, q.votesCount);
+                      }}
+                      title="Apoyar esta consulta"
+                      style={{
+                        textAlign: 'center',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '4px 10px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#2563eb' }}>
+                        ▲ {q.votesCount}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase' }}>
                         Votos
                       </div>
-                    </div>
+                    </button>
                     <div
                       style={{
                         textAlign: 'center',

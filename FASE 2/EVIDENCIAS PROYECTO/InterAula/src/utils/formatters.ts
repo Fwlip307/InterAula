@@ -40,8 +40,9 @@ export function getUserDisplayName(
   if (userMetadata?.full_name?.trim()) return userMetadata.full_name.trim();
   if (userMetadata?.name?.trim()) return userMetadata.name.trim();
 
-  if (email) {
-    const prefix = email.split('@')[0];
+  const effectiveEmail = email || profile?.email;
+  if (effectiveEmail) {
+    const prefix = effectiveEmail.split('@')[0];
     if (prefix) return prefix;
   }
 

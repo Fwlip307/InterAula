@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { profileService, isCertifiedAccount } from '../services/profile.service';
+import { profileService } from '../services/profile.service';
 import type {
   Profile,
   OfferedSubject,
@@ -101,7 +101,7 @@ export default function Dashboard() {
   };
 
   const verifiedCount = offeredSubjects.filter((s) => s.is_verified).length;
-  const isVerifiedTutor = verifiedCount > 0 || Boolean(user?.email && isCertifiedAccount(user.email));
+  const isVerifiedTutor = verifiedCount > 0;
 
   return (
     <div>
