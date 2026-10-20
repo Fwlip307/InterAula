@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   XIcon,
-  CheckIcon,
   ShieldCheckIcon,
   SparklesIcon,
   AlertCircleIcon,
   ClockIcon,
-  SendIcon,
   LockIcon,
 } from '../../../components/common/Icons';
 import { verificationService } from '../../../services/verification.service';
@@ -25,6 +23,9 @@ import {
   evaluateAnswerWithGemini,
 } from '../../../services/geminiAiService';
 import { useAntiCheat } from '../hooks/useAntiCheat';
+import TutorAntiCheatOverlays from './TutorAntiCheatOverlays';
+import TutorValidationIntro from './TutorValidationIntro';
+import TutorValidationBottomBar from './TutorValidationBottomBar';
 
 interface TutorValidationBotModalProps {
   isOpen: boolean;
@@ -701,181 +702,16 @@ export default function TutorValidationBotModal({
           </div>
         )}
 
-        {/* MODAL DE CONFIRMACIÓN DE ABANDONO */}
-        {showAbandonConfirm && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(3px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-              zIndex: 100,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                padding: '24px',
-                maxWidth: '460px',
-                width: '100%',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: '#fef2f2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#dc2626',
-                    flexShrink: 0,
-                  }}
-                >
-                  <AlertCircleIcon size={22} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
-                    ¿Deseas salir de la evaluación?
-                  </div>
-                  <div style={{ fontSize: '0.88rem', color: '#64748b' }}>
-                    Puedes retomar la prueba en otro momento
-                  </div>
-                </div>
-              </div>
-
-              <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', lineHeight: 1.55 }}>
-                Si abandonas ahora, el progreso de la sesión actual no se guardará. No tendrás penalizaciones ni registro negativo en tu cuenta, y podrás volver a realizar la evaluación cuando lo desees.
-              </p>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowAbandonConfirm(false)}
-                  className="ia-btn-secondary"
-                  style={{ padding: '10px 18px', fontSize: '0.92rem' }}
-                >
-                  Continuar Evaluación
-                </button>
-                <button
-                  type="button"
-                  onClick={handleFinalClose}
-                  style={{
-                    padding: '10px 20px',
-                    fontSize: '0.92rem',
-                    fontWeight: 700,
-                    backgroundColor: '#dc2626',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Salir y Abandonar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MODAL BLOQUEANTE SI EL ESTUDIANTE SALE DEL MODO PANTALLA COMPLETA */}
-        {!isFullscreen && (step === 'answering' || step === 'question_feedback') && !showAbandonConfirm && !isGenerating && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.94)',
-              backdropFilter: 'blur(8px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-              zIndex: 110,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: '16px',
-                padding: '28px 24px',
-                maxWidth: '480px',
-                width: '100%',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
-                border: '1px solid #cbd5e1',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                textAlign: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '14px',
-                  backgroundColor: '#fef2f2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#dc2626',
-                  border: '1px solid #fecaca',
-                }}
-              >
-                <LockIcon size={26} />
-              </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
-                  Modo Pantalla Completa Obligatorio
-                </div>
-                <div style={{ fontSize: '0.9rem', color: '#dc2626', fontWeight: 700, marginTop: '4px' }}>
-                  No está permitido minimizar ni alternar aplicaciones
-                </div>
-              </div>
-
-              <p style={{ margin: 0, fontSize: '0.95rem', color: '#475569', lineHeight: 1.55 }}>
-                Esta evaluación no admite segundo plano ni minimizado: <strong>es entrar o salir</strong>. El tiempo continúa corriendo en tiempo real. Para continuar, reanuda la pantalla completa de inmediato.
-              </p>
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '4px', width: '100%', justifyContent: 'center' }}>
-                <button
-                  type="button"
-                  onClick={handleFinalClose}
-                  className="ia-btn-secondary"
-                  style={{ padding: '11px 20px', fontSize: '0.92rem', fontWeight: 600 }}
-                >
-                  Salir y Abandonar
-                </button>
-                <button
-                  type="button"
-                  onClick={enterFullscreen}
-                  className="ia-btn-primary"
-                  style={{
-                    padding: '10px 22px',
-                    fontSize: '0.92rem',
-                    fontWeight: 800,
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    borderColor: '#047857',
-                  }}
-                >
-                  Reanudar Pantalla Completa
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* MODALES DE CONTROL ANTI-CHEAT Y SALIDA */}
+        <TutorAntiCheatOverlays
+          showAbandonConfirm={showAbandonConfirm}
+          onCancelAbandon={() => setShowAbandonConfirm(false)}
+          onConfirmAbandon={handleFinalClose}
+          isFullscreen={isFullscreen}
+          step={step}
+          isGenerating={isGenerating}
+          onEnterFullscreen={enterFullscreen}
+        />
 
         {/* ENCABEZADO CHATBOT */}
         <div
@@ -1152,451 +988,36 @@ export default function TutorValidationBotModal({
           }}
         >
           {/* ESTADO INICIAL: CARGA DINÁMICA O SELECCIÓN DE MATERIA Y NIVEL */}
-          {step === 'idle' && isGenerating && (
-            <div
-              style={{
-                padding: '48px 24px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                gap: '22px',
-                minHeight: '420px',
-                margin: 'auto 0',
+          {step === 'idle' && (
+            <TutorValidationIntro
+              isGenerating={isGenerating}
+              generationSeconds={generationSeconds}
+              getGenerationStatus={getGenerationStatus}
+              subjectName={subjectName}
+              selectedSubjectId={selectedSubjectId}
+              onSelectSubjectId={(id) => {
+                setSelectedSubjectId(id);
+                setErrorMessage(null);
               }}
-            >
-              {/* Spinner animado y halo central */}
-              <div style={{ position: 'relative', width: '78px', height: '78px' }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '50%',
-                    border: '4px solid #e2e8f0',
-                    borderTopColor: '#059669',
-                    animation: 'ia-spin 0.9s linear infinite',
-                  }}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: '8px',
-                    borderRadius: '50%',
-                    backgroundColor: '#ecfdf5',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#059669',
-                    animation: 'ia-pulse-scale 2s ease-in-out infinite',
-                  }}
-                >
-                  <SparklesIcon size={32} color="#059669" />
-                </div>
-              </div>
-
-              {/* Temporizador y estado dinámico */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    backgroundColor: '#ecfdf5',
-                    border: '1.5px solid #a7f3d0',
-                    borderRadius: '24px',
-                    padding: '6px 16px',
-                    color: '#065f46',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                  }}
-                >
-                  <ClockIcon size={16} color="#059669" />
-                  <span>Generando preguntas:</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 800 }}>
-                    {`00:${generationSeconds < 10 ? `0${generationSeconds}` : generationSeconds}`}s
-                  </span>
-                </div>
-
-                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', marginTop: '4px' }}>
-                  Preparando Evaluación Técnica
-                </div>
-
-                <div
-                  style={{
-                    fontSize: '0.92rem',
-                    color: '#047857',
-                    fontWeight: 700,
-                    minHeight: '26px',
-                    maxWidth: '480px',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {getGenerationStatus(generationSeconds)}
-                </div>
-
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                  Materia: <strong>{subjectName}</strong> · Nivel:{' '}
-                  <strong>
-                    {selectedLevel === 'basic' ? 'Básico' : selectedLevel === 'advanced' ? 'Avanzado' : 'Intermedio'}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Barra de progreso indeterminada animada */}
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: '360px',
-                  height: '6px',
-                  backgroundColor: '#e2e8f0',
-                  borderRadius: '6px',
-                  overflow: 'hidden',
-                  position: 'relative',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    width: '45%',
-                    background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)',
-                    borderRadius: '6px',
-                    animation: 'ia-indeterminate 1.6s ease-in-out infinite',
-                  }}
-                />
-              </div>
-
-              {/* Nota de contexto */}
-              <div
-                style={{
-                  padding: '12px 18px',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  color: '#64748b',
-                  maxWidth: '500px',
-                  lineHeight: 1.45,
-                }}
-              >
-                El motor de Inteligencia Artificial está generando 10 preguntas adaptadas al temario oficial. La prueba comenzará automáticamente en pantalla completa al finalizar la carga.
-              </div>
-            </div>
-          )}
-
-          {/* VISTA IDLE / INTRO */}
-          {step === 'idle' && !isGenerating && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: 'auto 0' }}>
-              <div
-                style={{
-                  backgroundColor: '#f0fdf4',
-                  border: '1.5px solid #86efac',
-                  borderRadius: '14px',
-                  padding: '18px',
-                  display: 'flex',
-                  gap: '14px',
-                }}
-              >
-                <div style={{ color: '#059669', flexShrink: 0, marginTop: '2px' }}>
-                  <ShieldCheckIcon size={24} />
-                </div>
-                <div>
-                  <div style={{ fontWeight: 800, color: '#065f46', fontSize: '1.1rem', marginBottom: '6px', letterSpacing: '-0.01em' }}>
-                    Evaluación Práctica para Acreditación de Tutores
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.95rem', color: '#166534', lineHeight: 1.55 }}>
-                    Para habilitarte como tutor y apoyar a tus compañeros en InterAula, necesitas rendir esta evaluación práctica con nuestro Asistente Evaluador:
-                  </p>
-                  <ul style={{ margin: '10px 0 0 18px', padding: 0, fontSize: '0.92rem', color: '#15803d', lineHeight: 1.6 }}>
-                    <li><strong>10 preguntas prácticas</strong> calibradas estrictamente con el temario oficial de la materia.</li>
-                    <li><strong>3 niveles formativos</strong>: elige entre Básico, Intermedio o Avanzado según tu dominio.</li>
-                    <li><strong>Tiempos específicos por pregunta</strong>: 15 segundos en alternativas y 45 segundos en desarrollo técnico para agilidad.</li>
-                    <li><strong>Modo de enfoque en pantalla completa</strong>: evaluación inmersiva con detección de cambio de pestañas.</li>
-                    <li><strong>Redacción manual</strong>: respuestas auténticas por teclado (copiado y pegado bloqueado).</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Selector de Asignatura */}
-              <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label className="ia-label" style={{ fontWeight: 700, margin: 0 }}>
-                    Asignatura a evaluar:
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomSubject(!isCustomSubject);
-                      setErrorMessage(null);
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#059669',
-                      fontSize: '0.88rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      padding: '2px 4px',
-                    }}
-                  >
-                    {isCustomSubject ? '← Elegir del catálogo sugerido' : '¿No está tu materia? Escríbela'}
-                  </button>
-                </div>
-
-                {isCustomSubject ? (
-                  <div>
-                    <input
-                      type="text"
-                      className="ia-input"
-                      placeholder="Ej. Contabilidad General, Costos y Presupuestos, Microeconomía..."
-                      value={customSubjectInput}
-                      onChange={(e) => {
-                        setCustomSubjectInput(e.target.value);
-                        setErrorMessage(null);
-                      }}
-                      style={{ width: '100%', fontWeight: 600, fontSize: '0.98rem' }}
-                    />
-                    <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '6px' }}>
-                      El motor de IA generará 10 preguntas técnicas especializadas para esta materia.
-                    </div>
-                  </div>
-                ) : (
-                  <select
-                    className="ia-input"
-                    value={selectedSubjectId}
-                    onChange={(e) => {
-                      setSelectedSubjectId(e.target.value);
-                      setErrorMessage(null);
-                    }}
-                    style={{ width: '100%', fontWeight: 600, fontSize: '0.98rem' }}
-                  >
-                    {availableSubjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {userInstitution && (
-                  <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <ShieldCheckIcon size={13} color="#059669" />
-                    <span>
-                      Evaluación calibrada con el temario formativo de <strong>{userInstitution}</strong> {userCareer ? `[${userCareer}]` : ''}.
-                    </span>
-                  </div>
-                )}
-
-                {/* Feedback dinámico con Gemini */}
-                <div style={{ marginTop: '10px' }}>
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      backgroundColor: '#f0fdf4',
-                      borderRadius: '8px',
-                      border: '1px solid #bbf7d0',
-                      fontSize: '0.82rem',
-                      color: '#166534',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                    }}
-                  >
-                    <SparklesIcon size={16} color="#059669" />
-                    <span>
-                      <strong>Evaluación Dinámica con IA:</strong> Las 10 preguntas para <strong>"{subjectName}"</strong> se generarán dinámicamente según el temario oficial y tu nivel formativo.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Selector de Nivel de Dificultad Académica */}
-              <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <label className="ia-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 700 }}>
-                  Nivel de Tutoría a Acreditar:
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                  {[
-                    {
-                      id: 'basic' as AcademicLevel,
-                      badge: 'Nivel Básico',
-                      title: 'Tutor Inicial',
-                      desc: 'Fundamentos nucleares, etiquetas, selectores y conceptos base.',
-                    },
-                    {
-                      id: 'intermediate' as AcademicLevel,
-                      badge: 'Nivel Intermedio',
-                      title: 'Tutor Comunitario',
-                      desc: 'Lógica aplicada, llamadas a APIs, eventos y debugging práctico.',
-                    },
-                    {
-                      id: 'advanced' as AcademicLevel,
-                      badge: 'Nivel Avanzado',
-                      title: 'Tutor Senior',
-                      desc: 'Arquitectura, seguridad web, rendimiento y optimización crítica.',
-                    },
-                  ].map((lvl) => {
-                    const isSelected = selectedLevel === lvl.id;
-                    return (
-                      <div
-                        key={lvl.id}
-                        onClick={() => setSelectedLevel(lvl.id)}
-                        style={{
-                          border: `2px solid ${isSelected ? '#059669' : '#e2e8f0'}`,
-                          backgroundColor: isSelected ? '#f0fdf4' : '#ffffff',
-                          borderRadius: '10px',
-                          padding: '12px',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              fontWeight: 800,
-                              color: isSelected ? '#047857' : '#64748b',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                            }}
-                          >
-                            {lvl.badge}
-                          </span>
-                          {isSelected && <CheckIcon size={14} color="#059669" />}
-                        </div>
-                        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
-                          {lvl.title}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>
-                          {lvl.desc}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Tarjeta del Motor de Evaluación y Estado de IA */}
-              <div
-                style={{
-                  backgroundColor: aiEnabled ? '#f8faff' : '#f8fafc',
-                  border: `1.5px solid ${aiEnabled ? '#bfdbfe' : '#e2e8f0'}`,
-                  borderRadius: '12px',
-                  padding: '14px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '8px',
-                      backgroundColor: '#ecfdf5',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#059669',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <SparklesIcon size={18} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
-                      Motor de Evaluación con Inteligencia Artificial
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                      Generación de retos en tiempo real para cualquier materia y evaluación semántica inteligente de respuestas.
-                    </div>
-                  </div>
-                </div>
-
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    backgroundColor: '#dcfce7',
-                    color: '#166534',
-                    border: '1px solid #86efac',
-                    padding: '4px 10px',
-                    borderRadius: '12px',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    flexShrink: 0,
-                  }}
-                >
-                  <CheckIcon size={12} color="#16a34a" />
-                  Activo
-                </span>
-              </div>
-
-              {/* Mensaje de error si la materia no tiene preguntas */}
-              {errorMessage && (
-                <div
-                  style={{
-                    backgroundColor: '#fef2f2',
-                    border: '1px solid #fecaca',
-                    borderRadius: '8px',
-                    padding: '10px 14px',
-                    fontSize: '0.84rem',
-                    color: '#991b1b',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <AlertCircleIcon size={16} color="#dc2626" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {/* Aclaración sobre Tutor Certificado Institucional */}
-              <div style={{ padding: '12px 14px', backgroundColor: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
-                <div style={{ fontSize: '0.8rem', color: '#1e40af', lineHeight: 1.45 }}>
-                  <strong>Aviso Institucional:</strong> Esta prueba te acredita como <strong>Tutor Comunitario Habilitado</strong> en el nivel elegido. Para obtener el sello de <strong>Tutor Certificado Institucional</strong>, puedes solicitar respaldo formal a tu profesor titular o adjuntar tu Concentración de Notas oficial (nota 5.5 o superior).
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '6px' }}>
-                <button
-                  type="button"
-                  onClick={handleStartChallenge}
-                  disabled={isGenerating}
-                  className="ia-btn-primary"
-                  style={{
-                    padding: '12px 30px',
-                    fontSize: '0.98rem',
-                    fontWeight: 800,
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    borderColor: '#047857',
-                    boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.3)',
-                    cursor: isGenerating ? 'wait' : 'pointer',
-                  }}
-                >
-                  {isGenerating
-                    ? 'Generando preguntas con IA...'
-                    : `Iniciar Evaluación [Nivel ${
-                        selectedLevel === 'basic'
-                          ? 'Básico'
-                          : selectedLevel === 'advanced'
-                          ? 'Avanzado'
-                          : 'Intermedio'
-                      }]`}
-                </button>
-              </div>
-            </div>
+              selectedLevel={selectedLevel}
+              onSelectLevel={setSelectedLevel}
+              availableSubjects={availableSubjects}
+              isCustomSubject={isCustomSubject}
+              onToggleCustomSubject={() => {
+                setIsCustomSubject(!isCustomSubject);
+                setErrorMessage(null);
+              }}
+              customSubjectInput={customSubjectInput}
+              onCustomSubjectInputChange={(val) => {
+                setCustomSubjectInput(val);
+                setErrorMessage(null);
+              }}
+              userInstitution={userInstitution}
+              userCareer={userCareer}
+              aiEnabled={aiEnabled}
+              errorMessage={errorMessage}
+              onStartChallenge={handleStartChallenge}
+            />
           )}
 
           {/* HISTORIAL DE MENSAJES CONVERSACIONALES */}
@@ -1736,300 +1157,31 @@ export default function TutorValidationBotModal({
         </div>
 
         {/* PANEL INFERIOR INTERACTIVO SEGÚN EL ESTADO */}
-        <div
-          style={{
-            padding: '16px 20px',
-            backgroundColor: '#ffffff',
-            borderTop: '1px solid #e2e8f0',
+        <TutorValidationBottomBar
+          step={step}
+          currentQ={currentQ}
+          timeLeft={timeLeft}
+          isProcessingAnswer={isProcessingAnswer}
+          redactionInput={redactionInput}
+          onRedactionInputChange={setRedactionInput}
+          inputRef={inputRef}
+          pasteWarning={pasteWarning}
+          onPasteAttempt={() => {
+            setPasteWarning(true);
+            setTimeout(() => setPasteWarning(false), 3500);
           }}
-        >
-          {/* ESTADO 1: READY CHECK (El bot preguntó si está listo -> El tiempo NO corre) */}
-          {step === 'ready_check' && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ fontSize: '0.84rem', color: '#64748b', fontWeight: 600 }}>
-                El tiempo comenzará a correr solo cuando confirmes que estás listo para la pregunta.
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={handleRequestClose}
-                  className="ia-btn-secondary"
-                  style={{ padding: '10px 16px', fontSize: '0.85rem' }}
-                >
-                  Salir
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmReady}
-                  className="ia-btn-primary"
-                  style={{
-                    padding: '10px 22px',
-                    fontSize: '0.9rem',
-                    fontWeight: 800,
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    borderColor: '#047857',
-                    boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.3)',
-                  }}
-                >
-                  ¡Estoy listo, comenzar!
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ESTADO 2: RESPONDIENDO PREGUNTA (El tiempo corre aquí) */}
-          {step === 'answering' && currentQ && (
-            <div>
-              {/* OPCIÓN A: PREGUNTA DE SELECCIÓN RÁPIDA */}
-              {currentQ.type === 'choice' && currentQ.options && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, marginBottom: '2px' }}>
-                    Selecciona tu respuesta ({timeLeft}s restantes):
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                    {currentQ.options.map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => handleAnswerSubmit(opt.text, opt.id)}
-                        disabled={isProcessingAnswer}
-                        style={{
-                          padding: '10px 12px',
-                          backgroundColor: '#f8fafc',
-                          border: '1.5px solid #cbd5e1',
-                          borderRadius: '8px',
-                          color: '#0f172a',
-                          fontSize: '0.82rem',
-                          fontWeight: 600,
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                          transition: 'all 0.1s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#2563eb';
-                          e.currentTarget.style.backgroundColor = '#eff6ff';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = '#cbd5e1';
-                          e.currentTarget.style.backgroundColor = '#f8fafc';
-                        }}
-                      >
-                        {opt.text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* OPCIÓN B: PREGUNTA DE DESARROLLO TÉCNICO / REDACCIÓN */}
-              {currentQ.type === 'redaction' && (
-                <div>
-                  {pasteWarning && (
-                    <div
-                      style={{
-                        fontSize: '0.76rem',
-                        color: '#b91c1c',
-                        backgroundColor: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '6px',
-                        padding: '4px 10px',
-                        marginBottom: '6px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Acción no permitida: Debes redactar tu respuesta directamente usando el teclado para validar la autoría.
-                    </div>
-                  )}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!redactionInput.trim() || isProcessingAnswer) return;
-                      handleAnswerSubmit(redactionInput.trim());
-                    }}
-                    style={{ display: 'flex', gap: '8px' }}
-                  >
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={redactionInput}
-                      onChange={(e) => setRedactionInput(e.target.value)}
-                      onPaste={(e) => {
-                        e.preventDefault();
-                        setPasteWarning(true);
-                        setTimeout(() => setPasteWarning(false), 3500);
-                      }}
-                      placeholder={currentQ.placeholder || 'Escribe tu respuesta técnica aquí (redacción directa)...'}
-                      disabled={isProcessingAnswer}
-                      style={{
-                        flex: 1,
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        border: '1.5px solid #2563eb',
-                        fontSize: '0.88rem',
-                        outline: 'none',
-                        userSelect: 'text',
-                        WebkitUserSelect: 'text',
-                      }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={!redactionInput.trim() || isProcessingAnswer}
-                      className="ia-btn-primary"
-                      style={{
-                        padding: '10px 18px',
-                        fontSize: '0.88rem',
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <span>Enviar</span>
-                      <SendIcon size={16} color="#ffffff" />
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              {/* BARRA INFERIOR DE SOPORTE Y ABANDONO */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: '10px',
-                  paddingTop: '6px',
-                  borderTop: '1px solid #f1f5f9',
-                }}
-              >
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                  Modo de Enfoque Activo · Redacción directa por teclado
-                </span>
-                <button
-                  type="button"
-                  onClick={handleRequestClose}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    padding: '2px 4px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#94a3b8';
-                  }}
-                >
-                  Abandonar evaluación
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ESTADO 3: PAUSA ENTRE PREGUNTAS (El tiempo está detenido para leer la retroalimentación) */}
-          {step === 'question_feedback' && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckIcon size={20} color="#16a34a" />
-                <span style={{ fontSize: '0.86rem', color: '#166534', fontWeight: 700 }}>
-                  Acierto registrado ({streak}/{TOTAL_QUESTIONS}). El tiempo está en pausa.
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={handleRequestClose}
-                  className="ia-btn-secondary"
-                  style={{ padding: '10px 14px', fontSize: '0.82rem' }}
-                >
-                  Abandonar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleProceedToNextQuestion}
-                  className="ia-btn-primary"
-                  style={{
-                    padding: '10px 20px',
-                    fontSize: '0.88rem',
-                    fontWeight: 800,
-                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                    borderColor: '#047857',
-                  }}
-                >
-                  Pasar a la siguiente pregunta
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ESTADO 4: FALLÓ O SE AGOTÓ EL TIEMPO */}
-          {step === 'eliminated' && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertCircleIcon size={20} color="#dc2626" />
-                <span style={{ fontSize: '0.86rem', color: '#991b1b', fontWeight: 700 }}>
-                  Evaluación finalizada ({eliminationReason === 'timeout' ? 'Tiempo agotado' : 'Respuesta incorrecta'}): {streak} de {TOTAL_QUESTIONS} aciertos.
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={handleFinalClose}
-                  className="ia-btn-secondary"
-                  style={{ padding: '8px 14px', fontSize: '0.82rem' }}
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStartChallenge}
-                  className="ia-btn-primary"
-                  style={{
-                    padding: '8px 18px',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    background: '#059669',
-                    borderColor: '#047857',
-                  }}
-                >
-                  Reintentar Evaluación
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ESTADO 5: EVALUACIÓN COMPLETADA (10/10) */}
-          {step === 'completed' && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckIcon size={22} color="#16a34a" />
-                <span style={{ fontSize: '0.9rem', color: '#166534', fontWeight: 800 }}>
-                  10 de 10 aciertos. Habilitación docente lista.
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleGrantCertification}
-                disabled={submittingVerification}
-                className="ia-btn-primary"
-                style={{
-                  padding: '10px 22px',
-                  fontSize: '0.9rem',
-                  fontWeight: 800,
-                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-                  borderColor: '#047857',
-                  boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.3)',
-                }}
-              >
-                {submittingVerification ? 'Guardando...' : 'Activar Habilitación en Mi Perfil'}
-              </button>
-            </div>
-          )}
-        </div>
+          streak={streak}
+          totalQuestions={TOTAL_QUESTIONS}
+          eliminationReason={eliminationReason}
+          submittingVerification={submittingVerification}
+          onAnswerSubmit={handleAnswerSubmit}
+          onRequestClose={handleRequestClose}
+          onConfirmReady={handleConfirmReady}
+          onProceedNext={handleProceedToNextQuestion}
+          onFinalClose={handleFinalClose}
+          onRetry={handleStartChallenge}
+          onGrantCertification={handleGrantCertification}
+        />
       </div>
     </div>
   );

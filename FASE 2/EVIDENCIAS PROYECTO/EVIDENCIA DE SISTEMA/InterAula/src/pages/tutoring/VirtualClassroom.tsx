@@ -22,6 +22,12 @@ import {
   XIcon,
 } from '../../components/common/Icons';
 import ReviewModal from './components/ReviewModal';
+import { INFORMATICS_QUIZ_BANK } from './data/classroomQuizBank';
+import {
+  ClassroomFinishModal,
+  ClassroomExitModal,
+  ClassroomFinishedNoticeModal,
+} from './components/ClassroomModals';
 
 declare global {
   interface Window {
@@ -29,115 +35,6 @@ declare global {
   }
 }
 
-// Banco Pedagógico de Desafíos y Quizzes en Vivo (Materias Críticas de Informática)
-interface QuizChallenge {
-  id: string;
-  subjectCategory: string;
-  difficulty: 'Básico' | 'Intermedio' | 'Avanzado';
-  question: string;
-  codeSnippet?: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-}
-
-const INFORMATICS_QUIZ_BANK: QuizChallenge[] = [
-  {
-    id: 'algo-1',
-    subjectCategory: 'Programación de Algoritmos',
-    difficulty: 'Básico',
-    question: '¿Qué valor imprimirá en consola este bloque de código?',
-    codeSnippet: `total = 0\nfor i in range(1, 4):\n    total += i\nprint(total)`,
-    options: ['3', '6', '10', '4'],
-    correctIndex: 1,
-    explanation: 'El bucle for en range(1, 4) recorre 1, 2 y 3 (excluye el 4). La suma es 1 + 2 + 3 = 6.',
-  },
-  {
-    id: 'algo-2',
-    subjectCategory: 'Programación de Algoritmos',
-    difficulty: 'Básico',
-    question: '¿Cuál es la causa principal de que un bucle "while" se vuelva infinito?',
-    options: [
-      'Declarar la variable antes del bucle',
-      'Olvidar actualizar la variable de control que hace falsa la condición',
-      'Utilizar una variable de tipo entero',
-      'Imprimir mensajes dentro del cuerpo del bucle',
-    ],
-    correctIndex: 1,
-    explanation: 'Un bucle while evalúa su condición en cada ciclo; si ninguna instrucción modifica las variables evaluadas hacia un estado falso, nunca termina.',
-  },
-  {
-    id: 'web-1',
-    subjectCategory: 'Programación Web',
-    difficulty: 'Básico',
-    question: '¿Qué método previene la recarga automática de la página al enviar un formulario en JS?',
-    codeSnippet: `const handleSubmit = (event) => {\n  event.????();\n  enviarDatos();\n};`,
-    options: ['event.stopPropagation()', 'event.preventDefault()', 'event.stop()', 'event.cancel()'],
-    correctIndex: 1,
-    explanation: 'event.preventDefault() cancela la acción por defecto del navegador de recargar la página tras el submit.',
-  },
-  {
-    id: 'web-2',
-    subjectCategory: 'Programación Web',
-    difficulty: 'Intermedio',
-    question: 'En JavaScript moderno (ES6+), ¿cuál es la principal diferencia entre "const" y "let"?',
-    options: [
-      'const no permite reasignar el identificador a otro valor en memoria',
-      'const solo se puede usar con números y let con strings',
-      'let tiene alcance global obligatorio y const no',
-      'const se ejecuta de forma asíncrona',
-    ],
-    correctIndex: 0,
-    explanation: 'Las variables declaradas con const crean una referencia inmutable por reasignación (=). let sí permite reasignar.',
-  },
-  {
-    id: 'db-1',
-    subjectCategory: 'Modelamiento y Bases de Datos',
-    difficulty: 'Intermedio',
-    question: '¿Qué cláusula de SQL permite filtrar grupos generados por la cláusula GROUP BY?',
-    codeSnippet: `SELECT carrera_id, COUNT(*)\nFROM estudiantes\nGROUP BY carrera_id\n???? COUNT(*) >= 5;`,
-    options: ['WHERE', 'HAVING', 'FILTER BY', 'ORDER BY'],
-    correctIndex: 1,
-    explanation: 'HAVING actúa sobre las filas agrupadas y funciones de agregación (COUNT, SUM, AVG). WHERE solo filtra filas individuales antes de agrupar.',
-  },
-  {
-    id: 'db-2',
-    subjectCategory: 'Modelamiento y Bases de Datos',
-    difficulty: 'Básico',
-    question: '¿Cuál es la restricción fundamental de una Llave Primaria (PRIMARY KEY) en una tabla relacional?',
-    options: [
-      'Solo permite valores positivos',
-      'Garantiza unicidad en cada registro y prohíbe valores NULL',
-      'Debe ser obligatoriamente de tipo VARCHAR',
-      'Solo se puede consultar mediante INNER JOIN',
-    ],
-    correctIndex: 1,
-    explanation: 'Una clave primaria identifica unívocamente cada fila y por integridad relacional nunca admite valores NULL.',
-  },
-  {
-    id: 'poo-1',
-    subjectCategory: 'Programación Orientada a Objetos',
-    difficulty: 'Intermedio',
-    question: '¿Qué principio de la POO consiste en ocultar el estado interno y obligar a interactuar mediante métodos?',
-    options: ['Polimorfismo', 'Encapsulamiento', 'Herencia múltiple', 'Sobrecarga de operadores'],
-    correctIndex: 1,
-    explanation: 'El encapsulamiento protege los atributos de una clase declarándolos privados y proveyendo métodos públicos para su acceso y modificación.',
-  },
-  {
-    id: 'math-1',
-    subjectCategory: 'Nivelación Matemática',
-    difficulty: 'Básico',
-    question: 'En lógica proposicional y tablas de verdad, ¿cuándo es Verdadera una conjunción (P ∧ Q)?',
-    options: [
-      'Cuando al menos una de las proposiciones es verdadera',
-      'Únicamente cuando tanto P como Q son verdaderas',
-      'Cuando ambas proposiciones son falsas',
-      'Cuando P es verdadera y Q es falsa',
-    ],
-    correctIndex: 1,
-    explanation: 'La conjunción lógica (AND / ∧) requiere que todas sus partes sean verdaderas simultáneamente para dar como resultado verdadero.',
-  },
-];
 
 export default function VirtualClassroom() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -1750,238 +1647,34 @@ export default function VirtualClassroom() {
         )}
       </div>
 
-      {/* 3. MODAL DE CONFIRMACIÓN PARA FINALIZAR CLASE (TUTOR) */}
-      {showFinishConfirm && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 110,
-            padding: '16px',
-          }}
-        >
-          <div
-            className="ia-card"
-            style={{
-              maxWidth: '460px',
-              width: '100%',
-              backgroundColor: '#1e293b',
-              color: '#ffffff',
-              border: '1px solid #ef4444',
-              padding: '26px',
-              borderRadius: '12px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-              <div
-                style={{
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ef4444',
-                  flexShrink: 0,
-                }}
-              >
-                <AlertCircleIcon size={24} />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc' }}>
-                  ¿Finalizar la Clase en Vivo?
-                </h3>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                  Tiempo transcurrido: {formatTimer(elapsedSeconds)}
-                </span>
-              </div>
-            </div>
+      {/* Modales de Confirmación y Notificación */}
+      <ClassroomFinishModal
+        isOpen={showFinishConfirm}
+        elapsedSeconds={elapsedSeconds}
+        formatTimer={formatTimer}
+        finishingClass={finishingClass}
+        onCancel={() => setShowFinishConfirm(false)}
+        onConfirm={handleFinishClass}
+      />
 
-            <p style={{ margin: '0 0 20px', fontSize: '0.88rem', color: '#cbd5e1', lineHeight: 1.5 }}>
-              Esta acción concluirá la sesión académica para todos los estudiantes conectados y actualizará el estado del taller a completado en InterAula.
-            </p>
+      <ClassroomExitModal
+        isOpen={showExitConfirm}
+        elapsedSeconds={elapsedSeconds}
+        formatTimer={formatTimer}
+        isWorkshop={isWorkshop}
+        isTutor={isTutor}
+        isStudent={isStudent}
+        sessionStatus={session?.status}
+        finishingClass={finishingClass}
+        onCancel={() => setShowExitConfirm(false)}
+        onFinishForEveryone={handleFinishClass}
+        onExit={handleExitSession}
+      />
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => setShowFinishConfirm(false)}
-                disabled={finishingClass}
-                className="ia-btn ia-btn-secondary"
-                style={{ padding: '8px 16px' }}
-              >
-                Continuar en clase
-              </button>
-              <button
-                type="button"
-                onClick={handleFinishClass}
-                disabled={finishingClass}
-                className="ia-btn"
-                style={{
-                  backgroundColor: '#dc2626',
-                  color: '#ffffff',
-                  padding: '8px 18px',
-                  fontWeight: 800,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                {finishingClass ? 'Finalizando...' : 'Finalizar Clase para Todos'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. MODAL DE CONFIRMACIÓN DE SALIDA */}
-      {showExitConfirm && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '16px',
-          }}
-        >
-          <div
-            className="ia-card"
-            style={{
-              maxWidth: '460px',
-              width: '100%',
-              backgroundColor: '#1e293b',
-              color: '#ffffff',
-              border: '1px solid #334155',
-              padding: '24px',
-              borderRadius: '12px',
-            }}
-          >
-            <h3 style={{ margin: '0 0 10px', fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc' }}>
-              ¿Deseas salir del Aula Virtual?
-            </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: '#94a3b8', lineHeight: 1.5 }}>
-              Tiempo acumulado en la sesión: <strong>{formatTimer(elapsedSeconds)}</strong>.
-              {isWorkshop
-                ? isTutor
-                  ? ' Como anfitrión, puedes salir dejando la sala disponible para los alumnos, o dar la clase por terminada definitivamente.'
-                  : ' Podrás volver a ingresar en cualquier momento mientras el taller continúe activo.'
-                : isStudent && session?.status === 'accepted'
-                ? ' Al salir, la sesión se registrará como completada y podrás evaluar el desempeño pedagógico del tutor.'
-                : ' Tu asistencia quedará registrada en el historial de la sesión.'}
-            </p>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setShowExitConfirm(false)}
-                className="ia-btn ia-btn-secondary"
-                style={{ padding: '8px 16px' }}
-              >
-                Permanecer en clase
-              </button>
-
-              {isTutor && isWorkshop && (
-                <button
-                  type="button"
-                  onClick={handleFinishClass}
-                  disabled={finishingClass}
-                  className="ia-btn"
-                  style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '8px 16px', fontWeight: 700 }}
-                >
-                  Finalizar para Todos
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleExitSession}
-                className="ia-btn"
-                style={{
-                  backgroundColor: isTutor && isWorkshop ? '#334155' : '#dc2626',
-                  color: '#ffffff',
-                  padding: '8px 16px',
-                  fontWeight: 700,
-                  border: isTutor && isWorkshop ? '1px solid #475569' : 'none',
-                }}
-              >
-                {isTutor && isWorkshop ? 'Solo Salir' : 'Salir y Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. MODAL CUANDO EL TUTOR FINALIZA LA CLASE (PARA ESTUDIANTES) */}
-      {classFinishedByTutor && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.85)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 120,
-            padding: '16px',
-          }}
-        >
-          <div
-            className="ia-card"
-            style={{
-              maxWidth: '460px',
-              width: '100%',
-              backgroundColor: '#1e293b',
-              color: '#ffffff',
-              border: '1px solid #38bdf8',
-              padding: '28px',
-              borderRadius: '12px',
-              textAlign: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(56, 189, 248, 0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#38bdf8',
-                margin: '0 auto 16px',
-              }}
-            >
-              <CheckIcon size={28} />
-            </div>
-
-            <h3 style={{ margin: '0 0 10px', fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>
-              La clase en vivo ha finalizado
-            </h3>
-
-            <p style={{ margin: '0 0 20px', fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5 }}>
-              El tutor ha concluido esta sesión académica grupal. Muchas gracias por tu asistencia y participación en el Aula Virtual de InterAula.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate('/tutoring')}
-              className="ia-btn ia-btn-primary"
-              style={{ padding: '10px 24px', fontSize: '0.9rem', fontWeight: 800 }}
-            >
-              Volver a Tutorías
-            </button>
-          </div>
-        </div>
-      )}
+      <ClassroomFinishedNoticeModal
+        isOpen={classFinishedByTutor}
+        onProceed={() => navigate('/tutoring')}
+      />
 
       {/* 4. MODAL DE EVALUACIÓN DOCENTE POST-CLASE (Solo para el estudiante en sesiones 1 a 1) */}
       {isReviewModalOpen && session && (

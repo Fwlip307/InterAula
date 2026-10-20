@@ -413,8 +413,8 @@ export const verificationService = {
       throw new Error(validation.error || 'Archivo no válido');
     }
 
-    // Ruta segura en el bucket privado estructurada por usuario y solicitud
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    // Ruta segura en el bucket privado estructurada por usuario y solicitud (anti path-traversal)
+    const sanitizedFileName = file.name.replace(/\.\./g, '_').replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${user.id}/${requestId}/${Date.now()}_${sanitizedFileName}`;
 
     const { error: uploadError } = await supabase.storage

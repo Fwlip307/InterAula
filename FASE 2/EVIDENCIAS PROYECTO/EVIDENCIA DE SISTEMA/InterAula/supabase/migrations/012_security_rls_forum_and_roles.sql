@@ -240,3 +240,18 @@ CREATE TRIGGER trg_forum_reply_counter
   AFTER INSERT OR DELETE ON public.forum_replies
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_forum_reply_counter();
+
+-- 6. PERMISOS DE ACTUALIZACIÓN Y SOBRESCRITURA EN STORAGE PRIVADO
+-- Permite a los usuarios actualizar o reemplazar sus certificados dentro de su propia carpeta
+DROP POLICY IF EXISTS "verification_documents_update_own" ON storage.objects;
+CREATE POLICY "verification_documents_update_own"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (
+    bucket_id = 'verification-documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  )
+  WITH CHECK (
+    bucket_id = 'verification-documents'
+    AND (storage.foldername(name))[1] = auth.uid()::text
+  );

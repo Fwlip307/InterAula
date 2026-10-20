@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profile.service';
@@ -12,19 +12,16 @@ import type {
   AcademicLevel,
   LearningPreference,
 } from '../../types/profile';
-import { LEARNING_PREFERENCES } from '../../types/profile';
 import type { TutorStatistics, UserBadge } from '../../types/tutoring';
 import type { TutorVerificationRequest } from '../../types/verification';
 import {
   UserIcon,
   BookOpenIcon,
-  SparklesIcon,
   ExternalLinkIcon,
   MapPinIcon,
   GraduationCapIcon,
   ShieldCheckIcon,
   MailIcon,
-  PhoneIcon,
   UploadCloudIcon,
   ClockIcon,
   AwardIcon,
@@ -32,7 +29,6 @@ import {
   LockIcon,
   CheckIcon,
 } from '../../components/common/Icons';
-import EmptyState from '../../components/common/EmptyState';
 import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
 import { isValidUrl } from '../../utils/validators';
 import TutorStats from '../../components/common/TutorStats';
@@ -41,8 +37,8 @@ import CertificateVerificationModal from './components/CertificateVerificationMo
 import TutorValidationBotModal from './components/TutorValidationBotModal';
 import TeacherEndorsementModal from './components/TeacherEndorsementModal';
 import OfferedSubjectsSection from './components/OfferedSubjectsSection';
-import NeededSubjectsSection from './components/NeededSubjectsSection';
-import SearchableCombobox from '../../components/common/SearchableCombobox';
+import ProfilePersonalInfoTab, { type PersonalInfoFormData } from './components/ProfilePersonalInfoTab';
+import ProfileLearningTab from './components/ProfileLearningTab';
 import {
   getAllInstitutions,
   getCareersForInstitution,
@@ -73,18 +69,10 @@ export default function ProfileView() {
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [_verificationRequests, setVerificationRequests] = useState<TutorVerificationRequest[]>([]);
 
-  // Estados de edición para Apartado 1: Información Personal y Académica
+  // Estados para Apartado 1: Información Personal y Académica
   const [isEditingPersonal, setIsEditingPersonal] = useState(searchParams.get('edit') === 'true');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [selectedInstitution, setSelectedInstitution] = useState('Duoc UC');
   const [selectedCareer, setSelectedCareer] = useState('Ingeniería en Informática');
-  const [location, setLocation] = useState('');
-  const [bio, setBio] = useState('');
-  const [phone, setPhone] = useState('');
-  const [showPhone, setShowPhone] = useState(false);
-  const [githubUrl, setGithubUrl] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [availableForTutoring, setAvailableForTutoring] = useState(true);
   const [savingPersonal, setSavingPersonal] = useState(false);
   const [personalSuccessMsg, setPersonalSuccessMsg] = useState<string | null>(null);
@@ -106,7 +94,7 @@ export default function ProfileView() {
 
   // Catálogos memoizados para el SearchableCombobox
   const allInstitutions = getAllInstitutions();
-  const availableCareers = selectedInstitution ? getCareersForInstitution(selectedInstitution, location) : [];
+  const availableCareers = selectedInstitution ? getCareersForInstitution(selectedInstitution) : [];
   const availableSedes = selectedInstitution ? getSedesForInstitution(selectedInstitution) : [];
 
   const institutionOptions = useMemo(() => {
@@ -201,16 +189,8 @@ export default function ProfileView() {
           setVerificationRequests(verifReqs);
 
           if (p) {
-            setFirstName(p.first_name || '');
-            setLastName(p.last_name || '');
             setSelectedInstitution(p.institution || 'Duoc UC');
             setSelectedCareer(p.career || 'Ingeniería en Informática');
-            setLocation(p.location || '');
-            setBio(p.bio || '');
-            setPhone(p.phone || '');
-            setShowPhone(Boolean(p.show_phone));
-            setGithubUrl(p.github_url || '');
-            setLinkedinUrl(p.linkedin_url || '');
             setAvailableForTutoring(offered.length > 0 ? (p.available_for_tutoring ?? true) : false);
             setLearningPreferences(p.learning_preferences || []);
           }
@@ -278,16 +258,15 @@ export default function ProfileView() {
   };
 
   // Guardar datos del Apartado 1: Personal y Académico
-  const handleSavePersonal = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSavePersonal = async (data: PersonalInfoFormData) => {
     setPersonalSuccessMsg(null);
     setPersonalErrorMsg(null);
 
-    if (githubUrl && !isValidUrl(githubUrl)) {
+    if (data.githubUrl && !isValidUrl(data.githubUrl)) {
       setPersonalErrorMsg('La URL de GitHub no es válida (ej: https://github.com/usuario).');
       return;
     }
-    if (linkedinUrl && !isValidUrl(linkedinUrl)) {
+    if (data.linkedinUrl && !isValidUrl(data.linkedinUrl)) {
       setPersonalErrorMsg('La URL de LinkedIn no es válida (ej: https://linkedin.com/in/usuario).');
       return;
     }
@@ -295,20 +274,22 @@ export default function ProfileView() {
     try {
       setSavingPersonal(true);
       const updated = await profileService.updateMyProfile({
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
-        institution: selectedInstitution.trim() || null,
-        career: selectedCareer.trim() || null,
-        location: location.trim() || null,
-        bio: bio.trim() || null,
-        phone: phone.trim() || null,
-        show_phone: showPhone,
-        github_url: githubUrl.trim() || null,
-        linkedin_url: linkedinUrl.trim() || null,
+        first_name: data.firstName.trim() || null,
+        last_name: data.lastName.trim() || null,
+        institution: data.institution.trim() || null,
+        career: data.career.trim() || null,
+        location: data.location.trim() || null,
+        bio: data.bio.trim() || null,
+        phone: data.phone.trim() || null,
+        show_phone: data.showPhone,
+        github_url: data.githubUrl.trim() || null,
+        linkedin_url: data.linkedinUrl.trim() || null,
       });
 
       if (updated) {
         setProfile(updated);
+        setSelectedInstitution(updated.institution || data.institution);
+        setSelectedCareer(updated.career || data.career);
         setIsEditingPersonal(false);
         setSearchParams({ tab: 'personal' });
         setPersonalSuccessMsg('Información personal y académica guardada con éxito.');
@@ -658,390 +639,28 @@ export default function ProfileView() {
       {/* APARTADO 1: INFORMACIÓN PERSONAL Y ACADÉMICA (Todo en mi perfil)          */}
       {/* ========================================================================= */}
       {activeTab === 'personal' && (
-        <div>
-          {personalSuccessMsg && (
-            <div
-              style={{
-                backgroundColor: '#ecfdf5',
-                border: '1px solid #a7f3d0',
-                color: '#065f46',
-                padding: '12px 16px',
-                borderRadius: '10px',
-                marginBottom: '16px',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-              }}
-            >
-              {personalSuccessMsg}
-            </div>
-          )}
-
-          {personalErrorMsg && (
-            <div
-              style={{
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                color: '#991b1b',
-                padding: '12px 16px',
-                borderRadius: '10px',
-                marginBottom: '16px',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-              }}
-            >
-              {personalErrorMsg}
-            </div>
-          )}
-
-          {isEditingPersonal ? (
-            /* MODO EDICIÓN EN EL MISMO LUGAR */
-            <form onSubmit={handleSavePersonal}>
-              <div className="ia-card" style={{ padding: '24px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                  <h2 className="ia-card-title" style={{ margin: 0, fontSize: '1.15rem' }}>
-                    Editar Información Personal y Académica
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={handleCancelEditPersonal}
-                    className="ia-btn-secondary"
-                    style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-
-                <div className="ia-form-grid" style={{ gap: '16px' }}>
-                  {/* Nombres y Apellidos */}
-                  <div className="ia-form-group">
-                    <label className="ia-label" htmlFor="firstName">Nombres</label>
-                    <input
-                      id="firstName"
-                      type="text"
-                      className="ia-input"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="Tu nombre"
-                      required
-                    />
-                  </div>
-
-                  <div className="ia-form-group">
-                    <label className="ia-label" htmlFor="lastName">Apellidos</label>
-                    <input
-                      id="lastName"
-                      type="text"
-                      className="ia-input"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Tus apellidos"
-                      required
-                    />
-                  </div>
-
-                  {/* Institución Educativa con Combobox de búsqueda en vivo */}
-                  <div className="ia-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label className="ia-label" htmlFor="institution" style={{ marginBottom: 0 }}>
-                        Institución Educativa
-                      </label>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        {allInstitutions.length} planteles (Escribe para buscar)
-                      </span>
-                    </div>
-                    <SearchableCombobox
-                      id="institution"
-                      options={institutionOptions}
-                      value={selectedInstitution}
-                      onChange={handleInstitutionSelect}
-                      placeholder="Escribe el nombre de tu universidad o instituto..."
-                      required
-                    />
-                  </div>
-
-                  {/* Carrera con Combobox vinculada a la institución */}
-                  <div className="ia-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label className="ia-label" htmlFor="career" style={{ marginBottom: 0 }}>
-                        Carrera
-                      </label>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        {availableCareers.length} carreras en {selectedInstitution || 'tu institución'}
-                      </span>
-                    </div>
-                    <SearchableCombobox
-                      id="career"
-                      options={careerOptions}
-                      value={selectedCareer}
-                      onChange={setSelectedCareer}
-                      placeholder={selectedInstitution ? "Escribe para filtrar tu carrera..." : "Selecciona primero tu institución"}
-                      disabled={!selectedInstitution}
-                      required
-                    />
-                  </div>
-
-                  {/* Sede / Campus con Combobox vinculada */}
-                  <div className="ia-form-group">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <label className="ia-label" htmlFor="location" style={{ marginBottom: 0 }}>
-                        Sede / Campus (Opcional)
-                      </label>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        {availableSedes.length > 0 ? `${availableSedes.length} sedes registradas` : 'Ubicación libre'}
-                      </span>
-                    </div>
-                    {availableSedes.length > 0 ? (
-                      <SearchableCombobox
-                        id="location"
-                        options={sedeOptions}
-                        value={location}
-                        onChange={setLocation}
-                        placeholder="Escribe o selecciona tu sede o campus..."
-                        allowCustom={true}
-                      />
-                    ) : (
-                      <input
-                        id="location"
-                        type="text"
-                        className="ia-input"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Ej: Campus San Joaquín, Santiago"
-                      />
-                    )}
-                  </div>
-
-                  {/* Teléfono / WhatsApp */}
-                  <div className="ia-form-group">
-                    <label className="ia-label" htmlFor="phone">Teléfono / WhatsApp (Opcional)</label>
-                    <input
-                      id="phone"
-                      type="tel"
-                      className="ia-input"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+56 9 1234 5678"
-                    />
-                  </div>
-
-                  {/* Checkbox Visibilidad Teléfono */}
-                  <div className="ia-form-group" style={{ justifyContent: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#334155', cursor: 'pointer', marginTop: '14px' }}>
-                      <input
-                        type="checkbox"
-                        checked={showPhone}
-                        onChange={(e) => setShowPhone(e.target.checked)}
-                        style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
-                      />
-                      <span>Permitir que estudiantes vean mi número para coordinar tutorías</span>
-                    </label>
-                  </div>
-
-                  {/* GitHub y LinkedIn */}
-                  <div className="ia-form-group">
-                    <label className="ia-label" htmlFor="githubUrl">GitHub (Opcional)</label>
-                    <input
-                      id="githubUrl"
-                      type="url"
-                      className="ia-input"
-                      value={githubUrl}
-                      onChange={(e) => setGithubUrl(e.target.value)}
-                      placeholder="https://github.com/tu-usuario"
-                    />
-                  </div>
-
-                  <div className="ia-form-group">
-                    <label className="ia-label" htmlFor="linkedinUrl">LinkedIn (Opcional)</label>
-                    <input
-                      id="linkedinUrl"
-                      type="url"
-                      className="ia-input"
-                      value={linkedinUrl}
-                      onChange={(e) => setLinkedinUrl(e.target.value)}
-                      placeholder="https://linkedin.com/in/tu-usuario"
-                    />
-                  </div>
-
-                  {/* Sobre mí */}
-                  <div className="ia-form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="ia-label" htmlFor="bio">Sobre mí (Breve presentación)</label>
-                    <textarea
-                      id="bio"
-                      className="ia-input"
-                      rows={3}
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="Cuéntale a tus compañeros tus áreas de interés, ramos que más te apasionan o tu método de estudio..."
-                    />
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={handleCancelEditPersonal}
-                    className="ia-btn-secondary"
-                    style={{ padding: '9px 18px' }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="ia-btn-primary"
-                    disabled={savingPersonal}
-                    style={{ padding: '9px 22px' }}
-                  >
-                    {savingPersonal ? 'Guardando...' : 'Guardar Información'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            /* MODO VISTA DE INFORMACIÓN */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
-              {/* Tarjeta Identidad y Casa de Estudios */}
-              <div className="ia-card" style={{ padding: '22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <GraduationCapIcon size={20} color="#2563eb" />
-                    <h2 className="ia-card-title" style={{ margin: 0 }}>Identidad y Casa de Estudios</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleStartEditPersonal}
-                    className="ia-card-action"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <EditIcon size={14} /> Editar
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Nombre completo</span>
-                    <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0f172a' }}>{fullName}</div>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Institución Educativa</span>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e40af' }}>
-                      {profile?.institution || 'No especificada'}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Carrera</span>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
-                      {profile?.career || 'No especificada'}
-                    </div>
-                  </div>
-
-                  {profile?.location && (
-                    <div>
-                      <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Sede / Campus</span>
-                      <div style={{ fontSize: '0.92rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <MapPinIcon size={14} color="#64748b" /> {profile.location}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Tarjeta Contacto y Enlaces */}
-              <div className="ia-card" style={{ padding: '22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <PhoneIcon size={20} color="#2563eb" />
-                    <h2 className="ia-card-title" style={{ margin: 0 }}>Contacto y Redes</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleStartEditPersonal}
-                    className="ia-card-action"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <EditIcon size={14} /> Editar
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Correo de cuenta</span>
-                    <div style={{ fontSize: '0.92rem', color: '#0f172a' }}>{user?.email}</div>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Teléfono / WhatsApp</span>
-                    <div style={{ fontSize: '0.92rem', color: '#0f172a' }}>
-                      {profile?.phone || 'No registrado'}
-                      {profile?.phone && (
-                        <span style={{ fontSize: '0.72rem', color: profile.show_phone ? '#16a34a' : '#64748b', marginLeft: '8px', fontWeight: 600 }}>
-                          ({profile.show_phone ? 'Visible para estudiantes' : 'Privado'})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Enlaces Profesionales</span>
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
-                      {profile?.github_url ? (
-                        <a href={profile.github_url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontSize: '0.84rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          GitHub <ExternalLinkIcon size={13} />
-                        </a>
-                      ) : (
-                        <span style={{ color: '#94a3b8', fontSize: '0.84rem' }}>Sin GitHub</span>
-                      )}
-
-                      {profile?.linkedin_url ? (
-                        <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontSize: '0.84rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          LinkedIn <ExternalLinkIcon size={13} />
-                        </a>
-                      ) : (
-                        <span style={{ color: '#94a3b8', fontSize: '0.84rem' }}>Sin LinkedIn</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tarjeta Sobre Mí (Ancho completo) */}
-              <div className="ia-card" style={{ gridColumn: '1 / -1', padding: '22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h2 className="ia-card-title" style={{ margin: 0 }}>Sobre mí (Presentación)</h2>
-                  <button
-                    type="button"
-                    onClick={handleStartEditPersonal}
-                    className="ia-card-action"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <EditIcon size={14} /> Editar
-                  </button>
-                </div>
-                {profile?.bio ? (
-                  <p style={{ color: '#334155', fontSize: '0.94rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
-                    {profile.bio}
-                  </p>
-                ) : (
-                  <EmptyState
-                    style={{ padding: '16px' }}
-                    description="Aún no has agregado una presentación personal. Cuéntale a tus compañeros en qué áreas te desempeñas."
-                    action={
-                      <button
-                        type="button"
-                        onClick={handleStartEditPersonal}
-                        className="ia-btn-secondary"
-                        style={{ fontSize: '0.82rem', padding: '6px 14px' }}
-                      >
-                        Agregar presentación
-                      </button>
-                    }
-                  />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <ProfilePersonalInfoTab
+          profile={profile}
+          userEmail={user?.email}
+          fullName={fullName}
+          isEditing={isEditingPersonal}
+          onStartEdit={handleStartEditPersonal}
+          onCancelEdit={handleCancelEditPersonal}
+          onSave={handleSavePersonal}
+          saving={savingPersonal}
+          successMsg={personalSuccessMsg}
+          errorMsg={personalErrorMsg}
+          institutionOptions={institutionOptions}
+          careerOptions={careerOptions}
+          sedeOptions={sedeOptions}
+          allInstitutionsCount={allInstitutions.length}
+          availableCareersCount={availableCareers.length}
+          availableSedesCount={availableSedes.length}
+          selectedInstitution={selectedInstitution}
+          selectedCareer={selectedCareer}
+          onInstitutionChange={handleInstitutionSelect}
+          onCareerChange={setSelectedCareer}
+        />
       )}
 
       {/* ========================================================================= */}
@@ -1676,98 +1295,15 @@ export default function ProfileView() {
       {/* APARTADO 3: MI APRENDIZAJE Y NECESIDADES (Lo que quiero aprender)        */}
       {/* ========================================================================= */}
       {activeTab === 'learning' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {preferencesSuccessMsg && (
-            <div
-              style={{
-                backgroundColor: '#ecfdf5',
-                border: '1px solid #a7f3d0',
-                color: '#065f46',
-                padding: '12px 16px',
-                borderRadius: '10px',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-              }}
-            >
-              {preferencesSuccessMsg}
-            </div>
-          )}
-
-          {/* Subcomponente: Materias que necesito aprender */}
-          <NeededSubjectsSection
-            neededSubjects={neededSubjects}
-            catalogSubjects={catalogSubjects}
-            onAdd={handleAddNeededSubject}
-            onRemove={handleRemoveNeededSubject}
-          />
-
-          {/* Preferencias Pedagógicas y Estilo de Estudio para el Aula Virtual */}
-          <div className="ia-card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <SparklesIcon size={20} color="#2563eb" />
-                  <h2 className="ia-card-title" style={{ margin: 0 }}>
-                    Preferencias de Aprendizaje y Estilo de Estudio
-                  </h2>
-                </div>
-                <p style={{ margin: 0, fontSize: '0.86rem', color: '#475569', lineHeight: 1.5, maxWidth: '780px' }}>
-                  Selecciona cómo te acomoda aprender mejor. En el <strong>Aula Virtual</strong>, los tutores verán estas pautas para modular el ritmo de la explicación, ofrecer pausas de asimilación o estructurar ejercicios prácticos paso a paso.
-                </p>
-              </div>
-              <span
-                style={{
-                  fontSize: '0.74rem',
-                  backgroundColor: '#eff6ff',
-                  color: '#1e40af',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                }}
-              >
-                Adaptación Aula Virtual
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginTop: '16px' }}>
-              {LEARNING_PREFERENCES.map((pref) => {
-                const isSelected = learningPreferences.includes(pref.id);
-                return (
-                  <label
-                    key={pref.id}
-                    onClick={() => handleTogglePreference(pref.id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
-                      padding: '14px',
-                      borderRadius: '10px',
-                      border: `1.5px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
-                      backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => {}} // gestionado por el label
-                      style={{ width: '18px', height: '18px', accentColor: '#2563eb', marginTop: '2px', cursor: 'pointer' }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: isSelected ? '#1e40af' : '#0f172a' }}>
-                        {pref.label}
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '4px', lineHeight: 1.4 }}>
-                        {pref.description}
-                      </div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <ProfileLearningTab
+          preferencesSuccessMsg={preferencesSuccessMsg}
+          neededSubjects={neededSubjects}
+          catalogSubjects={catalogSubjects}
+          onAddNeededSubject={handleAddNeededSubject}
+          onRemoveNeededSubject={handleRemoveNeededSubject}
+          learningPreferences={learningPreferences}
+          onTogglePreference={handleTogglePreference}
+        />
       )}
 
       {/* Modales Compartidos */}
