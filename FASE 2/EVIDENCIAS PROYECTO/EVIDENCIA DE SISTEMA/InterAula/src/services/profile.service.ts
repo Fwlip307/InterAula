@@ -37,48 +37,45 @@ async function getOptionalAuthUser() {
   return authData.user;
 }
 
-export const CERTIFIED_TUTOR_EMAILS = [
-  'kendokaponijereklein@gmail.com',
-  'lukasdonoso1911@gmail.com',
-];
-export const CERTIFIED_TUTOR_EMAIL = 'lukasdonoso1911@gmail.com';
-export const CERTIFIED_TUTOR_ID = 'e163f6ae-03e1-4688-a4ee-36ab9ed91e3c';
-export const KNOWN_CERTIFIED_USER_IDS = [
-  'e163f6ae-03e1-4688-a4ee-36ab9ed91e3c',
-  '7bd78acf-fce6-4736-91ca-285f0c2cef9d',
-  'f4c3f44f-62db-4376-9ca6-3936c6b65c8f',
-];
+export const CERTIFIED_TUTOR_EMAILS: string[] = [];
+export const CERTIFIED_TUTOR_EMAIL = '';
+export const CERTIFIED_TUTOR_ID = '';
+export const KNOWN_CERTIFIED_USER_IDS: string[] = [];
 
-export function isCertifiedAccount(emailOrId?: string | null): boolean {
-  if (!emailOrId) return false;
-  const clean = emailOrId.toLowerCase().trim();
-  return (
-    CERTIFIED_TUTOR_EMAILS.some((e) => clean === e || clean.includes(e.split('@')[0])) ||
-    KNOWN_CERTIFIED_USER_IDS.includes(clean) ||
-    clean.includes('kendokaponijereklein') ||
-    clean.includes('lukasdonoso1911')
-  );
+/**
+ * @deprecated Utilizar la verificación formal en base de datos (checkIsVerifiedTutor).
+ */
+export function isCertifiedAccount(_emailOrId?: string | null): boolean {
+  return false;
 }
 
-export const CERTIFIED_OFFERED_SUBJECTS: OfferedSubject[] = [
-  {
-    profile_id: CERTIFIED_TUTOR_ID,
-    subject_id: 'informatica_software.programacion_web',
-    level: 'advanced',
-    description: 'Tutor Certificado en Programación Web, Arquitectura Frontend/Backend, React, Node.js y Bases de Datos.',
-    is_verified: true,
-    verified_at: '2026-10-04T12:00:00.000Z',
-    created_at: '2026-10-04T12:00:00.000Z',
-    subject: {
-      id: 'informatica_software.programacion_web',
-      name: 'Programación Web',
-      category: 'Tecnología e Informática',
-      is_pilot: true,
-      pilot_priority: 1,
-      created_at: '2026-10-04T12:00:00.000Z',
-    },
-  },
-];
+export const CERTIFIED_OFFERED_SUBJECTS: OfferedSubject[] = [];
+
+/**
+ * Consulta en la base de datos si un perfil es tutor acreditado o validador académico.
+ */
+export async function checkIsVerifiedTutor(profileId: string): Promise<boolean> {
+  try {
+    const { data: offered } = await supabase
+      .from('profile_offered_subjects')
+      .select('is_verified')
+      .eq('profile_id', profileId)
+      .eq('is_verified', true)
+      .limit(1);
+
+    if (offered && offered.length > 0) return true;
+
+    const { data: validator } = await supabase
+      .from('academic_validators')
+      .select('profile_id')
+      .eq('profile_id', profileId)
+      .limit(1);
+
+    return Boolean(validator && validator.length > 0);
+  } catch {
+    return false;
+  }
+}
 
 export const profileService = {
   // Obtener perfil del usuario actualmente autenticado
@@ -92,73 +89,47 @@ export const profileService = {
       .eq('id', user.id)
       .maybeSingle();
 
-    let profile = data as Profile | null;
-
-    if (isCertifiedAccount(user.email) || isCertifiedAccount(user.id)) {
-      if (profile && !profile.available_for_tutoring) {
-        supabase.from('profiles').update({ available_for_tutoring: true }).eq('id', user.id).then();
-      }
-      const isLukas = Boolean(
-        user.email?.toLowerCase().includes('lukas') ||
-        user.id === '7bd78acf-fce6-4736-91ca-285f0c2cef9d' ||
-        user.id === 'f4c3f44f-62db-4376-9ca6-3936c6b65c8f'
-      );
-      const fallbackName = isLukas ? 'Lukas Donoso' : 'Kendo Kaponi';
-      const fallbackInst = isLukas ? 'Duoc UC' : 'Centro de Formación Técnica CENCO';
-      const fallbackCareer = isLukas ? 'Ingeniería en Informática' : 'Técnico de Nivel Superior en Informática y Ciberseguridad';
-
-      profile = {
-        id: user.id,
-        email: user.email || (isLukas ? 'lukasdonoso1911@gmail.com' : CERTIFIED_TUTOR_EMAIL),
-        first_name: profile?.first_name || user.user_metadata?.first_name || (isLukas ? 'Lukas' : ''),
-        last_name: profile?.last_name || user.user_metadata?.last_name || (isLukas ? 'Donoso' : ''),
-        display_name: profile?.display_name || user.user_metadata?.display_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : fallbackName),
-        avatar_url: profile?.avatar_url || user.user_metadata?.avatar_url || null,
-        institution: profile?.institution || fallbackInst,
-        career: profile?.career || fallbackCareer,
-        bio: profile?.bio || 'Tutor Verificado Oficial en Programación Web.',
-        location: profile?.location || 'Santiago, Chile',
-        profile_completed: profile?.profile_completed ?? true,
-        available_for_tutoring: true,
-        available_for_projects: profile?.available_for_projects ?? true,
-        project_bio: profile?.project_bio || '',
-        portfolio_url: profile?.portfolio_url || null,
-        github_url: profile?.github_url || null,
-        linkedin_url: profile?.linkedin_url || null,
-        phone: profile?.phone || '',
-        show_email: profile?.show_email ?? true,
-        show_phone: profile?.show_phone ?? true,
-        created_at: profile?.created_at || new Date().toISOString(),
-        updated_at: profile?.updated_at || new Date().toISOString(),
-      };
+    if (data) {
+      return data as Profile;
     }
 
-    return profile;
+    // Inicialización predeterminada segura si el perfil aún no se ha creado en la DB
+    const fallbackName = user.user_metadata?.full_name || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Estudiante';
+
+    return {
+      id: user.id,
+      email: user.email || '',
+      first_name: user.user_metadata?.first_name || '',
+      last_name: user.user_metadata?.last_name || '',
+      display_name: fallbackName,
+      avatar_url: user.user_metadata?.avatar_url || null,
+      institution: '',
+      career: '',
+      bio: '',
+      location: '',
+      profile_completed: false,
+      available_for_tutoring: false,
+      available_for_projects: true,
+      project_bio: '',
+      portfolio_url: null,
+      github_url: null,
+      linkedin_url: null,
+      phone: '',
+      show_email: false,
+      show_phone: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
   },
 
   // Obtener perfil público de cualquier estudiante por ID (respetando privacidad de contacto)
   async getProfileById(id: string): Promise<Profile | null> {
-    if (isCertifiedAccount(id)) {
-      const { data: dbProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (dbProfile) {
-        return {
-          ...dbProfile,
-          available_for_tutoring: true,
-        } as Profile;
-      }
-    }
-
     // 1. Consultar prioritariamente desde la vista segura public_profiles
     const { data: publicData, error: viewError } = await supabase
       .from('public_profiles')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (!viewError && publicData) {
       return publicData as Profile;
@@ -169,10 +140,10 @@ export const profileService = {
       .from('profiles')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
-      console.error('[profileService] Error en getProfileById:', error?.message || viewError?.message);
+      console.warn('[profileService] Perfil no encontrado:', error?.message || viewError?.message);
       return null;
     }
 
@@ -183,6 +154,7 @@ export const profileService = {
       ...data,
       email: data.show_email || isOwner ? data.email : null,
       phone: data.show_phone || isOwner ? data.phone : null,
+      learning_preferences: isOwner ? data.learning_preferences : [],
     } as Profile;
   },
 
@@ -253,40 +225,17 @@ export const profileService = {
 
   // Materias que un perfil enseña / ofrece
   async getOfferedSubjects(profileId: string): Promise<OfferedSubject[]> {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profile_offered_subjects')
       .select('*, subject:subjects(*)')
       .eq('profile_id', profileId);
 
-    const authUser = await getOptionalAuthUser();
-    const isTargetCertified =
-      isCertifiedAccount(profileId) ||
-      (authUser && isCertifiedAccount(authUser.email) && authUser.id === profileId);
-
-    const dbSubjects = (data || []) as OfferedSubject[];
-    if (isTargetCertified) {
-      const verifiedDb = dbSubjects.map((d) => ({
-        ...d,
-        is_verified: true,
-        verified_at: d.verified_at || new Date().toISOString(),
-      }));
-
-      const existingNames = new Set(
-        verifiedDb.map((s) => s.subject?.name?.toLowerCase().trim() || s.subject_id)
-      );
-
-      const missingCertified = CERTIFIED_OFFERED_SUBJECTS.map((cos) => ({
-        ...cos,
-        profile_id: profileId,
-      })).filter((cos) => {
-        const subName = cos.subject?.name?.toLowerCase().trim();
-        return (subName ? !existingNames.has(subName) : true) && !existingNames.has(cos.subject_id);
-      });
-
-      return [...verifiedDb, ...missingCertified];
+    if (error) {
+      console.warn('[profileService] Error en getOfferedSubjects:', error.message);
+      return [];
     }
 
-    return dbSubjects;
+    return (data || []) as OfferedSubject[];
   },
 
   // Materias en las que un perfil necesita tutoría / apoyo
@@ -310,7 +259,6 @@ export const profileService = {
     description?: string
   ): Promise<OfferedSubject> {
     const user = await getRequiredAuthUser();
-    const isCert = isCertifiedAccount(user.email) || isCertifiedAccount(user.id);
 
     let targetSubjectId = subjectId;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -328,6 +276,7 @@ export const profileService = {
         subject_id: targetSubjectId,
         level,
         description: description || null,
+        is_verified: false,
       })
       .select('*, subject:subjects(*)')
       .single();
@@ -337,12 +286,7 @@ export const profileService = {
       throw error;
     }
 
-    const res = data as OfferedSubject;
-    return {
-      ...res,
-      is_verified: isCert ? true : res.is_verified,
-      verified_at: isCert ? (res.verified_at || new Date().toISOString()) : res.verified_at,
-    };
+    return data as OfferedSubject;
   },
 
   // Eliminar materia ofrecida

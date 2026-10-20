@@ -4,104 +4,63 @@
  * de pruebas técnicas para tutores en InterAula.
  */
 
+import { supabase } from '../lib/supabase';
 import type { ChallengeQuestion } from './aiQuestionEngine';
 import type { AcademicLevel } from '../types/profile';
 
-// Clave API provista para el motor de evaluación (se obtiene de .env.local de forma segura)
-const DEFAULT_GEMINI_API_KEY = '';
-
-// Modelos Gemini optimizados por velocidad y disponibilidad
-const CANDIDATE_GEMINI_MODELS = [
-  'gemini-flash-lite-latest',
-  'gemini-flash-latest',
-  'gemini-3.1-flash-lite',
-];
+/**
+ * Las llamadas a Gemini se delegan a la Supabase Edge Function 'gemini-proxy',
+ * que custodia la clave GEMINI_API_KEY en variables de entorno del servidor
+ * y verifica la autenticación del usuario mediante JWT.
+ */
 
 export function getGeminiApiKey(): string {
-  try {
-    const envKey =
-      typeof import.meta !== 'undefined' && import.meta.env
-        ? (import.meta.env as any).VITE_GEMINI_API_KEY
-        : typeof globalThis !== 'undefined' && (globalThis as any).process?.env
-        ? (globalThis as any).process.env.VITE_GEMINI_API_KEY
-        : undefined;
-
-    if (envKey && typeof envKey === 'string' && envKey.trim().length > 10) {
-      return envKey.trim();
-    }
-
-    if (typeof localStorage !== 'undefined') {
-      const localKey = localStorage.getItem('ia_gemini_api_key');
-      if (localKey && localKey.trim().length > 10) {
-        return localKey.trim();
-      }
-    }
-  } catch (err) {
-    console.warn('[geminiAiService] Error al obtener API key:', err);
-  }
-
-  return DEFAULT_GEMINI_API_KEY;
+  // Clave deshabilitada en el cliente por seguridad. Se gestiona en el servidor.
+  return '';
 }
 
-export function setSessionGeminiApiKey(key: string): void {
-  if (typeof localStorage === 'undefined' || typeof sessionStorage === 'undefined') return;
-  try {
-    if (key && key.trim()) {
-      localStorage.setItem('ia_gemini_api_key', key.trim());
-      sessionStorage.setItem('ia_gemini_api_key', key.trim());
-    } else {
-      localStorage.removeItem('ia_gemini_api_key');
-      sessionStorage.removeItem('ia_gemini_api_key');
-    }
-  } catch (err) {
-    console.warn('[geminiAiService] Error al guardar clave en storage:', err);
-  }
+export function setSessionGeminiApiKey(_key: string): void {
+  // No-op por seguridad: los secretos se gestionan en Supabase Edge Functions.
+  console.info('[geminiAiService] La clave de IA está protegida en el backend (Edge Function).');
 }
 
 export function hasGeminiApiConfigured(): boolean {
-  const key = getGeminiApiKey();
-  return Boolean(key && key.trim().length > 10);
+  // El backend cuenta con la Edge Function configurada para usuarios autenticados
+  return true;
 }
 
 /**
- * Realiza llamadas a Gemini con tolerancia a fallos mediante cascada de modelos.
- * Si un modelo tiene alta demanda (código 503) o no responde en 10 segundos, salta al siguiente.
+ * Realiza llamadas a Gemini a través de la función protegida en el servidor.
+ * Cuenta con timeout y fallback a generadores locales en caso de desconexión.
  */
-export async function callGeminiApiWithFallback(body: any, timeoutMs: number = 10000): Promise<string | null> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) return null;
-
-  for (const model of CANDIDATE_GEMINI_MODELS) {
+export async function callGeminiApiWithFallback(body: any, timeoutMs: number = 20000): Promise<string | null> {
+  try {
     const controller = new AbortController();
     const timerId = setTimeout(() => controller.abort(), timeoutMs);
 
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        action: 'generateContent',
+        payload: body,
+      },
+    });
 
-      clearTimeout(timerId);
+    clearTimeout(timerId);
 
-      if (response.ok) {
-        const data = await response.json();
-        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (candidateText && candidateText.trim().length > 0) {
-          return candidateText;
-        }
-      } else {
-        console.warn(`[geminiAiService] Modelo ${model} respondió status ${response.status}. Probando alternativo...`);
-      }
-    } catch (err: any) {
-      clearTimeout(timerId);
-      console.warn(`[geminiAiService] Modelo ${model} no respondió a tiempo (${err.message || 'timeout'}). Intentando siguiente...`);
+    if (error) {
+      console.warn('[geminiAiService] La Edge Function de Gemini retornó un error:', error.message || error);
+      return null;
     }
-  }
 
-  return null;
+    if (data && typeof data.resultText === 'string' && data.resultText.trim().length > 0) {
+      return data.resultText;
+    }
+
+    return null;
+  } catch (err: any) {
+    console.warn('[geminiAiService] Error al invocar gemini-proxy:', err?.message || err);
+    return null;
+  }
 }
 
 /**

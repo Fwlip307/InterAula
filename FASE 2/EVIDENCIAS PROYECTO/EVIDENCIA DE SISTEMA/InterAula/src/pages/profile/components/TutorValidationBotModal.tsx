@@ -24,6 +24,7 @@ import {
   hasGeminiApiConfigured,
   evaluateAnswerWithGemini,
 } from '../../../services/geminiAiService';
+import { useAntiCheat } from '../hooks/useAntiCheat';
 
 interface TutorValidationBotModalProps {
   isOpen: boolean;
@@ -105,14 +106,26 @@ export default function TutorValidationBotModal({
   const [redactionInput, setRedactionInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [submittingVerification, setSubmittingVerification] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
-  const [pasteWarning, setPasteWarning] = useState(false);
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [showTabWarning, setShowTabWarning] = useState(false);
-  const [isWindowBlurred, setIsWindowBlurred] = useState(false);
-  const [screenshotBlockedToast, setScreenshotBlockedToast] = useState(false);
   const [eliminationReason, setEliminationReason] = useState<'timeout' | 'wrong_answer' | null>(null);
+
+  const {
+    isFullscreen,
+    enterFullscreen,
+    exitFullscreen,
+    tabSwitchCount,
+    showTabWarning,
+    setShowTabWarning,
+    isWindowBlurred,
+    setIsWindowBlurred,
+    screenshotBlockedToast,
+    pasteWarning,
+    setPasteWarning,
+    resetAntiCheat,
+  } = useAntiCheat({
+    isOpen,
+    isActiveExam: step === 'answering' || step === 'ready_check' || step === 'question_feedback',
+  });
 
   const modalOverlayRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -130,136 +143,6 @@ export default function TutorValidationBotModal({
     ? customSubjectInput.trim()
     : activeSubject?.name || 'Materia Universitaria';
 
-  // Control de pantalla completa (Modo Enfoque F11)
-  const enterFullscreen = async () => {
-    try {
-      const el = document.documentElement;
-      if (el.requestFullscreen) {
-        await el.requestFullscreen();
-      } else if ((el as any).webkitRequestFullscreen) {
-        await (el as any).webkitRequestFullscreen();
-      }
-    } catch (err) {
-      console.warn('[TutorValidationBotModal] Pantalla completa rechazada o no soportada:', err);
-    }
-  };
-
-  const exitFullscreen = async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else if ((document as any).webkitFullscreenElement) {
-        await (document as any).webkitExitFullscreen();
-      }
-    } catch (err) {
-      console.warn('[TutorValidationBotModal] Error al salir de pantalla completa:', err);
-    }
-  };
-
-  // Monitorear cambios de pantalla completa para sincronizar estado
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement || (document as any).webkitFullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
-  // Bloqueo de atajos de teclado para copia, inspección y capturas de pantalla
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const blockScreenshot = (e: KeyboardEvent) => {
-      // Tecla Impr Pant / PrintScreen
-      if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
-        e.preventDefault();
-        try {
-          navigator.clipboard?.writeText?.('');
-        } catch {}
-        setScreenshotBlockedToast(true);
-        setTimeout(() => setScreenshotBlockedToast(false), 3000);
-      }
-
-      // Atajo de recorte de Windows (Win/Ctrl + Shift + S) y Mac (Cmd + Shift + 3/4/5)
-      if (
-        e.shiftKey &&
-        (e.metaKey || e.ctrlKey) &&
-        ['s', 'S', '3', '4', '5'].includes(e.key)
-      ) {
-        e.preventDefault();
-        try {
-          navigator.clipboard?.writeText?.('');
-        } catch {}
-        setScreenshotBlockedToast(true);
-        setTimeout(() => setScreenshotBlockedToast(false), 3000);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      blockScreenshot(e);
-
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        ['c', 'C', 'u', 'U', 's', 'S', 'p', 'P', 'a', 'A'].includes(e.key)
-      ) {
-        e.preventDefault();
-      }
-      if (e.key === 'F12') {
-        e.preventDefault();
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      blockScreenshot(e);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [isOpen]);
-
-  // Detección de pérdida de foco o cambio de pestaña durante la evaluación
-  useEffect(() => {
-    if (!isOpen || (step !== 'answering' && step !== 'ready_check' && step !== 'question_feedback')) return;
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setTabSwitchCount((prev) => prev + 1);
-        setShowTabWarning(true);
-        setIsWindowBlurred(true);
-      } else {
-        setIsWindowBlurred(false);
-      }
-    };
-
-    const handleWindowBlur = () => {
-      setTabSwitchCount((prev) => prev + 1);
-      setShowTabWarning(true);
-      setIsWindowBlurred(true);
-    };
-
-    const handleWindowFocus = () => {
-      setIsWindowBlurred(false);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
-    };
-  }, [isOpen, step]);
-
   // Manejo de salida segura y confirmación de abandono
   const handleRequestClose = () => {
     if (step === 'ready_check' || step === 'answering' || step === 'question_feedback') {
@@ -270,10 +153,8 @@ export default function TutorValidationBotModal({
   };
 
   const handleFinalClose = () => {
-    exitFullscreen();
+    resetAntiCheat();
     setShowAbandonConfirm(false);
-    setShowTabWarning(false);
-    setPasteWarning(false);
     setEliminationReason(null);
     setStep('idle');
     setQuestions([]);

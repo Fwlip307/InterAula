@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { isCertifiedAccount } from '../../../services/profile.service';
 import type { AvailableTutor } from '../../../services/tutoring.service';
 import type { SessionModality } from '../../../types/tutoring';
 import { tutoringService } from '../../../services/tutoring.service';
@@ -51,10 +50,7 @@ export default function RequestTutoringModal({
       (user.id === tutor.profile.id ||
         (user.email &&
           tutor.profile.email &&
-          user.email.toLowerCase() === tutor.profile.email.toLowerCase()) ||
-        (isCertifiedAccount(user.email) &&
-          (isCertifiedAccount(tutor.profile.id) ||
-            isCertifiedAccount(tutor.profile.email))))
+          user.email.toLowerCase() === tutor.profile.email.toLowerCase()))
   );
 
   const tutorName = getUserDisplayName(tutor.profile);

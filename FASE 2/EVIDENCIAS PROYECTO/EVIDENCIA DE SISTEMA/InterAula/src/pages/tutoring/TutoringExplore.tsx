@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { profileService, isCertifiedAccount } from '../../services/profile.service';
+import { profileService } from '../../services/profile.service';
 import { tutoringService, type AvailableTutor } from '../../services/tutoring.service';
 import type { Subject, OfferedSubject } from '../../types/profile';
 import type { TutoringWorkshop } from '../../types/tutoring';
@@ -76,9 +76,7 @@ export default function TutoringExplore() {
   const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
 
-  const isTutor =
-    userOfferedSubjects.length > 0 ||
-    Boolean(user?.email && isCertifiedAccount(user.email));
+  const isTutor = userOfferedSubjects.length > 0;
 
   // Tutor seleccionado para el modal de solicitud 1 a 1
   const [selectedTutorForModal, setSelectedTutorForModal] = useState<AvailableTutor | null>(null);
@@ -203,10 +201,7 @@ export default function TutoringExplore() {
     const isSelf = Boolean(
       user &&
         (user.id === tutor.profile.id ||
-          (userEmail && tutorEmail && userEmail === tutorEmail) ||
-          (isCertifiedAccount(userEmail) &&
-            (isCertifiedAccount(tutor.profile.id) ||
-              isCertifiedAccount(tutorEmail))))
+          (userEmail && tutorEmail && userEmail === tutorEmail))
     );
 
     if (isSelf) {
@@ -602,7 +597,6 @@ export default function TutoringExplore() {
             {Boolean(user) &&
               (liveWorkshops[0].tutor_id === user?.id ||
                 liveWorkshops[0].tutor_id === 'live-host' ||
-                isCertifiedAccount(user?.email) ||
                 isTutor) && (
                 <button
                   type="button"
@@ -1024,10 +1018,7 @@ export default function TutoringExplore() {
               const isCurrentUser = Boolean(
                 user &&
                   (user.id === p.id ||
-                    (userEmail && profileEmail && userEmail === profileEmail) ||
-                    (isCertifiedAccount(userEmail) &&
-                      (isCertifiedAccount(p.id) ||
-                        isCertifiedAccount(profileEmail))))
+                    (userEmail && profileEmail && userEmail === profileEmail))
               );
               const hasReviews = Boolean(tutor.statistics && tutor.statistics.total_reviews_received > 0);
               const isCertifiedTutor = tutor.offeredSubjects.some((o) => o.is_verified);

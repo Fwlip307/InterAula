@@ -28,6 +28,15 @@ async function getOptionalAuthUser() {
   return authData.user;
 }
 
+export interface CreateProjectDTO {
+  title: string;
+  short_description?: string;
+  description?: string;
+  category?: string;
+  max_members?: number;
+  positions?: string[];
+}
+
 export const projectService = {
   // Obtener proyectos públicos activos para el Hub
   async getProjects(): Promise<Project[]> {
@@ -186,4 +195,75 @@ export const projectService = {
     }
     return data as ProjectApplication;
   },
+
+  // Crear un nuevo proyecto colaborativo con sus posiciones iniciales
+  async createProject(dto: CreateProjectDTO): Promise<Project & { positions: ProjectPosition[] }> {
+    const user = await getRequiredAuthUser();
+
+    const { data: project, error } = await supabase
+      .from('projects')
+      .insert({
+        owner_id: user.id,
+        title: dto.title.trim(),
+        short_description: dto.short_description?.trim() || null,
+        description: dto.description?.trim() || null,
+        category: dto.category || 'Desarrollo de Software',
+        status: 'recruiting',
+        visibility: 'public',
+        max_members: dto.max_members || 4,
+      })
+      .select('*, owner:profiles(*)')
+      .single();
+
+    if (error || !project) {
+      console.error('[projectService] Error al crear proyecto:', error?.message);
+      throw error || new Error('No fue posible crear el proyecto');
+    }
+
+    let createdPositions: ProjectPosition[] = [];
+    if (dto.positions && dto.positions.length > 0) {
+      const positionsToInsert = dto.positions
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((title) => ({
+          project_id: project.id,
+          title,
+          description: `Participación activa en el rol de ${title} para el proyecto.`,
+          level_required: 'intermediate',
+          slots: 1,
+          status: 'open',
+        }));
+
+      if (positionsToInsert.length > 0) {
+        const { data: posData, error: posError } = await supabase
+          .from('project_positions')
+          .insert(positionsToInsert)
+          .select('*, skill:skills(*)');
+
+        if (posError) {
+          console.error('[projectService] Error al crear posiciones del proyecto:', posError.message);
+        } else if (posData) {
+          createdPositions = posData as ProjectPosition[];
+        }
+      }
+    }
+
+    return { ...(project as Project), positions: createdPositions };
+  },
+
+  // Eliminar un proyecto propio
+  async deleteProject(projectId: string): Promise<void> {
+    const user = await getRequiredAuthUser();
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId)
+      .eq('owner_id', user.id);
+
+    if (error) {
+      console.error('[projectService] Error al eliminar proyecto:', error.message);
+      throw error;
+    }
+  },
 };
+
