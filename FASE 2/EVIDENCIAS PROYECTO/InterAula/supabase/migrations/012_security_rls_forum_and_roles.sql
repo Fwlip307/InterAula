@@ -19,8 +19,6 @@ SELECT
   p.location,
   p.profile_completed,
   p.available_for_tutoring,
-  p.available_for_projects,
-  p.project_bio,
   p.portfolio_url,
   p.github_url,
   p.linkedin_url,
