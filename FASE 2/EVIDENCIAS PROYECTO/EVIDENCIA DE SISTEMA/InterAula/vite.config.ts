@@ -7,4 +7,21 @@ export default defineConfig({
   server: {
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('chileEducationCatalog2026.json') || id.includes('subjectsCatalog.json')) {
+            return 'education-catalog';
+          }
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase-vendor';
+          }
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
+            return 'react-vendor';
+          }
+        },
+      },
+    },
+  },
 })

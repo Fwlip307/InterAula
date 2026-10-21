@@ -303,6 +303,8 @@ export const workshopService = {
    * Actualiza el estado de un taller ('scheduled', 'in_progress', 'completed', 'cancelled').
    */
   async updateWorkshopStatus(workshopId: string, status: string): Promise<void> {
+    await getRequiredAuthUser();
+
     const { error } = await supabase
       .from('tutoring_workshops')
       .update({ status, updated_at: new Date().toISOString() })

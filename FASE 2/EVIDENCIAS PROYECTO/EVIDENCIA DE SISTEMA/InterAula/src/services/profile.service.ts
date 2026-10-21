@@ -12,7 +12,6 @@ import type {
   AcademicLevel,
   LearningPreference,
 } from '../types/profile';
-import { getAllCatalogSubjects } from './catalogResolver';
 
 /**
  * Helper interno para obtener el usuario autenticado obligatorio en operaciones de mutación.
@@ -197,6 +196,7 @@ export const profileService = {
     const { data, error } = await query;
 
     if (error || !data || data.length === 0) {
+      const { getAllCatalogSubjects } = await import('./catalogResolver');
       const catalog = getAllCatalogSubjects();
       return catalog.map((cs) => ({
         id: cs.id,
