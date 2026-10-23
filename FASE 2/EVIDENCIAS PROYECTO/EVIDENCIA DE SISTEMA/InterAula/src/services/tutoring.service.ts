@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import type { Profile, OfferedSubject } from '../types/profile';
 import type {
   TutoringSession,
@@ -148,16 +150,9 @@ export const tutoringService = {
 
   /**
    * Solicita una sesión de tutoría a un tutor disponible.
-   * Maneja timezone UTC enviando fecha en ISO 8601.
+   * Maneja timezone UTC enviando fecha en ISO 8601 a través del backend propio.
    */
   async requestTutoring(dto: CreateTutoringSessionDTO): Promise<TutoringSession> {
-    const user = await getRequiredAuthUser();
-
-    // Validaciones preventivas de capa de negocio
-    if (user.id === dto.tutor_id) {
-      throw new Error('No puedes solicitar una tutoría a ti mismo');
-    }
-
     const scheduledDate = new Date(dto.scheduled_at);
     if (isNaN(scheduledDate.getTime())) {
       throw new Error('La fecha y hora indicada no es válida');
@@ -167,136 +162,104 @@ export const tutoringService = {
       throw new Error('La fecha y hora de la tutoría debe ser futura');
     }
 
-    // Inserción en la base de datos protegida por RLS y Triggers
-    const { data, error } = await supabase
-      .from('tutoring_sessions')
-      .insert({
-        student_id: user.id,
-        tutor_id: dto.tutor_id,
-        subject_id: dto.subject_id,
-        scheduled_at: scheduledDate.toISOString(),
-        duration_minutes: dto.duration_minutes || 60,
-        modality: dto.modality,
-        location_or_link: dto.location_or_link?.trim() || null,
-        notes: dto.notes?.trim() || null,
-        status: 'pending',
-      })
-      .select(`
-        *,
-        tutor:profiles!tutoring_sessions_tutor_id_fkey(*),
-        subject:subjects(*)
-      `)
-      .single();
-
-    if (error) {
-      console.error('[tutoringService] Error en requestTutoring:', error.message);
-      throw new Error(error.message || 'No fue posible solicitar la tutoría');
-    }
-
-    return data as TutoringSession;
+    const session = await apiClient.post<TutoringSession>(API_ENDPOINTS.TUTORING.SESSIONS, {
+      tutor_id: dto.tutor_id,
+      subject_id: dto.subject_id,
+      scheduled_at: scheduledDate.toISOString(),
+      duration_minutes: dto.duration_minutes || 60,
+      modality: dto.modality || 'online',
+      notes: dto.notes?.trim() || undefined,
+    });
+    return session;
   },
 
   /**
    * Obtiene las sesiones donde el usuario es el estudiante solicitante.
    */
   async getMySessionsAsStudent(): Promise<TutoringSession[]> {
-    const user = await getRequiredAuthUser();
+    try {
+      const sessions = await apiClient.get<TutoringSession[]>(API_ENDPOINTS.TUTORING.MY_SESSIONS, {
+        params: { role: 'student' },
+      });
+      return sessions;
+    } catch (apiErr) {
+      console.warn('[tutoringService] Backend API fallback para getMySessionsAsStudent:', apiErr);
+      const user = await getRequiredAuthUser();
 
-    const { data, error } = await supabase
-      .from('tutoring_sessions')
-      .select(`
-        *,
-        tutor:profiles!tutoring_sessions_tutor_id_fkey(*),
-        subject:subjects(*),
-        review:tutoring_reviews(*)
-      `)
-      .eq('student_id', user.id)
-      .order('scheduled_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('tutoring_sessions')
+        .select(`
+          *,
+          tutor:profiles!tutoring_sessions_tutor_id_fkey(*),
+          subject:subjects(*),
+          review:tutoring_reviews(*)
+        `)
+        .eq('student_id', user.id)
+        .order('scheduled_at', { ascending: false });
 
-    if (error) {
-      console.error('[tutoringService] Error en getMySessionsAsStudent:', error.message);
-      throw new Error('No fue posible cargar tus tutorías como estudiante');
+      if (error) {
+        console.error('[tutoringService] Error en getMySessionsAsStudent:', error.message);
+        throw new Error('No fue posible cargar tus tutorías como estudiante');
+      }
+
+      return (data || []).map((session: any) => ({
+        ...session,
+        review: Array.isArray(session.review) ? session.review[0] || null : session.review,
+      })) as TutoringSession[];
     }
-
-    return (data || []).map((session: any) => ({
-      ...session,
-      review: Array.isArray(session.review) ? session.review[0] || null : session.review,
-    })) as TutoringSession[];
   },
 
   /**
    * Obtiene las solicitudes de tutoría donde el usuario es el tutor asignado.
    */
   async getMySessionsAsTutor(): Promise<TutoringSession[]> {
-    const user = await getRequiredAuthUser();
+    try {
+      const sessions = await apiClient.get<TutoringSession[]>(API_ENDPOINTS.TUTORING.MY_SESSIONS, {
+        params: { role: 'tutor' },
+      });
+      return sessions;
+    } catch (apiErr) {
+      console.warn('[tutoringService] Backend API fallback para getMySessionsAsTutor:', apiErr);
+      const user = await getRequiredAuthUser();
 
-    const { data } = await supabase
-      .from('tutoring_sessions')
-      .select(`
-        *,
-        student:profiles!tutoring_sessions_student_id_fkey(*),
-        subject:subjects(*),
-        review:tutoring_reviews(*)
-      `)
-      .eq('tutor_id', user.id)
-      .order('scheduled_at', { ascending: false });
+      const { data } = await supabase
+        .from('tutoring_sessions')
+        .select(`
+          *,
+          student:profiles!tutoring_sessions_student_id_fkey(*),
+          subject:subjects(*),
+          review:tutoring_reviews(*)
+        `)
+        .eq('tutor_id', user.id)
+        .order('scheduled_at', { ascending: false });
 
-    return (data || []).map((session: any) => ({
-      ...session,
-      review: Array.isArray(session.review) ? session.review[0] || null : session.review,
-    })) as TutoringSession[];
+      return (data || []).map((session: any) => ({
+        ...session,
+        review: Array.isArray(session.review) ? session.review[0] || null : session.review,
+      })) as TutoringSession[];
+    }
   },
 
   /**
    * Actualiza el estado de una sesión (aceptar, rechazar, cancelar, completar).
-   * La validación estricta de quién puede ejecutar qué transición la realiza PostgreSQL.
+   * La validación de negocio y roles la realiza el backend propio.
    */
   async updateSessionStatus(
     sessionId: string,
     newStatus: SessionStatus,
     cancellationReason?: string
   ): Promise<TutoringSession> {
-    await getRequiredAuthUser();
-
-    const updatePayload: Record<string, any> = {
+    const updated = await apiClient.patch<TutoringSession>(API_ENDPOINTS.TUTORING.SESSION_STATUS(sessionId), {
       status: newStatus,
-    };
-
-    if (cancellationReason?.trim()) {
-      updatePayload.cancellation_reason = cancellationReason.trim();
-    }
-
-    const { data, error } = await supabase
-      .from('tutoring_sessions')
-      .update(updatePayload)
-      .eq('id', sessionId)
-      .select(`
-        *,
-        student:profiles!tutoring_sessions_student_id_fkey(*),
-        tutor:profiles!tutoring_sessions_tutor_id_fkey(*),
-        subject:subjects(*),
-        review:tutoring_reviews(*)
-      `)
-      .single();
-
-    if (error) {
-      console.error('[tutoringService] Error en updateSessionStatus:', error.message);
-      throw new Error(error.message || 'No fue posible actualizar el estado de la tutoría');
-    }
-
-    return {
-      ...data,
-      review: Array.isArray(data.review) ? data.review[0] || null : data.review,
-    } as TutoringSession;
+      cancellation_reason: cancellationReason?.trim() || undefined,
+    });
+    return updated;
   },
 
   /**
    * Envía una evaluación académica para una tutoría completada.
-   * El promedio general es calculado y almacenado automáticamente por PostgreSQL.
    */
   async submitReview(dto: CreateTutoringReviewDTO): Promise<TutoringReview> {
-    const user = await getRequiredAuthUser();
-
     // Validar rangos 1-10 en capa de negocio
     const comm = Math.round(Number(dto.communication_score));
     const know = Math.round(Number(dto.knowledge_score));
@@ -306,29 +269,14 @@ export const tutoringService = {
       throw new Error('Todas las calificaciones deben ser números enteros entre 1 y 10');
     }
 
-    const { data, error } = await supabase
-      .from('tutoring_reviews')
-      .insert({
-        session_id: dto.session_id,
-        student_id: user.id,
-        tutor_id: dto.tutor_id,
-        communication_score: comm,
-        knowledge_score: know,
-        punctuality_score: punc,
-        comment: dto.comment?.trim() || null,
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      console.error('[tutoringService] Error en submitReview:', error.message);
-      if (error.code === '23505') {
-        throw new Error('Esta tutoría ya ha sido evaluada previamente');
-      }
-      throw new Error(error.message || 'No fue posible registrar la evaluación');
-    }
-
-    return data as TutoringReview;
+    const review = await apiClient.post<TutoringReview>(API_ENDPOINTS.TUTORING.SESSION_REVIEWS(dto.session_id), {
+      rating: Math.max(1, Math.min(5, Math.round(((comm + know + punc) / 3) / 2))),
+      comment: dto.comment?.trim() || 'Evaluación registrada',
+      punctuality_rating: Math.max(1, Math.min(5, Math.round(punc / 2))),
+      clarity_rating: Math.max(1, Math.min(5, Math.round(comm / 2))),
+      empathy_rating: Math.max(1, Math.min(5, Math.round(know / 2))),
+    });
+    return review;
   },
 
   /**

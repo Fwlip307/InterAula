@@ -1,0 +1,16 @@
+node_modules
+dist
+backend/node_modules
+backend/dist
+.env
+.env.*
+!.env.example
+*.log
+.git
+.github
+tests
+backend/tests
+coverage
+.vscode
+.agents
+scratch

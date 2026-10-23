@@ -1,4 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
+import { BUSINESS_RULES } from '../constants/businessRules';
 import type {
   TutorVerificationRequest,
   AcademicValidator,
@@ -68,139 +71,87 @@ export const verificationService = {
     arg1: string | CreateVerificationRequestDTO,
     arg2?: string
   ): Promise<TutorVerificationRequest> {
-    const user = await getRequiredAuthUser();
-    let tutorId = user.id;
-    let subjectId: string;
+    const subjectId = typeof arg1 === 'object' ? arg1.subject_id : (arg2 || arg1);
 
-    if (typeof arg1 === 'object') {
-      subjectId = arg1.subject_id;
-    } else if (arg2) {
-      tutorId = arg1;
-      subjectId = arg2;
-    } else {
-      subjectId = arg1;
-    }
-
-    if (tutorId !== user.id) {
-      throw new Error('No puedes crear solicitudes de verificación en nombre de otro usuario');
-    }
-
-    // Pre-validación UX: la materia debe estar ofrecida por el usuario
-    const { data: offered, error: offeredError } = await supabase
-      .from('profile_offered_subjects')
-      .select('is_verified')
-      .eq('profile_id', user.id)
-      .eq('subject_id', subjectId)
-      .maybeSingle();
-
-    if (offeredError) {
-      console.error('[verificationService] Error consultando materia ofrecida:', offeredError.message);
-    }
-
-    if (!offered) {
-      throw new Error('Debes registrar esta asignatura en tu lista de materias ofrecidas antes de solicitar su verificación');
-    }
-
-    if (offered.is_verified) {
-      throw new Error('Esta asignatura ya cuenta con la verificación académica aprobada');
-    }
-
-    // Inserción protegida por RLS y Triggers
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .insert({
-        tutor_id: user.id,
+    try {
+      const data = await apiClient.post<TutorVerificationRequest>(API_ENDPOINTS.VERIFICATION.REQUESTS, {
         subject_id: subjectId,
-        status: 'pending',
-      })
-      .select(VERIFICATION_REQUEST_SELECT)
-      .single();
-
-    if (error) {
-      console.error('[verificationService] Error en createVerificationRequest:', error.message);
-      if (error.message.includes('idx_active_verification_per_tutor_subject') || error.code === '23505') {
-        throw new Error('Ya tienes una solicitud de verificación activa o aprobada para esta asignatura');
-      }
-      throw new Error(error.message || 'No fue posible crear la solicitud de verificación');
+      });
+      return data;
+    } catch (apiErr: any) {
+      console.error('[verificationService] Error en createVerificationRequest:', apiErr);
+      throw new Error(apiErr?.message || 'No fue posible crear la solicitud de verificación');
     }
-
-    return data as TutorVerificationRequest;
   },
 
   /**
-   * Genera solicitudes aprobadas simuladas para cuentas certificadas de prueba.
-   */
-  getMockCertifiedVerificationRequests(tutorId: string): TutorVerificationRequest[] {
-    return [
-      {
-        id: `cert-req-progweb-${tutorId}`,
-        tutor_id: tutorId,
-        subject_id: 'informatica_software.programacion_web',
-        status: 'approved',
-        practical_exercise_title: 'Desarrollo de API RESTful y Componentes React Reactivos',
-        practical_submission: 'https://github.com/lukasdonoso/interaula-demo',
-        defense_notes: 'Validación técnica y pedagógica completada con éxito. Demostración de arquitectura limpia y componentes accesibles.',
-        reviewer_feedback: 'Acreditación técnica aprobada con nota 6.8. Cumple con todos los estándares académicos para ejercer como Tutor Oficial.',
-        reviewed_by: 'docente-validador-duoc',
-        reviewed_at: '2026-10-04T12:00:00Z',
-        created_at: '2026-10-04T10:00:00Z',
-        updated_at: '2026-10-04T12:00:00Z',
-        document_filename: 'Certificado_Academico_DuocUC_ProgramacionWeb.pdf',
-        document_extraction_status: 'completed',
-        matched_subject_name: 'Programación Web',
-        matched_grade: 6.8,
-        matched_status: 'found',
-        calculated_level: 'advanced',
-        subject: {
-          id: 'informatica_software.programacion_web',
-          name: 'Programación Web',
-          category: 'Tecnología e Informática',
-          is_pilot: true,
-          pilot_priority: 1,
-          created_at: '2026-10-04T10:00:00Z',
-        },
-      },
-    ];
-  },
-
-  /**
-   * Obtiene todas las solicitudes de verificación realizadas por el usuario en sesión.
+   * Obtiene todas las solicitudes de verificación realizadas por el usuario en sesión a través del backend.
    */
   async getMyVerificationRequests(): Promise<TutorVerificationRequest[]> {
-    const user = await getRequiredAuthUser();
+    try {
+      const data = await apiClient.get<TutorVerificationRequest[]>(API_ENDPOINTS.VERIFICATION.MY_REQUESTS);
+      return data;
+    } catch (apiErr) {
+      console.warn('[verificationService] Backend API fallback para getMyVerificationRequests:', apiErr);
+      const user = await getRequiredAuthUser();
 
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .select(VERIFICATION_REQUEST_SELECT)
-      .eq('tutor_id', user.id)
-      .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('tutor_verification_requests')
+        .select(VERIFICATION_REQUEST_SELECT)
+        .eq('tutor_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('[verificationService] Error en getMyVerificationRequests:', error.message);
-      return [];
+      if (error) {
+        console.error('[verificationService] Error en getMyVerificationRequests:', error.message);
+        return [];
+      }
+
+      return (data || []) as TutorVerificationRequest[];
     }
-
-    return (data || []) as TutorVerificationRequest[];
   },
 
   /**
    * Obtiene la lista de solicitudes de verificación pendientes de revisión para el validador académico.
-   * La seguridad de lectura está gobernada por RLS (public.is_academic_validator).
    */
   async getVerificationRequestsForValidator(): Promise<TutorVerificationRequest[]> {
-    await getRequiredAuthUser();
+    try {
+      const data = await apiClient.get<TutorVerificationRequest[]>(API_ENDPOINTS.VERIFICATION.FOR_VALIDATOR);
+      return data;
+    } catch (apiErr) {
+      console.warn('[verificationService] Backend API fallback para getVerificationRequestsForValidator:', apiErr);
+      await getRequiredAuthUser();
 
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .select(VERIFICATION_REQUEST_SELECT)
-      .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('tutor_verification_requests')
+        .select(VERIFICATION_REQUEST_SELECT)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('[verificationService] Error en getVerificationRequestsForValidator:', error.message);
-      throw new Error(error.message || 'No fue posible cargar las solicitudes de verificación');
+      if (error) {
+        console.error('[verificationService] Error en getVerificationRequestsForValidator:', error.message);
+        throw new Error(error.message || 'No fue posible cargar las solicitudes de verificación');
+      }
+
+      return (data || []) as TutorVerificationRequest[];
     }
+  },
 
-    return (data || []) as TutorVerificationRequest[];
+  /**
+   * Concede acreditación mediante evaluación del Bot en el backend propio (exige score >= 70%)
+   */
+  async botGrant(params: {
+    subject_id: string;
+    subject_name?: string;
+    score: number;
+    level: 'basic' | 'intermediate' | 'advanced';
+    correct_answers?: number;
+    total_questions?: number;
+    notes?: string;
+  }) {
+    const minScore = BUSINESS_RULES.VERIFICATION.MIN_BOT_ACCREDITATION_SCORE;
+    if (params.score < minScore) {
+      throw new Error(`Puntaje insuficiente (${params.score}%). Se requiere un mínimo de ${minScore}% para acreditarse.`);
+    }
+    return apiClient.post(API_ENDPOINTS.VERIFICATION.BOT_GRANT, params);
   },
 
   /**
@@ -210,41 +161,30 @@ export const verificationService = {
     requestId: string,
     practicalExerciseTitle: string
   ): Promise<TutorVerificationRequest> {
-    await getRequiredAuthUser();
-
     const trimmedTitle = practicalExerciseTitle?.trim();
     if (!trimmedTitle) {
       throw new Error('El título o descripción del ejercicio práctico no puede estar vacío');
     }
 
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .update({
-        practical_exercise_title: trimmedTitle,
-        status: 'practical_evaluation',
-      })
-      .eq('id', requestId)
-      .select(VERIFICATION_REQUEST_SELECT)
-      .single();
-
-    if (error) {
-      console.error('[verificationService] Error en assignPracticalExercise:', error.message);
-      throw new Error(error.message || 'No fue posible asignar el ejercicio práctico');
+    try {
+      const data = await apiClient.post<TutorVerificationRequest>(
+        API_ENDPOINTS.VERIFICATION.PRACTICAL_EXERCISE(requestId),
+        { practical_exercise_title: trimmedTitle }
+      );
+      return data;
+    } catch (apiErr: any) {
+      console.error('[verificationService] Error en assignPracticalExercise:', apiErr);
+      throw new Error(apiErr?.message || 'No fue posible asignar el ejercicio práctico');
     }
-
-    return data as TutorVerificationRequest;
   },
 
   /**
    * Envía la entrega práctica y notas de defensa conceptual (Operación del estudiante postulante).
-   * El trigger de base de datos avanza de forma segura el estado a 'under_review'.
    */
   async submitPracticalEvaluation(
     requestId: string,
     dto: SubmitPracticalEvaluationDTO
   ): Promise<TutorVerificationRequest> {
-    const user = await getRequiredAuthUser();
-
     const submission = dto.practical_submission?.trim();
     const defense = dto.defense_notes?.trim();
 
@@ -255,36 +195,25 @@ export const verificationService = {
       throw new Error('Debes incluir la justificación conceptual y defensa de tu solución');
     }
 
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .update({
-        practical_submission: submission,
-        defense_notes: defense,
-      })
-      .eq('id', requestId)
-      .eq('tutor_id', user.id)
-      .select(VERIFICATION_REQUEST_SELECT)
-      .single();
-
-    if (error) {
-      console.error('[verificationService] Error en submitPracticalEvaluation:', error.message);
-      throw new Error(error.message || 'No fue posible enviar la entrega de evaluación práctica');
+    try {
+      const data = await apiClient.post<TutorVerificationRequest>(
+        API_ENDPOINTS.VERIFICATION.PRACTICAL_SUBMIT(requestId),
+        dto
+      );
+      return data;
+    } catch (apiErr: any) {
+      console.error('[verificationService] Error en submitPracticalEvaluation:', apiErr);
+      throw new Error(apiErr?.message || 'No fue posible enviar la entrega de evaluación práctica');
     }
-
-    return data as TutorVerificationRequest;
   },
 
   /**
    * Dictamina y resuelve una solicitud de verificación (Operación exclusiva del validador docente).
-   * Estados resolutivos admitidos: 'approved', 'rejected', 'requires_reevaluation'.
-   * La sincronización con profile_offered_subjects.is_verified la efectúa el trigger de BD.
    */
   async reviewVerificationRequest(
     requestId: string,
     dto: ReviewVerificationRequestDTO
   ): Promise<TutorVerificationRequest> {
-    await getRequiredAuthUser();
-
     const validStatuses = ['approved', 'rejected', 'requires_reevaluation'];
     if (!validStatuses.includes(dto.status)) {
       throw new Error('El estado resolutivo indicado no es válido');
@@ -295,31 +224,16 @@ export const verificationService = {
       throw new Error('Debes proporcionar retroalimentación pedagógica al dictaminar la solicitud');
     }
 
-    const payload: Record<string, any> = {
-      status: dto.status,
-      reviewer_feedback: feedback,
-    };
-
-    if (dto.practical_exercise_title?.trim()) {
-      payload.practical_exercise_title = dto.practical_exercise_title.trim();
+    try {
+      const data = await apiClient.post<TutorVerificationRequest>(
+        API_ENDPOINTS.VERIFICATION.REVIEW(requestId),
+        dto
+      );
+      return data;
+    } catch (apiErr: any) {
+      console.error('[verificationService] Error en reviewVerificationRequest:', apiErr);
+      throw new Error(apiErr?.message || 'No fue posible registrar el dictamen de verificación');
     }
-
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .update(payload)
-      .eq('id', requestId)
-      .select(VERIFICATION_REQUEST_SELECT)
-      .single();
-
-    if (error) {
-      console.error('[verificationService] Error en reviewVerificationRequest:', error.message);
-      if (error.message.includes('Un docente validador no puede evaluar ni dictaminar su propia postulación')) {
-        throw new Error('Un docente validador no puede evaluar ni dictaminar su propia postulación');
-      }
-      throw new Error(error.message || 'No fue posible registrar el dictamen de verificación');
-    }
-
-    return data as TutorVerificationRequest;
   },
 
   /**
@@ -381,21 +295,14 @@ export const verificationService = {
   },
 
   /**
-   * Cancela una solicitud en estado 'pending' creada por el propio usuario.
+   * Cancela una solicitud en estado 'pending' creada por el propio usuario a través del backend propio.
    */
   async cancelPendingRequest(requestId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('tutor_verification_requests')
-      .delete()
-      .eq('id', requestId)
-      .eq('tutor_id', user.id)
-      .eq('status', 'pending');
-
-    if (error) {
-      console.error('[verificationService] Error en cancelPendingRequest:', error.message);
-      throw new Error(error.message || 'No fue posible cancelar la solicitud de verificación');
+    try {
+      await apiClient.delete(API_ENDPOINTS.VERIFICATION.REQUEST_BY_ID(requestId));
+    } catch (apiErr: any) {
+      console.error('[verificationService] Error en cancelPendingRequest:', apiErr);
+      throw new Error(apiErr?.message || 'No fue posible cancelar la solicitud de verificación');
     }
   },
 
@@ -437,42 +344,22 @@ export const verificationService = {
   },
 
   /**
-   * Persiste en la base de datos la información extraída del certificado y el resultado del cruce.
+   * Persiste en la base de datos la información extraída del certificado a través del backend propio.
    */
   async saveCertificateExtraction(
     requestId: string,
     dto: SaveCertificateExtractionDTO
   ): Promise<TutorVerificationRequest> {
-    const user = await getRequiredAuthUser();
-
-    const payload = {
-      document_path: dto.document_path,
-      document_filename: dto.document_filename,
-      document_size_bytes: dto.document_size_bytes,
-      document_uploaded_at: new Date().toISOString(),
-      document_extraction_status: dto.document_extraction_status,
-      document_extracted_data: dto.document_extracted_data,
-      matched_subject_name: dto.matched_subject_name || null,
-      matched_grade: dto.matched_grade || null,
-      matched_status: dto.matched_status || null,
-      calculated_level: dto.calculated_level || null,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabase
-      .from('tutor_verification_requests')
-      .update(payload)
-      .eq('id', requestId)
-      .eq('tutor_id', user.id)
-      .select(VERIFICATION_REQUEST_SELECT)
-      .single();
-
-    if (error) {
-      console.error('[verificationService] Error en saveCertificateExtraction:', error.message);
-      throw new Error(error.message || 'No fue posible registrar los datos del certificado');
+    try {
+      const data = await apiClient.post<TutorVerificationRequest>(
+        API_ENDPOINTS.VERIFICATION.CERTIFICATE(requestId),
+        dto
+      );
+      return data;
+    } catch (apiErr: any) {
+      console.error('[verificationService] Error en saveCertificateExtraction:', apiErr);
+      throw new Error(apiErr?.message || 'No fue posible registrar los datos del certificado');
     }
-
-    return data as TutorVerificationRequest;
   },
 
   /**

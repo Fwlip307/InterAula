@@ -8,7 +8,6 @@ import {
   LockIcon,
 } from '../../../components/common/Icons';
 import { verificationService } from '../../../services/verification.service';
-import { profileService } from '../../../services/profile.service';
 import type { AcademicLevel } from '../../../types/profile';
 import {
   generateLightningRound,
@@ -26,6 +25,7 @@ import { useAntiCheat } from '../hooks/useAntiCheat';
 import TutorAntiCheatOverlays from './TutorAntiCheatOverlays';
 import TutorValidationIntro from './TutorValidationIntro';
 import TutorValidationBottomBar from './TutorValidationBottomBar';
+import { BUSINESS_RULES } from '../../../constants/businessRules';
 
 interface TutorValidationBotModalProps {
   isOpen: boolean;
@@ -51,7 +51,7 @@ interface ChatMessage {
 
 type StepType = 'idle' | 'ready_check' | 'answering' | 'question_feedback' | 'eliminated' | 'completed';
 
-const TOTAL_QUESTIONS = 10;
+const TOTAL_QUESTIONS = BUSINESS_RULES.VERIFICATION.TOTAL_BOT_QUESTIONS;
 
 export default function TutorValidationBotModal({
   isOpen,
@@ -507,46 +507,24 @@ export default function TutorValidationBotModal({
     if (!effectiveSubjectId) return;
     try {
       setSubmittingVerification(true);
-      await profileService.addOfferedSubject(
-        effectiveSubjectId,
-        selectedLevel,
-        `Tutor Habilitado (${selectedLevel === 'basic' ? 'Nivel Básico' : selectedLevel === 'advanced' ? 'Nivel Avanzado' : 'Nivel Intermedio'}) mediante Evaluación Técnica de Contenidos`
-      );
 
-      const req = await verificationService.createVerificationRequest({
+      // Acreditación oficial y segura a través del backend propio de InterAula
+      await verificationService.botGrant({
         subject_id: effectiveSubjectId,
-      });
-
-      await verificationService.saveCertificateExtraction(req.id, {
-        document_filename: 'evaluacion_tecnica_tutor.json',
-        document_path: `evaluations/evaluacion_${effectiveSubjectId}.json`,
-        document_size_bytes: 2048,
-        document_extraction_status: 'completed',
-        matched_subject_name: subjectName,
-        matched_grade: 7.0,
-        calculated_level: selectedLevel,
-        document_extracted_data: {
-          program: userCareer || 'Educación Superior',
-          certificate_id: `EVAL-TUTOR-${Date.now()}`,
-          extracted_at: new Date().toISOString(),
-          calculated_level: selectedLevel,
-          subjects: [
-            {
-              name: subjectName,
-              grade: 7.0,
-            },
-          ],
-        },
+        subject_name: subjectName,
+        score: Math.round((streak / TOTAL_QUESTIONS) * 100),
+        level: selectedLevel,
+        correct_answers: streak,
+        total_questions: TOTAL_QUESTIONS,
+        notes: `Tutor Habilitado (${selectedLevel === 'basic' ? 'Nivel Básico' : selectedLevel === 'advanced' ? 'Nivel Avanzado' : 'Nivel Intermedio'}) mediante Evaluación Técnica de Contenidos`,
       });
 
       exitFullscreen();
       onSuccess(effectiveSubjectId, subjectName, selectedLevel);
       onClose();
     } catch (err: any) {
-      console.error('[TutorValidationBotModal] Error al acreditar:', err);
-      exitFullscreen();
-      onSuccess(effectiveSubjectId, subjectName, selectedLevel);
-      onClose();
+      console.error('[TutorValidationBotModal] Error al acreditar en el servidor:', err);
+      setErrorMessage(err?.message || 'Error al procesar la acreditación en el servidor.');
     } finally {
       setSubmittingVerification(false);
     }

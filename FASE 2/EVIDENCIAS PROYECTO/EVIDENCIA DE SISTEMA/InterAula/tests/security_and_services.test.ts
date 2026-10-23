@@ -17,6 +17,10 @@ import {
   formatAcademicLevel,
 } from '../src/utils/formatters.ts';
 
+// Test 4: Reglas de negocio y endpoints centralizados (Anti-Hardcoding)
+import { API_ENDPOINTS } from '../src/constants/apiEndpoints.ts';
+import { BUSINESS_RULES } from '../src/constants/businessRules.ts';
+
 describe('Seguridad y Autorización', () => {
   it('isCertifiedAccount debe rechazar cualquier email o ID arbitrario (no hardcoding)', () => {
     // Casos que antes pasaban por hardcoding indebido en el frontend
@@ -252,6 +256,105 @@ describe('Políticas de Privacidad de Datos Personales (Privacy Rules)', () => {
 
     assert.equal(publicProfileVisible.email, 'felipe@duoc.cl');
     assert.equal(publicProfileVisible.phone, '+56912345678');
+  });
+});
+
+describe('Centralización de Reglas de Negocio y Endpoints (Anti-Hardcoding)', () => {
+  it('API_ENDPOINTS contiene rutas REST válidas y funciones parametrizadas correctas', () => {
+    assert.equal(API_ENDPOINTS.PROFILES.ME, '/profiles/me');
+    assert.equal(API_ENDPOINTS.TUTORING.SESSIONS, '/tutoring/sessions');
+    assert.equal(API_ENDPOINTS.WORKSHOPS.BASE, '/workshops');
+    assert.equal(API_ENDPOINTS.VERIFICATION.BOT_GRANT, '/verification/bot-grant');
+    assert.equal(API_ENDPOINTS.FORUM.POSTS, '/forum/posts');
+    assert.equal(API_ENDPOINTS.PROJECTS.BASE, '/projects');
+    assert.equal(API_ENDPOINTS.AI.EVALUATE_ANSWER, '/ai/evaluate-answer');
+
+    // Funciones dinámicas de URL
+    assert.equal(API_ENDPOINTS.PROFILES.BY_ID('usr-123'), '/profiles/usr-123');
+    assert.equal(API_ENDPOINTS.WORKSHOPS.ENROLL('ws-123'), '/workshops/ws-123/enroll');
+    assert.equal(API_ENDPOINTS.TUTORING.SESSION_STATUS('sess-456'), '/tutoring/sessions/sess-456/status');
+    assert.equal(API_ENDPOINTS.VERIFICATION.REQUEST_BY_ID('req-789'), '/verification/requests/req-789');
+    assert.equal(API_ENDPOINTS.PROJECTS.APPLY('p-1', 'pos-2'), '/projects/p-1/positions/pos-2/apply');
+  });
+
+  it('BUSINESS_RULES define umbrales de seguridad consistentes con la política académica', () => {
+    assert.equal(BUSINESS_RULES.VERIFICATION.MIN_BOT_ACCREDITATION_SCORE, 70);
+    assert.equal(BUSINESS_RULES.VERIFICATION.TOTAL_BOT_QUESTIONS, 10);
+    assert.equal(BUSINESS_RULES.WORKSHOPS.MIN_CAPACITY, 2);
+    assert.equal(BUSINESS_RULES.WORKSHOPS.MAX_CAPACITY, 100);
+    assert.equal(BUSINESS_RULES.TUTORING.MIN_DURATION_MINUTES, 15);
+    assert.equal(BUSINESS_RULES.TUTORING.MAX_DURATION_MINUTES, 300);
+  });
+});
+
+import { verificationService } from '../src/services/verification.service.ts';
+
+describe('Seguridad de Servicios y Prevención de Bypass (Fail-Closed)', () => {
+  it('verificationService.botGrant rechaza puntajes inferiores al 70% sin invocar el backend', async () => {
+    await assert.rejects(
+      async () => {
+        await verificationService.botGrant({
+          subject_id: 'sub-123',
+          score: 65,
+          level: 'basic',
+        });
+      },
+      {
+        message: /Puntaje insuficiente \(65%\)\. Se requiere un mínimo de 70%/,
+      }
+    );
+  });
+
+  it('verificationService.assignPracticalExercise rechaza títulos vacíos preventivamente', async () => {
+    await assert.rejects(
+      async () => {
+        await verificationService.assignPracticalExercise('req-1', '   ');
+      },
+      {
+        message: /El título o descripción del ejercicio práctico no puede estar vacío/,
+      }
+    );
+  });
+
+  it('verificationService.submitPracticalEvaluation rechaza entregas sin justificación conceptual', async () => {
+    await assert.rejects(
+      async () => {
+        await verificationService.submitPracticalEvaluation('req-1', {
+          practical_submission: 'https://github.com/proyecto/repo',
+          defense_notes: '   ',
+        });
+      },
+      {
+        message: /Debes incluir la justificación conceptual y defensa de tu solución/,
+      }
+    );
+  });
+
+  it('verificationService.reviewVerificationRequest rechaza estados inválidos o retroalimentación vacía', async () => {
+    await assert.rejects(
+      async () => {
+        await verificationService.reviewVerificationRequest('req-1', {
+          // @ts-expect-error estado intencionalmente inválido
+          status: 'invalido',
+          reviewer_feedback: 'Buen trabajo',
+        });
+      },
+      {
+        message: /El estado resolutivo indicado no es válido/,
+      }
+    );
+
+    await assert.rejects(
+      async () => {
+        await verificationService.reviewVerificationRequest('req-1', {
+          status: 'approved',
+          reviewer_feedback: '   ',
+        });
+      },
+      {
+        message: /Debes proporcionar retroalimentación pedagógica al dictaminar la solicitud/,
+      }
+    );
   });
 });
 

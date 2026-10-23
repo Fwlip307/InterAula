@@ -22,170 +22,9 @@ import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
 
 type TabType = 'explore' | 'my_projects' | 'my_applications';
 
-interface SampleProjectWithPositions extends Project {
+export interface ProjectWithPositions extends Project {
   positions: ProjectPosition[];
 }
-
-// Proyectos iniciales con contexto institucional Duoc UC
-const DEFAULT_SAMPLE_PROJECTS: SampleProjectWithPositions[] = [
-  {
-    id: 'proj-sample-1',
-    owner_id: 'sample-user-1',
-    title: 'Sistema de Reserva de Laboratorios de Computación',
-    short_description: 'Plataforma web para que alumnos reserven puestos y computadores de alta gama en sedes Duoc UC.',
-    description: 'Buscamos crear una plataforma centralizada que permita a los estudiantes ver disponibilidad en tiempo real de los laboratorios de informática de la sede y reservar turnos con su cuenta institucional.',
-    category: 'Desarrollo de Software',
-    status: 'recruiting',
-    visibility: 'public',
-    max_members: 4,
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    owner: {
-      id: 'sample-user-1',
-      email: 'carlos.navarrete@duocuc.cl',
-      first_name: 'Carlos',
-      last_name: 'Navarrete',
-      display_name: 'Carlos Navarrete',
-      institution: 'Duoc UC Plaza Vespucio',
-      career: 'Ingeniería en Informática',
-      avatar_url: null,
-      bio: null,
-      location: 'Santiago, Chile',
-      profile_completed: true,
-      available_for_tutoring: false,
-      portfolio_url: null,
-      github_url: null,
-      linkedin_url: null,
-      created_at: '',
-      updated_at: '',
-    },
-    positions: [
-      {
-        id: 'pos-1',
-        project_id: 'proj-sample-1',
-        title: 'Frontend Developer (React / Tailwind)',
-        description: 'Construcción de interfaz responsive y componentes de reserva interactiva.',
-        skill_id: null,
-        level_required: 'intermediate',
-        slots: 1,
-        status: 'open',
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'pos-2',
-        project_id: 'proj-sample-1',
-        title: 'Backend Developer (Node.js / Supabase)',
-        description: 'Modelado de base de datos relacional y lógica de reservas concurrentes.',
-        skill_id: null,
-        level_required: 'intermediate',
-        slots: 1,
-        status: 'open',
-        created_at: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    id: 'proj-sample-2',
-    owner_id: 'sample-user-2',
-    title: 'App Móvil de Horarios y Buses Universitarios "DuocRuta"',
-    short_description: 'App para consultar rutas, tiempos de espera y buses de acercamiento entre estaciones de metro y sedes.',
-    description: 'Iniciativa colaborativa para desarrollar una app móvil simple y rápida que ayude a los compañeros a coordinar viajes y consultar los horarios de buses de acercamiento a sedes periféricas.',
-    category: 'Desarrollo Móvil',
-    status: 'recruiting',
-    visibility: 'public',
-    max_members: 3,
-    created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-    owner: {
-      id: 'sample-user-2',
-      email: 'camila.fuentes@duocuc.cl',
-      first_name: 'Camila',
-      last_name: 'Fuentes',
-      display_name: 'Camila Fuentes',
-      institution: 'Duoc UC San Joaquín',
-      career: 'Técnico en Programación y Análisis',
-      avatar_url: null,
-      bio: null,
-      location: 'Santiago, Chile',
-      profile_completed: true,
-      available_for_tutoring: false,
-      portfolio_url: null,
-      github_url: null,
-      linkedin_url: null,
-      created_at: '',
-      updated_at: '',
-    },
-    positions: [
-      {
-        id: 'pos-3',
-        project_id: 'proj-sample-2',
-        title: 'Diseñador/a UI/UX (Figma)',
-        description: 'Prototipado rápido enfocado en accesibilidad móvil y modo oscuro.',
-        skill_id: null,
-        level_required: 'basic',
-        slots: 1,
-        status: 'open',
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'pos-4',
-        project_id: 'proj-sample-2',
-        title: 'Desarrollador/a Móvil (React Native o Flutter)',
-        description: 'Implementación del cliente móvil y consumo de API REST.',
-        skill_id: null,
-        level_required: 'intermediate',
-        slots: 1,
-        status: 'open',
-        created_at: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    id: 'proj-sample-3',
-    owner_id: 'sample-user-3',
-    title: 'Monitor IoT de Temperatura y Ruido en Salas de Estudio',
-    short_description: 'Proyecto de hardware y software con ESP32 para medir niveles de ruido en biblioteca y salas silenciosas.',
-    description: 'Desarrollo de un dispositivo inteligente con panel web que permite ver qué salas de estudio de la sede tienen menor nivel de ruido en tiempo real, ideal para estudiar certámenes.',
-    category: 'IoT y Redes',
-    status: 'recruiting',
-    visibility: 'public',
-    max_members: 4,
-    created_at: new Date(Date.now() - 86400000 * 6).toISOString(),
-    updated_at: new Date(Date.now() - 86400000 * 6).toISOString(),
-    owner: {
-      id: 'sample-user-3',
-      email: 'matias.silva@duocuc.cl',
-      first_name: 'Matías',
-      last_name: 'Silva',
-      display_name: 'Matías Silva',
-      institution: 'Duoc UC Antonio Varas',
-      career: 'Ingeniería en Redes y Telecomunicaciones',
-      avatar_url: null,
-      bio: null,
-      location: 'Santiago, Chile',
-      profile_completed: true,
-      available_for_tutoring: false,
-      portfolio_url: null,
-      github_url: null,
-      linkedin_url: null,
-      created_at: '',
-      updated_at: '',
-    },
-    positions: [
-      {
-        id: 'pos-5',
-        project_id: 'proj-sample-3',
-        title: 'Desarrollador Python / Backend API',
-        description: 'Creación de endpoint FastAPI / Flask para recibir telemetría de sensores.',
-        skill_id: null,
-        level_required: 'intermediate',
-        slots: 1,
-        status: 'open',
-        created_at: new Date().toISOString(),
-      },
-    ],
-  },
-];
 
 const CATEGORIES = [
   'Todas las Áreas',
@@ -200,7 +39,7 @@ const CATEGORIES = [
 export default function ProjectsHub() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('explore');
-  const [projects, setProjects] = useState<SampleProjectWithPositions[]>([]);
+  const [projects, setProjects] = useState<ProjectWithPositions[]>([]);
   const [myApplications, setMyApplications] = useState<ProjectApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -219,7 +58,7 @@ export default function ProjectsHub() {
   const [newPositions, setNewPositions] = useState<string>('Frontend Developer, Backend Developer');
 
   // Modal de postulación
-  const [applyingToProject, setApplyingToProject] = useState<SampleProjectWithPositions | null>(null);
+  const [applyingToProject, setApplyingToProject] = useState<ProjectWithPositions | null>(null);
   const [selectedPositionId, setSelectedPositionId] = useState<string>('');
   const [applicationPitch, setApplicationPitch] = useState('');
   const [isApplying, setIsApplying] = useState(false);
@@ -234,43 +73,30 @@ export default function ProjectsHub() {
       const dbProjects = await projectService.getProjects();
 
       // 2. Proyectos guardados localmente por el usuario
-      let localProjects: SampleProjectWithPositions[] = [];
+      let localProjects: ProjectWithPositions[] = [];
       try {
         const raw = localStorage.getItem('ia_local_custom_projects');
         if (raw) localProjects = JSON.parse(raw);
       } catch {}
 
-      // Si Supabase aún no tiene proyectos de muestra, combinamos con el catálogo semilla
-      let combined: SampleProjectWithPositions[] = [];
-      if (dbProjects.length > 0) {
-        // Enriquecer proyectos con posiciones si vienen de Supabase
-        const enriched = await Promise.all(
-          dbProjects.map(async (p) => {
-            const pos = await projectService.getProjectPositions(p.id);
-            return { ...p, positions: pos };
-          })
-        );
-        combined = [...localProjects, ...enriched];
-      } else {
-        combined = [...localProjects, ...DEFAULT_SAMPLE_PROJECTS];
-      }
+      // Enriquecer proyectos con posiciones reales de la base de datos
+      const enriched: ProjectWithPositions[] = await Promise.all(
+        dbProjects.map(async (p) => {
+          const pos = await projectService.getProjectPositions(p.id);
+          return { ...p, positions: pos };
+        })
+      );
 
-      setProjects(combined);
+      setProjects([...localProjects, ...enriched]);
 
       // Cargar postulaciones del usuario si está autenticado
       if (user) {
         const apps = await projectService.getMyApplications();
-        let localApps: ProjectApplication[] = [];
-        try {
-          const rawApps = localStorage.getItem('ia_local_user_applications');
-          if (rawApps) localApps = JSON.parse(rawApps);
-        } catch {}
-        setMyApplications([...localApps, ...apps]);
+        setMyApplications(apps);
       }
     } catch (err: any) {
       console.error('[ProjectsHub] Error cargando datos:', err);
-      // Fallback a proyectos semilla
-      setProjects(DEFAULT_SAMPLE_PROJECTS);
+      setErrorMsg('No fue posible cargar las iniciativas estudiantiles.');
     } finally {
       setLoading(false);
     }
@@ -303,7 +129,7 @@ export default function ProjectsHub() {
           positions: positionsList,
         });
 
-        setProjects((prev) => [created as SampleProjectWithPositions, ...prev]);
+        setProjects((prev) => [created as ProjectWithPositions, ...prev]);
         setSuccessMsg('¡Proyecto colaborativo publicado exitosamente en el Hub!');
       } else {
         // Fallback local para modo no autenticado
@@ -320,7 +146,7 @@ export default function ProjectsHub() {
           created_at: new Date().toISOString(),
         }));
 
-        const newProj: SampleProjectWithPositions = {
+        const newProj: ProjectWithPositions = {
           id: newProjId,
           owner_id: 'guest-user',
           title: newTitle.trim(),
@@ -361,7 +187,7 @@ export default function ProjectsHub() {
   };
 
   // Abrir modal de postulación
-  const handleOpenApplyModal = (project: SampleProjectWithPositions, positionId?: string) => {
+  const handleOpenApplyModal = (project: ProjectWithPositions, positionId?: string) => {
     setApplyingToProject(project);
     const availablePos = project.positions.filter((p) => p.status === 'open');
     setSelectedPositionId(positionId || availablePos[0]?.id || '');
@@ -375,37 +201,18 @@ export default function ProjectsHub() {
 
     setIsApplying(true);
     try {
-      const isDbProject = !applyingToProject.id.startsWith('proj-sample-') && !applyingToProject.id.startsWith('proj-');
-      const isDbPosition = !selectedPositionId.startsWith('pos-');
-
-      if (user && isDbProject && isDbPosition) {
-        const dbApp = await projectService.applyToPosition(
-          applyingToProject.id,
-          selectedPositionId,
-          applicationPitch.trim()
-        );
-        setMyApplications((prev) => [dbApp, ...prev]);
-      } else {
-        const pos = applyingToProject.positions.find((p) => p.id === selectedPositionId);
-        const newApp: ProjectApplication = {
-          id: `app-${Date.now()}`,
-          project_id: applyingToProject.id,
-          position_id: selectedPositionId,
-          applicant_id: user?.id || 'user-me',
-          message: applicationPitch.trim() || 'Me gustaría unirme al equipo para aportar mis conocimientos en esta iniciativa.',
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          project: applyingToProject,
-          position: pos,
-        };
-
-        const updatedApps = [newApp, ...myApplications];
-        setMyApplications(updatedApps);
-        try {
-          localStorage.setItem('ia_local_user_applications', JSON.stringify(updatedApps));
-        } catch {}
+      if (!user) {
+        setErrorMsg('Debes iniciar sesión para postular a una iniciativa.');
+        setIsApplying(false);
+        return;
       }
+
+      const dbApp = await projectService.applyToPosition(
+        applyingToProject.id,
+        selectedPositionId,
+        applicationPitch.trim()
+      );
+      setMyApplications((prev) => [dbApp, ...prev]);
 
       setSuccessMsg('¡Postulación enviada exitosamente! El creador del proyecto revisará tu solicitud.');
       setTimeout(() => setSuccessMsg(''), 6000);
@@ -461,7 +268,7 @@ export default function ProjectsHub() {
 
   // Mis proyectos creados
   const myCreatedProjects = projects.filter(
-    (p) => p.owner_id === user?.id || (user?.email && p.owner?.email === user.email)
+    (p) => Boolean(user && p.owner_id === user.id)
   );
 
   return (
@@ -808,7 +615,7 @@ export default function ProjectsHub() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
               {filteredProjects.map((project) => {
                 const openPositions = (project.positions || []).filter((p) => p.status === 'open');
-                const isMyProject = project.owner_id === user?.id || (user?.email && project.owner?.email === user.email);
+                const isMyProject = Boolean(user && project.owner_id === user.id);
 
                 return (
                   <div

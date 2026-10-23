@@ -5,6 +5,8 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import type { ChallengeQuestion } from './aiQuestionEngine';
 import type { AcademicLevel } from '../types/profile';
 
@@ -177,7 +179,7 @@ REGLAS OBLIGATORIAS:
 }
 
 /**
- * Evaluador semántico opcional con Gemini para respuestas de redacción abierta
+ * Evaluador semántico con backend propio o Gemini para respuestas de redacción abierta
  * que puedan tener sinónimos o explicaciones redactadas de forma distinta.
  */
 export async function evaluateAnswerWithGemini(
@@ -185,6 +187,21 @@ export async function evaluateAnswerWithGemini(
   userAnswer: string,
   acceptedAnswers: string[]
 ): Promise<boolean | null> {
+  // 1. Intentar evaluación semántica a través del backend propio
+  try {
+    const res = await apiClient.post<{ score: number; passed: boolean; feedback: string }>(API_ENDPOINTS.AI.EVALUATE_ANSWER, {
+      question: questionPrompt,
+      answer: userAnswer,
+      rubric: `Respuestas aceptables: ${acceptedAnswers.join(', ')}`,
+    });
+    if (res && typeof res.passed === 'boolean') {
+      return res.passed;
+    }
+  } catch (apiErr) {
+    console.warn('[geminiAiService] Backend API fallback para evaluateAnswer:', apiErr);
+  }
+
+  // 2. Fallback a Supabase Edge Function
   try {
     const prompt = `Pregunta técnica: "${questionPrompt}"
 Respuestas de referencia: ${JSON.stringify(acceptedAnswers)}

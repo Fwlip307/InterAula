@@ -1,13 +1,8 @@
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import type { TutoringWorkshop, CreateWorkshopDTO } from '../types/tutoring';
 
-async function getRequiredAuthUser() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData?.user) {
-    throw new Error('Usuario no autenticado');
-  }
-  return authData.user;
-}
 
 // Canal Supabase Realtime para sincronizar talleres en vivo
 const realtimeWorkshopsMap = new Map<string, TutoringWorkshop>();
@@ -173,34 +168,13 @@ export const workshopService = {
       console.warn('[workshopService] Error en getWorkshopById desde DB:', e);
     }
 
-    // Fallback dinámico seguro para acceso a sala
-    const cleanRoomCode = workshopIdOrRoomId.startsWith('ia-')
-      ? workshopIdOrRoomId
-      : `ia-aula-${workshopIdOrRoomId.replace(/[^a-zA-Z0-9]/g, '')}`;
-
-    return {
-      id: workshopIdOrRoomId,
-      tutor_id: currentUserId || 'live-host',
-      subject_id: '00000000-0000-4000-8000-000000000001',
-      title: 'Clase en Vivo InterAula',
-      description: 'Sala de clase en vivo y ayudantía compartida',
-      scheduled_at: new Date().toISOString(),
-      duration_minutes: 60,
-      max_students: 50,
-      room_id: cleanRoomCode,
-      status: 'in_progress',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      enrollments_count: 1,
-      is_enrolled: true,
-    };
+    throw new Error('Taller o sala de tutoría no encontrada');
   },
 
   /**
-   * Crea un nuevo taller grupal en Supabase.
+   * Crea un nuevo taller grupal en el backend propio.
    */
   async createWorkshop(dto: CreateWorkshopDTO): Promise<TutoringWorkshop> {
-    const user = await getRequiredAuthUser();
     ensureRealtimeWorkshopsChannel();
 
     const scheduledDate = new Date(dto.scheduled_at);
@@ -208,39 +182,17 @@ export const workshopService = {
       throw new Error('La fecha y hora del taller no es válida');
     }
 
-    const { data, error } = await supabase
-      .from('tutoring_workshops')
-      .insert({
-        tutor_id: user.id,
-        subject_id: dto.subject_id,
-        title: dto.title.trim(),
-        description: dto.description?.trim() || null,
-        scheduled_at: dto.scheduled_at,
-        duration_minutes: dto.duration_minutes || 60,
-        max_students: dto.max_students || 30,
-        status: 'scheduled',
-      })
-      .select(`
-        *,
-        tutor:profiles(*),
-        subject:subjects(*)
-      `)
-      .single();
-
-    if (error || !data) {
-      console.error('[workshopService] Error en createWorkshop:', error?.message);
-      throw new Error(error?.message || 'No fue posible crear el taller en la base de datos');
-    }
-
-    const workshop = {
-      ...data,
-      enrollments_count: 0,
-      is_enrolled: false,
-    } as TutoringWorkshop;
+    const workshop = await apiClient.post<TutoringWorkshop>(API_ENDPOINTS.WORKSHOPS.BASE, {
+      subject_id: dto.subject_id,
+      title: dto.title.trim(),
+      description: dto.description?.trim() || undefined,
+      scheduled_at: dto.scheduled_at,
+      duration_minutes: dto.duration_minutes || 60,
+      max_students: dto.max_students || 30,
+    });
 
     realtimeWorkshopsMap.set(workshop.id, workshop);
 
-    // Notificar a otros clientes conectados
     if (realtimeWorkshopsChannel) {
       realtimeWorkshopsChannel.send({
         type: 'broadcast',
@@ -253,66 +205,24 @@ export const workshopService = {
   },
 
   /**
-   * Inscribe a un estudiante en un taller grupal.
+   * Inscribe a un estudiante en un taller grupal a través del backend propio.
    */
   async enrollInWorkshop(workshopId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { data: workshop } = await supabase
-      .from('tutoring_workshops')
-      .select('tutor_id, max_students')
-      .eq('id', workshopId)
-      .single();
-
-    if (workshop?.tutor_id === user.id) {
-      throw new Error('No puedes inscribirte a tu propio taller');
-    }
-
-    const { error } = await supabase
-      .from('workshop_enrollments')
-      .insert({
-        workshop_id: workshopId,
-        student_id: user.id,
-      });
-
-    if (error) {
-      if (error.code === '23505') {
-        throw new Error('Ya estás inscrito en este taller');
-      }
-      throw new Error(error.message || 'No fue posible completar la inscripción');
-    }
+    await apiClient.post(API_ENDPOINTS.WORKSHOPS.ENROLL(workshopId));
   },
 
   /**
-   * Cancela la reserva de un cupo en un taller.
+   * Cancela la reserva de un cupo en un taller a través del backend propio.
    */
   async unenrollFromWorkshop(workshopId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-    const { error } = await supabase
-      .from('workshop_enrollments')
-      .delete()
-      .eq('workshop_id', workshopId)
-      .eq('student_id', user.id);
-
-    if (error) {
-      throw new Error('No fue posible cancelar tu inscripción');
-    }
+    await apiClient.delete(API_ENDPOINTS.WORKSHOPS.ENROLL(workshopId));
   },
 
   /**
    * Actualiza el estado de un taller ('scheduled', 'in_progress', 'completed', 'cancelled').
    */
   async updateWorkshopStatus(workshopId: string, status: string): Promise<void> {
-    await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('tutoring_workshops')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', workshopId);
-
-    if (error) {
-      console.warn('[workshopService] Error al actualizar estado del taller:', error.message);
-    }
+    await apiClient.patch(API_ENDPOINTS.WORKSHOPS.STATUS(workshopId), { status });
 
     const cached = realtimeWorkshopsMap.get(workshopId);
     if (cached) {
@@ -329,21 +239,10 @@ export const workshopService = {
   },
 
   /**
-   * Elimina un taller programado.
+   * Elimina un taller programado a través del backend propio.
    */
   async deleteWorkshop(workshopId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('tutoring_workshops')
-      .delete()
-      .eq('id', workshopId)
-      .eq('tutor_id', user.id);
-
-    if (error) {
-      console.error('[workshopService] Error en deleteWorkshop:', error.message);
-      throw new Error('No fue posible eliminar el taller');
-    }
+    await apiClient.delete(API_ENDPOINTS.WORKSHOPS.BY_ID(workshopId));
 
     realtimeWorkshopsMap.delete(workshopId);
 
@@ -361,35 +260,41 @@ export const workshopService = {
    */
   async getMyWorkshopsAsStudent(): Promise<TutoringWorkshop[]> {
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id;
-      if (!currentUserId) return [];
+      const workshops = await apiClient.get<TutoringWorkshop[]>(API_ENDPOINTS.WORKSHOPS.ME_AS_STUDENT);
+      return workshops;
+    } catch (apiErr) {
+      console.warn('[workshopService] Backend API fallback para getMyWorkshopsAsStudent:', apiErr);
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const currentUserId = authData?.user?.id;
+        if (!currentUserId) return [];
 
-      const { data, error } = await supabase
-        .from('workshop_enrollments')
-        .select(`
-          workshop:tutoring_workshops(
-            *,
-            tutor:profiles(*),
-            subject:subjects(*),
-            enrollments:workshop_enrollments(*)
-          )
-        `)
-        .eq('student_id', currentUserId);
+        const { data, error } = await supabase
+          .from('workshop_enrollments')
+          .select(`
+            workshop:tutoring_workshops(
+              *,
+              tutor:profiles(*),
+              subject:subjects(*),
+              enrollments:workshop_enrollments(*)
+            )
+          `)
+          .eq('student_id', currentUserId);
 
-      if (error || !data) return [];
+        if (error || !data) return [];
 
-      return data
-        .map((row: any) => row.workshop)
-        .filter(Boolean)
-        .map((w: any) => ({
-          ...w,
-          enrollments_count: (w.enrollments || []).length,
-          is_enrolled: true,
-        })) as TutoringWorkshop[];
-    } catch (err) {
-      console.error('[workshopService] Error en getMyWorkshopsAsStudent:', err);
-      return [];
+        return data
+          .map((row: any) => row.workshop)
+          .filter(Boolean)
+          .map((w: any) => ({
+            ...w,
+            enrollments_count: (w.enrollments || []).length,
+            is_enrolled: true,
+          })) as TutoringWorkshop[];
+      } catch (err) {
+        console.error('[workshopService] Error en getMyWorkshopsAsStudent:', err);
+        return [];
+      }
     }
   },
 
@@ -398,31 +303,37 @@ export const workshopService = {
    */
   async getMyWorkshopsAsTutor(): Promise<TutoringWorkshop[]> {
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      const currentUserId = authData?.user?.id;
-      if (!currentUserId) return [];
+      const workshops = await apiClient.get<TutoringWorkshop[]>(API_ENDPOINTS.WORKSHOPS.ME_AS_TUTOR);
+      return workshops;
+    } catch (apiErr) {
+      console.warn('[workshopService] Backend API fallback para getMyWorkshopsAsTutor:', apiErr);
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const currentUserId = authData?.user?.id;
+        if (!currentUserId) return [];
 
-      const { data, error } = await supabase
-        .from('tutoring_workshops')
-        .select(`
-          *,
-          tutor:profiles(*),
-          subject:subjects(*),
-          enrollments:workshop_enrollments(*)
-        `)
-        .eq('tutor_id', currentUserId)
-        .order('scheduled_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('tutoring_workshops')
+          .select(`
+            *,
+            tutor:profiles(*),
+            subject:subjects(*),
+            enrollments:workshop_enrollments(*)
+          `)
+          .eq('tutor_id', currentUserId)
+          .order('scheduled_at', { ascending: false });
 
-      if (error || !data) return [];
+        if (error || !data) return [];
 
-      return data.map((w: any) => ({
-        ...w,
-        enrollments_count: (w.enrollments || []).length,
-        is_enrolled: false,
-      })) as TutoringWorkshop[];
-    } catch (err) {
-      console.error('[workshopService] Error en getMyWorkshopsAsTutor:', err);
-      return [];
+        return data.map((w: any) => ({
+          ...w,
+          enrollments_count: (w.enrollments || []).length,
+          is_enrolled: false,
+        })) as TutoringWorkshop[];
+      } catch (err) {
+        console.error('[workshopService] Error en getMyWorkshopsAsTutor:', err);
+        return [];
+      }
     }
   },
 };

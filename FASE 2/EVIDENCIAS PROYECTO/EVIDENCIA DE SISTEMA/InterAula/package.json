@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "npm --prefix backend run dev",
     "build": "tsc -b && vite build",
+    "build:backend": "npm --prefix backend run build",
     "lint": "oxlint",
     "test": "npx vite-node tests/security_and_services.test.ts",
+    "test:backend": "npm --prefix backend test",
+    "test:all": "npm test && npm --prefix backend test",
     "preview": "vite preview"
   },
   "dependencies": {

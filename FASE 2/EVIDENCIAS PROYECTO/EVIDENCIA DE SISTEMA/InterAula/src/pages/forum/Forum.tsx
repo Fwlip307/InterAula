@@ -8,7 +8,6 @@ import {
 } from '../../components/common/Icons';
 import {
   forumService,
-  INITIAL_FORUM_QUESTIONS,
   type ForumQuestion,
 } from '../../services/forum.service';
 
@@ -17,17 +16,19 @@ const CATEGORIES = ['Todas', 'Programación', 'Bases de Datos', 'Matemáticas', 
 export default function Forum() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas');
-  const [questions, setQuestions] = useState<ForumQuestion[]>(INITIAL_FORUM_QUESTIONS);
+  const [questions, setQuestions] = useState<ForumQuestion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [successToast, setSuccessToast] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Cargar publicaciones persistidas desde Supabase
+  // Cargar publicaciones persistidas desde el backend / Supabase
   useEffect(() => {
     let isMounted = true;
     forumService.getPosts().then((posts) => {
-      if (isMounted && posts.length > 0) {
-        setQuestions(posts);
+      if (isMounted) {
+        setQuestions(posts || []);
+        setIsLoading(false);
       }
     });
     return () => {
@@ -253,7 +254,11 @@ export default function Forum() {
 
       {/* Listado de Consultas */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-        {filteredQuestions.length > 0 ? (
+        {isLoading ? (
+          <div className="ia-card" style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: '0.92rem' }}>Cargando consultas de la comunidad...</p>
+          </div>
+        ) : filteredQuestions.length > 0 ? (
           filteredQuestions.map((q) => (
             <div
               key={q.id}

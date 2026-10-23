@@ -146,28 +146,7 @@ export default function VirtualClassroom() {
           setTutorConnected(true);
           return;
         } catch {
-          // Fallback dinámico: sala en vivo compartida
-          const safeRoomCode = `ia-aula-${sessionId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
-          const dynamicWs: TutoringWorkshop = {
-            id: sessionId,
-            tutor_id: user?.id || 'live-host',
-            subject_id: '00000000-0000-4000-8000-000000000001',
-            title: 'Clase en Vivo InterAula',
-            description: 'Sala de clase en vivo y ayudantía compartida',
-            scheduled_at: new Date().toISOString(),
-            duration_minutes: 60,
-            max_students: 50,
-            room_id: safeRoomCode,
-            status: 'in_progress',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            enrollments_count: 1,
-            is_enrolled: true,
-          };
-          setWorkshop(dynamicWs);
-          setAttendanceVerified(true);
-          setStudentConnected(true);
-          setTutorConnected(true);
+          throw new Error('No se encontró una sesión individual ni taller grupal registrado con el identificador proporcionado.');
         }
       }
     } catch (err: any) {

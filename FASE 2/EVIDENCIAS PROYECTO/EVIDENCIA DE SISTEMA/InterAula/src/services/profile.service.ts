@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { apiClient } from '../lib/apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import type {
   Profile,
   UpdateProfileDTO,
@@ -13,17 +15,6 @@ import type {
   LearningPreference,
 } from '../types/profile';
 
-/**
- * Helper interno para obtener el usuario autenticado obligatorio en operaciones de mutación.
- * Si no hay sesión válida activa, lanza un error tipado.
- */
-async function getRequiredAuthUser() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData?.user) {
-    throw new Error('Usuario no autenticado');
-  }
-  return authData.user;
-}
 
 /**
  * Helper interno para obtener el usuario autenticado opcional (ej. consultas de lectura).
@@ -79,6 +70,13 @@ export async function checkIsVerifiedTutor(profileId: string): Promise<boolean> 
 export const profileService = {
   // Obtener perfil del usuario actualmente autenticado
   async getMyProfile(): Promise<Profile | null> {
+    try {
+      const data = await apiClient.get<Profile>(API_ENDPOINTS.PROFILES.ME);
+      if (data) return data;
+    } catch (apiErr) {
+      console.warn('[profileService] Backend API fallback para getMyProfile:', apiErr);
+    }
+
     const user = await getOptionalAuthUser();
     if (!user) return null;
 
@@ -123,6 +121,13 @@ export const profileService = {
 
   // Obtener perfil público de cualquier estudiante por ID (respetando privacidad de contacto)
   async getProfileById(id: string): Promise<Profile | null> {
+    try {
+      const data = await apiClient.get<Profile>(API_ENDPOINTS.PROFILES.BY_ID(id));
+      if (data) return data;
+    } catch (apiErr) {
+      console.warn('[profileService] Backend API fallback para getProfileById:', apiErr);
+    }
+
     // 1. Consultar prioritariamente desde la vista segura public_profiles
     const { data: publicData, error: viewError } = await supabase
       .from('public_profiles')
@@ -157,22 +162,10 @@ export const profileService = {
     } as Profile;
   },
 
-  // Actualizar datos del perfil del usuario en sesión
+  // Actualizar datos del perfil del usuario en sesión a través del backend propio
   async updateMyProfile(data: UpdateProfileDTO): Promise<Profile | null> {
-    const user = await getRequiredAuthUser();
-
-    const { data: updated, error } = await supabase
-      .from('profiles')
-      .update(data)
-      .eq('id', user.id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[profileService] Error en updateMyProfile:', error.message);
-      throw error;
-    }
-    return updated as Profile;
+    const updated = await apiClient.put<Profile>(API_ENDPOINTS.PROFILES.ME, data);
+    return updated;
   },
 
   // Actualizar específicamente las preferencias de aprendizaje inclusivas
@@ -252,99 +245,42 @@ export const profileService = {
     return (data || []) as NeededSubject[];
   },
 
-  // Agregar materia que el usuario puede enseñar
+  // Agregar materia que el usuario puede enseñar a través del backend propio
   async addOfferedSubject(
     subjectId: string,
     level: AcademicLevel,
     description?: string
   ): Promise<OfferedSubject> {
-    const user = await getRequiredAuthUser();
-
-    let targetSubjectId = subjectId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(targetSubjectId)) {
-      const { data: realSubs } = await supabase.from('subjects').select('id, name').limit(10);
-      if (realSubs && realSubs.length > 0) {
-        targetSubjectId = realSubs[0].id;
-      }
-    }
-
-    const { data, error } = await supabase
-      .from('profile_offered_subjects')
-      .upsert({
-        profile_id: user.id,
-        subject_id: targetSubjectId,
-        level,
-        description: description || null,
-        is_verified: false,
-      })
-      .select('*, subject:subjects(*)')
-      .single();
-
-    if (error) {
-      console.error('[profileService] Error en addOfferedSubject:', error.message);
-      throw error;
-    }
-
-    return data as OfferedSubject;
+    const created = await apiClient.post<OfferedSubject>(API_ENDPOINTS.PROFILES.OFFERED_SUBJECTS, {
+      subject_id: subjectId,
+      level,
+      description,
+    });
+    return created;
   },
 
-  // Eliminar materia ofrecida
+  // Eliminar materia ofrecida a través del backend propio
   async removeOfferedSubject(subjectId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('profile_offered_subjects')
-      .delete()
-      .eq('profile_id', user.id)
-      .eq('subject_id', subjectId);
-
-    if (error) {
-      console.error('[profileService] Error en removeOfferedSubject:', error.message);
-      throw error;
-    }
+    await apiClient.delete(API_ENDPOINTS.PROFILES.OFFERED_SUBJECT_BY_ID(subjectId));
   },
 
-  // Agregar materia que el usuario necesita aprender
+  // Agregar materia que el usuario necesita aprender a través del backend propio
   async addNeededSubject(
     subjectId: string,
     currentLevel?: AcademicLevel,
     notes?: string
   ): Promise<NeededSubject> {
-    const user = await getRequiredAuthUser();
-
-    const { data, error } = await supabase
-      .from('profile_needed_subjects')
-      .upsert({
-        profile_id: user.id,
-        subject_id: subjectId,
-        current_level: currentLevel || null,
-        notes: notes || null,
-      })
-      .select('*, subject:subjects(*)')
-      .single();
-
-    if (error) {
-      console.error('[profileService] Error en addNeededSubject:', error.message);
-      throw error;
-    }
-    return data as NeededSubject;
+    const created = await apiClient.post<NeededSubject>(API_ENDPOINTS.PROFILES.NEEDED_SUBJECTS, {
+      subject_id: subjectId,
+      current_level: currentLevel,
+      notes,
+    });
+    return created;
   },
 
-  // Eliminar materia necesaria
+  // Eliminar materia necesaria a través del backend propio
   async removeNeededSubject(subjectId: string): Promise<void> {
-    const user = await getRequiredAuthUser();
-
-    const { error } = await supabase
-      .from('profile_needed_subjects')
-      .delete()
-      .eq('profile_id', user.id)
-      .eq('subject_id', subjectId);
-
-    if (error) {
-      console.error('[profileService] Error en removeNeededSubject:', error.message);
-      throw error;
-    }
+    await apiClient.delete(API_ENDPOINTS.PROFILES.NEEDED_SUBJECT_BY_ID(subjectId));
   },
 
   // Métodos de habilidades e intereses (desacoplados tras migración 009)
