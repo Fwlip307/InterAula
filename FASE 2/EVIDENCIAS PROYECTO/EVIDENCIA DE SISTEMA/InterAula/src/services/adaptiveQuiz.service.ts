@@ -5,7 +5,8 @@
  * utilizando IA (Google Gemini) y un banco pedagógico con andamiaje cognitivo (scaffolding).
  */
 
-import { callGeminiApiWithFallback } from './geminiAiService';
+import { apiClient } from '../lib/apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 
 export interface InterestTheme {
   id: string;
@@ -394,84 +395,30 @@ export const adaptiveQuizService = {
   },
 
   /**
-   * Llamada a Gemini con prompt basado en DUA (Diseño Universal para el Aprendizaje)
+   * Llamada al backend de IA para generar preguntas con analogías adaptativas DUA
    */
   async generateWithGemini(
     subjectName: string,
     theme: InterestTheme,
     count: number
   ): Promise<AdaptiveQuizQuestion[] | null> {
-    const systemPrompt = `Eres un pedagogo universitario experto en Diseño Universal para el Aprendizaje (DUA) y educación neuroinclusiva en Informática de InterAula (Duoc UC).
-Tu misión es crear un micro-desafío interactivo y amable de ${count} preguntas para la materia "${subjectName}".
-
-REGLA CLAVE DE ENGAGEMENT:
-Debes usar EXCLUSIVAMENTE analogías, metáforas y contextos del interés del alumno: "${theme.name}" (${theme.description}).
-Por ejemplo, si el tema es Videojuegos, explica bucles con jefes de batalla o arreglos con cofres e inventarios. Si es Música, usa canciones, ritmos o Spotify.
-
-DIRECTRICES PEDAGÓGICAS NEUROINCLUSIVAS:
-1. "analogyContext": 1 o 2 oraciones breves y atractivas que sitúan el concepto dentro de su interés.
-2. "prompt": Enunciado claro, sin trampas ambiguas ni lenguaje intimidante.
-3. "codeSnippet": (Opcional) Código corto y limpio si ayuda a la comprensión visual.
-4. "options": 4 alternativas ("id": "a", "b", "c", "d") con 1 sola correcta ("correctOptionId").
-5. "hintStepByStep": Una pista progresiva y amable que desglosa el problema en pasos masticables (andamiaje/chunking cognitivo) para quien tenga dudas.
-6. "explanation": Justificación empática y positiva explicando por qué es la respuesta correcta y qué concepto se aprendió.`;
-
-    const requestBody = {
-      contents: [
+    try {
+      const questions = await apiClient.post<AdaptiveQuizQuestion[]>(
+        API_ENDPOINTS.AI.GENERATE_QUIZ,
         {
-          role: 'user',
-          parts: [
-            {
-              text: `${systemPrompt}\n\nDevuelve ÚNICAMENTE un arreglo JSON con las ${count} preguntas conforme a esta estructura:\n[
-  {
-    "id": "q1",
-    "subject": "${subjectName}",
-    "themeId": "${theme.id}",
-    "themeLabel": "${theme.name}",
-    "analogyContext": "Contexto amigable del interés...",
-    "prompt": "¿Enunciado de la pregunta?",
-    "codeSnippet": "código opcional o null",
-    "options": [
-      {"id": "a", "text": "Opción A"},
-      {"id": "b", "text": "Opción B"},
-      {"id": "c", "text": "Opción C"},
-      {"id": "d", "text": "Opción D"}
-    ],
-    "correctOptionId": "a",
-    "hintStepByStep": "Paso 1: Analiza... Paso 2: Observa...",
-    "explanation": "¡Bien hecho! Este concepto demuestra..."
-  }
-]`,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.4,
-        responseMimeType: 'application/json',
-        maxOutputTokens: 2500,
-      },
-    };
-
-    const candidateText = await callGeminiApiWithFallback(requestBody, 15000);
-    if (!candidateText) return null;
-
-    const cleaned = candidateText
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim();
-
-    const parsed = JSON.parse(cleaned);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed.slice(0, count).map((item, idx) => ({
-        ...item,
-        id: `ai_adapt_${Date.now()}_${idx + 1}`,
-        subject: subjectName,
-        themeId: theme.id,
-        themeLabel: theme.name,
-      }));
+          subject_name: subjectName,
+          theme_id: theme.id,
+          count,
+        }
+      );
+      if (Array.isArray(questions) && questions.length > 0) {
+        return questions;
+      }
+      return null;
+    } catch (err) {
+      console.warn('[adaptiveQuizService] Error al generar quiz desde el backend, usando banco local:', err);
+      return null;
     }
-    return null;
   },
 
   /**

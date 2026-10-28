@@ -750,6 +750,13 @@ export async function generateLightningRound(
       if (geminiQuestions && geminiQuestions.length >= count) {
         return geminiQuestions;
       }
+      if (geminiQuestions && geminiQuestions.length >= 3) {
+        const padded = [...geminiQuestions];
+        while (padded.length < count) {
+          padded.push({ ...geminiQuestions[padded.length % geminiQuestions.length], id: `pad_gemini_${Date.now()}_${padded.length}` });
+        }
+        return padded;
+      }
     } catch (e) {
       console.warn('[aiQuestionEngine] Falló generación con Gemini, recurriendo al banco curado:', e);
     }

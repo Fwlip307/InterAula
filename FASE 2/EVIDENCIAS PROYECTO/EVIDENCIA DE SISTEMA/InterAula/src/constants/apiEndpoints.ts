@@ -73,6 +73,9 @@ export const API_ENDPOINTS = {
 
   // Inteligencia artificial y evaluación semántica
   AI: {
+    STATUS: '/ai/status',
+    GENERATE_QUESTIONS: '/ai/generate-questions',
+    GENERATE_QUIZ: '/ai/generate-quiz',
     EVALUATE_ANSWER: '/ai/evaluate-answer',
   },
 } as const;

@@ -98,57 +98,81 @@ export const verificationBackendService = {
     const client = getAuthenticatedSupabase(token);
     const admin = getAdminSupabase();
 
-    // 0. Validar que la asignatura exista en el catálogo oficial
-    const { data: subject, error: subErr } = await client
-      .from('subjects')
-      .select('id, name')
-      .eq('id', body.subject_id)
-      .maybeSingle();
+    // 0. Validar o registrar la asignatura en el catálogo
+    let effectiveSubjectId = body.subject_id;
+    let effectiveSubjectName = body.subject_name;
 
-    if (subErr || !subject) {
-      throw new Error('La asignatura especificada no existe en el catálogo.');
+    // Si es un ID temporal de materia personalizada o no es UUID válido
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(effectiveSubjectId);
+    
+    if (isUuid) {
+      const { data: subject } = await client
+        .from('subjects')
+        .select('id, name')
+        .eq('id', effectiveSubjectId)
+        .maybeSingle();
+
+      if (subject) {
+        effectiveSubjectName = subject.name;
+      } else if (body.subject_name) {
+        // Intentar buscar por nombre
+        const { data: byName } = await client
+          .from('subjects')
+          .select('id, name')
+          .ilike('name', body.subject_name.trim())
+          .maybeSingle();
+        if (byName) {
+          effectiveSubjectId = byName.id;
+          effectiveSubjectName = byName.name;
+        }
+      }
+    } else if (body.subject_name) {
+      // Búsqueda por nombre o creación en catálogo
+      const trimmedName = body.subject_name.trim();
+      const { data: byName } = await admin
+        .from('subjects')
+        .select('id, name')
+        .ilike('name', trimmedName)
+        .maybeSingle();
+
+      if (byName) {
+        effectiveSubjectId = byName.id;
+        effectiveSubjectName = byName.name;
+      } else {
+        // Crear nueva asignatura en catálogo oficial
+        const { data: newSub } = await admin
+          .from('subjects')
+          .insert({ name: trimmedName, category: 'General' })
+          .select('id, name')
+          .single();
+        if (newSub) {
+          effectiveSubjectId = newSub.id;
+          effectiveSubjectName = newSub.name;
+        }
+      }
     }
 
-    // 1. Asegurar o actualizar materia ofrecida como verificada
-    const { data: existingOffered } = await client
-      .from('profile_offered_subjects')
-      .select('*')
-      .eq('profile_id', user.id)
-      .eq('subject_id', body.subject_id)
+    // 1. Obtener un validador oficial del sistema para registrar el dictamen
+    const { data: valRow } = await admin
+      .from('academic_validators')
+      .select('profile_id')
+      .neq('profile_id', user.id)
+      .limit(1)
       .maybeSingle();
 
-    if (existingOffered) {
-      await admin
-        .from('profile_offered_subjects')
-        .update({
-          is_verified: true,
-          level: body.level,
-          description: body.notes || `Acreditado con ${body.score}% en Evaluación Técnica`,
-        })
-        .eq('profile_id', user.id)
-        .eq('subject_id', body.subject_id);
-    } else {
-      await admin
-        .from('profile_offered_subjects')
-        .insert({
-          profile_id: user.id,
-          subject_id: body.subject_id,
-          level: body.level,
-          description: body.notes || `Acreditado con ${body.score}% en Evaluación Técnica`,
-          is_verified: true,
-        });
-    }
+    const reviewerId = valRow?.profile_id || undefined;
 
-    // 2. Registrar solicitud resuelta
-    const { data: requestRecord, error: _reqErr } = await admin
+    // 2. Registrar PRIMERO la solicitud aprobada en tutor_verification_requests
+    const { data: requestRecord } = await admin
       .from('tutor_verification_requests')
       .insert({
         tutor_id: user.id,
-        subject_id: body.subject_id,
+        subject_id: effectiveSubjectId,
         status: 'approved',
         practical_exercise_title: 'Evaluación Técnica de Contenidos InterAula Bot',
         defense_notes: `Aprobado con nota equivalente ${(body.score / 10).toFixed(1)} (${body.score}%)`,
         reviewer_feedback: `Acreditación automatizada por Bot Evaluador. Calificación: ${body.score}%. Nivel otorgado: ${body.level}.`,
+        reviewed_by: reviewerId,
         reviewed_at: new Date().toISOString(),
         document_filename: 'evaluacion_tecnica_bot.json',
         document_extraction_status: 'completed',
@@ -158,11 +182,54 @@ export const verificationBackendService = {
       .select(VERIFICATION_REQUEST_SELECT)
       .maybeSingle();
 
+    // 3. Registrar o actualizar en profile_offered_subjects
+    const { data: existingOffered } = await client
+      .from('profile_offered_subjects')
+      .select('*')
+      .eq('profile_id', user.id)
+      .eq('subject_id', effectiveSubjectId)
+      .maybeSingle();
+
+    const nowIso = new Date().toISOString();
+    const offeredDesc = body.notes || `Acreditado con ${body.score}% en Evaluación Técnica`;
+
+    if (existingOffered) {
+      await admin
+        .from('profile_offered_subjects')
+        .update({
+          is_verified: true,
+          verified_at: nowIso,
+          level: body.level,
+          description: offeredDesc,
+        })
+        .eq('profile_id', user.id)
+        .eq('subject_id', effectiveSubjectId);
+    } else {
+      await admin
+        .from('profile_offered_subjects')
+        .insert({
+          profile_id: user.id,
+          subject_id: effectiveSubjectId,
+          level: body.level,
+          description: offeredDesc,
+          is_verified: true,
+          verified_at: nowIso,
+        });
+    }
+
+    // 4. Asegurar que el perfil quede disponible para tutorías
+    await admin
+      .from('profiles')
+      .update({ available_for_tutoring: true })
+      .eq('id', user.id);
+
     return {
       success: true,
       message: 'Acreditación concedida exitosamente',
       score: body.score,
       level: body.level,
+      subject_id: effectiveSubjectId,
+      subject_name: effectiveSubjectName,
       request: requestRecord,
     };
   },

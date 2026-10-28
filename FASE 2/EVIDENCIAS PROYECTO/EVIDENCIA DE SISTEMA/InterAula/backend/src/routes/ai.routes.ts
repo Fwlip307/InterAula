@@ -1,15 +1,34 @@
 import { Router } from 'express';
 import { aiController } from '../controllers/ai.controller.js';
-import { requireAuth } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
-import { aiEvaluateAnswerSchema } from '../schemas/ai.schema.js';
+import {
+  aiGenerateQuestionsSchema,
+  aiGenerateQuizSchema,
+  aiEvaluateAnswerSchema,
+} from '../schemas/ai.schema.js';
 
 const router = Router();
 
-// Evaluación semántica segura de respuestas de acreditación (requiere sesión)
+// Estado del motor de IA
+router.get('/status', aiController.getStatus);
+
+// Generar preguntas de retos o acreditación técnica
+router.post(
+  '/generate-questions',
+  validateRequest({ body: aiGenerateQuestionsSchema }),
+  aiController.generateQuestions
+);
+
+// Generar micro-quizzes adaptativos DUA por temática
+router.post(
+  '/generate-quiz',
+  validateRequest({ body: aiGenerateQuizSchema }),
+  aiController.generateQuiz
+);
+
+// Evaluación semántica de respuestas redactadas
 router.post(
   '/evaluate-answer',
-  requireAuth,
   validateRequest({ body: aiEvaluateAnswerSchema }),
   aiController.evaluateAnswer
 );
