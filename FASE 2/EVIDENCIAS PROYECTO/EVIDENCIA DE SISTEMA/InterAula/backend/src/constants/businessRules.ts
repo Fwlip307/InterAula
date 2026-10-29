@@ -53,11 +53,23 @@ export const BUSINESS_RULES = {
       MIN_DESCRIPTION_LENGTH: 10,
       MAX_DESCRIPTION_LENGTH: 5000,
       MAX_TAGS: 10,
+      TYPES: ['pregunta', 'discusion', 'duda', 'recurso'] as const,
     },
     REPLY: {
       MIN_CONTENT_LENGTH: 2,
       MAX_CONTENT_LENGTH: 3000,
     },
+  },
+
+  // Biblioteca y Editor de Apuntes Académicos
+  NOTES: {
+    MIN_TITLE_LENGTH: 2,
+    MAX_TITLE_LENGTH: 200,
+    MAX_SUMMARY_LENGTH: 600,
+    MAX_CONTENT_LENGTH: 250000,
+    MAX_FILE_SIZE_BYTES: 15 * 1024 * 1024, // 15 MB
+    ALLOWED_EXTENSIONS: ['.pdf', '.docx', '.doc', '.pptx', '.xlsx', '.txt', '.md'] as const,
+    VISIBILITIES: ['private', 'shared', 'public'] as const,
   },
 
   // Proyectos colaborativos
@@ -68,7 +80,7 @@ export const BUSINESS_RULES = {
     MAX_MEMBERS: 50,
     DEFAULT_MEMBERS: 4,
     MIN_PITCH_LENGTH: 5,
-    MAX_PITCH_LENGTH: 1000,
+    MAX_PITCH_LENGTH: 1500,
     POSITION: {
       MIN_TITLE_LENGTH: 2,
       MAX_TITLE_LENGTH: 100,

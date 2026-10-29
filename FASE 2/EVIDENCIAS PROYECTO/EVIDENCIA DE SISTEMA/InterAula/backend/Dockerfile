@@ -37,6 +37,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copiar artefactos JavaScript compilados desde el builder
 COPY --from=builder /app/dist ./dist
 
+# Crear directorio de persistencia para el usuario no privilegiado 'node'
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
 # Ejecutar como usuario no privilegiado 'node' por seguridad
 USER node
 

@@ -31,4 +31,5 @@ dist-ssr
 # Data files
 *.csv
 catalogo_anidado.json
-
+backend/data/runtime_store.json
+data/runtime_store.json

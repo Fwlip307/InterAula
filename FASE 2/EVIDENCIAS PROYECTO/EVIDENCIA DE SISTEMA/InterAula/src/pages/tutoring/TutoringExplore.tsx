@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCalmMode } from '../../context/CalmModeContext';
 import { profileService } from '../../services/profile.service';
 import { tutoringService, type AvailableTutor } from '../../services/tutoring.service';
 import type { Subject, OfferedSubject } from '../../types/profile';
@@ -49,13 +50,7 @@ const CRITICAL_INFORMATICS_SUBJECTS = [
 export default function TutoringExplore() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'tutors' | 'workshops' | 'my_classes' | 'quizzes' | 'materials'>('tutors');
-  const [isCalmMode, setIsCalmMode] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('ia_calm_mode') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const { isCalmMode, toggleCalmMode } = useCalmMode();
 
   // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
@@ -361,13 +356,7 @@ export default function TutoringExplore() {
           {/* Botón Accesibilidad Neuroinclusiva: Modo Calma */}
           <button
             type="button"
-            onClick={() => {
-              setIsCalmMode((prev) => {
-                const next = !prev;
-                localStorage.setItem('ia_calm_mode', String(next));
-                return next;
-              });
-            }}
+            onClick={toggleCalmMode}
             style={{
               display: 'inline-flex',
               alignItems: 'center',

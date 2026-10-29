@@ -14,6 +14,7 @@ import {
   CalendarIcon,
 } from '../components/common/Icons';
 import interaulaLogo from '../assets/branding/interaula-logo.png';
+import '../styles/home.css';
 
 export default function Home() {
   const { user } = useAuth();

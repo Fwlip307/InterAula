@@ -1,5 +1,8 @@
-import { BookOpenIcon, StarIcon, DownloadIcon } from '../../../components/common/Icons';
-import { STUDY_RESOURCES } from '../../learning/data/studyBank';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpenIcon, DownloadIcon, PlusIcon } from '../../../components/common/Icons';
+import { notesService, type AcademicNote } from '../../../services/notes.service';
+import { exportNoteToPdf } from '../../../utils/noteExporter';
 import type { Subject } from '../../../types/profile';
 
 interface ExploreMaterialsTabProps {
@@ -15,168 +18,168 @@ export default function ExploreMaterialsTab({
   subjects,
   onDownload,
 }: ExploreMaterialsTabProps) {
-  const filtered = STUDY_RESOURCES.filter((res) => {
-    const term = searchTerm.toLowerCase().trim();
-    const matchesSearch =
-      term === '' ||
-      res.title.toLowerCase().includes(term) ||
-      res.subject.toLowerCase().includes(term) ||
-      res.description.toLowerCase().includes(term) ||
-      res.topics.some((t) => t.toLowerCase().includes(term));
+  const [notes, setNotes] = useState<AcademicNote[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
     const selectedSubjectObj = subjects.find((s) => s.id === selectedSubjectId);
-    const matchesSubject =
-      selectedSubjectId === 'all' ||
-      (selectedSubjectObj && res.subject.toLowerCase().includes(selectedSubjectObj.name.toLowerCase()));
-    return matchesSearch && matchesSubject;
-  });
+    notesService
+      .getNotes({
+        search: searchTerm,
+        subject_name: selectedSubjectObj ? selectedSubjectObj.name : undefined,
+      })
+      .then((data) => {
+        if (active) setNotes(data.filter((n) => !n.isDraft));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [searchTerm, selectedSubjectId, subjects]);
+
+  const handleRealDownload = async (note: AcademicNote) => {
+    await notesService.registerDownload(note.id);
+    if (note.sourceType === 'upload' && note.fileUrl) {
+      const a = document.createElement('a');
+      a.href = note.fileUrl;
+      a.download = note.fileName || note.title;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      exportNoteToPdf(note);
+    }
+    onDownload(note.title);
+  };
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-        <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpenIcon size={20} color="#16a34a" />
-            Banco de Apuntes y Recursos de Estudio
-          </h2>
-          <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Materiales, resúmenes de certámenes, guías con ejercicios resueltos y formularios compartidos por tutores y estudiantes.
-          </span>
-        </div>
-      </div>
-
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-          gap: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '10px',
         }}
       >
-        {filtered.map((res) => (
-          <div
-            key={res.id}
-            className="ia-card"
+        <div>
+          <h2
             style={{
-              padding: '22px',
+              fontSize: '1.2rem',
+              fontWeight: 800,
+              margin: 0,
+              color: 'var(--ia-text-main)',
               display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '16px',
-              transition: 'all 0.18s ease',
-              border: '1px solid #e2e8f0',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
-                <span
-                  style={{
-                    fontSize: '0.74rem',
-                    fontWeight: 800,
-                    padding: '3px 10px',
-                    borderRadius: '9999px',
-                    background:
-                      res.category === 'Resumen'
-                        ? '#eff6ff'
-                        : res.category === 'Guia de Ejercicios'
-                        ? '#f0fdf4'
-                        : res.category === 'Cheatsheet'
-                        ? '#faf5ff'
-                        : '#fffbeb',
-                    color:
-                      res.category === 'Resumen'
-                        ? '#1d4ed8'
-                        : res.category === 'Guia de Ejercicios'
-                        ? '#15803d'
-                        : res.category === 'Cheatsheet'
-                        ? '#7c3aed'
-                        : '#b45309',
-                  }}
-                >
-                  {res.category}
-                </span>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
-                  {res.semester}
-                </span>
-              </div>
+            <BookOpenIcon size={20} color="var(--ia-success)" />
+            Banco de Apuntes y Recursos de Estudio
+          </h2>
+          <span style={{ fontSize: '0.85rem', color: 'var(--ia-text-muted)' }}>
+            Apuntes creados con el Editor Académico Integrado y documentos subidos por tutores y estudiantes.
+          </span>
+        </div>
 
-              <h3 style={{ fontSize: '1.08rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0', lineHeight: 1.35 }}>
-                {res.title}
-              </h3>
-
-              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2563eb', marginBottom: '8px' }}>
-                {res.subject}
-              </div>
-
-              <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 14px 0', lineHeight: 1.5 }}>
-                {res.description}
-              </p>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                {res.topics.map((t) => (
-                  <span
-                    key={t}
-                    style={{
-                      fontSize: '0.72rem',
-                      background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      color: '#475569',
-                    }}
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Por <strong>{res.author}</strong>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', fontWeight: 700, color: '#d97706' }}>
-                  <StarIcon size={14} color="#f59e0b" style={{ fill: '#f59e0b' }} />
-                  <span>{res.rating}</span>
-                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>({res.downloadsCount} descargas)</span>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  background: '#f8fafc',
-                  borderRadius: '8px',
-                  padding: '10px',
-                  fontSize: '0.8rem',
-                  color: '#475569',
-                  marginBottom: '12px',
-                }}
-              >
-                <strong>Contenido clave:</strong> {res.contentSummary}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onDownload(res.title)}
-                className="ia-btn-primary"
-                style={{
-                  width: '100%',
-                  justifyContent: 'center',
-                  padding: '9px',
-                  fontSize: '0.85rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: '#16a34a',
-                  borderColor: '#15803d',
-                }}
-              >
-                <DownloadIcon size={16} color="#ffffff" />
-                <span>Descargar Apunte / Guía</span>
-              </button>
-            </div>
-          </div>
-        ))}
+        <Link to="/resources" className="ia-btn-primary">
+          <PlusIcon size={15} color="#ffffff" />
+          <span>Ir a Biblioteca y Editor Completo</span>
+        </Link>
       </div>
+
+      {loading ? (
+        <div className="ia-card" style={{ textAlign: 'center', padding: '28px' }}>
+          <p style={{ margin: 0, color: 'var(--ia-text-muted)' }}>Cargando apuntes de la comunidad...</p>
+        </div>
+      ) : notes.length === 0 ? (
+        <div className="ia-empty-box">
+          <div className="ia-empty-icon">
+            <BookOpenIcon size={20} />
+          </div>
+          <p className="ia-empty-title">Todavía no hay apuntes publicados en esta asignatura</p>
+          <p className="ia-empty-desc">
+            Crea el primer apunte usando nuestro Editor Académico Integrado o sube tus guías en PDF, DOCX o Markdown.
+          </p>
+          <Link to="/resources" className="ia-btn-primary">
+            <PlusIcon size={15} color="#ffffff" />
+            <span>Crear o Subir Apunte en la Biblioteca</span>
+          </Link>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+            gap: '18px',
+          }}
+        >
+          {notes.map((note) => (
+            <div
+              key={note.id}
+              className="ia-card"
+              style={{
+                marginBottom: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '14px',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span className="ia-badge ia-badge-blue">{note.category}</span>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--ia-text-muted)' }}>
+                    📁 {note.folder}
+                  </span>
+                </div>
+
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--ia-text-main)', margin: '0 0 4px 0' }}>
+                  {note.title}
+                </h3>
+
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--ia-primary)', marginBottom: '8px' }}>
+                  {note.subjectName}
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'var(--ia-text-body)', margin: '0 0 12px 0', lineHeight: 1.45 }}>
+                  {note.summary || 'Apunte estructurado disponible para lectura y descarga directa.'}
+                </p>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--ia-text-muted)', marginBottom: '10px' }}>
+                  <span>Por <strong>{note.authorName}</strong></span>
+                  <span>⬇ {note.downloadsCount} descargas</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Link to="/resources" className="ia-btn-secondary" style={{ flex: 1 }}>
+                    Abrir en Biblioteca
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleRealDownload(note)}
+                    className="ia-btn-primary"
+                    style={{ flex: 1 }}
+                  >
+                    <DownloadIcon size={15} color="#ffffff" />
+                    <span>Descargar PDF</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

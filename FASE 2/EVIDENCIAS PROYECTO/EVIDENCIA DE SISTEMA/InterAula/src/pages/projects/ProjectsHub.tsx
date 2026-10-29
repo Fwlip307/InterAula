@@ -1,779 +1,1692 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { projectService } from '../../services/project.service';
+import {
+  projectService,
+  type PositionInputDTO,
+} from '../../services/project.service';
 import type {
   Project,
   ProjectPosition,
+  ProjectMember,
   ProjectApplication,
+  ProjectStatus,
+  ProjectModality,
+  ProjectCompensationType,
+  PositionStatus,
+  ProjectMilestone,
 } from '../../types/project';
+import { getUserDisplayName } from '../../utils/formatters';
 import {
   BriefcaseIcon,
-  CodeIcon,
-  UsersIcon,
-  SparklesIcon,
-  SearchIcon,
   PlusIcon,
+  UsersIcon,
   CheckIcon,
   XIcon,
   AlertCircleIcon,
+  SearchIcon,
+  TrashIcon,
+  EditIcon,
+  ArrowLeftIcon,
+  ExternalLinkIcon,
 } from '../../components/common/Icons';
-import EmptyState from '../../components/common/EmptyState';
-import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
 
-type TabType = 'explore' | 'my_projects' | 'my_applications';
-
-export interface ProjectWithPositions extends Project {
-  positions: ProjectPosition[];
-}
-
-const CATEGORIES = [
-  'Todas las Áreas',
+const PROJECT_CATEGORIES = [
   'Desarrollo de Software',
-  'Desarrollo Móvil',
-  'IoT y Redes',
-  'Inteligencia Artificial',
-  'Ciberseguridad',
-  'Diseño UI/UX',
+  'Aplicación Móvil / Web',
+  'Inteligencia Artificial y Datos',
+  'Ciberseguridad y Redes',
+  'Videojuegos y Modelado 3D',
+  'UX/UI y Diseño Digital',
+  'Innovación e Investigación',
+  'Hardware / IoT',
 ];
+
+const QUICK_ROLE_PRESETS = [
+  'Frontend Developer',
+  'Backend Developer',
+  'Especialista Base de Datos',
+  'Diseñador UX/UI',
+  'QA / Testing',
+  'Artista / Modelador 3D',
+  'Analista de Ciberseguridad',
+  'Investigador / Documentación',
+];
+
+const COMPENSATION_LABELS: Record<ProjectCompensationType, { label: string; badgeClass: string }> = {
+  unpaid_academic: { label: 'Académico / Colaborativo (Sin pago)', badgeClass: 'ia-badge-blue' },
+  paid: { label: 'Remunerado', badgeClass: 'ia-badge-success' },
+  milestone_based: { label: 'Pago por Hitos / Entregables', badgeClass: 'ia-badge-purple' },
+  revenue_share: { label: 'Participación / Revenue Share', badgeClass: 'ia-badge-amber' },
+  negotiable: { label: 'Compensación a Convenir', badgeClass: 'ia-badge-neutral' },
+};
+
+const STATUS_LABELS: Record<string, { label: string; badgeClass: string }> = {
+  draft: { label: 'Borrador', badgeClass: 'ia-badge-neutral' },
+  open: { label: 'Abierto · Buscando Equipo', badgeClass: 'ia-badge-success' },
+  recruiting: { label: 'Abierto · Buscando Equipo', badgeClass: 'ia-badge-success' },
+  in_progress: { label: 'En Desarrollo', badgeClass: 'ia-badge-blue' },
+  completed: { label: 'Finalizado', badgeClass: 'ia-badge-purple' },
+  cancelled: { label: 'Cancelado', badgeClass: 'ia-badge-neutral' },
+};
+
+const MODALITY_LABELS: Record<ProjectModality, string> = {
+  online: '100% Online / Remoto',
+  presencial: 'Presencial en Sede',
+  hibrido: 'Híbrido (Online + Sede)',
+};
 
 export default function ProjectsHub() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('explore');
-  const [projects, setProjects] = useState<ProjectWithPositions[]>([]);
+
+  const [activeTab, setActiveTab] = useState<'explore' | 'my_projects' | 'my_applications'>('explore');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [myApplications, setMyApplications] = useState<ProjectApplication[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todas las Áreas');
-  const [onlyOpenPositions, setOnlyOpenPositions] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Modales
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('Desarrollo de Software');
-  const [newShortDesc, setNewShortDesc] = useState('');
-  const [newFullDesc, setNewFullDesc] = useState('');
-  const [newMaxMembers, setNewMaxMembers] = useState(4);
-  const [newPositions, setNewPositions] = useState<string>('Frontend Developer, Backend Developer');
+  // Filtros de descubrimiento
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterModality, setFilterModality] = useState<string>('all');
+  const [filterCompensation, setFilterCompensation] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [onlyOpenVacancies, setOnlyOpenVacancies] = useState<boolean>(false);
 
-  // Modal de postulación
-  const [applyingToProject, setApplyingToProject] = useState<ProjectWithPositions | null>(null);
-  const [selectedPositionId, setSelectedPositionId] = useState<string>('');
-  const [applicationPitch, setApplicationPitch] = useState('');
-  const [isApplying, setIsApplying] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  // Vista de Detalle / Workspace de un Proyecto
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'roles' | 'team' | 'milestones' | 'applications'>('overview');
+  const [projectPositions, setProjectPositions] = useState<ProjectPosition[]>([]);
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [projectApplications, setProjectApplications] = useState<ProjectApplication[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
 
-  // Cargar proyectos (desde Supabase + persistencia local fallback)
-  const loadProjectsData = async () => {
+  // Nuevo hito en el workspace
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState<string>('');
+  const [newMilestoneDue, setNewMilestoneDue] = useState<string>('');
+
+  // Modal de Creación / Edición de Proyecto
+  const [showBuilderModal, setShowBuilderModal] = useState<boolean>(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [formTitle, setFormTitle] = useState<string>('');
+  const [formShortDesc, setFormShortDesc] = useState<string>('');
+  const [formDescription, setFormDescription] = useState<string>('');
+  const [formProblem, setFormProblem] = useState<string>('');
+  const [formObjectives, setFormObjectives] = useState<string>('');
+  const [formCategory, setFormCategory] = useState<string>(PROJECT_CATEGORIES[0]);
+  const [formCareer, setFormCareer] = useState<string>('Ingeniería en Informática');
+  const [formTechnologies, setFormTechnologies] = useState<string>('React, TypeScript, Node.js, PostgreSQL');
+  const [formStatus, setFormStatus] = useState<ProjectStatus>('open');
+  const [formModality, setFormModality] = useState<ProjectModality>('online');
+  const [formDedication, setFormDedication] = useState<number>(6);
+  const [formMaxMembers, setFormMaxMembers] = useState<number>(5);
+  const [formRequirements, setFormRequirements] = useState<string>('');
+  const [formCompType, setFormCompType] = useState<ProjectCompensationType>('unpaid_academic');
+  const [formCompAmount, setFormCompAmount] = useState<string>('');
+  const [formCompCurrency, setFormCompCurrency] = useState<string>('CLP');
+  const [formCompPeriodicity, setFormCompPeriodicity] = useState<string>('por_hito');
+  const [formCompNotes, setFormCompNotes] = useState<string>('');
+  const [formAgreementSchedule, setFormAgreementSchedule] = useState<string>('Reunión semanal de seguimiento y coordinación asíncrona');
+  const [formAgreementTools, setFormAgreementTools] = useState<string>('GitHub, Discord/Teams, Tablero Kanban');
+  const [formAgreementDeliverables, setFormAgreementDeliverables] = useState<string>('Entregas iterativas por sprint / hito académico');
+  const [formAgreementIp, setFormAgreementIp] = useState<string>('Coautoría académica compartida entre los integrantes activos');
+  const [formGithubUrl, setFormGithubUrl] = useState<string>('');
+  const [formFigmaUrl, setFormFigmaUrl] = useState<string>('');
+  const [formPositions, setFormPositions] = useState<PositionInputDTO[]>([
+    {
+      title: 'Frontend Developer',
+      description: 'Construcción de interfaz responsiva e integración con API.',
+      skills_required: ['React', 'TypeScript', 'CSS'],
+      mandatory_requirements: ['Conocimientos base de componentes web'],
+      dedication_hours: 6,
+      slots: 1,
+      status: 'open',
+    },
+    {
+      title: 'Backend Developer',
+      description: 'Diseño de endpoints, lógica de negocio y persistencia de datos.',
+      skills_required: ['Node.js', 'SQL'],
+      mandatory_requirements: ['Manejo de APIs REST'],
+      dedication_hours: 6,
+      slots: 1,
+      status: 'open',
+    },
+  ]);
+  const [savingProject, setSavingProject] = useState<boolean>(false);
+
+  // Modal de Postulación a un Rol
+  const [applyingPosition, setApplyingPosition] = useState<{ project: Project; position: ProjectPosition } | null>(null);
+  const [applyMessage, setApplyMessage] = useState<string>('');
+  const [applySkills, setApplySkills] = useState<string>('');
+  const [applyPortfolio, setApplyPortfolio] = useState<string>('');
+  const [applyAvailability, setApplyAvailability] = useState<string>('Disponible 6 horas semanales');
+  const [applyAcceptedAgreements, setApplyAcceptedAgreements] = useState<boolean>(false);
+  const [submittingApplication, setSubmittingApplication] = useState<boolean>(false);
+
+  // Confirmación de eliminación
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState<boolean>(false);
+
+  // Notificaciones
+  const [errorMsg, setErrorMsg] = useState<string>('');
+  const [successMsg, setSuccessMsg] = useState<string>('');
+
+  const showFeedback = (msg: string, isError = false) => {
+    if (isError) {
+      setErrorMsg(msg);
+      setTimeout(() => setErrorMsg(''), 5000);
+    } else {
+      setSuccessMsg(msg);
+      setTimeout(() => setSuccessMsg(''), 4500);
+    }
+  };
+
+  const loadAll = useCallback(async () => {
     setLoading(true);
     setErrorMsg('');
     try {
-      // 1. Obtener proyectos de base de datos
-      const dbProjects = await projectService.getProjects();
-
-      // 2. Proyectos guardados localmente por el usuario
-      let localProjects: ProjectWithPositions[] = [];
-      try {
-        const raw = localStorage.getItem('ia_local_custom_projects');
-        if (raw) localProjects = JSON.parse(raw);
-      } catch {}
-
-      // Enriquecer proyectos con posiciones reales de la base de datos
-      const enriched: ProjectWithPositions[] = await Promise.all(
-        dbProjects.map(async (p) => {
-          const pos = await projectService.getProjectPositions(p.id);
-          return { ...p, positions: pos };
-        })
-      );
-
-      setProjects([...localProjects, ...enriched]);
-
-      // Cargar postulaciones del usuario si está autenticado
-      if (user) {
-        const apps = await projectService.getMyApplications();
-        setMyApplications(apps);
-      }
+      const [pub, mine, apps] = await Promise.all([
+        projectService.getProjects(),
+        user ? projectService.getMyProjects() : Promise.resolve([]),
+        user ? projectService.getMyApplications() : Promise.resolve([]),
+      ]);
+      setProjects(pub);
+      setMyProjects(mine);
+      setMyApplications(apps);
     } catch (err: any) {
-      console.error('[ProjectsHub] Error cargando datos:', err);
-      setErrorMsg('No fue posible cargar las iniciativas estudiantiles.');
+      console.error('[ProjectsHub] Error al cargar proyectos:', err);
+      setErrorMsg('No fue posible cargar el listado de proyectos.');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadProjectsData();
   }, [user]);
 
-  // Manejo de crear proyecto
-  const handleCreateProjectSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
-    const positionsList = newPositions
+  const openProjectWorkspace = async (project: Project) => {
+    setSelectedProject(project);
+    setWorkspaceTab('overview');
+    setLoadingDetail(true);
+    try {
+      const isOwner = Boolean(user?.id && project.owner_id === user.id);
+      const [detail, positions, members, apps] = await Promise.all([
+        projectService.getProjectById(project.id),
+        projectService.getProjectPositions(project.id),
+        projectService.getProjectMembers(project.id),
+        isOwner ? projectService.getProjectApplications(project.id) : Promise.resolve([]),
+      ]);
+      if (detail) setSelectedProject(detail);
+      setProjectPositions(positions.length > 0 ? positions : detail?.positions || []);
+      setProjectMembers(members.length > 0 ? members : detail?.members || []);
+      setProjectApplications(apps);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingProject(null);
+    setFormTitle('');
+    setFormShortDesc('');
+    setFormDescription('');
+    setFormProblem('');
+    setFormObjectives('');
+    setFormCategory(PROJECT_CATEGORIES[0]);
+    setFormCareer('Ingeniería en Informática');
+    setFormTechnologies('React, TypeScript, Node.js, PostgreSQL');
+    setFormStatus('open');
+    setFormModality('online');
+    setFormDedication(6);
+    setFormMaxMembers(5);
+    setFormRequirements('');
+    setFormCompType('unpaid_academic');
+    setFormCompAmount('');
+    setFormCompCurrency('CLP');
+    setFormCompPeriodicity('por_hito');
+    setFormCompNotes('');
+    setFormAgreementSchedule('Reunión semanal de seguimiento y coordinación asíncrona');
+    setFormAgreementTools('GitHub, Discord/Teams, Tablero Kanban');
+    setFormAgreementDeliverables('Entregas iterativas por sprint / hito académico');
+    setFormAgreementIp('Coautoría académica compartida entre los integrantes activos');
+    setFormGithubUrl('');
+    setFormFigmaUrl('');
+    setFormPositions([
+      {
+        title: 'Frontend Developer',
+        description: 'Construcción de interfaz responsiva e integración con API.',
+        skills_required: ['React', 'TypeScript'],
+        mandatory_requirements: ['Compromiso con entregas semanales'],
+        dedication_hours: 6,
+        slots: 1,
+        status: 'open',
+      },
+    ]);
+    setShowBuilderModal(true);
+  };
+
+  const openEditModal = (proj: Project) => {
+    setEditingProject(proj);
+    setFormTitle(proj.title);
+    setFormShortDesc(proj.short_description || '');
+    setFormDescription(proj.description || '');
+    setFormProblem(proj.problem_statement || '');
+    setFormObjectives(proj.objectives || '');
+    setFormCategory(proj.category || PROJECT_CATEGORIES[0]);
+    setFormCareer(proj.career || 'Ingeniería en Informática');
+    setFormTechnologies((proj.technologies || []).join(', '));
+    setFormStatus(proj.status || 'open');
+    setFormModality(proj.modality || 'online');
+    setFormDedication(proj.dedication_hours || 6);
+    setFormMaxMembers(proj.max_members || 4);
+    setFormRequirements(proj.requirements || '');
+    setFormCompType(proj.compensation_type || 'unpaid_academic');
+    setFormCompAmount(proj.compensation_amount ? String(proj.compensation_amount) : '');
+    setFormCompCurrency(proj.compensation_currency || 'CLP');
+    setFormCompPeriodicity(proj.compensation_periodicity || 'por_hito');
+    setFormCompNotes(proj.compensation_notes || '');
+    setFormAgreementSchedule(proj.agreements?.schedule || 'Reunión semanal de coordinación');
+    setFormAgreementTools(proj.agreements?.tools || 'GitHub, Discord');
+    setFormAgreementDeliverables(proj.agreements?.deliverables || 'Entregas por hito');
+    setFormAgreementIp(proj.agreements?.intellectual_property || 'Coautoría compartida');
+    setFormGithubUrl(proj.external_links?.github || '');
+    setFormFigmaUrl(proj.external_links?.figma || '');
+
+    const currentPos = proj.positions && proj.positions.length > 0 ? proj.positions : projectPositions;
+    setFormPositions(
+      currentPos.map((p) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description || '',
+        skills_required: p.skills_required || [],
+        mandatory_requirements: p.mandatory_requirements || [],
+        dedication_hours: p.dedication_hours || 6,
+        slots: p.slots || 1,
+        status: p.status || 'open',
+      }))
+    );
+    setShowBuilderModal(true);
+  };
+
+  const handleAddRoleRow = (presetTitle = '') => {
+    setFormPositions((prev) => [
+      ...prev,
+      {
+        title: presetTitle || 'Nuevo Rol Especialista',
+        description: `Responsable de ${presetTitle || 'tareas técnicas del área'} en el proyecto.`,
+        skills_required: presetTitle ? [presetTitle] : [],
+        mandatory_requirements: ['Compromiso con los acuerdos del equipo'],
+        dedication_hours: formDedication,
+        slots: 1,
+        status: 'open',
+      },
+    ]);
+  };
+
+  const handleUpdateRoleRow = (idx: number, patch: Partial<PositionInputDTO>) => {
+    setFormPositions((prev) => prev.map((item, i) => (i === idx ? { ...item, ...patch } : item)));
+  };
+
+  const handleRemoveRoleRow = (idx: number) => {
+    setFormPositions((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle.trim() || savingProject) return;
+
+    setSavingProject(true);
+    setErrorMsg('');
+
+    const parsedTechs = formTechnologies
       .split(',')
-      .map((p) => p.trim())
+      .map((t) => t.trim())
       .filter(Boolean);
 
-    setIsCreating(true);
+    const payload = {
+      title: formTitle.trim(),
+      short_description: formShortDesc.trim() || formDescription.trim().slice(0, 160),
+      description: formDescription.trim() || formShortDesc.trim() || 'Proyecto colaborativo interdisciplinario.',
+      problem_statement: formProblem.trim() || undefined,
+      objectives: formObjectives.trim() || undefined,
+      category: formCategory,
+      career: formCareer.trim() || 'Ingeniería en Informática',
+      technologies: parsedTechs,
+      tags: parsedTechs.slice(0, 8),
+      status: formStatus,
+      visibility: 'public' as const,
+      modality: formModality,
+      dedication_hours: Number(formDedication) || 6,
+      max_members: Number(formMaxMembers) || 4,
+      requirements: formRequirements.trim() || undefined,
+      compensation_type: formCompType,
+      compensation_amount:
+        formCompType !== 'unpaid_academic' && formCompAmount.trim()
+          ? Number(formCompAmount)
+          : null,
+      compensation_currency: formCompCurrency,
+      compensation_periodicity: formCompPeriodicity,
+      compensation_notes: formCompNotes.trim() || undefined,
+      agreements: {
+        schedule: formAgreementSchedule.trim(),
+        tools: formAgreementTools.trim(),
+        deliverables: formAgreementDeliverables.trim(),
+        intellectual_property: formAgreementIp.trim(),
+      },
+      external_links: {
+        github: formGithubUrl.trim(),
+        figma: formFigmaUrl.trim(),
+      },
+      positions: formPositions.filter((p) => p.title && p.title.trim()),
+    };
+
     try {
-      if (user) {
-        // Persistencia directa en base de datos PostgreSQL/Supabase
-        const created = await projectService.createProject({
-          title: newTitle.trim(),
-          short_description: newShortDesc.trim() || newFullDesc.slice(0, 100),
-          description: newFullDesc.trim() || newShortDesc.trim(),
-          category: newCategory,
-          max_members: Number(newMaxMembers) || 4,
-          positions: positionsList,
-        });
-
-        setProjects((prev) => [created as ProjectWithPositions, ...prev]);
-        setSuccessMsg('¡Proyecto colaborativo publicado exitosamente en el Hub!');
+      if (editingProject) {
+        const updated = await projectService.updateProject(editingProject.id, payload);
+        showFeedback('Proyecto actualizado exitosamente.');
+        setShowBuilderModal(false);
+        await loadAll();
+        if (selectedProject?.id === editingProject.id) {
+          await openProjectWorkspace(updated);
+        }
       } else {
-        // Fallback local para modo no autenticado
-        const newProjId = `proj-${Date.now()}`;
-        const createdPositions: ProjectPosition[] = positionsList.map((pTitle, idx) => ({
-          id: `pos-${Date.now()}-${idx}`,
-          project_id: newProjId,
-          title: pTitle,
-          description: `Participación activa en el rol de ${pTitle} para el proyecto.`,
-          skill_id: null,
-          level_required: 'intermediate',
-          slots: 1,
-          status: 'open',
-          created_at: new Date().toISOString(),
-        }));
-
-        const newProj: ProjectWithPositions = {
-          id: newProjId,
-          owner_id: 'guest-user',
-          title: newTitle.trim(),
-          short_description: newShortDesc.trim() || newFullDesc.slice(0, 100),
-          description: newFullDesc.trim() || newShortDesc.trim(),
-          category: newCategory,
-          status: 'recruiting',
-          visibility: 'public',
-          max_members: Number(newMaxMembers) || 4,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          owner: undefined,
-          positions: createdPositions,
-        };
-
-        setProjects((prev) => [newProj, ...prev]);
-        try {
-          const raw = localStorage.getItem('ia_local_custom_projects');
-          const existing = raw ? JSON.parse(raw) : [];
-          localStorage.setItem('ia_local_custom_projects', JSON.stringify([newProj, ...existing]));
-        } catch {}
-        setSuccessMsg('¡Proyecto colaborativo publicado exitosamente en el Hub!');
+        const created = await projectService.createProject(payload);
+        showFeedback('¡Proyecto publicado exitosamente con sus roles y acuerdos!');
+        setShowBuilderModal(false);
+        await loadAll();
+        await openProjectWorkspace(created);
       }
-
-      setIsCreateModalOpen(false);
-      setNewTitle('');
-      setNewShortDesc('');
-      setNewFullDesc('');
-      setNewPositions('Frontend Developer, Backend Developer');
-      setActiveTab('my_projects');
-      setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err: any) {
-      console.error('[ProjectsHub] Error al publicar proyecto:', err);
-      setErrorMsg('No fue posible publicar el proyecto. Por favor, intenta nuevamente.');
+      showFeedback(err?.message || 'Error al guardar el proyecto.', true);
     } finally {
-      setIsCreating(false);
+      setSavingProject(false);
     }
   };
 
-  // Abrir modal de postulación
-  const handleOpenApplyModal = (project: ProjectWithPositions, positionId?: string) => {
-    setApplyingToProject(project);
-    const availablePos = project.positions.filter((p) => p.status === 'open');
-    setSelectedPositionId(positionId || availablePos[0]?.id || '');
-    setApplicationPitch('');
+  const handleConfirmDeleteProject = async () => {
+    if (!projectToDelete || deletingProject) return;
+    setDeletingProject(true);
+    try {
+      await projectService.deleteProject(projectToDelete.id);
+      if (selectedProject?.id === projectToDelete.id) {
+        setSelectedProject(null);
+      }
+      setProjectToDelete(null);
+      showFeedback('Proyecto eliminado correctamente.');
+      await loadAll();
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo eliminar el proyecto.', true);
+    } finally {
+      setDeletingProject(false);
+    }
   };
 
-  // Enviar postulación
+  const handleOpenApplyModal = (project: Project, position: ProjectPosition) => {
+    setApplyingPosition({ project, position });
+    setApplyMessage('');
+    setApplySkills((position.skills_required || []).join(', '));
+    setApplyPortfolio('');
+    setApplyAvailability(`Disponible ${position.dedication_hours || project.dedication_hours || 6} hrs/semana`);
+    setApplyAcceptedAgreements(false);
+  };
+
   const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!applyingToProject || !selectedPositionId) return;
+    if (!applyingPosition || submittingApplication) return;
+    if (!applyAcceptedAgreements) {
+      showFeedback('Debes aceptar explícitamente los acuerdos y condiciones del proyecto para postular.', true);
+      return;
+    }
 
-    setIsApplying(true);
+    setSubmittingApplication(true);
     try {
-      if (!user) {
-        setErrorMsg('Debes iniciar sesión para postular a una iniciativa.');
-        setIsApplying(false);
-        return;
-      }
+      const skillsArr = applySkills
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
 
-      const dbApp = await projectService.applyToPosition(
-        applyingToProject.id,
-        selectedPositionId,
-        applicationPitch.trim()
-      );
-      setMyApplications((prev) => [dbApp, ...prev]);
+      await projectService.applyToPosition(applyingPosition.project.id, applyingPosition.position.id, {
+        message: applyMessage.trim(),
+        relevant_skills: skillsArr,
+        portfolio_url: applyPortfolio.trim() || undefined,
+        availability_notes: applyAvailability.trim() || undefined,
+        accepted_agreements: true,
+      });
 
-      setSuccessMsg('¡Postulación enviada exitosamente! El creador del proyecto revisará tu solicitud.');
-      setTimeout(() => setSuccessMsg(''), 6000);
-      setApplyingToProject(null);
+      setApplyingPosition(null);
+      showFeedback(`¡Postulación enviada al rol "${applyingPosition.position.title}"! El creador revisará tu perfil.`);
+      await loadAll();
     } catch (err: any) {
-      console.error('[ProjectsHub] Error al enviar postulación:', err);
-      setErrorMsg('No fue posible enviar tu postulación.');
+      showFeedback(err?.message || 'No fue posible enviar la postulación.', true);
     } finally {
-      setIsApplying(false);
+      setSubmittingApplication(false);
     }
   };
 
-  // Retirar postulación
-  const handleWithdrawApplication = async (appId: string) => {
+  const handleReviewApplication = async (applicationId: string, status: 'accepted' | 'rejected') => {
     try {
-      if (!appId.startsWith('app-')) {
-        await projectService.withdrawApplication(appId);
+      await projectService.reviewApplication(applicationId, status);
+      showFeedback(
+        status === 'accepted'
+          ? '¡Postulante aceptado e incorporado automáticamente al equipo del proyecto!'
+          : 'Postulación rechazada.'
+      );
+      if (selectedProject) {
+        await openProjectWorkspace(selectedProject);
       }
-    } catch (err) {
-      console.warn('[ProjectsHub] Error al retirar postulación en base de datos:', err);
+      await loadAll();
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo procesar la postulación.', true);
     }
-    const updated = myApplications.filter((a) => a.id !== appId);
-    setMyApplications(updated);
-    try {
-      localStorage.setItem('ia_local_user_applications', JSON.stringify(updated));
-    } catch {}
-    setSuccessMsg('Has retirado tu postulación del proyecto.');
-    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  // Filtrado de proyectos para explorar
-  const filteredProjects = projects.filter((proj) => {
-    // Categoría
-    if (selectedCategory !== 'Todas las Áreas' && proj.category !== selectedCategory) {
-      return false;
+  const handleWithdrawApplication = async (applicationId: string) => {
+    try {
+      await projectService.withdrawApplication(applicationId);
+      showFeedback('Has retirado tu postulación.');
+      await loadAll();
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo retirar la postulación.', true);
     }
-    // Búsqueda de texto
+  };
+
+  const handleTogglePositionStatus = async (pos: ProjectPosition, nextStatus: PositionStatus) => {
+    if (!selectedProject) return;
+    try {
+      await projectService.updatePositionStatus(selectedProject.id, pos.id, nextStatus);
+      setProjectPositions((prev) =>
+        prev.map((item) => (item.id === pos.id ? { ...item, status: nextStatus } : item))
+      );
+      showFeedback(`Estado de la vacante "${pos.title}" actualizado a ${nextStatus}.`);
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo actualizar la vacante.', true);
+    }
+  };
+
+  const handleAddMilestone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProject || !newMilestoneTitle.trim()) return;
+    const currentMilestones: ProjectMilestone[] = selectedProject.milestones || [];
+    const nextMilestones: ProjectMilestone[] = [
+      ...currentMilestones,
+      {
+        id: `ms-${Date.now()}`,
+        title: newMilestoneTitle.trim(),
+        due_date: newMilestoneDue || undefined,
+        completed: false,
+      },
+    ];
+    try {
+      const updated = await projectService.updateProject(selectedProject.id, {
+        milestones: nextMilestones,
+      });
+      setSelectedProject(updated);
+      setNewMilestoneTitle('');
+      setNewMilestoneDue('');
+      showFeedback('Hito / entregable agregado al plan del proyecto.');
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo agregar el hito.', true);
+    }
+  };
+
+  const handleToggleMilestone = async (milestoneId: string) => {
+    if (!selectedProject) return;
+    const nextMilestones = (selectedProject.milestones || []).map((m) =>
+      m.id === milestoneId ? { ...m, completed: !m.completed } : m
+    );
+    try {
+      const updated = await projectService.updateProject(selectedProject.id, {
+        milestones: nextMilestones,
+      });
+      setSelectedProject(updated);
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo actualizar el hito.', true);
+    }
+  };
+
+  // Filtrado de proyectos para Explorar
+  const filteredProjects = projects.filter((proj) => {
+    if (filterCategory !== 'all' && proj.category !== filterCategory) return false;
+    if (filterModality !== 'all' && (proj.modality || 'online') !== filterModality) return false;
+    if (filterCompensation !== 'all' && (proj.compensation_type || 'unpaid_academic') !== filterCompensation) return false;
+    if (filterStatus !== 'all' && proj.status !== filterStatus) return false;
+
+    if (onlyOpenVacancies) {
+      const openSlots =
+        typeof proj.open_slots_count === 'number'
+          ? proj.open_slots_count
+          : (proj.positions || []).filter((p) => p.status === 'open').length;
+      if (openSlots <= 0 && (proj.positions || []).length > 0) return false;
+    }
+
     if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
+      const term = searchTerm.trim().toLowerCase();
       const matchTitle = proj.title.toLowerCase().includes(term);
       const matchDesc = (proj.description || '').toLowerCase().includes(term) || (proj.short_description || '').toLowerCase().includes(term);
-      const matchPos = (proj.positions || []).some((p) => p.title.toLowerCase().includes(term));
-      const matchOwner = proj.owner ? getUserDisplayName(proj.owner).toLowerCase().includes(term) : false;
-      if (!matchTitle && !matchDesc && !matchPos && !matchOwner) return false;
+      const matchTech = (proj.technologies || []).some((t) => t.toLowerCase().includes(term));
+      const matchRoles = (proj.positions || []).some((p) => p.title.toLowerCase().includes(term));
+      if (!matchTitle && !matchDesc && !matchTech && !matchRoles) return false;
     }
-    // Solo con vacantes abiertas
-    if (onlyOpenPositions) {
-      const hasOpen = (proj.positions || []).some((p) => p.status === 'open');
-      if (!hasOpen) return false;
-    }
+
     return true;
   });
 
-  // Mis proyectos creados
-  const myCreatedProjects = projects.filter(
-    (p) => Boolean(user && p.owner_id === user.id)
-  );
-
   return (
     <div>
-      {/* Cabecera Principal del Hub de Proyectos */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-          marginBottom: '24px',
-        }}
-      >
+      {/* Cabecera distintiva del Hub de Proyectos */}
+      <div className="ia-page-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span
-              style={{
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                color: '#7c3aed',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                background: '#faf5ff',
-                padding: '3px 10px',
-                borderRadius: '9999px',
-                border: '1px solid #e9d5ff',
-              }}
-            >
-              Colaboración Multidisciplinaria
-            </span>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>· Comunidad Duoc UC</span>
-          </div>
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0' }}>
-            Hub de Proyectos Estudiantiles
-          </h1>
-          <p style={{ fontSize: '0.92rem', color: '#64748b', margin: 0, maxWidth: '720px' }}>
-            Encuentra proyectos reales, forma equipos con estudiantes de distintas áreas y postula a vacantes para enriquecer tu portafolio académico y profesional.
+          <h1 className="ia-page-title">Hub de Proyectos Académicos e Interdisciplinarios</h1>
+          <p className="ia-page-subtitle">
+            Publica iniciativas de desarrollo, innovación o investigación, define roles específicos, establece acuerdos transparentes y recluta talento estudiantil.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="ia-btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-            }}
-          >
+        <div className="ia-page-actions">
+          {selectedProject && (
+            <button
+              type="button"
+              className="ia-btn-secondary"
+              onClick={() => setSelectedProject(null)}
+            >
+              <ArrowLeftIcon size={16} />
+              <span>Volver al Catálogo</span>
+            </button>
+          )}
+          <button type="button" className="ia-btn-primary" onClick={openCreateModal}>
             <PlusIcon size={16} color="#ffffff" />
-            <span>+ Publicar Proyecto</span>
+            <span>Publicar Nuevo Proyecto</span>
           </button>
         </div>
       </div>
 
-      {/* Alertas Globales */}
-      {successMsg && (
-        <div
-          style={{
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            color: '#15803d',
-            padding: '12px 18px',
-            borderRadius: '10px',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-          }}
-        >
-          <CheckIcon size={18} color="#15803d" />
-          <span>{successMsg}</span>
-        </div>
-      )}
-
+      {/* Notificaciones */}
       {errorMsg && (
         <div
           style={{
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
-            color: '#b91c1c',
-            padding: '12px 18px',
+            padding: '12px 16px',
+            marginBottom: '16px',
             borderRadius: '10px',
-            marginBottom: '20px',
+            background: 'var(--ia-danger-bg)',
+            border: '1px solid var(--ia-danger-border)',
+            color: 'var(--ia-danger)',
+            fontSize: '0.86rem',
+            fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            fontSize: '0.9rem',
+            gap: '8px',
           }}
         >
-          <AlertCircleIcon size={18} color="#b91c1c" />
+          <AlertCircleIcon size={16} />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Métricas Visuales del Hub */}
-      <div className="ia-stats-grid" style={{ marginBottom: '24px' }}>
-        <div className="ia-stat-card">
-          <div className="ia-stat-icon blue">
-            <BriefcaseIcon size={22} color="#2563eb" />
-          </div>
-          <div>
-            <div className="ia-stat-value" style={{ fontSize: '1.25rem', fontWeight: 800 }}>
-              {projects.length}
-            </div>
-            <div className="ia-stat-label">Iniciativas activas</div>
-          </div>
-        </div>
-
-        <div className="ia-stat-card">
-          <div className="ia-stat-icon amber">
-            <CodeIcon size={22} color="#d97706" />
-          </div>
-          <div>
-            <div className="ia-stat-value" style={{ fontSize: '1.25rem', fontWeight: 800 }}>
-              {projects.reduce((acc, p) => acc + (p.positions ? p.positions.filter((pos) => pos.status === 'open').length : 0), 0)}
-            </div>
-            <div className="ia-stat-label">Vacantes abiertas</div>
-          </div>
-        </div>
-
-        <div className="ia-stat-card">
-          <div className="ia-stat-icon green">
-            <UsersIcon size={22} color="#16a34a" />
-          </div>
-          <div>
-            <div className="ia-stat-value" style={{ fontSize: '1.25rem', fontWeight: 800 }}>
-              Equipos Ágiles
-            </div>
-            <div className="ia-stat-label">Multidisciplinarios</div>
-          </div>
-        </div>
-
-        <div className="ia-stat-card">
-          <div className="ia-stat-icon purple">
-            <SparklesIcon size={22} color="#9333ea" />
-          </div>
-          <div>
-            <div className="ia-stat-value" style={{ fontSize: '1.25rem', fontWeight: 800 }}>
-              Portafolio
-            </div>
-            <div className="ia-stat-label">Experiencia real Duoc UC</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Pestañas de Navegación del Hub */}
-      <div
-        style={{
-          display: 'flex',
-          borderBottom: '2px solid #e2e8f0',
-          marginBottom: '24px',
-          gap: '8px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab('explore')}
+      {successMsg && (
+        <div
           style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'explore' ? '#2563eb' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'explore' ? '2px solid #2563eb' : '2px solid transparent',
-            marginBottom: '-2px',
-            cursor: 'pointer',
+            padding: '12px 16px',
+            marginBottom: '16px',
+            borderRadius: '10px',
+            background: 'var(--ia-success-bg)',
+            border: '1px solid var(--ia-success-border)',
+            color: 'var(--ia-success)',
+            fontSize: '0.86rem',
+            fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
         >
-          <BriefcaseIcon size={18} color={activeTab === 'explore' ? '#2563eb' : '#64748b'} />
-          <span>Explorar Proyectos ({projects.length})</span>
-        </button>
+          <CheckIcon size={16} />
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('my_projects')}
-          style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'my_projects' ? '#16a34a' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'my_projects' ? '2px solid #16a34a' : '2px solid transparent',
-            marginBottom: '-2px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <CodeIcon size={18} color={activeTab === 'my_projects' ? '#16a34a' : '#64748b'} />
-          <span>Mis Proyectos Publicados ({myCreatedProjects.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('my_applications')}
-          style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'my_applications' ? '#7c3aed' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'my_applications' ? '2px solid #7c3aed' : '2px solid transparent',
-            marginBottom: '-2px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <UsersIcon size={18} color={activeTab === 'my_applications' ? '#7c3aed' : '#64748b'} />
-          <span>Mis Postulaciones ({myApplications.length})</span>
-          {myApplications.length > 0 && (
-            <span
-              style={{
-                background: '#7c3aed',
-                color: '#ffffff',
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                padding: '2px 8px',
-                borderRadius: '9999px',
-              }}
+      {/* MODAL CONSTRUCTOR / EDITOR DE PROYECTO (CON ROLES Y ACUERDOS) */}
+      {showBuilderModal && (
+        <div className="ia-card" style={{ marginBottom: '24px', border: '1px solid var(--ia-primary-border)', padding: '24px' }}>
+          <div className="ia-card-header">
+            <h2 className="ia-card-title">
+              <BriefcaseIcon size={18} color="var(--ia-primary)" />
+              <span>{editingProject ? 'Editar Proyecto y Vacantes' : 'Publicar Nuevo Proyecto Colaborativo'}</span>
+            </h2>
+            <button
+              type="button"
+              className="ia-btn-secondary"
+              style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+              onClick={() => setShowBuilderModal(false)}
             >
-              {myApplications.length}
-            </span>
-          )}
-        </button>
-      </div>
+              Cancelar
+            </button>
+          </div>
 
-      {/* CONTENIDO 1: EXPLORAR PROYECTOS */}
-      {activeTab === 'explore' && (
-        <div>
-          {/* Barra de Filtros y Búsqueda */}
+          <form onSubmit={handleSaveProject}>
+            {/* Sección 1: Datos Generales */}
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ia-primary)', margin: '0 0 12px 0' }}>
+              1. Identidad y Alcance del Proyecto
+            </h3>
+            <div className="ia-form-grid" style={{ marginBottom: '20px' }}>
+              <div className="ia-form-group full">
+                <label className="ia-label" htmlFor="proj-title">
+                  Título del Proyecto *
+                </label>
+                <input
+                  id="proj-title"
+                  type="text"
+                  className="ia-input"
+                  placeholder="Ej: Plataforma de Monitoreo IoT para Laboratorios Universitarios"
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-category">
+                  Categoría / Área Principal
+                </label>
+                <select
+                  id="proj-category"
+                  className="ia-select"
+                  value={formCategory}
+                  onChange={(e) => setFormCategory(e.target.value)}
+                >
+                  {PROJECT_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-career">
+                  Carrera o Escuela de Origen
+                </label>
+                <input
+                  id="proj-career"
+                  type="text"
+                  className="ia-input"
+                  value={formCareer}
+                  onChange={(e) => setFormCareer(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-modality">
+                  Modalidad de Trabajo
+                </label>
+                <select
+                  id="proj-modality"
+                  className="ia-select"
+                  value={formModality}
+                  onChange={(e) => setFormModality(e.target.value as ProjectModality)}
+                >
+                  <option value="online">100% Online / Remoto</option>
+                  <option value="hibrido">Híbrido (Online + Reuniones en Sede)</option>
+                  <option value="presencial">Presencial en Sede</option>
+                </select>
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-status">
+                  Estado del Proyecto
+                </label>
+                <select
+                  id="proj-status"
+                  className="ia-select"
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value as ProjectStatus)}
+                >
+                  <option value="open">Abierto · Buscando Integrantes</option>
+                  <option value="in_progress">En Desarrollo</option>
+                  <option value="draft">Borrador (Solo visible para mí)</option>
+                  <option value="completed">Finalizado</option>
+                  <option value="cancelled">Cancelado</option>
+                </select>
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-dedication">
+                  Dedicación Estimada (Horas / Semana)
+                </label>
+                <input
+                  id="proj-dedication"
+                  type="number"
+                  min={1}
+                  max={45}
+                  className="ia-input"
+                  value={formDedication}
+                  onChange={(e) => setFormDedication(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-max-members">
+                  Tamaño Máximo del Equipo
+                </label>
+                <input
+                  id="proj-max-members"
+                  type="number"
+                  min={1}
+                  max={30}
+                  className="ia-input"
+                  value={formMaxMembers}
+                  onChange={(e) => setFormMaxMembers(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="ia-form-group full">
+                <label className="ia-label" htmlFor="proj-short-desc">
+                  Resumen Ejecutivo (1-2 líneas)
+                </label>
+                <input
+                  id="proj-short-desc"
+                  type="text"
+                  className="ia-input"
+                  placeholder="Síntesis rápida del proyecto para la tarjeta del catálogo..."
+                  value={formShortDesc}
+                  onChange={(e) => setFormShortDesc(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group full">
+                <label className="ia-label" htmlFor="proj-desc">
+                  Descripción General del Proyecto *
+                </label>
+                <textarea
+                  id="proj-desc"
+                  className="ia-textarea"
+                  rows={3}
+                  placeholder="Explica en qué consiste la iniciativa, su contexto académico o práctico y el impacto esperado..."
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-problem">
+                  Problema o Necesidad que Resuelve
+                </label>
+                <textarea
+                  id="proj-problem"
+                  className="ia-textarea"
+                  rows={3}
+                  placeholder="¿Qué dolor, desafío técnico o oportunidad aborda este proyecto?"
+                  value={formProblem}
+                  onChange={(e) => setFormProblem(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-objectives">
+                  Objetivos y Entregables Clave
+                </label>
+                <textarea
+                  id="proj-objectives"
+                  className="ia-textarea"
+                  rows={3}
+                  placeholder="Ej: 1. Prototipo funcional en Figma, 2. MVP en React/Node, 3. Presentación en feria..."
+                  value={formObjectives}
+                  onChange={(e) => setFormObjectives(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group full">
+                <label className="ia-label" htmlFor="proj-techs">
+                  Tecnologías y Herramientas Previstas (separadas por coma)
+                </label>
+                <input
+                  id="proj-techs"
+                  type="text"
+                  className="ia-input"
+                  placeholder="Ej: React, TypeScript, Python, PostgreSQL, Docker, Blender, Figma"
+                  value={formTechnologies}
+                  onChange={(e) => setFormTechnologies(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-github">
+                  Repositorio GitHub / GitLab (Opcional)
+                </label>
+                <input
+                  id="proj-github"
+                  type="url"
+                  className="ia-input"
+                  placeholder="https://github.com/..."
+                  value={formGithubUrl}
+                  onChange={(e) => setFormGithubUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-figma">
+                  Enlace de Diseño / Documentación (Opcional)
+                </label>
+                <input
+                  id="proj-figma"
+                  type="url"
+                  className="ia-input"
+                  placeholder="https://figma.com/..."
+                  value={formFigmaUrl}
+                  onChange={(e) => setFormFigmaUrl(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Sección 2: Roles y Vacantes */}
+            <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '18px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                <div>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ia-primary)', margin: 0 }}>
+                    2. Roles y Vacantes del Equipo ({formPositions.length})
+                  </h3>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted)' }}>
+                    Agrega los perfiles específicos que necesitas reclutar para el proyecto.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="ia-btn-secondary"
+                  style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+                  onClick={() => handleAddRoleRow('')}
+                >
+                  + Añadir Rol Personalizado
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                {QUICK_ROLE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className="ia-tag"
+                    onClick={() => handleAddRoleRow(preset)}
+                    title={`Añadir vacante de ${preset}`}
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {formPositions.map((pos, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '14px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--ia-border)',
+                      background: 'var(--ia-bg-body)',
+                    }}
+                  >
+                    <div className="ia-form-grid">
+                      <div className="ia-form-group">
+                        <label className="ia-label">Nombre del Rol *</label>
+                        <input
+                          type="text"
+                          className="ia-input"
+                          value={pos.title}
+                          onChange={(e) => handleUpdateRoleRow(idx, { title: e.target.value })}
+                          placeholder="Ej: Especialista Base de Datos"
+                          required
+                        />
+                      </div>
+
+                      <div className="ia-form-group" style={{ display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'flex-end' }}>
+                        <div style={{ flex: 1 }}>
+                          <label className="ia-label">Cupos</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={15}
+                            className="ia-input"
+                            value={pos.slots || 1}
+                            onChange={(e) => handleUpdateRoleRow(idx, { slots: Number(e.target.value) })}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label className="ia-label">Hrs/sem</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={45}
+                            className="ia-input"
+                            value={pos.dedication_hours || 6}
+                            onChange={(e) => handleUpdateRoleRow(idx, { dedication_hours: Number(e.target.value) })}
+                          />
+                        </div>
+                        {formPositions.length > 1 && (
+                          <button
+                            type="button"
+                            className="ia-btn-icon-danger"
+                            onClick={() => handleRemoveRoleRow(idx)}
+                            title="Quitar este rol"
+                          >
+                            <TrashIcon size={15} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="ia-form-group full">
+                        <label className="ia-label">Tareas y Responsabilidades del Rol</label>
+                        <input
+                          type="text"
+                          className="ia-input"
+                          value={pos.description || ''}
+                          onChange={(e) => handleUpdateRoleRow(idx, { description: e.target.value })}
+                          placeholder="Describe qué construirá o investigará quien ocupe esta vacante..."
+                        />
+                      </div>
+
+                      <div className="ia-form-group">
+                        <label className="ia-label">Habilidades Deseadas (separadas por coma)</label>
+                        <input
+                          type="text"
+                          className="ia-input"
+                          value={(pos.skills_required || []).join(', ')}
+                          onChange={(e) =>
+                            handleUpdateRoleRow(idx, {
+                              skills_required: e.target.value
+                                .split(',')
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            })
+                          }
+                          placeholder="Ej: PostgreSQL, Modelamiento ER, Índices"
+                        />
+                      </div>
+
+                      <div className="ia-form-group">
+                        <label className="ia-label">Requisitos Obligatorios</label>
+                        <input
+                          type="text"
+                          className="ia-input"
+                          value={(pos.mandatory_requirements || []).join(', ')}
+                          onChange={(e) =>
+                            handleUpdateRoleRow(idx, {
+                              mandatory_requirements: e.target.value
+                                .split(',')
+                                .map((s) => s.trim())
+                                .filter(Boolean),
+                            })
+                          }
+                          placeholder="Ej: Haber aprobado Base de Datos I"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Sección 3: Condiciones Económicas y Acuerdos */}
+            <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '18px', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--ia-primary)', margin: '0 0 12px 0' }}>
+                3. Condiciones Económicas y Acuerdos de Trabajo Transparentes
+              </h3>
+
+              <div className="ia-form-grid">
+                <div className="ia-form-group">
+                  <label className="ia-label" htmlFor="proj-comp-type">
+                    Modalidad de Compensación
+                  </label>
+                  <select
+                    id="proj-comp-type"
+                    className="ia-select"
+                    value={formCompType}
+                    onChange={(e) => setFormCompType(e.target.value as ProjectCompensationType)}
+                  >
+                    <option value="unpaid_academic">Proyecto Académico / Portafolio (Sin remuneración)</option>
+                    <option value="paid">Remunerado (Monto fijo o periódico)</option>
+                    <option value="milestone_based">Pago por Hitos / Entregables cumplidos</option>
+                    <option value="revenue_share">Participación / Reparto de beneficios futuros</option>
+                    <option value="negotiable">Compensación a convenir según rol</option>
+                  </select>
+                </div>
+
+                {formCompType !== 'unpaid_academic' && (
+                  <div className="ia-form-group" style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
+                    <div style={{ flex: 2 }}>
+                      <label className="ia-label">Monto Estimado</label>
+                      <input
+                        type="number"
+                        min={0}
+                        className="ia-input"
+                        placeholder="Ej: 150000"
+                        value={formCompAmount}
+                        onChange={(e) => setFormCompAmount(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label className="ia-label">Moneda</label>
+                      <select
+                        className="ia-select"
+                        value={formCompCurrency}
+                        onChange={(e) => setFormCompCurrency(e.target.value)}
+                      >
+                        <option value="CLP">CLP ($)</option>
+                        <option value="USD">USD ($)</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1.5 }}>
+                      <label className="ia-label">Periodicidad</label>
+                      <select
+                        className="ia-select"
+                        value={formCompPeriodicity}
+                        onChange={(e) => setFormCompPeriodicity(e.target.value)}
+                      >
+                        <option value="por_hito">Por Hito</option>
+                        <option value="mensual">Mensual</option>
+                        <option value="unico">Pago Único</option>
+                        <option value="por_hora">Por Hora</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                <div className="ia-form-group full">
+                  <label className="ia-label">Detalle de Condiciones Económicas / Beneficios para el Postulante</label>
+                  <input
+                    type="text"
+                    className="ia-input"
+                    placeholder="Ej: Proyecto para concurso de innovación con fondo adjudicable o crédito académico..."
+                    value={formCompNotes}
+                    onChange={(e) => setFormCompNotes(e.target.value)}
+                  />
+                </div>
+
+                <div className="ia-form-group">
+                  <label className="ia-label">Acuerdo de Horarios y Reuniones</label>
+                  <input
+                    type="text"
+                    className="ia-input"
+                    value={formAgreementSchedule}
+                    onChange={(e) => setFormAgreementSchedule(e.target.value)}
+                  />
+                </div>
+
+                <div className="ia-form-group">
+                  <label className="ia-label">Herramientas de Trabajo del Equipo</label>
+                  <input
+                    type="text"
+                    className="ia-input"
+                    value={formAgreementTools}
+                    onChange={(e) => setFormAgreementTools(e.target.value)}
+                  />
+                </div>
+
+                <div className="ia-form-group">
+                  <label className="ia-label">Compromiso de Entregables</label>
+                  <input
+                    type="text"
+                    className="ia-input"
+                    value={formAgreementDeliverables}
+                    onChange={(e) => setFormAgreementDeliverables(e.target.value)}
+                  />
+                </div>
+
+                <div className="ia-form-group">
+                  <label className="ia-label">Propiedad Intelectual y Reconocimiento</label>
+                  <input
+                    type="text"
+                    className="ia-input"
+                    value={formAgreementIp}
+                    onChange={(e) => setFormAgreementIp(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" className="ia-btn-secondary" onClick={() => setShowBuilderModal(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="ia-btn-primary" disabled={savingProject}>
+                {savingProject
+                  ? 'Guardando proyecto...'
+                  : editingProject
+                  ? 'Guardar Cambios del Proyecto'
+                  : 'Publicar Proyecto y Abrir Vacantes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL AUDITABLE DE POSTULACIÓN A UNA VACANTE */}
+      {applyingPosition && (
+        <div className="ia-card" style={{ marginBottom: '24px', border: '2px solid var(--ia-primary)', padding: '24px' }}>
+          <div className="ia-card-header">
+            <h2 className="ia-card-title">
+              Postular al Rol: {applyingPosition.position.title} · {applyingPosition.project.title}
+            </h2>
+            <button
+              type="button"
+              className="ia-btn-secondary"
+              style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+              onClick={() => setApplyingPosition(null)}
+            >
+              Cancelar
+            </button>
+          </div>
+
           <div
-            className="ia-card"
             style={{
-              padding: '16px 20px',
-              marginBottom: '20px',
-              display: 'flex',
-              gap: '14px',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: 'var(--ia-bg-subtle)',
+              border: '1px solid var(--ia-border)',
+              marginBottom: '16px',
+              fontSize: '0.84rem',
+              color: 'var(--ia-text-body)',
             }}
           >
-            <div style={{ display: 'flex', gap: '12px', flex: 1, minWidth: '280px', alignItems: 'center' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar proyectos por nombre, rol o tecnologías..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px 8px 36px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
+            <strong>Resumen de Condiciones y Acuerdos del Proyecto:</strong>
+            <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px', lineHeight: 1.55 }}>
+              <li>
+                <strong>Compensación:</strong>{' '}
+                {COMPENSATION_LABELS[applyingPosition.project.compensation_type || 'unpaid_academic']?.label}
+                {applyingPosition.project.compensation_amount
+                  ? ` (${applyingPosition.project.compensation_amount} ${applyingPosition.project.compensation_currency || 'CLP'} / ${applyingPosition.project.compensation_periodicity || 'hito'})`
+                  : ''}
+              </li>
+              <li>
+                <strong>Dedicación estimada:</strong>{' '}
+                {applyingPosition.position.dedication_hours || applyingPosition.project.dedication_hours || 6} horas/semana ·{' '}
+                {MODALITY_LABELS[applyingPosition.project.modality || 'online']}
+              </li>
+              {applyingPosition.project.agreements?.schedule && (
+                <li>
+                  <strong>Coordinación:</strong> {applyingPosition.project.agreements.schedule}
+                </li>
+              )}
+              {applyingPosition.project.agreements?.intellectual_property && (
+                <li>
+                  <strong>Autoría / Propiedad Intelectual:</strong> {applyingPosition.project.agreements.intellectual_property}
+                </li>
+              )}
+            </ul>
+          </div>
+
+          <form onSubmit={handleSubmitApplication}>
+            <div className="ia-form-grid">
+              <div className="ia-form-group full">
+                <label className="ia-label" htmlFor="apply-motivation">
+                  Mensaje de Motivación y Experiencia para el Rol *
+                </label>
+                <textarea
+                  id="apply-motivation"
+                  className="ia-textarea"
+                  rows={3}
+                  placeholder="Cuéntale al creador del proyecto qué asignaturas o proyectos previos has realizado y cómo aportarás en este rol..."
+                  value={applyMessage}
+                  onChange={(e) => setApplyMessage(e.target.value)}
+                  required
                 />
-                <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-                  <SearchIcon size={16} color="#94a3b8" />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="apply-skills">
+                  Habilidades Relevantes que Dominas
+                </label>
+                <input
+                  id="apply-skills"
+                  type="text"
+                  className="ia-input"
+                  value={applySkills}
+                  onChange={(e) => setApplySkills(e.target.value)}
+                  placeholder="Ej: React, TypeScript, Diseño de APIs"
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="apply-portfolio">
+                  Enlace a Portafolio / GitHub (Opcional)
+                </label>
+                <input
+                  id="apply-portfolio"
+                  type="url"
+                  className="ia-input"
+                  value={applyPortfolio}
+                  onChange={(e) => setApplyPortfolio(e.target.value)}
+                  placeholder="https://github.com/tu-usuario"
+                />
+              </div>
+
+              <div className="ia-form-group full">
+                <label className="ia-label" htmlFor="apply-availability">
+                  Disponibilidad Horaria
+                </label>
+                <input
+                  id="apply-availability"
+                  type="text"
+                  className="ia-input"
+                  value={applyAvailability}
+                  onChange={(e) => setApplyAvailability(e.target.value)}
+                />
+              </div>
+
+              <div className="ia-form-group full">
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: 'var(--ia-primary-subtle)',
+                    border: '1px solid var(--ia-primary-border)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    color: 'var(--ia-text-main)',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={applyAcceptedAgreements}
+                    onChange={(e) => setApplyAcceptedAgreements(e.target.checked)}
+                    style={{ marginTop: '3px' }}
+                    required
+                  />
+                  <span>
+                    <strong>Aceptación Explícita de Acuerdos:</strong> He leído y acepto las condiciones económicas ({COMPENSATION_LABELS[applyingPosition.project.compensation_type || 'unpaid_academic']?.label}), la dedicación horaria estimada y los acuerdos de trabajo y coautoría definidos en este proyecto.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px' }}>
+              <button type="button" className="ia-btn-secondary" onClick={() => setApplyingPosition(null)}>
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="ia-btn-primary"
+                disabled={submittingApplication || !applyAcceptedAgreements}
+              >
+                {submittingApplication ? 'Enviando postulación...' : 'Confirmar y Enviar Postulación'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Confirmación de Eliminación de Proyecto */}
+      {projectToDelete && (
+        <div
+          className="ia-card"
+          style={{
+            marginBottom: '20px',
+            border: '1px solid var(--ia-danger-border)',
+            background: 'var(--ia-danger-bg)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 6px 0', fontSize: '0.98rem', color: 'var(--ia-danger)' }}>
+            ¿Eliminar el proyecto "{projectToDelete.title}"?
+          </h3>
+          <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: 'var(--ia-text-body)' }}>
+            Esta acción eliminará el proyecto, sus vacantes y postulaciones asociadas.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              className="ia-btn-primary"
+              style={{ background: 'var(--ia-danger)' }}
+              onClick={handleConfirmDeleteProject}
+              disabled={deletingProject}
+            >
+              {deletingProject ? 'Eliminando...' : 'Sí, eliminar proyecto'}
+            </button>
+            <button type="button" className="ia-btn-secondary" onClick={() => setProjectToDelete(null)}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* VISTA WORKSPACE / DETALLE COMPLETO DEL PROYECTO */}
+      {selectedProject ? (
+        <div>
+          <div className="ia-card" style={{ padding: '24px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className={`ia-badge ${STATUS_LABELS[selectedProject.status]?.badgeClass || 'ia-badge-success'}`}>
+                  {STATUS_LABELS[selectedProject.status]?.label || selectedProject.status}
+                </span>
+                <span className="ia-badge ia-badge-blue">{selectedProject.category || 'Desarrollo'}</span>
+                <span className="ia-badge ia-badge-neutral">
+                  {MODALITY_LABELS[selectedProject.modality || 'online']}
+                </span>
+                <span
+                  className={`ia-badge ${
+                    COMPENSATION_LABELS[selectedProject.compensation_type || 'unpaid_academic']?.badgeClass
+                  }`}
+                >
+                  {COMPENSATION_LABELS[selectedProject.compensation_type || 'unpaid_academic']?.label}
+                </span>
+              </div>
+
+              {user?.id && selectedProject.owner_id === user.id && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="ia-btn-secondary"
+                    onClick={() => openEditModal(selectedProject)}
+                  >
+                    <EditIcon size={15} />
+                    <span>Editar Proyecto</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="ia-btn-icon-danger"
+                    onClick={() => setProjectToDelete(selectedProject)}
+                    title="Eliminar proyecto"
+                  >
+                    <TrashIcon size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--ia-text-main)', margin: '0 0 8px 0' }}>
+              {selectedProject.title}
+            </h2>
+
+            <p style={{ fontSize: '0.95rem', color: 'var(--ia-text-body)', lineHeight: 1.6, margin: '0 0 16px 0' }}>
+              {selectedProject.description || selectedProject.short_description}
+            </p>
+
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '0.83rem', color: 'var(--ia-text-muted)', paddingTop: '12px', borderTop: '1px solid var(--ia-border)' }}>
+              <span>
+                Líder del Proyecto:{' '}
+                <Link
+                  to={`/profile/${selectedProject.owner_id}`}
+                  style={{ color: 'var(--ia-primary)', fontWeight: 700, textDecoration: 'none' }}
+                >
+                  {getUserDisplayName(selectedProject.owner as any)}
+                </Link>
+              </span>
+              <span>Carrera: <strong>{selectedProject.career || 'Ingeniería en Informática'}</strong></span>
+              <span>Dedicación: <strong>{selectedProject.dedication_hours || 6} hrs/semana</strong></span>
+              <span>Equipo máximo: <strong>{selectedProject.max_members} integrantes</strong></span>
+            </div>
+
+            {/* Pestañas internas del Workspace */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '18px', paddingTop: '14px', borderTop: '1px solid var(--ia-border)' }}>
+              <button
+                type="button"
+                className={workspaceTab === 'overview' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                onClick={() => setWorkspaceTab('overview')}
+              >
+                Visión General y Acuerdos
+              </button>
+              <button
+                type="button"
+                className={workspaceTab === 'roles' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                onClick={() => setWorkspaceTab('roles')}
+              >
+                Roles y Vacantes ({projectPositions.length})
+              </button>
+              <button
+                type="button"
+                className={workspaceTab === 'team' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                onClick={() => setWorkspaceTab('team')}
+              >
+                Equipo Actual ({projectMembers.length})
+              </button>
+              <button
+                type="button"
+                className={workspaceTab === 'milestones' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                onClick={() => setWorkspaceTab('milestones')}
+              >
+                Hitos y Entregables ({(selectedProject.milestones || []).length})
+              </button>
+              {user?.id && selectedProject.owner_id === user.id && (
+                <button
+                  type="button"
+                  className={workspaceTab === 'applications' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                  onClick={() => setWorkspaceTab('applications')}
+                >
+                  Postulaciones Recibidas ({projectApplications.length})
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loadingDetail ? (
+            <div className="ia-card" style={{ textAlign: 'center', padding: '28px' }}>
+              <p style={{ margin: 0, color: 'var(--ia-text-muted)' }}>Cargando espacio del proyecto...</p>
+            </div>
+          ) : workspaceTab === 'overview' ? (
+            <div className="ia-content-grid">
+              <div>
+                <div className="ia-card">
+                  <h3 className="ia-card-title" style={{ marginBottom: '10px' }}>
+                    Planteamiento del Problema y Objetivos
+                  </h3>
+                  <div style={{ marginBottom: '14px' }}>
+                    <strong style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted)', display: 'block', marginBottom: '4px' }}>
+                      PROBLEMA O NECESIDAD:
+                    </strong>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--ia-text-body)', lineHeight: 1.55 }}>
+                      {selectedProject.problem_statement || 'El proyecto busca resolver un desafío práctico mediante colaboración interdisciplinaria entre estudiantes.'}
+                    </p>
+                  </div>
+                  <div>
+                    <strong style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted)', display: 'block', marginBottom: '4px' }}>
+                      OBJETIVOS Y RESULTADOS ESPERADOS:
+                    </strong>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--ia-text-body)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                      {selectedProject.objectives || 'Construir un prototipo funcional validado y documentado.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="ia-card">
+                  <h3 className="ia-card-title" style={{ marginBottom: '12px' }}>
+                    Acuerdos de Trabajo y Gobernanza del Equipo
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.86rem' }}>
+                    <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--ia-bg-body)', border: '1px solid var(--ia-border)' }}>
+                      <strong>Coordinación y Horarios:</strong>
+                      <p style={{ margin: '4px 0 0 0', color: 'var(--ia-text-body)' }}>
+                        {selectedProject.agreements?.schedule || 'Reuniones semanales de coordinación'}
+                      </p>
+                    </div>
+                    <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--ia-bg-body)', border: '1px solid var(--ia-border)' }}>
+                      <strong>Herramientas de Colaboración:</strong>
+                      <p style={{ margin: '4px 0 0 0', color: 'var(--ia-text-body)' }}>
+                        {selectedProject.agreements?.tools || 'GitHub, Discord, Kanban'}
+                      </p>
+                    </div>
+                    <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--ia-bg-body)', border: '1px solid var(--ia-border)' }}>
+                      <strong>Compromiso de Entregables:</strong>
+                      <p style={{ margin: '4px 0 0 0', color: 'var(--ia-text-body)' }}>
+                        {selectedProject.agreements?.deliverables || 'Entregas iterativas por hito'}
+                      </p>
+                    </div>
+                    <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--ia-bg-body)', border: '1px solid var(--ia-border)' }}>
+                      <strong>Propiedad Intelectual / Créditos:</strong>
+                      <p style={{ margin: '4px 0 0 0', color: 'var(--ia-text-body)' }}>
+                        {selectedProject.agreements?.intellectual_property || 'Coautoría académica compartida'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.88rem',
-                  backgroundColor: '#ffffff',
-                  outline: 'none',
-                }}
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <aside>
+                <div className="ia-card">
+                  <h3 className="ia-card-title" style={{ marginBottom: '10px' }}>
+                    Condiciones Económicas
+                  </h3>
+                  <div style={{ marginBottom: '10px' }}>
+                    <span
+                      className={`ia-badge ${
+                        COMPENSATION_LABELS[selectedProject.compensation_type || 'unpaid_academic']?.badgeClass
+                      }`}
+                    >
+                      {COMPENSATION_LABELS[selectedProject.compensation_type || 'unpaid_academic']?.label}
+                    </span>
+                  </div>
+                  {selectedProject.compensation_amount && (
+                    <p style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--ia-text-main)', margin: '0 0 6px 0' }}>
+                      {selectedProject.compensation_amount.toLocaleString('es-CL')}{' '}
+                      {selectedProject.compensation_currency || 'CLP'}{' '}
+                      <span style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--ia-text-muted)' }}>
+                        ({selectedProject.compensation_periodicity || 'por hito'})
+                      </span>
+                    </p>
+                  )}
+                  <p style={{ fontSize: '0.84rem', color: 'var(--ia-text-body)', margin: 0, lineHeight: 1.5 }}>
+                    {selectedProject.compensation_notes ||
+                      'Este proyecto se rige bajo los acuerdos transparentes publicados por su creador.'}
+                  </p>
+                </div>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.86rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }}>
-              <input
-                type="checkbox"
-                checked={onlyOpenPositions}
-                onChange={(e) => setOnlyOpenPositions(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              <span>Solo con vacantes abiertas</span>
-            </label>
-          </div>
-
-          {/* Grilla de Proyectos */}
-          {loading ? (
-            <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <p style={{ color: '#64748b' }}>Cargando proyectos estudiantiles...</p>
+                <div className="ia-card">
+                  <h3 className="ia-card-title" style={{ marginBottom: '10px' }}>
+                    Stack Tecnológico y Enlaces
+                  </h3>
+                  <div className="ia-tags-cloud" style={{ marginBottom: '14px' }}>
+                    {(selectedProject.technologies || selectedProject.tags || ['Software']).map((tech) => (
+                      <span key={tech} className="ia-tag">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                  {selectedProject.external_links?.github && (
+                    <a
+                      href={selectedProject.external_links.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ia-btn-secondary"
+                      style={{ width: '100%', marginBottom: '8px' }}
+                    >
+                      <ExternalLinkIcon size={14} /> Repositorio del Proyecto
+                    </a>
+                  )}
+                  {selectedProject.external_links?.figma && (
+                    <a
+                      href={selectedProject.external_links.figma}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ia-btn-secondary"
+                      style={{ width: '100%' }}
+                    >
+                      <ExternalLinkIcon size={14} /> Diseño / Documentación
+                    </a>
+                  )}
+                </div>
+              </aside>
             </div>
-          ) : filteredProjects.length === 0 ? (
-            <div className="ia-card">
-              <EmptyState
-                style={{ padding: '50px 20px' }}
-                icon={<BriefcaseIcon size={32} color="#2563eb" />}
-                title="No se encontraron proyectos con esos criterios"
-                description="Intenta buscar con otras palabras o publica tu propia idea de proyecto para convocar compañeros."
-                action={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setSelectedCategory('Todas las Áreas');
-                      setOnlyOpenPositions(false);
-                    }}
-                    className="ia-btn-secondary"
-                  >
-                    Restablecer filtros
-                  </button>
-                }
-              />
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
-              {filteredProjects.map((project) => {
-                const openPositions = (project.positions || []).filter((p) => p.status === 'open');
-                const isMyProject = Boolean(user && project.owner_id === user.id);
+          ) : workspaceTab === 'roles' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+              {projectPositions.map((pos) => {
+                const isOwner = Boolean(user?.id && selectedProject.owner_id === user.id);
+                const filled = pos.slots_filled || 0;
+                const remaining = Math.max(0, (pos.slots || 1) - filled);
+                const alreadyApplied = myApplications.some(
+                  (a) => a.position_id === pos.id && a.status !== 'withdrawn'
+                );
 
                 return (
-                  <div
-                    key={project.id}
-                    className="ia-card"
-                    style={{
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '14px',
-                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                    }}
-                  >
+                  <div key={pos.id} className="ia-card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
                     <div>
-                      {/* Cabecera de la Tarjeta */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <span
-                          style={{
-                            fontSize: '0.74rem',
-                            fontWeight: 800,
-                            padding: '3px 10px',
-                            borderRadius: '9999px',
-                            textTransform: 'uppercase',
-                            background: '#eff6ff',
-                            color: '#1d4ed8',
-                            border: '1px solid #bfdbfe',
-                          }}
+                          className={`ia-badge ${
+                            pos.status === 'open' && remaining > 0
+                              ? 'ia-badge-success'
+                              : pos.status === 'paused'
+                              ? 'ia-badge-amber'
+                              : 'ia-badge-neutral'
+                          }`}
                         >
-                          {project.category || 'Proyecto General'}
+                          {pos.status === 'open' && remaining > 0
+                            ? `${remaining} de ${pos.slots} vacante(s) disponible(s)`
+                            : pos.status === 'paused'
+                            ? 'Vacante en pausa'
+                            : 'Vacante cubierta'}
                         </span>
-                        <span
-                          style={{
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            background: openPositions.length > 0 ? '#dcfce7' : '#f1f5f9',
-                            color: openPositions.length > 0 ? '#15803d' : '#64748b',
-                          }}
-                        >
-                          {openPositions.length > 0 ? `${openPositions.length} vacante${openPositions.length > 1 ? 's' : ''} disponible${openPositions.length > 1 ? 's' : ''}` : 'Equipo completo'}
+                        <span style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)' }}>
+                          {pos.dedication_hours || selectedProject.dedication_hours || 6} hrs/sem
                         </span>
                       </div>
 
-                      <h3 style={{ fontSize: '1.18rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0', lineHeight: 1.35 }}>
-                        {project.title}
+                      <h3 style={{ fontSize: '1.08rem', fontWeight: 700, margin: '0 0 6px 0' }}>
+                        {pos.title}
                       </h3>
-
-                      <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 16px 0', lineHeight: 1.5 }}>
-                        {project.short_description || project.description}
+                      <p style={{ fontSize: '0.86rem', color: 'var(--ia-text-body)', margin: '0 0 10px 0', lineHeight: 1.45 }}>
+                        {pos.description || 'Participación técnica activa en el equipo del proyecto.'}
                       </p>
 
-                      {/* Autor del Proyecto */}
-                      {project.owner && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '10px 12px',
-                            background: '#f8fafc',
-                            borderRadius: '10px',
-                            marginBottom: '16px',
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '50%',
-                              backgroundColor: '#2563eb',
-                              color: '#ffffff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {getUserInitial(getUserDisplayName(project.owner))}
-                          </div>
-                          <div style={{ overflow: 'hidden' }}>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                              {getUserDisplayName(project.owner)} {isMyProject && '(Tú)'}
-                            </div>
-                            <div style={{ fontSize: '0.76rem', color: '#64748b' }}>
-                              {project.owner.career || project.owner.institution || 'Estudiante Duoc UC'}
-                            </div>
-                          </div>
+                      {pos.skills_required && pos.skills_required.length > 0 && (
+                        <div className="ia-tags-cloud" style={{ marginBottom: '10px' }}>
+                          {pos.skills_required.map((sk) => (
+                            <span key={sk} className="ia-tag" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                              {sk}
+                            </span>
+                          ))}
                         </div>
                       )}
 
-                      {/* Vacantes del Proyecto */}
-                      <div>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
-                          Perfiles buscados:
+                      {pos.mandatory_requirements && pos.mandatory_requirements.length > 0 && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)' }}>
+                          <strong>Requisitos:</strong> {pos.mandatory_requirements.join(' · ')}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {(project.positions || []).slice(0, 3).map((pos) => (
-                            <div
-                              key={pos.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                background: '#f1f5f9',
-                                padding: '6px 10px',
-                                borderRadius: '6px',
-                                fontSize: '0.8rem',
-                              }}
-                            >
-                              <span style={{ fontWeight: 600, color: '#334155' }}>{pos.title}</span>
-                              <span
-                                style={{
-                                  fontSize: '0.72rem',
-                                  fontWeight: 700,
-                                  color: pos.status === 'open' ? '#16a34a' : '#94a3b8',
-                                }}
-                              >
-                                {pos.status === 'open' ? 'Cupo abierto' : 'Cubierto'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Acciones de la Tarjeta */}
-                    <div style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '14px', display: 'flex', gap: '10px' }}>
-                      {isMyProject ? (
+                    <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '12px' }}>
+                      {isOwner ? (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className={pos.status === 'open' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                            style={{ flex: 1, padding: '6px', fontSize: '0.76rem' }}
+                            onClick={() => handleTogglePositionStatus(pos, 'open')}
+                          >
+                            Abierta
+                          </button>
+                          <button
+                            type="button"
+                            className={pos.status === 'paused' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                            style={{ flex: 1, padding: '6px', fontSize: '0.76rem' }}
+                            onClick={() => handleTogglePositionStatus(pos, 'paused')}
+                          >
+                            Pausar
+                          </button>
+                          <button
+                            type="button"
+                            className={pos.status === 'filled' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                            style={{ flex: 1, padding: '6px', fontSize: '0.76rem' }}
+                            onClick={() => handleTogglePositionStatus(pos, 'filled')}
+                          >
+                            Cubierta
+                          </button>
+                        </div>
+                      ) : alreadyApplied ? (
+                        <span className="ia-badge ia-badge-blue" style={{ width: '100%', justifyContent: 'center', padding: '8px' }}>
+                          ✓ Ya postulaste a esta vacante
+                        </span>
+                      ) : pos.status === 'open' && remaining > 0 ? (
                         <button
                           type="button"
-                          onClick={() => setActiveTab('my_projects')}
-                          className="ia-btn-secondary"
-                          style={{ width: '100%', justifyContent: 'center', fontSize: '0.84rem' }}
-                        >
-                          Administrar mi proyecto
-                        </button>
-                      ) : openPositions.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => handleOpenApplyModal(project)}
                           className="ia-btn-primary"
-                          style={{ width: '100%', justifyContent: 'center', fontSize: '0.84rem', fontWeight: 700 }}
+                          style={{ width: '100%' }}
+                          onClick={() => handleOpenApplyModal(selectedProject, pos)}
                         >
-                          Postular a una Vacante
+                          Postular a este Rol
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          disabled
-                          className="ia-btn-secondary"
-                          style={{ width: '100%', justifyContent: 'center', fontSize: '0.84rem', opacity: 0.6, cursor: 'not-allowed' }}
-                        >
-                          Equipo Completo
+                        <button type="button" className="ia-btn-secondary" style={{ width: '100%' }} disabled>
+                          Vacante no disponible
                         </button>
                       )}
                     </div>
@@ -781,511 +1694,583 @@ export default function ProjectsHub() {
                 );
               })}
             </div>
+          ) : workspaceTab === 'team' ? (
+            <div className="ia-card">
+              <h3 className="ia-card-title" style={{ marginBottom: '14px' }}>
+                Integrantes del Equipo ({projectMembers.length})
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                {projectMembers.map((m) => (
+                  <div
+                    key={`${m.project_id}-${m.profile_id}`}
+                    style={{
+                      padding: '14px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--ia-border)',
+                      background: 'var(--ia-bg-body)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div>
+                      <Link
+                        to={`/profile/${m.profile_id}`}
+                        style={{ fontWeight: 700, color: 'var(--ia-primary)', textDecoration: 'none', fontSize: '0.92rem' }}
+                      >
+                        {m.profile_name || getUserDisplayName(m.profile as any)}
+                      </Link>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--ia-text-body)', marginTop: '2px' }}>
+                        {m.role_name || m.position?.title || (m.member_role === 'owner' ? 'Líder del Proyecto' : 'Integrante')}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted)' }}>
+                        {m.profile_institution || 'Duoc UC'}
+                      </div>
+                    </div>
+                    <span className={`ia-badge ${m.member_role === 'owner' ? 'ia-badge-purple' : 'ia-badge-blue'}`}>
+                      {m.member_role === 'owner' ? 'Creador' : 'Miembro'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : workspaceTab === 'milestones' ? (
+            <div className="ia-card">
+              <h3 className="ia-card-title" style={{ marginBottom: '12px' }}>
+                Plan de Hitos y Entregables del Proyecto
+              </h3>
+
+              {user?.id && selectedProject.owner_id === user.id && (
+                <form
+                  onSubmit={handleAddMilestone}
+                  style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}
+                >
+                  <input
+                    type="text"
+                    className="ia-input"
+                    style={{ flex: 2, minWidth: '220px' }}
+                    placeholder="Nuevo hito o entregable (Ej: Entrega Arquitectura y Modelo ER)"
+                    value={newMilestoneTitle}
+                    onChange={(e) => setNewMilestoneTitle(e.target.value)}
+                    required
+                  />
+                  <input
+                    type="date"
+                    className="ia-input"
+                    style={{ width: '170px' }}
+                    value={newMilestoneDue}
+                    onChange={(e) => setNewMilestoneDue(e.target.value)}
+                  />
+                  <button type="submit" className="ia-btn-primary">
+                    + Añadir Hito
+                  </button>
+                </form>
+              )}
+
+              {(selectedProject.milestones || []).length === 0 ? (
+                <div className="ia-empty-box" style={{ padding: '24px' }}>
+                  <p className="ia-empty-title">Aún no se han registrado hitos específicos</p>
+                  <p className="ia-empty-desc">
+                    El líder del proyecto puede definir aquí las entregas parciales y metas del equipo.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {(selectedProject.milestones || []).map((ms) => (
+                    <div
+                      key={ms.id}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--ia-border)',
+                        background: ms.completed ? 'var(--ia-success-bg)' : 'var(--ia-bg-body)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 600 }}>
+                        <input
+                          type="checkbox"
+                          checked={ms.completed}
+                          disabled={!(user?.id && selectedProject.owner_id === user.id)}
+                          onChange={() => handleToggleMilestone(ms.id)}
+                        />
+                        <span style={{ textDecoration: ms.completed ? 'line-through' : 'none' }}>
+                          {ms.title}
+                        </span>
+                      </label>
+                      {ms.due_date && (
+                        <span style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)' }}>
+                          Meta: {ms.due_date}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Pestaña de Postulaciones Recibidas (Solo Creador) */
+            <div className="ia-card">
+              <h3 className="ia-card-title" style={{ marginBottom: '14px' }}>
+                Postulaciones Recibidas ({projectApplications.length})
+              </h3>
+              {projectApplications.length === 0 ? (
+                <div className="ia-empty-box" style={{ padding: '24px' }}>
+                  <p className="ia-empty-title">Aún no hay postulaciones en este proyecto</p>
+                  <p className="ia-empty-desc">
+                    Cuando otros estudiantes postulen a tus vacantes abiertas, podrás revisar su perfil y aceptarlos aquí.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {projectApplications.map((app) => (
+                    <div
+                      key={app.id}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--ia-border)',
+                        background: 'var(--ia-bg-body)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '8px' }}>
+                        <div>
+                          <Link
+                            to={`/profile/${app.applicant_id}`}
+                            style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--ia-primary)', textDecoration: 'none' }}
+                          >
+                            {app.applicant_name || (app.applicant as any)?.display_name || 'Estudiante Postulante'}
+                          </Link>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--ia-text-muted)', marginLeft: '8px' }}>
+                            postuló a <strong>{app.position?.title || 'Vacante'}</strong>
+                          </span>
+                        </div>
+                        <span
+                          className={`ia-badge ${
+                            app.status === 'accepted'
+                              ? 'ia-badge-success'
+                              : app.status === 'rejected'
+                              ? 'ia-badge-neutral'
+                              : 'ia-badge-amber'
+                          }`}
+                        >
+                          {app.status === 'accepted'
+                            ? 'Aceptada'
+                            : app.status === 'rejected'
+                            ? 'Rechazada'
+                            : 'Pendiente de revisión'}
+                        </span>
+                      </div>
+
+                      <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: 'var(--ia-text-main)', lineHeight: 1.5 }}>
+                        "{app.message || 'Interesado en aportar al proyecto.'}"
+                      </p>
+
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '0.78rem', color: 'var(--ia-text-muted)', marginBottom: '10px' }}>
+                        {app.relevant_skills && app.relevant_skills.length > 0 && (
+                          <span>Habilidades: <strong>{app.relevant_skills.join(', ')}</strong></span>
+                        )}
+                        {app.availability_notes && (
+                          <span>Disponibilidad: <strong>{app.availability_notes}</strong></span>
+                        )}
+                        {app.portfolio_url && (
+                          <a href={app.portfolio_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ia-primary)', fontWeight: 600 }}>
+                            Ver Portafolio / GitHub ↗
+                          </a>
+                        )}
+                        {app.accepted_agreements && (
+                          <span style={{ color: 'var(--ia-success)', fontWeight: 600 }}>
+                            ✓ Aceptó acuerdos y condiciones del proyecto
+                          </span>
+                        )}
+                      </div>
+
+                      {app.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            className="ia-btn-primary"
+                            style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                            onClick={() => handleReviewApplication(app.id, 'accepted')}
+                          >
+                            <CheckIcon size={14} color="#ffffff" /> Aceptar e Incorporar al Equipo
+                          </button>
+                          <button
+                            type="button"
+                            className="ia-btn-secondary"
+                            style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                            onClick={() => handleReviewApplication(app.id, 'rejected')}
+                          >
+                            <XIcon size={14} /> Rechazar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
-
-      {/* CONTENIDO 2: MIS PROYECTOS PUBLICADOS */}
-      {activeTab === 'my_projects' && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Iniciativas Creadas por Ti
-              </h2>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '2px 0 0' }}>
-                Gestiona las vacantes de tu equipo y aprueba las postulaciones de tus compañeros.
-              </p>
-            </div>
+      ) : (
+        /* VISTA CATÁLOGO Y DESCUBRIMIENTO DE PROYECTOS */
+        <>
+          {/* Pestañas Principales */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="ia-btn-primary"
-              style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              className={activeTab === 'explore' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+              onClick={() => setActiveTab('explore')}
             >
-              <PlusIcon size={16} /> + Crear Nuevo Proyecto
+              Explorar Proyectos ({projects.length})
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'my_projects' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+              onClick={() => setActiveTab('my_projects')}
+            >
+              Mis Proyectos ({myProjects.length})
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'my_applications' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+              onClick={() => setActiveTab('my_applications')}
+            >
+              Mis Postulaciones ({myApplications.length})
             </button>
           </div>
 
-          {myCreatedProjects.length === 0 ? (
-            <div className="ia-card">
-              <EmptyState
-                style={{ padding: '50px 20px' }}
-                icon={<CodeIcon size={32} color="#16a34a" />}
-                title="Aún no has publicado ningún proyecto"
-                description="¿Tienes una idea de startup, app móvil, bot o proyecto para un certamen? Publícala y convoca compañeros con las habilidades que te faltan."
-                action={
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="ia-btn-primary"
-                    style={{ background: '#16a34a', borderColor: '#15803d' }}
-                  >
-                    + Publicar mi Primer Proyecto
-                  </button>
-                }
-              />
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
-              {myCreatedProjects.map((p) => (
-                <div key={p.id} className="ia-card" style={{ padding: '20px', border: '1px solid #bbf7d0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#166534', background: '#dcfce7', padding: '2px 8px', borderRadius: '4px' }}>
-                      {p.category}
-                    </span>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Máx {p.max_members} integrantes</span>
-                  </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 6px 0', color: '#0f172a' }}>{p.title}</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#475569', margin: '0 0 14px 0' }}>{p.short_description}</p>
-                  
-                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', marginBottom: '6px' }}>
-                    Vacantes definidas:
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-                    {p.positions.map((pos) => (
-                      <div key={pos.id} style={{ fontSize: '0.8rem', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 600 }}>{pos.title}</span>
-                        <span style={{ color: '#16a34a', fontWeight: 700 }}>Activa</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ background: '#f0fdf4', padding: '10px', borderRadius: '8px', fontSize: '0.8rem', color: '#166534' }}>
-                    ✓ Proyecto visible públicamente en el catálogo para toda la comunidad Duoc UC.
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* CONTENIDO 3: MIS POSTULACIONES */}
-      {activeTab === 'my_applications' && (
-        <div>
-          <div style={{ marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              Mis Postulaciones a Proyectos
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '2px 0 0' }}>
-              Revisa el estado de tus solicitudes para integrarte a equipos y proyectos colaborativos.
-            </p>
-          </div>
-
-          {myApplications.length === 0 ? (
-            <div className="ia-card">
-              <EmptyState
-                style={{ padding: '50px 20px' }}
-                icon={<UsersIcon size={32} color="#7c3aed" />}
-                title="No has enviado postulaciones todavía"
-                description="Explora las iniciativas creadas por compañeros en distintas sedes y postula a las posiciones acordes a tus conocimientos."
-                action={
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('explore')}
-                    className="ia-btn-primary"
-                    style={{ background: '#7c3aed', borderColor: '#6d28d9' }}
-                  >
-                    Explorar Vacantes Disponibles
-                  </button>
-                }
-              />
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {myApplications.map((app) => (
-                <div
-                  key={app.id}
-                  className="ia-card"
-                  style={{
-                    padding: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '16px',
-                    border: '1px solid #e2e8f0',
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: '260px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          textTransform: 'uppercase',
-                          background:
-                            app.status === 'accepted'
-                              ? '#dcfce7'
-                              : app.status === 'rejected'
-                              ? '#fee2e2'
-                              : '#fef3c7',
-                          color:
-                            app.status === 'accepted'
-                              ? '#15803d'
-                              : app.status === 'rejected'
-                              ? '#991b1b'
-                              : '#b45309',
-                        }}
-                      >
-                        {app.status === 'accepted'
-                          ? 'Aceptada'
-                          : app.status === 'rejected'
-                          ? 'Rechazada'
-                          : 'Pendiente de Respuesta'}
-                      </span>
-                      <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
-                        Postulado recientemente
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-                      {app.project?.title || 'Proyecto Estudiantil'}
-                    </h3>
-
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#2563eb', marginBottom: '6px' }}>
-                      Vacante: {app.position?.title || 'Desarrollador / Integrante'}
-                    </div>
-
-                    {app.message && (
-                      <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, fontStyle: 'italic' }}>
-                        "{app.message}"
-                      </p>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    {app.status === 'pending' && (
-                      <button
-                        type="button"
-                        onClick={() => handleWithdrawApplication(app.id)}
-                        className="ia-btn-secondary"
-                        style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                      >
-                        Retirar postulación
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* MODAL PARA CREAR PROYECTO */}
-      {isCreateModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '16px',
-          }}
-        >
-          <div
-            className="ia-card"
-            style={{
-              maxWidth: '560px',
-              width: '100%',
-              padding: '26px',
-              borderRadius: '16px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Publicar Nuevo Proyecto Estudiantil
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-              >
-                <XIcon size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProjectSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Título del Proyecto *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="ej: Portal de Reservas de Laboratorios Duoc UC"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Área o Categoría
-                  </label>
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.88rem',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="Desarrollo de Software">Desarrollo de Software</option>
-                    <option value="Desarrollo Móvil">Desarrollo Móvil</option>
-                    <option value="IoT y Redes">IoT y Redes</option>
-                    <option value="Inteligencia Artificial">Inteligencia Artificial</option>
-                    <option value="Ciberseguridad">Ciberseguridad</option>
-                    <option value="Diseño UI/UX">Diseño UI/UX</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                    Cupo Máx. Integrantes
-                  </label>
+          {activeTab === 'explore' && (
+            <div className="ia-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', flex: '1 1 240px' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                    <SearchIcon size={16} />
+                  </span>
                   <input
-                    type="number"
-                    min={2}
-                    max={8}
-                    value={newMaxMembers}
-                    onChange={(e) => setNewMaxMembers(Number(e.target.value))}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.88rem',
-                      outline: 'none',
-                    }}
+                    type="text"
+                    className="ia-input"
+                    style={{ paddingLeft: '36px' }}
+                    placeholder="Buscar por proyecto, rol (Frontend, 3D, QA...), tecnología o problema..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Descripción breve (resumen en 1 línea)
-                </label>
-                <input
-                  type="text"
-                  value={newShortDesc}
-                  onChange={(e) => setNewShortDesc(e.target.value)}
-                  placeholder="ej: App web interactiva para alumnos y docentes de la sede..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Detalles del Proyecto y Objetivos
-                </label>
-                <textarea
-                  rows={3}
-                  value={newFullDesc}
-                  onChange={(e) => setNewFullDesc(e.target.value)}
-                  placeholder="Describe de qué trata el proyecto, tecnologías tentativas (React, Python, etc.) y metas a alcanzar..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Perfiles o Vacantes buscadas (separadas por coma)
-                </label>
-                <input
-                  type="text"
-                  value={newPositions}
-                  onChange={(e) => setNewPositions(e.target.value)}
-                  placeholder="ej: Frontend React, Backend Node, Diseñador UI/UX"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                />
-                <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px', display: 'block' }}>
-                  Cada rol se publicará como una vacante a la que tus compañeros podrán postular.
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="ia-btn-secondary"
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreating}
-                  className="ia-btn-primary"
-                  style={{
-                    padding: '8px 18px',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    opacity: isCreating ? 0.7 : 1,
-                    cursor: isCreating ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {isCreating ? 'Publicando...' : 'Publicar Proyecto'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PARA POSTULAR A UNA VACANTE */}
-      {applyingToProject && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '16px',
-          }}
-        >
-          <div
-            className="ia-card"
-            style={{
-              maxWidth: '500px',
-              width: '100%',
-              padding: '24px',
-              borderRadius: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Postular a Proyecto
-              </h2>
-              <button
-                type="button"
-                onClick={() => setApplyingToProject(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
-              >
-                <XIcon size={20} />
-              </button>
-            </div>
-
-            <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', marginBottom: '16px' }}>
-              <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Proyecto:</div>
-              <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>{applyingToProject.title}</div>
-            </div>
-
-            <form onSubmit={handleSubmitApplication} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Selecciona la vacante a la que postulas *
-                </label>
                 <select
-                  required
-                  value={selectedPositionId}
-                  onChange={(e) => setSelectedPositionId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                  }}
+                  aria-label="Filtrar por categoría"
+                  className="ia-select"
+                  style={{ width: 'auto', minWidth: '175px' }}
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
                 >
-                  {applyingToProject.positions
-                    .filter((p) => p.status === 'open')
-                    .map((pos) => (
-                      <option key={pos.id} value={pos.id}>
-                        {pos.title}
-                      </option>
-                    ))}
+                  <option value="all">Todas las áreas</option>
+                  {PROJECT_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
                 </select>
-              </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Mensaje o motivación para el equipo
+                <select
+                  aria-label="Filtrar por modalidad"
+                  className="ia-select"
+                  style={{ width: 'auto', minWidth: '150px' }}
+                  value={filterModality}
+                  onChange={(e) => setFilterModality(e.target.value)}
+                >
+                  <option value="all">Modalidad: Todas</option>
+                  <option value="online">Online / Remoto</option>
+                  <option value="hibrido">Híbrido</option>
+                  <option value="presencial">Presencial</option>
+                </select>
+
+                <select
+                  aria-label="Filtrar por estado"
+                  className="ia-select"
+                  style={{ width: 'auto', minWidth: '150px' }}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">Estado: Todos</option>
+                  <option value="open">Abiertos</option>
+                  <option value="in_progress">En Desarrollo</option>
+                  <option value="completed">Finalizados</option>
+                </select>
+
+                <select
+                  aria-label="Filtrar por compensación"
+                  className="ia-select"
+                  style={{ width: 'auto', minWidth: '175px' }}
+                  value={filterCompensation}
+                  onChange={(e) => setFilterCompensation(e.target.value)}
+                >
+                  <option value="all">Compensación: Todas</option>
+                  <option value="unpaid_academic">Académico (Sin pago)</option>
+                  <option value="paid">Remunerado</option>
+                  <option value="milestone_based">Por Hitos</option>
+                  <option value="revenue_share">Participación</option>
+                  <option value="negotiable">A convenir</option>
+                </select>
+
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={onlyOpenVacancies}
+                    onChange={(e) => setOnlyOpenVacancies(e.target.checked)}
+                  />
+                  <span>Solo con vacantes abiertas</span>
                 </label>
-                <textarea
-                  rows={4}
-                  value={applicationPitch}
-                  onChange={(e) => setApplicationPitch(e.target.value)}
-                  placeholder="Cuéntale al creador qué tecnologías manejas, tus ramos aprobados o qué te motiva a sumarte a este proyecto..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.88rem',
-                    outline: 'none',
-                  }}
-                />
               </div>
+            </div>
+          )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setApplyingToProject(null)}
-                  className="ia-btn-secondary"
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isApplying}
-                  className="ia-btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.85rem', fontWeight: 700 }}
-                >
-                  {isApplying ? 'Enviando...' : 'Confirmar Postulación'}
+          {loading ? (
+            <div className="ia-card" style={{ textAlign: 'center', padding: '36px' }}>
+              <p style={{ margin: 0, color: 'var(--ia-text-muted)' }}>Cargando proyectos colaborativos...</p>
+            </div>
+          ) : activeTab === 'my_applications' ? (
+            myApplications.length === 0 ? (
+              <div className="ia-empty-box">
+                <div className="ia-empty-icon">
+                  <BriefcaseIcon size={22} />
+                </div>
+                <p className="ia-empty-title">Aún no has postulado a vacantes de proyectos</p>
+                <p className="ia-empty-desc">
+                  Explora los proyectos abiertos, revisa sus roles y condiciones y postula al equipo donde quieras aportar.
+                </p>
+                <button type="button" className="ia-btn-primary" onClick={() => setActiveTab('explore')}>
+                  Explorar Proyectos Disponibles
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {myApplications.map((app) => (
+                  <div key={app.id} className="ia-card" style={{ marginBottom: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <span className="ia-badge ia-badge-blue" style={{ marginBottom: '6px' }}>
+                          Rol: {app.position?.title || 'Especialista'}
+                        </span>
+                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 700 }}>
+                          {app.project?.title || 'Proyecto Colaborativo'}
+                        </h3>
+                        <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: 'var(--ia-text-body)' }}>
+                          Tu mensaje: "{app.message || 'Sin mensaje adicional'}"
+                        </p>
+                        {app.accepted_agreements && (
+                          <span style={{ fontSize: '0.76rem', color: 'var(--ia-success)', fontWeight: 600 }}>
+                            ✓ Acuerdos del proyecto aceptados
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span
+                          className={`ia-badge ${
+                            app.status === 'accepted'
+                              ? 'ia-badge-success'
+                              : app.status === 'rejected'
+                              ? 'ia-badge-neutral'
+                              : app.status === 'withdrawn'
+                              ? 'ia-badge-neutral'
+                              : 'ia-badge-amber'
+                          }`}
+                        >
+                          {app.status === 'accepted'
+                            ? '¡Aceptado en el equipo!'
+                            : app.status === 'rejected'
+                            ? 'No seleccionado'
+                            : app.status === 'withdrawn'
+                            ? 'Retirada'
+                            : 'En revisión'}
+                        </span>
+
+                        {app.status === 'pending' && (
+                          <button
+                            type="button"
+                            className="ia-btn-secondary"
+                            style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                            onClick={() => handleWithdrawApplication(app.id)}
+                          >
+                            Retirar postulación
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            /* Listado de Proyectos (Explorar o Mis Proyectos) */
+            (() => {
+              const list = activeTab === 'my_projects' ? myProjects : filteredProjects;
+              if (list.length === 0) {
+                return (
+                  <div className="ia-empty-box">
+                    <div className="ia-empty-icon">
+                      <UsersIcon size={22} />
+                    </div>
+                    <p className="ia-empty-title">
+                      {activeTab === 'my_projects'
+                        ? 'Aún no has creado ningún proyecto propio'
+                        : 'No se encontraron proyectos con estos filtros'}
+                    </p>
+                    <p className="ia-empty-desc">
+                      Publica tu iniciativa académica, técnica o interdisciplinaria, define las vacantes que necesitas y recluta compañeros.
+                    </p>
+                    <button type="button" className="ia-btn-primary" onClick={openCreateModal}>
+                      <PlusIcon size={15} color="#ffffff" /> Publicar Nuevo Proyecto
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '18px' }}>
+                  {list.map((proj) => {
+                    const isOwner = Boolean(user?.id && proj.owner_id === user.id);
+                    const compMeta = COMPENSATION_LABELS[proj.compensation_type || 'unpaid_academic'];
+                    const statusMeta = STATUS_LABELS[proj.status] || STATUS_LABELS.open;
+                    const positionsList = proj.positions || [];
+
+                    return (
+                      <article
+                        key={proj.id}
+                        className="ia-card"
+                        style={{
+                          marginBottom: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '14px',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                            <span className={`ia-badge ${statusMeta.badgeClass}`}>
+                              {statusMeta.label}
+                            </span>
+                            <span className={`ia-badge ${compMeta?.badgeClass || 'ia-badge-blue'}`}>
+                              {compMeta?.label || 'Académico'}
+                            </span>
+                          </div>
+
+                          <h2
+                            style={{
+                              fontSize: '1.1rem',
+                              fontWeight: 800,
+                              color: 'var(--ia-text-main)',
+                              margin: '0 0 4px 0',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => openProjectWorkspace(proj)}
+                          >
+                            {proj.title}
+                          </h2>
+
+                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--ia-primary)', marginBottom: '8px' }}>
+                            {proj.category || 'Desarrollo'} · {MODALITY_LABELS[proj.modality || 'online']} · {proj.dedication_hours || 6} hrs/sem
+                          </div>
+
+                          <p style={{ fontSize: '0.86rem', color: 'var(--ia-text-body)', margin: '0 0 12px 0', lineHeight: 1.45 }}>
+                            {proj.short_description || proj.description || 'Proyecto colaborativo abierto a estudiantes.'}
+                          </p>
+
+                          {/* Roles buscados */}
+                          {positionsList.length > 0 && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ia-text-muted)', display: 'block', marginBottom: '4px' }}>
+                                ROLES REQUERIDOS ({positionsList.length}):
+                              </span>
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {positionsList.map((pos) => (
+                                  <span
+                                    key={pos.id}
+                                    className="ia-badge"
+                                    style={{
+                                      background: pos.status === 'open' ? 'var(--ia-primary-subtle)' : 'var(--ia-bg-subtle)',
+                                      color: pos.status === 'open' ? 'var(--ia-primary)' : 'var(--ia-text-muted)',
+                                      border: '1px solid var(--ia-border)',
+                                    }}
+                                  >
+                                    {pos.title} ({Math.max(0, (pos.slots || 1) - (pos.slots_filled || 0))})
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tecnologías */}
+                          {proj.technologies && proj.technologies.length > 0 && (
+                            <div className="ia-tags-cloud">
+                              {proj.technologies.slice(0, 5).map((t) => (
+                                <span key={t} className="ia-tag" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--ia-text-muted)', marginBottom: '10px' }}>
+                            <span>
+                              Por{' '}
+                              <Link
+                                to={`/profile/${proj.owner_id}`}
+                                style={{ color: 'var(--ia-primary)', fontWeight: 600, textDecoration: 'none' }}
+                              >
+                                {getUserDisplayName(proj.owner as any)}
+                              </Link>
+                            </span>
+                            <span>Máx {proj.max_members} miembros</span>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              type="button"
+                              className="ia-btn-primary"
+                              style={{ flex: 1 }}
+                              onClick={() => openProjectWorkspace(proj)}
+                            >
+                              Ver Proyecto y Vacantes
+                            </button>
+
+                            {isOwner && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="ia-btn-secondary"
+                                  style={{ padding: '7px 10px' }}
+                                  onClick={() => openEditModal(proj)}
+                                  title="Editar proyecto"
+                                >
+                                  <EditIcon size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ia-btn-icon-danger"
+                                  onClick={() => setProjectToDelete(proj)}
+                                  title="Eliminar proyecto"
+                                >
+                                  <TrashIcon size={14} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              );
+            })()
+          )}
+        </>
       )}
     </div>
   );

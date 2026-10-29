@@ -54,6 +54,16 @@ export const projectController = {
     }
   },
 
+  async getProjectApplications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const applications = await projectBackendService.getProjectApplications(req.user!, req.token!, id);
+      res.json({ success: true, data: applications });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getMyApplications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const applications = await projectBackendService.getMyApplications(req.user!, req.token!);
@@ -72,16 +82,42 @@ export const projectController = {
     }
   },
 
+  async updateProject(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const project = await projectBackendService.updateProject(req.user!, req.token!, id, req.body);
+      res.json({ success: true, data: project });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updatePositionStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id, positionId } = req.params;
+      const { status } = req.body;
+      const result = await projectBackendService.updatePositionStatus(
+        req.user!,
+        req.token!,
+        id,
+        positionId,
+        status
+      );
+      res.json({ success: true, data: result });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async applyToPosition(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id, positionId } = req.params;
-      const { message } = req.body;
       const application = await projectBackendService.applyToPosition(
         req.user!,
         req.token!,
         id,
         positionId,
-        message
+        req.body
       );
       res.status(201).json({ success: true, data: application });
     } catch (err) {
@@ -102,8 +138,14 @@ export const projectController = {
   async reviewApplication(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { applicationId } = req.params;
-      const { status } = req.body;
-      const result = await projectBackendService.reviewApplication(req.user!, req.token!, applicationId, status);
+      const { status, feedback } = req.body;
+      const result = await projectBackendService.reviewApplication(
+        req.user!,
+        req.token!,
+        applicationId,
+        status,
+        feedback
+      );
       res.json({ success: true, data: result });
     } catch (err) {
       next(err);

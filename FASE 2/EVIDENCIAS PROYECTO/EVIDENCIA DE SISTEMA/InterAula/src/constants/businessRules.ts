@@ -39,10 +39,23 @@ export const BUSINESS_RULES = {
   PROJECTS: {
     MIN_TITLE_LENGTH: 3,
     MAX_TITLE_LENGTH: 150,
+    MIN_DESCRIPTION_LENGTH: 10,
+    MAX_DESCRIPTION_LENGTH: 6000,
     MIN_MEMBERS: 1,
     MAX_MEMBERS: 50,
     DEFAULT_MEMBERS: 4,
+    MAX_POSITIONS: 15,
+    MAX_PITCH_LENGTH: 1500,
     DEFAULT_POSITIONS_TEMPLATE: 'Frontend Developer, Backend Developer',
+    MODALITIES: ['online', 'presencial', 'hibrido'] as const,
+    STATUSES: ['draft', 'open', 'in_progress', 'completed', 'cancelled'] as const,
+    COMPENSATION_TYPES: [
+      'unpaid_academic',
+      'paid',
+      'milestone_based',
+      'revenue_share',
+      'negotiable',
+    ] as const,
   },
 
   // Foro de preguntas y respuestas
@@ -51,5 +64,41 @@ export const BUSINESS_RULES = {
     MAX_TITLE_LENGTH: 200,
     MIN_DESCRIPTION_LENGTH: 10,
     MAX_DESCRIPTION_LENGTH: 5000,
+    MIN_REPLY_LENGTH: 2,
+    MAX_REPLY_LENGTH: 3000,
+    MAX_TAGS: 10,
+    PAGE_SIZE: 10,
+    POST_TYPES: ['pregunta', 'discusion', 'duda', 'recurso'] as const,
+  },
+
+  // Biblioteca y Editor de Apuntes Académicos
+  NOTES: {
+    MIN_TITLE_LENGTH: 2,
+    MAX_TITLE_LENGTH: 200,
+    MAX_SUMMARY_LENGTH: 600,
+    MAX_CONTENT_LENGTH: 250000,
+    MAX_FILE_SIZE_BYTES: 15 * 1024 * 1024, // 15 MB
+    MAX_FILE_SIZE_MB: 15,
+    AUTOSAVE_DEBOUNCE_MS: 2200,
+    PAGE_SIZE: 12,
+    ALLOWED_EXTENSIONS: ['.pdf', '.docx', '.doc', '.pptx', '.xlsx', '.txt', '.md'] as const,
+    ALLOWED_MIMES: [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain',
+      'text/markdown',
+    ] as const,
+    VISIBILITIES: ['private', 'shared', 'public'] as const,
+    CATEGORIES: [
+      'Apunte de Clase',
+      'Resumen de Certamen',
+      'Guía de Ejercicios',
+      'Formulario / Cheatsheet',
+      'Laboratorio / Código',
+      'Investigación',
+    ] as const,
   },
 } as const;

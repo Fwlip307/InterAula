@@ -358,3 +358,121 @@ describe('Seguridad de Servicios y Prevención de Bypass (Fail-Closed)', () => {
   });
 });
 
+
+import { validateNoteFile } from '../src/services/notes.service.ts';
+import {
+  parseNoteToStructuredBlocks,
+  htmlToMarkdown,
+  generateStructuredPdfBytes,
+  parseInterAulaNoteFile,
+} from '../src/utils/noteExporter.ts';
+
+describe('Biblioteca de Apuntes, Validación de Archivos y Exportadores Estructurados', () => {
+  it('validateNoteFile acepta extensiones académicas permitidas (.pdf, .docx, .md, .txt, .pptx, .xlsx)', () => {
+    const validMd = {
+      name: 'resumen_algoritmos.md',
+      type: 'text/markdown',
+      size: 12000,
+    } as File;
+    const resMd = validateNoteFile(validMd);
+    assert.equal(resMd.valid, true);
+    assert.equal(resMd.extension, '.md');
+
+    const validDocx = {
+      name: 'guia_sql.docx',
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 450000,
+    } as File;
+    const resDocx = validateNoteFile(validDocx);
+    assert.equal(resDocx.valid, true);
+    assert.equal(resDocx.extension, '.docx');
+  });
+
+  it('validateNoteFile rechaza archivos ejecutables, vacíos o mayores a 15 MB', () => {
+    const exeFile = {
+      name: 'script.exe',
+      type: 'application/octet-stream',
+      size: 5000,
+    } as File;
+    assert.equal(validateNoteFile(exeFile).valid, false);
+
+    const emptyFile = {
+      name: 'apunte.pdf',
+      type: 'application/pdf',
+      size: 0,
+    } as File;
+    assert.equal(validateNoteFile(emptyFile).valid, false);
+
+    const oversizedFile = {
+      name: 'dataset.pdf',
+      type: 'application/pdf',
+      size: 16 * 1024 * 1024,
+    } as File;
+    const resOver = validateNoteFile(oversizedFile);
+    assert.equal(resOver.valid, false);
+    assert.match(resOver.error!, /15 MB/);
+  });
+
+  it('parseNoteToStructuredBlocks preserva títulos H1-H3, listas, código, fórmulas y tablas', () => {
+    const sampleHtml = `
+      <h1>Normalización de Bases de Datos</h1>
+      <h2>Primera Forma Normal (1FN)</h2>
+      <p>Elimina grupos repetitivos y asegura atomicidad.</p>
+      <ul><li>Atributos atómicos</li><li>Clave primaria definida</li></ul>
+      <div data-math="true">R(A, B) \\to B depende funcionalmente de A</div>
+      <pre><code>CREATE TABLE estudiantes (id INT PRIMARY KEY);</code></pre>
+    `;
+    const blocks = parseNoteToStructuredBlocks(sampleHtml);
+    assert.ok(blocks.some((b) => b.type === 'h1' && b.text.includes('Normalización')));
+    assert.ok(blocks.some((b) => b.type === 'h2' && b.text.includes('Primera Forma Normal')));
+    assert.ok(blocks.some((b) => b.type === 'list-item' && b.text.includes('Atributos atómicos')));
+    assert.ok(blocks.some((b) => b.type === 'math' && b.text.includes('depende funcionalmente')));
+    assert.ok(blocks.some((b) => b.type === 'code' && b.text.includes('CREATE TABLE')));
+  });
+
+  it('htmlToMarkdown convierte encabezados, énfasis y listas a Markdown limpio', () => {
+    const md = htmlToMarkdown('<h1>Título</h1><p>Texto en <strong>negrita</strong> y <em>cursiva</em>.</p><ul><li>Item 1</li></ul>');
+    assert.match(md, /# Título/);
+    assert.match(md, /\*\*negrita\*\*/);
+    assert.match(md, /\*cursiva\*/);
+    assert.match(md, /- Item 1/);
+  });
+
+  it('generateStructuredPdfBytes genera un binario PDF (%PDF-1.4) válido y multipágina con estructura académica', () => {
+    const pdfBytes = generateStructuredPdfBytes({
+      title: 'Apunte de Arquitectura de Software',
+      subjectName: 'Arquitectura de Sistemas',
+      career: 'Ingeniería en Informática',
+      authorName: 'Matías Rojas',
+      summary: 'Patrones en capas y microservicios.',
+      contentHtml: '<h1>1. Patrón MVC</h1><p>Separa modelo, vista y controlador.</p><pre><code>export class UserController {}</code></pre>',
+      version: 2,
+    });
+    assert.ok(pdfBytes instanceof Uint8Array);
+    assert.ok(pdfBytes.byteLength > 400);
+    const header = new TextDecoder().decode(pdfBytes.slice(0, 8));
+    assert.equal(header, '%PDF-1.4');
+    const fullText = new TextDecoder().decode(pdfBytes);
+    assert.match(fullText, /Apunte de Arquitectura de Software/);
+    assert.match(fullText, /%%EOF/);
+  });
+
+  it('parseInterAulaNoteFile valida e importa archivos .interaula.json correctamente', () => {
+    const validRaw = JSON.stringify({
+      schema: 'interaula.academic-note.v1',
+      exportedAt: new Date().toISOString(),
+      note: {
+        title: 'Apunte Importado',
+        subjectName: 'Programación Web',
+        contentHtml: '<h2>Hooks en React</h2>',
+      },
+    });
+    const imported = parseInterAulaNoteFile(validRaw);
+    assert.equal(imported.title, 'Apunte Importado');
+    assert.equal(imported.subjectName, 'Programación Web');
+
+    assert.throws(() => {
+      parseInterAulaNoteFile(JSON.stringify({ schema: 'invalido' }));
+    }, /formato válido de apunte InterAula/);
+  });
+});

@@ -12,9 +12,10 @@ export interface FrontendConfig {
 }
 
 function loadFrontendConfig(): FrontendConfig {
-  const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  const metaEnv = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
+  const apiUrl = (metaEnv.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+  const supabaseUrl = metaEnv.VITE_SUPABASE_URL || '';
+  const supabaseAnonKey = metaEnv.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn(
@@ -26,8 +27,8 @@ function loadFrontendConfig(): FrontendConfig {
     apiUrl,
     supabaseUrl,
     supabaseAnonKey,
-    isDevelopment: import.meta.env.DEV,
-    isProduction: import.meta.env.PROD,
+    isDevelopment: Boolean(metaEnv.DEV ?? true),
+    isProduction: Boolean(metaEnv.PROD ?? false),
   };
 }
 

@@ -4,8 +4,10 @@ import { requireAuth, optionalAuth } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import {
   createProjectSchema,
+  updateProjectSchema,
   applyToProjectSchema,
   reviewApplicationSchema,
+  updatePositionStatusSchema,
 } from '../schemas/project.schema.js';
 
 const router = Router();
@@ -28,12 +30,31 @@ router.get('/:id/positions', projectController.getProjectPositions);
 // Miembros de un proyecto
 router.get('/:id/members', projectController.getProjectMembers);
 
+// Postulaciones recibidas en un proyecto (solo el creador)
+router.get('/:id/applications', requireAuth, projectController.getProjectApplications);
+
 // Crear proyecto colaborativo
 router.post(
   '/',
   requireAuth,
   validateRequest({ body: createProjectSchema }),
   projectController.createProject
+);
+
+// Editar proyecto propio
+router.put(
+  '/:id',
+  requireAuth,
+  validateRequest({ body: updateProjectSchema }),
+  projectController.updateProject
+);
+
+// Cambiar estado de una vacante (open, paused, filled, closed)
+router.patch(
+  '/:id/positions/:positionId/status',
+  requireAuth,
+  validateRequest({ body: updatePositionStatusSchema }),
+  projectController.updatePositionStatus
 );
 
 // Postular a una vacante

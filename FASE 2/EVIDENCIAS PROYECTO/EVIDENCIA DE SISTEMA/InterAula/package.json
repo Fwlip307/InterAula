@@ -8,8 +8,8 @@
     "dev:backend": "npm --prefix backend run dev",
     "build": "tsc -b && vite build",
     "build:backend": "npm --prefix backend run build",
-    "lint": "oxlint",
-    "test": "npx vite-node tests/security_and_services.test.ts",
+    "lint": "oxlint src backend/src tests",
+    "test": "node ./backend/node_modules/tsx/dist/cli.mjs --test tests/security_and_services.test.ts",
     "test:backend": "npm --prefix backend test",
     "test:all": "npm test && npm --prefix backend test",
     "preview": "vite preview"

@@ -6,180 +6,254 @@ import type {
   ProjectPosition,
   ProjectMember,
   ProjectApplication,
+  ProjectStatus,
+  ProjectVisibility,
+  ProjectModality,
+  ProjectCompensationType,
+  ProjectAgreements,
+  ProjectMilestone,
+  PositionStatus,
 } from '../types/project';
 
-
-/**
- * Helper interno para obtener el usuario autenticado opcional (ej. consultas de lectura de proyectos propios).
- */
-async function getOptionalAuthUser() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData?.user) {
-    return null;
-  }
-  return authData.user;
+export interface PositionInputDTO {
+  id?: string;
+  title: string;
+  description?: string | null;
+  skills_required?: string[];
+  mandatory_requirements?: string[];
+  optional_requirements?: string[];
+  level_required?: string;
+  dedication_hours?: number;
+  slots?: number;
+  compensation_override?: string | null;
+  status?: PositionStatus;
 }
 
 export interface CreateProjectDTO {
   title: string;
   short_description?: string;
   description?: string;
+  problem_statement?: string;
+  objectives?: string;
   category?: string;
+  career?: string;
+  technologies?: string[];
+  tags?: string[];
+  status?: ProjectStatus;
+  visibility?: ProjectVisibility;
+  modality?: ProjectModality;
+  dedication_hours?: number;
   max_members?: number;
-  positions?: string[];
+  requirements?: string;
+  compensation_type?: ProjectCompensationType;
+  compensation_amount?: number | null;
+  compensation_currency?: string;
+  compensation_periodicity?: string;
+  compensation_notes?: string;
+  agreements?: ProjectAgreements;
+  external_links?: Record<string, string>;
+  milestones?: ProjectMilestone[];
+  positions?: Array<string | PositionInputDTO>;
+}
+
+export interface ApplyPositionDTO {
+  message?: string;
+  relevant_skills?: string[];
+  portfolio_url?: string;
+  availability_notes?: string;
+  accepted_agreements?: boolean;
 }
 
 export const projectService = {
-  // Obtener proyectos públicos activos para el Hub
+  /**
+   * Obtener proyectos públicos activos a través del backend propio.
+   */
   async getProjects(): Promise<Project[]> {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, owner:profiles(*)')
-      .eq('visibility', 'public')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('[projectService] Error en getProjects:', error.message);
-      return [];
-    }
-    return (data || []) as Project[];
-  },
-
-  // Obtener detalle de un proyecto por ID
-  async getProjectById(id: string): Promise<Project | null> {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*, owner:profiles(*)')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('[projectService] Error en getProjectById:', error.message);
-      return null;
-    }
-    return data as Project;
-  },
-
-  // Obtener proyectos creados por el usuario en sesión
-  async getMyProjects(): Promise<Project[]> {
     try {
-      const data = await apiClient.get<Project[]>(API_ENDPOINTS.PROJECTS.ME);
-      return data;
+      const data = await apiClient.get<Project[]>(API_ENDPOINTS.PROJECTS.BASE);
+      if (Array.isArray(data)) return data;
     } catch (apiErr) {
-      console.warn('[projectService] Backend API fallback para getMyProjects:', apiErr);
-      const user = await getOptionalAuthUser();
-      if (!user) return [];
+      console.warn('[projectService] Lectura de respaldo en getProjects:', apiErr);
+    }
 
+    try {
       const { data, error } = await supabase
         .from('projects')
         .select('*, owner:profiles(*)')
-        .eq('owner_id', user.id)
+        .eq('visibility', 'public')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('[projectService] Error en getMyProjects:', error.message);
-        return [];
-      }
-      return (data || []) as Project[];
+      if (error || !data) return [];
+      return data as Project[];
+    } catch {
+      return [];
     }
   },
 
-  // Obtener vacantes / posiciones abiertas de un proyecto
+  /**
+   * Obtener detalle de un proyecto por ID a través del backend propio.
+   */
+  async getProjectById(id: string): Promise<Project | null> {
+    try {
+      const data = await apiClient.get<Project>(API_ENDPOINTS.PROJECTS.BY_ID(id));
+      if (data) return data;
+    } catch {
+      // Fallback lectura pública
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*, owner:profiles(*)')
+        .eq('id', id)
+        .single();
+
+      if (error) return null;
+      return data as Project;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Obtener proyectos creados por el usuario en sesión.
+   */
+  async getMyProjects(): Promise<Project[]> {
+    try {
+      const data = await apiClient.get<Project[]>(API_ENDPOINTS.PROJECTS.ME);
+      return Array.isArray(data) ? data : [];
+    } catch (apiErr) {
+      console.warn('[projectService] Error en getMyProjects:', apiErr);
+      return [];
+    }
+  },
+
+  /**
+   * Obtener vacantes / posiciones de un proyecto.
+   */
   async getProjectPositions(projectId: string): Promise<ProjectPosition[]> {
-    const { data, error } = await supabase
-      .from('project_positions')
-      .select('*, skill:skills(*)')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('[projectService] Error en getProjectPositions:', error.message);
-      return [];
+    try {
+      const data = await apiClient.get<ProjectPosition[]>(API_ENDPOINTS.PROJECTS.POSITIONS(projectId));
+      if (Array.isArray(data)) return data;
+    } catch {
+      // Ignorar y devolver vacío
     }
-    return (data || []) as ProjectPosition[];
+    return [];
   },
 
-  // Obtener miembros integrantes de un proyecto
+  /**
+   * Obtener miembros integrantes de un proyecto.
+   */
   async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
-    const { data, error } = await supabase
-      .from('project_members')
-      .select('*, profile:profiles(*), position:project_positions(*)')
-      .eq('project_id', projectId)
-      .order('joined_at', { ascending: true });
-
-    if (error) {
-      console.error('[projectService] Error en getProjectMembers:', error.message);
-      return [];
+    try {
+      const data = await apiClient.get<ProjectMember[]>(API_ENDPOINTS.PROJECTS.MEMBERS(projectId));
+      if (Array.isArray(data)) return data;
+    } catch {
+      // Ignorar
     }
-    return (data || []) as ProjectMember[];
+    return [];
   },
 
-  // Obtener postulaciones enviadas por el usuario actual
+  /**
+   * Obtener postulaciones recibidas en un proyecto propio (solo creador).
+   */
+  async getProjectApplications(projectId: string): Promise<ProjectApplication[]> {
+    try {
+      const data = await apiClient.get<ProjectApplication[]>(
+        API_ENDPOINTS.PROJECTS.PROJECT_APPLICATIONS(projectId)
+      );
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.error('[projectService] Error en getProjectApplications:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Obtener postulaciones enviadas por el usuario actual.
+   */
   async getMyApplications(): Promise<ProjectApplication[]> {
     try {
       const data = await apiClient.get<ProjectApplication[]>(API_ENDPOINTS.PROJECTS.MY_APPLICATIONS);
-      return data;
+      return Array.isArray(data) ? data : [];
     } catch (apiErr) {
-      console.warn('[projectService] Backend API fallback para getMyApplications:', apiErr);
-      const user = await getOptionalAuthUser();
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from('project_applications')
-        .select('*, project:projects(*), position:project_positions(*)')
-        .eq('applicant_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[projectService] Error en getMyApplications:', error.message);
-        return [];
-      }
-      return (data || []) as ProjectApplication[];
+      console.warn('[projectService] Error en getMyApplications:', apiErr);
+      return [];
     }
   },
 
-  // Postular a una vacante abierta a través del backend propio
+  /**
+   * Postular a una vacante abierta a través del backend propio.
+   */
   async applyToPosition(
     projectId: string,
     positionId: string,
-    message?: string
+    payloadOrMessage?: string | ApplyPositionDTO
   ): Promise<ProjectApplication> {
-    const data = await apiClient.post<ProjectApplication>(
+    const body: ApplyPositionDTO =
+      typeof payloadOrMessage === 'string'
+        ? { message: payloadOrMessage, accepted_agreements: true }
+        : { accepted_agreements: true, ...(payloadOrMessage || {}) };
+
+    return apiClient.post<ProjectApplication>(
       API_ENDPOINTS.PROJECTS.APPLY(projectId, positionId),
-      { message }
+      body
     );
-    return data;
   },
 
-  // Retirar una postulación pendiente a través del backend propio (solo el postulante)
+  /**
+   * Retirar una postulación pendiente a través del backend propio (solo el postulante).
+   */
   async withdrawApplication(applicationId: string): Promise<ProjectApplication> {
-    const data = await apiClient.patch<ProjectApplication>(
-      API_ENDPOINTS.PROJECTS.WITHDRAW(applicationId)
-    );
-    return data;
+    return apiClient.patch<ProjectApplication>(API_ENDPOINTS.PROJECTS.WITHDRAW(applicationId));
   },
 
-  // Resolver postulación a través del backend propio (aceptar o rechazar - solo el propietario del proyecto)
+  /**
+   * Resolver postulación a través del backend propio (aceptar o rechazar - solo el propietario del proyecto).
+   */
   async reviewApplication(
     applicationId: string,
-    status: 'accepted' | 'rejected'
+    status: 'accepted' | 'rejected',
+    feedback?: string
   ): Promise<ProjectApplication> {
-    const data = await apiClient.patch<ProjectApplication>(
+    return apiClient.patch<ProjectApplication>(
       API_ENDPOINTS.PROJECTS.REVIEW_APPLICATION(applicationId),
+      { status, feedback }
+    );
+  },
+
+  /**
+   * Actualizar estado de una vacante (open, paused, filled, closed).
+   */
+  async updatePositionStatus(
+    projectId: string,
+    positionId: string,
+    status: PositionStatus
+  ): Promise<ProjectPosition> {
+    return apiClient.patch<ProjectPosition>(
+      API_ENDPOINTS.PROJECTS.POSITION_STATUS(projectId, positionId),
       { status }
     );
-    return data;
   },
 
-  // Crear un nuevo proyecto colaborativo con sus posiciones iniciales a través del backend
+  /**
+   * Crear un nuevo proyecto colaborativo con sus posiciones, condiciones económicas y acuerdos.
+   */
   async createProject(dto: CreateProjectDTO): Promise<Project & { positions: ProjectPosition[] }> {
-    const project = await apiClient.post<Project & { positions: ProjectPosition[] }>(API_ENDPOINTS.PROJECTS.BASE, dto);
-    return project;
+    return apiClient.post<Project & { positions: ProjectPosition[] }>(API_ENDPOINTS.PROJECTS.BASE, dto);
   },
 
-  // Eliminar un proyecto propio a través del backend
+  /**
+   * Actualizar un proyecto existente a través del backend.
+   */
+  async updateProject(projectId: string, dto: Partial<CreateProjectDTO>): Promise<Project> {
+    return apiClient.put<Project>(API_ENDPOINTS.PROJECTS.BY_ID(projectId), dto);
+  },
+
+  /**
+   * Eliminar un proyecto propio a través del backend.
+   */
   async deleteProject(projectId: string): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.PROJECTS.BY_ID(projectId));
   },
 };
-

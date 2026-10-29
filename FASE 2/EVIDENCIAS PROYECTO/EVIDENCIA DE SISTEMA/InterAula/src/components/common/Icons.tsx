@@ -821,4 +821,48 @@ export const DownloadIcon = ({ size = 18, color = 'currentColor', ...props }: Ic
   </svg>
 );
 
+// Birrete Académico (Alias AcademicCapIcon)
+export const AcademicCapIcon = GraduationCapIcon;
+
+// Cerrar Sesión
+export const LogOutIcon = ({ size = 18, color = 'currentColor', ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    {...props}
+  >
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+// Menú Hamburguesa
+export const MenuIcon = ({ size = 18, color = 'currentColor', ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ display: 'inline-block', verticalAlign: 'middle' }}
+    {...props}
+  >
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+
 
