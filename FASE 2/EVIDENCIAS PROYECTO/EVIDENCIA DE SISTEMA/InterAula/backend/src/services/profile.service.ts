@@ -63,12 +63,14 @@ export const profileBackendService = {
     }
 
     // Regla de privacidad adicional en el servidor:
-    // Si no es el propio usuario, asegurar que email y teléfono solo se expongan si el flag está activo
+    // Si no es el propio usuario, asegurar que email, teléfono y preferencias de aprendizaje/accesibilidad sean privados
     const isOwner = currentUserId === targetUserId;
     return {
       ...data,
       email: data.show_email || isOwner ? data.email : null,
       phone: data.show_phone || isOwner ? data.phone : null,
+      learning_preferences: isOwner ? data.learning_preferences || [] : [],
+      accessibility_preferences: isOwner ? data.accessibility_preferences || null : null,
     };
   },
 
@@ -96,6 +98,25 @@ export const profileBackendService = {
       .single();
 
     if (error) {
+      const errMsg = String(error.message || '').toLowerCase();
+      if (error.code === 'PGRST204' || errMsg.includes('accessibility_preferences') || errMsg.includes('schema cache')) {
+        const fallbackPayload = { ...payload };
+        delete (fallbackPayload as any).accessibility_preferences;
+        delete (fallbackPayload as any).available_for_projects;
+        delete (fallbackPayload as any).project_bio;
+        const retry = await client
+          .from('profiles')
+          .update(fallbackPayload)
+          .eq('id', user.id)
+          .select()
+          .single();
+        if (!retry.error && retry.data) {
+          return {
+            ...retry.data,
+            accessibility_preferences: sanitizedUpdates.accessibility_preferences ?? null,
+          };
+        }
+      }
       throw new Error(`No fue posible actualizar el perfil: ${error.message}`);
     }
 

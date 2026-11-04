@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
 import { profileService } from '../../services/profile.service';
+import { notesService } from '../../services/notes.service';
 import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
 import type { Subject, OfferedSubject } from '../../types/profile';
 import SessionCard from './components/SessionCard';
@@ -23,39 +24,13 @@ import {
 } from '../../components/common/Icons';
 import TutorMaterialsSection, { type TutorUploadedMaterial } from './components/TutorMaterialsSection';
 
-type TutorTabType = 'requests' | 'confirmed' | 'workshops' | 'offerings' | 'materials';
-
-const DEFAULT_MATERIALS: TutorUploadedMaterial[] = [
-  {
-    id: 'mat-1',
-    title: 'Resumen de Algoritmos de Búsqueda y Ordenamiento',
-    subjectName: 'Programación de Algoritmos',
-    format: 'word',
-    fileName: 'algoritmos_ordenamiento_guia.docx',
-    uploadedAt: 'Hace 2 días',
-  },
-  {
-    id: 'mat-2',
-    title: 'Esquema de Diagrama Entidad-Relación y Reglas de Negocio',
-    subjectName: 'Modelamiento de Base de Datos',
-    format: 'png',
-    fileName: 'diagrama_er_ejemplo.png',
-    uploadedAt: 'Hace 4 días',
-  },
-  {
-    id: 'mat-3',
-    title: 'Síntesis de Comandos Git & GitHub para Proyectos en Equipo',
-    subjectName: 'Programación Web',
-    format: 'text',
-    textContent: 'Comandos esenciales: git clone, git branch feature, git checkout, git pull origin main, git merge...',
-    uploadedAt: 'Hace 1 semana',
-  },
-];
+type TutorTabType = 'requests' | 'confirmed' | 'student_sessions' | 'history' | 'workshops' | 'offerings' | 'materials';
 
 export default function MyTutoring() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TutorTabType>('requests');
   const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
+  const [studentSessions, setStudentSessions] = useState<TutoringSession[]>([]);
   const [hostedWorkshops, setHostedWorkshops] = useState<TutoringWorkshop[]>([]);
   const [offeredSubjects, setOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
@@ -73,16 +48,8 @@ export default function MyTutoring() {
   const [pubDescription, setPubDescription] = useState('');
   const [pubSubmitting, setPubSubmitting] = useState(false);
 
-  // Subir apuntes
-  const [materials, setMaterials] = useState<TutorUploadedMaterial[]>(() => {
-    try {
-      const saved = localStorage.getItem('ia_tutor_uploaded_materials');
-      return saved ? JSON.parse(saved) : DEFAULT_MATERIALS;
-    } catch {
-      return DEFAULT_MATERIALS;
-    }
-  });
-
+  // Apuntes reales del tutor conectados a notesService (sin datos ficticios hardcodeados)
+  const [materials, setMaterials] = useState<TutorUploadedMaterial[]>([]);
 
   // Estado para modal de evaluación
   const [selectedSessionForReview, setSelectedSessionForReview] = useState<TutoringSession | null>(null);
@@ -98,19 +65,48 @@ export default function MyTutoring() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const [asTutor, tutorWorkshops, offered, subjects] = await Promise.all([
+      const [asTutor, asStudent, tutorWorkshops, offered, subjects, myNotes] = await Promise.all([
         tutoringService.getMySessionsAsTutor(),
+        tutoringService.getMySessionsAsStudent(),
         tutoringService.getMyWorkshopsAsTutor(),
         user ? profileService.getOfferedSubjects(user.id) : Promise.resolve([]),
         profileService.getSubjects(),
+        notesService.getMyNotes().catch(() => []),
       ]);
       setTutorSessions(asTutor);
+      setStudentSessions(asStudent);
       setHostedWorkshops(tutorWorkshops);
       setOfferedSubjects(offered);
       setCatalogSubjects(subjects);
       if (subjects.length > 0 && !pubSubjectId) {
         setPubSubjectId(subjects[0].id);
       }
+
+      const mappedMaterials: TutorUploadedMaterial[] = myNotes.map((note) => {
+        const ext = (note.fileExtension || '').toLowerCase();
+        const format: 'png' | 'word' | 'pdf' | 'text' =
+          ext === '.png' || ext === '.jpg' || ext === '.jpeg'
+            ? 'png'
+            : ext === '.docx' || ext === '.doc'
+              ? 'word'
+              : ext === '.pdf'
+                ? 'pdf'
+                : note.sourceType === 'upload'
+                  ? 'pdf'
+                  : 'text';
+        return {
+          id: note.id,
+          title: note.title,
+          subjectName: note.subjectName || 'Materia General',
+          format,
+          fileName: note.fileName || undefined,
+          textContent: note.contentMarkdown || note.summary || undefined,
+          uploadedAt: note.createdAt
+            ? new Date(note.createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+            : 'Publicado',
+        };
+      });
+      setMaterials(mappedMaterials);
     } catch (err: any) {
       console.error('[MyTutoring] Error al cargar sesiones:', err);
       setErrorMsg(err.message || 'No fue posible cargar tus tutorías.');
@@ -312,47 +308,74 @@ export default function MyTutoring() {
     await loadSessions();
   };
 
-  // Guardar nuevo apunte
-  const handleUploadMaterialSubmit = (data: {
+  // Guardar nuevo apunte conectado al backend real (notesService)
+  const handleUploadMaterialSubmit = async (data: {
     title: string;
     subjectName: string;
     format: 'png' | 'word' | 'pdf' | 'text';
     fileName?: string;
     textContent?: string;
   }) => {
-    const newMat: TutorUploadedMaterial = {
-      id: `mat-${Date.now()}`,
-      title: data.title,
-      subjectName: data.subjectName || (offeredSubjects[0]?.subject?.name || 'Materia General'),
-      format: data.format,
-      fileName: data.fileName || (data.format === 'word' ? `${data.title.toLowerCase().replace(/\s+/g, '_')}.docx` : data.format === 'png' ? `${data.title.toLowerCase().replace(/\s+/g, '_')}.png` : `${data.title.toLowerCase().replace(/\s+/g, '_')}.pdf`),
-      textContent: data.format === 'text' ? data.textContent : undefined,
-      uploadedAt: 'Recién subido',
-    };
-
-    const updated = [newMat, ...materials];
-    setMaterials(updated);
+    setErrorMsg('');
     try {
-      localStorage.setItem('ia_tutor_uploaded_materials', JSON.stringify(updated));
-    } catch {}
+      const subjectMatch = catalogSubjects.find(
+        (s) => s.name.toLowerCase() === (data.subjectName || '').toLowerCase()
+      );
+      const ext =
+        data.format === 'word' ? '.docx' : data.format === 'png' ? '.png' : data.format === 'pdf' ? '.pdf' : '.md';
 
-    setSuccessMsg('¡Apunte publicado exitosamente para tus estudiantes!');
-    setTimeout(() => setSuccessMsg(''), 5000);
+      const created = await notesService.createNote({
+        title: data.title,
+        subject_id: subjectMatch?.id || null,
+        subject_name: data.subjectName || offeredSubjects[0]?.subject?.name || 'Materia General',
+        summary: data.textContent ? data.textContent.slice(0, 220) : `Material de apoyo compartido (${data.format.toUpperCase()})`,
+        content_markdown: data.textContent || `Documento de apoyo académico: **${data.title}**`,
+        content_html: `<p>${data.textContent || `Documento de apoyo académico: ${data.title}`}</p>`,
+        source_type: data.format === 'text' ? 'editor' : 'upload',
+        file_name: data.fileName || `${data.title.toLowerCase().replace(/\s+/g, '_')}${ext}`,
+        file_extension: ext,
+        visibility: 'public',
+        is_draft: false,
+      });
+
+      const newMat: TutorUploadedMaterial = {
+        id: created.id,
+        title: created.title,
+        subjectName: created.subjectName || data.subjectName || 'Materia General',
+        format: data.format,
+        fileName: created.fileName || data.fileName,
+        textContent: data.textContent,
+        uploadedAt: 'Recién publicado',
+      };
+
+      setMaterials((prev) => [newMat, ...prev]);
+      setSuccessMsg('¡Apunte publicado exitosamente en la Biblioteca de Apuntes y disponible para tus estudiantes!');
+      setTimeout(() => setSuccessMsg(''), 5000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'No fue posible guardar el apunte en el servidor.');
+    }
   };
 
-  const handleDeleteMaterial = (id: string) => {
-    const updated = materials.filter((m) => m.id !== id);
-    setMaterials(updated);
+  const handleDeleteMaterial = async (id: string) => {
+    setErrorMsg('');
     try {
-      localStorage.setItem('ia_tutor_uploaded_materials', JSON.stringify(updated));
-    } catch {}
-    setSuccessMsg('El apunte ha sido eliminado.');
-    setTimeout(() => setSuccessMsg(''), 4000);
+      await notesService.deleteNote(id);
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
+      setSuccessMsg('El apunte ha sido eliminado.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'No fue posible eliminar el apunte.');
+    }
   };
 
-  // Filtrado de sesiones del tutor
+  // Filtrado de sesiones del tutor y del estudiante
   const pendingRequests = tutorSessions.filter((s) => s.status === 'pending');
   const confirmedSessions = tutorSessions.filter((s) => s.status === 'accepted');
+  const activeStudentSessions = studentSessions.filter((s) => s.status === 'pending' || s.status === 'accepted');
+  const historySessions = [
+    ...tutorSessions.filter((s) => s.status === 'completed' || s.status === 'cancelled' || s.status === 'rejected'),
+    ...studentSessions.filter((s) => s.status === 'completed' || s.status === 'cancelled' || s.status === 'rejected'),
+  ].filter((session, index, self) => index === self.findIndex((t) => t.id === session.id));
 
   return (
     <div>
@@ -382,15 +405,15 @@ export default function MyTutoring() {
                 border: '1px solid #bbf7d0',
               }}
             >
-              Rol Tutor
+              Aprendizaje Colaborativo
             </span>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>· Gestión de Sesiones y Material</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>· Gestión de Sesiones, Solicitudes y Material</span>
           </div>
           <h1 style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0' }}>
-            Panel del Tutor
+            Gestión de Tutorías y Apoyo Académico
           </h1>
-          <p style={{ fontSize: '0.92rem', color: '#64748b', margin: 0, maxWidth: '680px' }}>
-            Atiende solicitudes de estudiantes, coordina tus tutorías 1 a 1, imparte talleres grupales y publica apuntes de estudio.
+          <p style={{ fontSize: '0.92rem', color: '#475569', margin: 0, maxWidth: '720px' }}>
+            En InterAula puedes recibir apoyo en materias desafiantes y enseñar aquellas que dominas. Gestiona tus solicitudes recibidas, tus sesiones como estudiante, talleres grupales y apuntes compartidos.
           </p>
         </div>
 
@@ -523,42 +546,59 @@ export default function MyTutoring() {
             </div>
             <div style={{ flex: 1 }}>
               <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#166534', margin: '0 0 6px 0' }}>
-                Habilítate como Tutor Académico
+                Habilítate para ofrecer Apoyo Académico entre Pares o Certificarte como Tutor
               </h2>
               <p style={{ fontSize: '0.9rem', color: '#15803d', margin: '0 0 16px 0', lineHeight: 1.5, maxWidth: '720px' }}>
-                Para comenzar a recibir solicitudes de estudiantes, dictar talleres en vivo y compartir material validado,
-                acredita tu rendimiento en los ramos aprobados mediante tu certificado de notas o la prueba técnica con IA.
+                Puedes publicar una asignatura de apoyo colaborativo entre pares ahora mismo o acreditar formalmente tu dominio como Tutor Par Verificado en tu perfil.
               </p>
-              <Link
-                to="/profile?tab=tutoring"
-                className="ia-btn-primary"
-                style={{
-                  padding: '9px 20px',
-                  fontSize: '0.88rem',
-                  fontWeight: 700,
-                  background: '#16a34a',
-                  borderColor: '#15803d',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <ShieldCheckIcon size={16} color="#ffffff" />
-                <span>¿Cómo Certificarme como Tutor? (Ver Guía y Pasos)</span>
-              </Link>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsPublishTutoringModalOpen(true)}
+                  className="ia-btn-primary"
+                  style={{
+                    padding: '9px 20px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    background: '#16a34a',
+                    borderColor: '#15803d',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <PlusIcon size={16} color="#ffffff" />
+                  <span>Publicar Materia de Apoyo entre Pares</span>
+                </button>
+                <Link
+                  to="/profile?tab=tutoring"
+                  className="ia-btn-secondary"
+                  style={{
+                    padding: '9px 20px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <ShieldCheckIcon size={16} color="#15803d" />
+                  <span>¿Cómo Certificarme como Tutor Verificado?</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Pestañas del Panel del Tutor */}
+      {/* Pestañas del Panel */}
       <div
         style={{
           display: 'flex',
           borderBottom: '2px solid #e2e8f0',
           marginBottom: '24px',
-          gap: '8px',
+          gap: '6px',
           flexWrap: 'wrap',
         }}
       >
@@ -567,8 +607,8 @@ export default function MyTutoring() {
           type="button"
           onClick={() => setActiveTab('requests')}
           style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
+            padding: '12px 16px',
+            fontSize: '0.9rem',
             fontWeight: 700,
             color: activeTab === 'requests' ? '#2563eb' : '#64748b',
             background: 'none',
@@ -604,8 +644,8 @@ export default function MyTutoring() {
           type="button"
           onClick={() => setActiveTab('confirmed')}
           style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
+            padding: '12px 16px',
+            fontSize: '0.9rem',
             fontWeight: 700,
             color: activeTab === 'confirmed' ? '#16a34a' : '#64748b',
             background: 'none',
@@ -619,16 +659,62 @@ export default function MyTutoring() {
           }}
         >
           <UsersIcon size={18} color={activeTab === 'confirmed' ? '#16a34a' : '#64748b'} />
-          <span>Tutorías Confirmadas ({confirmedSessions.length})</span>
+          <span>Confirmadas como Tutor ({confirmedSessions.length})</span>
         </button>
 
-        {/* Pestaña 3: Talleres Grupales */}
+        {/* Pestaña 3: Mis Solicitudes como Estudiante */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('student_sessions')}
+          style={{
+            padding: '12px 16px',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+            color: activeTab === 'student_sessions' ? '#0284c7' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'student_sessions' ? '2px solid #0284c7' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <CalendarIcon size={18} color={activeTab === 'student_sessions' ? '#0284c7' : '#64748b'} />
+          <span>Mis Solicitudes como Estudiante ({activeStudentSessions.length})</span>
+        </button>
+
+        {/* Pestaña 4: Historial y Evaluaciones */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('history')}
+          style={{
+            padding: '12px 16px',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+            color: activeTab === 'history' ? '#475569' : '#64748b',
+            background: 'none',
+            border: 'none',
+            borderBottom: activeTab === 'history' ? '2px solid #475569' : '2px solid transparent',
+            marginBottom: '-2px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <CheckIcon size={18} color={activeTab === 'history' ? '#475569' : '#64748b'} />
+          <span>Historial ({historySessions.length})</span>
+        </button>
+
+        {/* Pestaña 5: Talleres Grupales */}
         <button
           type="button"
           onClick={() => setActiveTab('workshops')}
           style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
+            padding: '12px 16px',
+            fontSize: '0.9rem',
             fontWeight: 700,
             color: activeTab === 'workshops' ? '#7c3aed' : '#64748b',
             background: 'none',
@@ -642,16 +728,16 @@ export default function MyTutoring() {
           }}
         >
           <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
-          <span>Talleres que Imparto ({hostedWorkshops.length})</span>
+          <span>Talleres Grupales ({hostedWorkshops.length})</span>
         </button>
 
-        {/* Pestaña 4: Materias que Imparto */}
+        {/* Pestaña 6: Materias que Imparto */}
         <button
           type="button"
           onClick={() => setActiveTab('offerings')}
           style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
+            padding: '12px 16px',
+            fontSize: '0.9rem',
             fontWeight: 700,
             color: activeTab === 'offerings' ? '#059669' : '#64748b',
             background: 'none',
@@ -668,13 +754,13 @@ export default function MyTutoring() {
           <span>Materias que Imparto ({offeredSubjects.length})</span>
         </button>
 
-        {/* Pestaña 5: Subir Apuntes y Recursos */}
+        {/* Pestaña 7: Subir Apuntes y Recursos */}
         <button
           type="button"
           onClick={() => setActiveTab('materials')}
           style={{
-            padding: '12px 18px',
-            fontSize: '0.95rem',
+            padding: '12px 16px',
+            fontSize: '0.9rem',
             fontWeight: 700,
             color: activeTab === 'materials' ? '#d97706' : '#64748b',
             background: 'none',
@@ -688,7 +774,7 @@ export default function MyTutoring() {
           }}
         >
           <BookOpenIcon size={18} color={activeTab === 'materials' ? '#d97706' : '#64748b'} />
-          <span>Apuntes del Tutor ({materials.length})</span>
+          <span>Apuntes Publicados ({materials.length})</span>
         </button>
       </div>
 
@@ -707,11 +793,15 @@ export default function MyTutoring() {
                 style={{ padding: '40px 20px' }}
                 icon={<CalendarIcon size={32} color="#2563eb" />}
                 title="No tienes solicitudes pendientes"
-                description="Cuando un estudiante de tu carrera solicite apoyo en las materias que impartes, podrás revisar sus datos, motivo y agendar la sesión aquí."
+                description="Cuando un estudiante solicite tu apoyo en las materias que impartes, podrás revisar sus preferencias de aprendizaje, temas a reforzar y confirmar la sesión aquí."
                 action={
-                  <Link to="/profile?tab=tutoring" className="ia-btn-secondary" style={{ textDecoration: 'none' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('offerings')}
+                    className="ia-btn-secondary"
+                  >
                     Ver mis materias impartidas
-                  </Link>
+                  </button>
                 }
               />
             </div>
@@ -735,7 +825,7 @@ export default function MyTutoring() {
         </div>
       )}
 
-      {/* 2. TUTORÍAS CONFIRMADAS */}
+      {/* 2. TUTORÍAS CONFIRMADAS COMO TUTOR */}
       {activeTab === 'confirmed' && (
         <div>
           {loading ? (
@@ -748,7 +838,7 @@ export default function MyTutoring() {
                 style={{ padding: '40px 20px' }}
                 icon={<UsersIcon size={32} color="#16a34a" />}
                 title="Sin tutorías confirmadas por impartir"
-                description="Acepta solicitudes pendientes para programar y habilitar la sala virtual para tu alumno."
+                description="Acepta solicitudes pendientes para programar y habilitar el Aula Colaborativa para tu compañero."
               />
             </div>
           ) : (
@@ -771,7 +861,87 @@ export default function MyTutoring() {
         </div>
       )}
 
-      {/* 3. TALLERES GRUPALES QUE IMPARTO */}
+      {/* 3. MIS SOLICITUDES Y SESIONES COMO ESTUDIANTE */}
+      {activeTab === 'student_sessions' && (
+        <div>
+          {loading ? (
+            <div className="ia-card" style={{ padding: '50px 20px', textAlign: 'center' }}>
+              <p style={{ color: '#64748b', margin: 0 }}>Cargando tus solicitudes como estudiante...</p>
+            </div>
+          ) : activeStudentSessions.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '40px 20px' }}
+                icon={<CalendarIcon size={32} color="#0284c7" />}
+                title="No tienes solicitudes activas como estudiante"
+                description="Explora el directorio de tutores pares y solicita apoyo personalizado en las asignaturas que estás cursando."
+                action={
+                  <Link to="/tutoring" className="ia-btn-primary" style={{ textDecoration: 'none' }}>
+                    Explorar Tutores y Asignaturas
+                  </Link>
+                }
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+              {activeStudentSessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  role="student"
+                  onAccept={handleAccept}
+                  onReject={handleReject}
+                  onCancel={handleCancelClick}
+                  onComplete={handleComplete}
+                  onReview={handleOpenReview}
+                  actionLoading={actionLoading}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. HISTORIAL COMPLETO Y EVALUACIONES */}
+      {activeTab === 'history' && (
+        <div>
+          {loading ? (
+            <div className="ia-card" style={{ padding: '50px 20px', textAlign: 'center' }}>
+              <p style={{ color: '#64748b', margin: 0 }}>Cargando historial de sesiones...</p>
+            </div>
+          ) : historySessions.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '40px 20px' }}
+                icon={<CheckIcon size={32} color="#475569" />}
+                title="Aún no tienes sesiones en el historial"
+                description="Aquí aparecerán tus sesiones completadas, canceladas o rechazadas, y podrás dejar evaluaciones constructivas a tus tutores."
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+              {historySessions.map((session) => {
+                const sessionRole = session.tutor_id === user?.id ? 'tutor' : 'student';
+                return (
+                  <SessionCard
+                    key={session.id}
+                    session={session}
+                    role={sessionRole}
+                    onAccept={handleAccept}
+                    onReject={handleReject}
+                    onCancel={handleCancelClick}
+                    onComplete={handleComplete}
+                    onReview={handleOpenReview}
+                    actionLoading={actionLoading}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. TALLERES GRUPALES QUE IMPARTO */}
       {activeTab === 'workshops' && (
         <div>
           {hostedWorkshops.length === 0 ? (
@@ -780,7 +950,7 @@ export default function MyTutoring() {
                 style={{ padding: '40px 20px' }}
                 icon={<VideoIcon size={32} color="#7c3aed" />}
                 title="Aún no has creado talleres grupales"
-                description="Como tutor acreditado puedes abrir aulas virtuales para preparar certámenes con varios estudiantes a la vez."
+                description="Como tutor puedes abrir aulas colaborativas para preparar certámenes o resolver ejercicios paso a paso con varios estudiantes a la vez."
                 action={
                   <button
                     type="button"
@@ -813,7 +983,7 @@ export default function MyTutoring() {
         </div>
       )}
 
-      {/* 4. MATERIAS QUE IMPARTO Y PUBLICAR TUTORÍAS */}
+      {/* 6. MATERIAS QUE IMPARTO Y PUBLICAR TUTORÍAS */}
       {activeTab === 'offerings' && (
         <div>
           <div
@@ -831,7 +1001,7 @@ export default function MyTutoring() {
                 Materias y Asignaturas que Impartes ({offeredSubjects.length})
               </h2>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '2px 0 0' }}>
-                Estas asignaturas están publicadas en Aprendizaje para que los estudiantes puedan solicitarte sesiones de tutoría 1 a 1.
+                Estas asignaturas están publicadas en el directorio para que otros estudiantes puedan solicitarte sesiones de tutoría 1 a 1.
               </p>
             </div>
             <button
@@ -860,7 +1030,7 @@ export default function MyTutoring() {
                 style={{ padding: '40px 20px' }}
                 icon={<BookOpenIcon size={32} color="#16a34a" />}
                 title="Aún no has publicado materias para enseñar"
-                description="Selecciona del catálogo institucional de Duoc UC las asignaturas que ya aprobaste para ofrecer tutorías a tus compañeros."
+                description="Selecciona del catálogo institucional las asignaturas que ya aprobaste para ofrecer apoyo académico a tus compañeros."
                 action={
                   <button
                     type="button"
@@ -893,7 +1063,7 @@ export default function MyTutoring() {
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px', flexWrap: 'wrap' }}>
                         <span
                           style={{
                             fontSize: '0.72rem',
@@ -911,7 +1081,11 @@ export default function MyTutoring() {
                           style={{
                             fontSize: '0.72rem',
                             fontWeight: 700,
-                            color: offered.is_verified ? '#15803d' : '#64748b',
+                            color: offered.is_verified ? '#15803d' : '#1d4ed8',
+                            background: offered.is_verified ? '#f0fdf4' : '#eff6ff',
+                            border: `1px solid ${offered.is_verified ? '#bbf7d0' : '#bfdbfe'}`,
+                            padding: '2px 8px',
+                            borderRadius: '9999px',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
@@ -920,10 +1094,10 @@ export default function MyTutoring() {
                           {offered.is_verified ? (
                             <>
                               <ShieldCheckIcon size={14} color="#15803d" />
-                              <span>Validado Duoc UC</span>
+                              <span>Tutor Par Verificado</span>
                             </>
                           ) : (
-                            <span>Nivel {offered.level === 'advanced' ? 'Avanzado' : offered.level === 'intermediate' ? 'Intermedio' : 'Básico'}</span>
+                            <span>Apoyo Académico entre Pares · Nivel {offered.level === 'advanced' ? 'Avanzado' : offered.level === 'intermediate' ? 'Intermedio' : 'Básico'}</span>
                           )}
                         </span>
                       </div>
@@ -973,7 +1147,7 @@ export default function MyTutoring() {
         </div>
       )}
 
-      {/* 5. SUBIR Y GESTIONAR APUNTES DEL TUTOR */}
+      {/* 7. SUBIR Y GESTIONAR APUNTES DEL TUTOR */}
       {activeTab === 'materials' && (
         <TutorMaterialsSection
           materials={materials}
@@ -1005,7 +1179,7 @@ export default function MyTutoring() {
               Cancelar Sesión de Tutoría
             </h3>
             <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '0 0 16px 0' }}>
-              Indica el motivo de cancelación para notificar al estudiante.
+              Indica el motivo de cancelación para notificar a tu compañero.
             </p>
             <textarea
               rows={3}
@@ -1098,7 +1272,7 @@ export default function MyTutoring() {
                   Publicar Asignatura de Tutoría
                 </h2>
                 <p style={{ fontSize: '0.84rem', color: '#64748b', margin: '2px 0 0' }}>
-                  Habilita una materia para recibir solicitudes directas de estudiantes.
+                  Habilita una materia para recibir solicitudes directas de otros estudiantes.
                 </p>
               </div>
               <button
@@ -1193,7 +1367,7 @@ export default function MyTutoring() {
                     }}
                   >
                     <option value="online">Online (Aula Virtual InterAula)</option>
-                    <option value="in_person">Presencial en Sede Duoc UC</option>
+                    <option value="in_person">Presencial en Sede</option>
                     <option value="hybrid">Híbrida (Online o Presencial)</option>
                   </select>
                 </div>
@@ -1214,7 +1388,7 @@ export default function MyTutoring() {
                 }}
               >
                 <CheckIcon size={16} color="#15803d" />
-                <span>Apoyo Académico 100% Gratuito y Solidario entre Pares Duoc UC</span>
+                <span>Apoyo Académico 100% Gratuito y Solidario entre Pares</span>
               </div>
 
               <div>
@@ -1225,7 +1399,7 @@ export default function MyTutoring() {
                   rows={3}
                   value={pubDescription}
                   onChange={(e) => setPubDescription(e.target.value)}
-                  placeholder="ej: Apoyo en resolución de guías de ejercicios, dudas de laboratorio y preparación de certámenes. Horarios flexibles en las tardes..."
+                  placeholder="ej: Apoyo paso a paso en resolución de ejercicios, dudas de laboratorio y preparación de certámenes. Ritmo pausado y ejemplos visuales..."
                   style={{
                     width: '100%',
                     padding: '8px 12px',

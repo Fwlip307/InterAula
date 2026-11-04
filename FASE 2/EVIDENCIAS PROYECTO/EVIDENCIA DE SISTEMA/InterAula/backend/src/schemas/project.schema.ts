@@ -64,6 +64,7 @@ export const createProjectSchema = z
     external_links: z.record(z.any()).optional().default({}),
     milestones: z.array(projectMilestoneInputSchema).max(20).optional().default([]),
     cover_url: z.string().trim().max(500).nullable().optional(),
+    start_date: z.string().trim().max(40).nullable().optional(),
     // Soporta tanto lista de nombres simples (compatibilidad) como objetos estructurados de rol
     positions: z.array(z.union([z.string().trim().max(P_RULES.POSITION.MAX_TITLE_LENGTH), projectPositionInputSchema])).max(15).optional(),
     required_roles: z.array(z.string().trim().max(50)).max(15).optional(),
@@ -98,6 +99,7 @@ export const updateProjectSchema = z
     external_links: z.record(z.any()).optional(),
     milestones: z.array(projectMilestoneInputSchema).max(20).optional(),
     cover_url: z.string().trim().max(500).nullable().optional(),
+    start_date: z.string().trim().max(40).nullable().optional(),
     positions: z.array(z.union([z.string().trim().max(P_RULES.POSITION.MAX_TITLE_LENGTH), projectPositionInputSchema])).max(15).optional(),
   })
   .strict();

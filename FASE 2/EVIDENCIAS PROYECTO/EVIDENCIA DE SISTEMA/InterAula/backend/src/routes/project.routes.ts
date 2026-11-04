@@ -79,4 +79,7 @@ router.patch(
 // Eliminar proyecto (solo el creador)
 router.delete('/:id', requireAuth, projectController.deleteProject);
 
+// Remover integrante del equipo (solo el creador)
+router.delete('/:id/members/:memberId', requireAuth, projectController.removeProjectMember);
+
 export default router;

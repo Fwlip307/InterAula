@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+export const accessibilityPreferencesSchema = z
+  .object({
+    calmMode: z.boolean().optional(),
+    fontSize: z.enum(['normal', 'large', 'xlarge']).optional(),
+    contrast: z.enum(['standard', 'high']).optional(),
+    reduceMotion: z.boolean().optional(),
+    spacing: z.enum(['standard', 'spacious']).optional(),
+    untimedQuizzes: z.boolean().optional(),
+    quietNotifications: z.boolean().optional(),
+    emailTutoring: z.boolean().optional(),
+    emailProjects: z.boolean().optional(),
+  })
+  .strict();
+
 export const updateProfileSchema = z
   .object({
     first_name: z.string().trim().max(60, 'El nombre no puede exceder 60 caracteres').nullable().optional(),
@@ -34,7 +48,10 @@ export const updateProfileSchema = z
       .nullable()
       .optional(),
     available_for_tutoring: z.boolean().optional(),
-    learning_preferences: z.array(z.string()).max(20).optional(),
+    available_for_projects: z.boolean().optional(),
+    project_bio: z.string().trim().max(600).nullable().optional(),
+    learning_preferences: z.array(z.string()).max(25).optional(),
+    accessibility_preferences: accessibilityPreferencesSchema.nullable().optional(),
     // Campos de DUA y accesibilidad neuroinclusiva
     dua_contrast_mode: z.boolean().optional(),
     dua_font_scale: z.number().min(0.8).max(1.8).optional(),

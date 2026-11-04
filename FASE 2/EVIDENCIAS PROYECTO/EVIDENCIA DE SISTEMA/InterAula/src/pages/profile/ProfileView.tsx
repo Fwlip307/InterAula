@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profile.service';
 import { tutoringService } from '../../services/tutoring.service';
 import { verificationService } from '../../services/verification.service';
+import { projectService } from '../../services/project.service';
+import { notesService, type AcademicNote } from '../../services/notes.service';
+import type { Project } from '../../types/project';
 import type {
   Profile,
   Subject,
@@ -28,6 +31,7 @@ import {
   EditIcon,
   LockIcon,
   CheckIcon,
+  BriefcaseIcon,
 } from '../../components/common/Icons';
 import { getUserDisplayName, getUserInitial } from '../../utils/formatters';
 import { isValidUrl } from '../../utils/validators';
@@ -68,6 +72,8 @@ export default function ProfileView() {
   const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [_verificationRequests, setVerificationRequests] = useState<TutorVerificationRequest[]>([]);
+  const [myProjects, setMyProjects] = useState<Project[]>([]);
+  const [myNotes, setMyNotes] = useState<AcademicNote[]>([]);
 
   // Estados para Apartado 1: Información Personal y Académica
   const [isEditingPersonal, setIsEditingPersonal] = useState(searchParams.get('edit') === 'true');
@@ -166,7 +172,7 @@ export default function ProfileView() {
       if (!user) return;
       try {
         setLoading(true);
-        const [p, subs, offered, needed, stats, uBadges, verifReqs] = await Promise.all([
+        const [p, subs, offered, needed, stats, uBadges, verifReqs, userProjs, userNotes] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getSubjects(),
           profileService.getOfferedSubjects(user.id),
@@ -177,6 +183,8 @@ export default function ProfileView() {
             console.error('[ProfileView] Error al cargar solicitudes de verificación:', e);
             return [];
           }),
+          projectService.getMyProjects().catch(() => []),
+          notesService.getMyNotes().catch(() => []),
         ]);
 
         if (isMounted) {
@@ -187,6 +195,8 @@ export default function ProfileView() {
           setTutorStats(stats);
           setBadges(uBadges);
           setVerificationRequests(verifReqs);
+          setMyProjects(userProjs);
+          setMyNotes(userNotes);
 
           if (p) {
             setSelectedInstitution(p.institution || 'Duoc UC');
@@ -639,28 +649,105 @@ export default function ProfileView() {
       {/* APARTADO 1: INFORMACIÓN PERSONAL Y ACADÉMICA (Todo en mi perfil)          */}
       {/* ========================================================================= */}
       {activeTab === 'personal' && (
-        <ProfilePersonalInfoTab
-          profile={profile}
-          userEmail={user?.email}
-          fullName={fullName}
-          isEditing={isEditingPersonal}
-          onStartEdit={handleStartEditPersonal}
-          onCancelEdit={handleCancelEditPersonal}
-          onSave={handleSavePersonal}
-          saving={savingPersonal}
-          successMsg={personalSuccessMsg}
-          errorMsg={personalErrorMsg}
-          institutionOptions={institutionOptions}
-          careerOptions={careerOptions}
-          sedeOptions={sedeOptions}
-          allInstitutionsCount={allInstitutions.length}
-          availableCareersCount={availableCareers.length}
-          availableSedesCount={availableSedes.length}
-          selectedInstitution={selectedInstitution}
-          selectedCareer={selectedCareer}
-          onInstitutionChange={handleInstitutionSelect}
-          onCareerChange={setSelectedCareer}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <ProfilePersonalInfoTab
+            profile={profile}
+            userEmail={user?.email}
+            fullName={fullName}
+            isEditing={isEditingPersonal}
+            onStartEdit={handleStartEditPersonal}
+            onCancelEdit={handleCancelEditPersonal}
+            onSave={handleSavePersonal}
+            saving={savingPersonal}
+            successMsg={personalSuccessMsg}
+            errorMsg={personalErrorMsg}
+            institutionOptions={institutionOptions}
+            careerOptions={careerOptions}
+            sedeOptions={sedeOptions}
+            allInstitutionsCount={allInstitutions.length}
+            availableCareersCount={availableCareers.length}
+            availableSedesCount={availableSedes.length}
+            selectedInstitution={selectedInstitution}
+            selectedCareer={selectedCareer}
+            onInstitutionChange={handleInstitutionSelect}
+            onCareerChange={setSelectedCareer}
+          />
+
+          {/* Resumen de Proyectos Interdisciplinarios y Apuntes del Estudiante */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '18px' }}>
+            <div className="ia-card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h2 className="ia-card-title" style={{ margin: 0 }}>
+                  <BriefcaseIcon size={18} color="#7c3aed" /> Mis Proyectos Interdisciplinarios ({myProjects.length})
+                </h2>
+                <Link to="/projects" className="ia-card-action">
+                  Gestionar en el Hub →
+                </Link>
+              </div>
+              {myProjects.length > 0 ? (
+                <div className="ia-catalog-list">
+                  {myProjects.slice(0, 4).map((proj) => (
+                    <div key={proj.id} className="ia-catalog-item">
+                      <div className="ia-catalog-item-info">
+                        <div>
+                          <div className="ia-catalog-item-title">{proj.title}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                            {proj.category || 'Desarrollo'} · {proj.status === 'open' ? 'Buscando equipo' : proj.status}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="ia-badge ia-badge-purple">Creador</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                  Aún no has publicado proyectos en el Hub Interdisciplinario.{' '}
+                  <Link to="/projects" style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}>
+                    Crear o explorar proyectos
+                  </Link>
+                </p>
+              )}
+            </div>
+
+            <div className="ia-card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h2 className="ia-card-title" style={{ margin: 0 }}>
+                  <BookOpenIcon size={18} color="#d97706" /> Mis Apuntes y Recursos ({myNotes.length})
+                </h2>
+                <Link to="/resources" className="ia-card-action">
+                  Ir a Biblioteca →
+                </Link>
+              </div>
+              {myNotes.length > 0 ? (
+                <div className="ia-catalog-list">
+                  {myNotes.slice(0, 4).map((note) => (
+                    <div key={note.id} className="ia-catalog-item">
+                      <div className="ia-catalog-item-info">
+                        <div>
+                          <div className="ia-catalog-item-title">{note.title}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                            {note.subjectName || 'Materia General'} · {note.downloadsCount || 0} descargas
+                          </div>
+                        </div>
+                      </div>
+                      <span className="ia-badge ia-badge-neutral">
+                        {note.visibility === 'public' ? 'Público' : 'Privado'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                  No tienes apuntes publicados aún.{' '}
+                  <Link to="/resources" style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}>
+                    Subir o redactar un apunte
+                  </Link>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ========================================================================= */}

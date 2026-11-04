@@ -547,5 +547,49 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
 
       const membersAfter = await projectBackendService.getProjectMembers(project.id);
       assert.equal(membersAfter.length, 2); // Líder + Miembro aceptado
+
+      // 7. Un integrante que no es dueño no puede remover miembros del equipo
+      await assert.rejects(
+        async () => {
+          await projectBackendService.removeProjectMember(applicant, MOCK_TOKEN, project.id, leader.id);
+        },
+        /Solo el creador del proyecto puede gestionar los integrantes/
+      );
+
+      // 8. El líder remueve al integrante -> libera el cupo y reabre la vacante ('open')
+      await projectBackendService.removeProjectMember(leader, MOCK_TOKEN, project.id, applicant.id);
+      const membersAfterRemoval = await projectBackendService.getProjectMembers(project.id);
+      assert.equal(membersAfterRemoval.length, 1);
+
+      const positionsAfterRemoval = await projectBackendService.getProjectPositions(project.id);
+      assert.equal(positionsAfterRemoval[0].slots_filled, 0);
+      assert.equal(positionsAfterRemoval[0].status, 'open');
+    });
+
+    test('Accesibilidad y Privacidad: updateProfileSchema valida accessibility_preferences y learning_preferences', async () => {
+      const { updateProfileSchema } = await import('../schemas/profile.schema.js');
+
+      const validPayload = {
+        learning_preferences: ['step_by_step', 'message_communication', 'low_stimulus'],
+        accessibility_preferences: {
+          calmMode: true,
+          fontSize: 'large' as const,
+          contrast: 'high' as const,
+          reduceMotion: true,
+          spacing: 'spacious' as const,
+          untimedQuizzes: true,
+        },
+      };
+
+      const parsed = updateProfileSchema.safeParse(validPayload);
+      assert.equal(parsed.success, true);
+
+      const invalidFontSize = {
+        accessibility_preferences: {
+          fontSize: 'gigante',
+        },
+      };
+      const parsedInvalid = updateProfileSchema.safeParse(invalidFontSize);
+      assert.equal(parsedInvalid.success, false);
     });
   });

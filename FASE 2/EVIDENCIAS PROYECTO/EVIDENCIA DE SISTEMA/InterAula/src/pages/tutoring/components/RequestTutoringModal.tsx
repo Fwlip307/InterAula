@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import type { AvailableTutor } from '../../../services/tutoring.service';
 import type { SessionModality } from '../../../types/tutoring';
 import { tutoringService } from '../../../services/tutoring.service';
+import { profileService } from '../../../services/profile.service';
 import { formatAcademicLevel, getUserDisplayName } from '../../../utils/formatters';
 import {
   XIcon,
@@ -19,11 +20,25 @@ interface RequestTutoringModalProps {
 }
 
 export const COMFORT_OPTIONS = [
-  { id: 'camera_optional', label: 'Cámara opcional', desc: 'Interactuar por voz, chat o pizarra' },
-  { id: 'processing_pause', label: 'Pausas de asimilación', desc: 'Tiempo para procesar preguntas' },
-  { id: 'step_by_step_visual', label: 'Explicación paso a paso', desc: 'Apoyo visual y ejemplos prácticos' },
+  { id: 'camera_optional', label: 'Sin cámara ni micrófono obligatorio', desc: 'Interactuar por chat escrito y pizarra' },
+  { id: 'processing_pause', label: 'Pausas de asimilación', desc: 'Tiempo tranquilo para procesar y responder' },
+  { id: 'step_by_step_visual', label: 'Explicación paso a paso', desc: 'Apoyo visual estructurado y ejemplos prácticos' },
   { id: 'written_summary', label: 'Resumen o apuntes clave', desc: 'Síntesis escrita al terminar la sesión' },
 ];
+
+export const HELP_TYPE_OPTIONS = [
+  { id: 'explicacion_base', label: 'Explicación de conceptos desde cero' },
+  { id: 'resolucion_guia', label: 'Resolución práctica de ejercicios o guía' },
+  { id: 'preparacion_evaluacion', label: 'Preparación para certamen o evaluación' },
+  { id: 'revision_avance', label: 'Revisión de dudas puntuales o avance de proyecto' },
+] as const;
+
+export const COMMUNICATION_PREF_OPTIONS = [
+  { id: 'mensajes_y_pizarra', label: 'Mensajes escritos y pizarra colaborativa (sin voz)' },
+  { id: 'voz_y_pizarra', label: 'Voz y pizarra compartida (sin cámara)' },
+  { id: 'videollamada', label: 'Videollamada completa (voz y cámara opcional)' },
+  { id: 'presencial', label: 'Encuentro presencial en sede o biblioteca' },
+] as const;
 
 export default function RequestTutoringModal({
   tutor,
@@ -33,8 +48,12 @@ export default function RequestTutoringModal({
 }: RequestTutoringModalProps) {
   const { user } = useAuth();
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [topicFocus, setTopicFocus] = useState('');
+  const [helpType, setHelpType] = useState<string>(HELP_TYPE_OPTIONS[0].id);
+  const [communicationPref, setCommunicationPref] = useState<string>(COMMUNICATION_PREF_OPTIONS[1].id);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('15:00');
+  const [alternativeSchedule, setAlternativeSchedule] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [modality, setModality] = useState<SessionModality>('online');
   const [locationOrLink, setLocationOrLink] = useState('');
@@ -42,6 +61,49 @@ export default function RequestTutoringModal({
   const [comfortPreferences, setComfortPreferences] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Pre-cargar preferencias privadas de aprendizaje del estudiante para facilitar la solicitud
+  useEffect(() => {
+    let active = true;
+    if (!isOpen || !user) return;
+    profileService
+      .getMyProfile()
+      .then((prof) => {
+        if (!active || !prof?.learning_preferences) return;
+        const mapped: string[] = [];
+        if (
+          prof.learning_preferences.includes('message_communication') ||
+          prof.learning_preferences.includes('written_support')
+        ) {
+          mapped.push('camera_optional');
+          setCommunicationPref('mensajes_y_pizarra');
+        }
+        if (
+          prof.learning_preferences.includes('extra_response_time') ||
+          prof.learning_preferences.includes('paced_rhythm') ||
+          prof.learning_preferences.includes('low_stimulus')
+        ) {
+          mapped.push('processing_pause');
+        }
+        if (
+          prof.learning_preferences.includes('step_by_step') ||
+          prof.learning_preferences.includes('visual_support') ||
+          prof.learning_preferences.includes('practical_examples')
+        ) {
+          mapped.push('step_by_step_visual');
+        }
+        if (prof.learning_preferences.includes('summarized_material')) {
+          mapped.push('written_summary');
+        }
+        if (mapped.length > 0) {
+          setComfortPreferences((prev) => (prev.length === 0 ? Array.from(new Set(mapped)) : prev));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isOpen, user]);
 
   if (!isOpen || !tutor) return null;
 
@@ -67,16 +129,15 @@ export default function RequestTutoringModal({
     }
 
     if (!activeSubjectId) {
-      setErrorMessage('Por favor selecciona la materia a solicitar.');
+      setErrorMessage('Por favor selecciona la asignatura que necesitas reforzar.');
       return;
     }
 
     if (!date || !time) {
-      setErrorMessage('Por favor indica la fecha y hora de la sesión.');
+      setErrorMessage('Por favor indica la fecha y hora propuesta para la sesión.');
       return;
     }
 
-    // Construir fecha combinando date + time
     const scheduledDateTime = new Date(`${date}T${time}:00`);
     if (isNaN(scheduledDateTime.getTime())) {
       setErrorMessage('Fecha u hora no válida.');
@@ -90,16 +151,33 @@ export default function RequestTutoringModal({
 
     setSubmitting(true);
     try {
-      const selectedLabels = COMFORT_OPTIONS.filter((c) =>
+      const selectedComfortLabels = COMFORT_OPTIONS.filter((c) =>
         comfortPreferences.includes(c.id)
       ).map((c) => c.label);
 
-      const comfortHeader =
-        selectedLabels.length > 0
-          ? `[Pautas de Confort: ${selectedLabels.join(', ')}]`
-          : '';
+      const helpTypeLabel =
+        HELP_TYPE_OPTIONS.find((h) => h.id === helpType)?.label || helpType;
+      const commPrefLabel =
+        COMMUNICATION_PREF_OPTIONS.find((c) => c.id === communicationPref)?.label ||
+        communicationPref;
 
-      const combinedNotes = [comfortHeader, notes.trim()].filter(Boolean).join('\n\n');
+      const structuredBlocks: string[] = [];
+      if (topicFocus.trim()) {
+        structuredBlocks.push(`Contenido a reforzar: ${topicFocus.trim()}`);
+      }
+      structuredBlocks.push(`Tipo de ayuda: ${helpTypeLabel}`);
+      structuredBlocks.push(`Preferencia de comunicación: ${commPrefLabel}`);
+      if (alternativeSchedule.trim()) {
+        structuredBlocks.push(`Horarios alternativos: ${alternativeSchedule.trim()}`);
+      }
+      if (selectedComfortLabels.length > 0) {
+        structuredBlocks.push(`[Pautas de Confort: ${selectedComfortLabels.join(', ')}]`);
+      }
+      if (notes.trim()) {
+        structuredBlocks.push(`Detalle / dificultad actual: ${notes.trim()}`);
+      }
+
+      const combinedNotes = structuredBlocks.join('\n');
 
       await tutoringService.requestTutoring({
         tutor_id: tutor.profile.id,
@@ -136,18 +214,19 @@ export default function RequestTutoringModal({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="request-tutoring-title"
     >
       <div
         style={{
-          background: '#ffffff',
+          background: 'var(--ia-bg-card, #ffffff)',
           borderRadius: '16px',
-          maxWidth: '540px',
+          maxWidth: '580px',
           width: '100%',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
         }}
       >
         {/* Cabecera del Modal */}
@@ -162,11 +241,11 @@ export default function RequestTutoringModal({
           }}
         >
           <div>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
-              Solicitar Tutoría Académica
+            <h2 id="request-tutoring-title" style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+              Solicitar Apoyo Académico entre Pares
             </h2>
             <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '2px 0 0 0' }}>
-              Con tutor: <strong>{tutorName}</strong>
+              Compañero tutor: <strong>{tutorName}</strong> · Adapta la sesión a tu forma de aprender
             </p>
           </div>
           <button
@@ -183,7 +262,7 @@ export default function RequestTutoringModal({
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            aria-label="Cerrar modal"
+            aria-label="Cerrar ventana de solicitud"
           >
             <XIcon size={20} />
           </button>
@@ -213,6 +292,7 @@ export default function RequestTutoringModal({
 
           {errorMessage && (
             <div
+              role="alert"
               style={{
                 background: '#fef2f2',
                 border: '1px solid #fecaca',
@@ -231,34 +311,70 @@ export default function RequestTutoringModal({
             </div>
           )}
 
-          {/* Selector de Materia */}
+          {/* 1. Selector de Materia */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-              Materia que necesitas reforzar *
+            <label htmlFor="req-subject" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+              1. Asignatura que necesitas reforzar *
             </label>
-            <div style={{ position: 'relative' }}>
-              <select
+            <select
+              id="req-subject"
+              className="ia-input"
+              value={activeSubjectId}
+              onChange={(e) => setSelectedSubjectId(e.target.value)}
+              required
+              style={{ width: '100%' }}
+            >
+              {tutor.offeredSubjects.map((item) => (
+                <option key={item.subject_id} value={item.subject_id}>
+                  {item.subject?.name} — Nivel {formatAcademicLevel(item.level)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Contenido específico y Tipo de ayuda */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div>
+              <label htmlFor="req-topic" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Contenido o unidad específica
+              </label>
+              <input
+                id="req-topic"
+                type="text"
                 className="ia-input"
-                value={activeSubjectId}
-                onChange={(e) => setSelectedSubjectId(e.target.value)}
-                required
+                value={topicFocus}
+                onChange={(e) => setTopicFocus(e.target.value)}
+                placeholder="Ej: Consultas JOIN, punteros, derivadas..."
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="req-help-type" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                ¿Qué tipo de ayuda necesitas?
+              </label>
+              <select
+                id="req-help-type"
+                className="ia-input"
+                value={helpType}
+                onChange={(e) => setHelpType(e.target.value)}
                 style={{ width: '100%' }}
               >
-                {tutor.offeredSubjects.map((item) => (
-                  <option key={item.subject_id} value={item.subject_id}>
-                    {item.subject?.name} — Nivel {formatAcademicLevel(item.level)}
+                {HELP_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Modalidad */}
+          {/* 3. Modalidad y Preferencia de Comunicación Inclusiva */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-              Modalidad de encuentro *
+              2. Modalidad y forma de interacción *
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
               <button
                 type="button"
                 onClick={() => setModality('online')}
@@ -278,12 +394,15 @@ export default function RequestTutoringModal({
                 }}
               >
                 <VideoIcon size={18} color={modality === 'online' ? '#1d4ed8' : '#64748b'} />
-                Online
+                Virtual (Aula Integrada)
               </button>
 
               <button
                 type="button"
-                onClick={() => setModality('in_person')}
+                onClick={() => {
+                  setModality('in_person');
+                  setCommunicationPref('presencial');
+                }}
                 style={{
                   padding: '10px',
                   borderRadius: '10px',
@@ -300,58 +419,56 @@ export default function RequestTutoringModal({
                 }}
               >
                 <MapPinIcon size={18} color={modality === 'in_person' ? '#1d4ed8' : '#64748b'} />
-                Presencial
+                Presencial en Sede
               </button>
             </div>
+
+            <label htmlFor="req-comm-pref" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+              Preferencia de comunicación (no es obligatorio usar cámara ni comunicación oral):
+            </label>
+            <select
+              id="req-comm-pref"
+              className="ia-input"
+              value={communicationPref}
+              onChange={(e) => setCommunicationPref(e.target.value)}
+              style={{ width: '100%' }}
+            >
+              {COMMUNICATION_PREF_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Lugar o Link */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-              {modality === 'online' ? 'Plataforma o enlace propuesto (opcional)' : 'Lugar o sala de encuentro sugerida (opcional)'}
+            <label htmlFor="req-location" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+              {modality === 'online' ? 'Enlace externo opcional (por defecto Aula Virtual InterAula)' : 'Lugar o espacio tranquilo de encuentro sugerido'}
             </label>
-            {modality === 'online' && (
-              <div
-                style={{
-                  marginBottom: '8px',
-                  padding: '10px 12px',
-                  background: '#eff6ff',
-                  borderRadius: '8px',
-                  border: '1px solid #bfdbfe',
-                  fontSize: '0.82rem',
-                  color: '#1e40af',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '8px',
-                }}
-              >
-                <VideoIcon size={16} color="#2563eb" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>
-                  <strong>Aula Virtual InterAula integrada:</strong> Se creará automáticamente una sala privada con videollamada HD, pizarra colaborativa y control de asistencia auditada. Si prefieres un enlace externo, puedes ingresarlo a continuación.
-                </span>
-              </div>
-            )}
             <input
+              id="req-location"
               type="text"
               className="ia-input"
               value={locationOrLink}
               onChange={(e) => setLocationOrLink(e.target.value)}
               placeholder={
                 modality === 'online'
-                  ? 'Opcional (por defecto se usará el Aula Virtual de InterAula)'
-                  : 'Ej: Biblioteca Central, Sala de Estudio 3'
+                  ? 'Dejar vacío para usar la sala integrada con chat y pizarra de InterAula'
+                  : 'Ej: Biblioteca Central, Cubículo de Estudio 3'
               }
               style={{ width: '100%' }}
             />
           </div>
 
-          {/* Fecha y Hora */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+          {/* 4. Fecha, Hora y Disponibilidad */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                Fecha *
+              <label htmlFor="req-date" style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                Fecha propuesta *
               </label>
               <input
+                id="req-date"
                 type="date"
                 className="ia-input"
                 value={date}
@@ -363,10 +480,11 @@ export default function RequestTutoringModal({
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+              <label htmlFor="req-time" style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                 Hora *
               </label>
               <input
+                id="req-time"
                 type="time"
                 className="ia-input"
                 value={time}
@@ -375,36 +493,51 @@ export default function RequestTutoringModal({
                 style={{ width: '100%' }}
               />
             </div>
+
+            <div>
+              <label htmlFor="req-duration" style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                Duración *
+              </label>
+              <select
+                id="req-duration"
+                className="ia-input"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                style={{ width: '100%' }}
+              >
+                <option value={30}>30 min</option>
+                <option value={45}>45 min</option>
+                <option value={60}>60 min</option>
+                <option value={90}>90 min</option>
+                <option value={120}>120 min</option>
+              </select>
+            </div>
           </div>
 
-          {/* Duración */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-              Duración estimada *
+            <label htmlFor="req-alt-schedule" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+              Otros horarios en los que tienes disponibilidad (opcional)
             </label>
-            <select
+            <input
+              id="req-alt-schedule"
+              type="text"
               className="ia-input"
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(Number(e.target.value))}
+              value={alternativeSchedule}
+              onChange={(e) => setAlternativeSchedule(e.target.value)}
+              placeholder="Ej: También puedo miércoles o viernes después de las 17:00 hrs"
               style={{ width: '100%' }}
-            >
-              <option value={30}>30 minutos</option>
-              <option value={45}>45 minutos</option>
-              <option value={60}>60 minutos (1 hora estándar)</option>
-              <option value={90}>90 minutos (1 hora y media)</option>
-              <option value={120}>120 minutos (2 horas)</option>
-            </select>
+            />
           </div>
 
-          {/* Pautas de Confort y Aprendizaje (Inclusión DUA) */}
+          {/* 5. Pautas de Confort y Aprendizaje (Inclusión DUA) */}
           <div style={{ marginBottom: '18px', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', marginBottom: '4px' }}>
-              🌱 Pautas de Confort en la Sesión (Opcional)
+              🌱 Pautas de Confort y Ritmo de Aprendizaje (Opcional y Privado)
             </label>
             <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#64748b' }}>
-              Selecciona cómo te sientes más cómodo aprendiendo para que el tutor adapte el ritmo a tus necesidades (sin etiquetas):
+              Indica cómo te resulta más cómodo aprender para que tu compañero adapte el ritmo de la sesión:
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '8px' }}>
               {COMFORT_OPTIONS.map((opt) => {
                 const checked = comfortPreferences.includes(opt.id);
                 return (
@@ -444,17 +577,18 @@ export default function RequestTutoringModal({
             </div>
           </div>
 
-          {/* Notas / Temas */}
+          {/* 6. Explicación de dificultad o dudas */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-              Temas que necesitas reforzar o notas (opcional)
+            <label htmlFor="req-notes" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+              Explica brevemente qué dificultad tienes o qué ejercicio quieres revisar
             </label>
             <textarea
+              id="req-notes"
               className="ia-input"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ej: Preparación para prueba de integrales dobles y dudas con la guía de ejercicios..."
+              placeholder="Ej: Me cuesta entender cómo plantear las condiciones de término en ciclos while y quiero resolver juntos 2 ejercicios de la guía..."
               style={{ width: '100%', resize: 'vertical' }}
             />
           </div>
@@ -481,7 +615,7 @@ export default function RequestTutoringModal({
                 cursor: isSelf ? 'not-allowed' : 'pointer',
               }}
             >
-              {submitting ? 'Enviando solicitud...' : isSelf ? 'No puedes solicitarte a ti mismo' : 'Enviar Solicitud'}
+              {submitting ? 'Enviando solicitud...' : isSelf ? 'No puedes solicitarte a ti mismo' : 'Enviar Solicitud de Tutoría'}
             </button>
           </div>
         </form>

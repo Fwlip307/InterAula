@@ -75,6 +75,14 @@ export interface AdaptiveQuizQuestion {
   explanation: string;
 }
 
+export interface QuizAttemptProgress {
+  subject: string;
+  theme: string;
+  score: number;
+  totalQuestions: number;
+  completedAt: string;
+}
+
 // Banco de preguntas de reserva de alta fidelidad pedagógica por temática
 const OFFLINE_ADAPTIVE_BANK: Record<string, Record<string, AdaptiveQuizQuestion[]>> = {
   'Programación de Algoritmos': {
@@ -456,13 +464,7 @@ export const adaptiveQuizService = {
   /**
    * Guarda puntaje y logros de micro-quizzes completados en almacenamiento local
    */
-  saveQuizProgress(record: {
-    subject: string;
-    theme: string;
-    score: number;
-    totalQuestions: number;
-    completedAt: string;
-  }) {
+  saveQuizProgress(record: QuizAttemptProgress) {
     try {
       const key = 'ia_adaptive_quiz_history';
       const raw = localStorage.getItem(key);
@@ -472,7 +474,7 @@ export const adaptiveQuizService = {
     } catch { }
   },
 
-  getQuizHistory(): any[] {
+  getQuizHistory(): QuizAttemptProgress[] {
     try {
       const raw = localStorage.getItem('ia_adaptive_quiz_history');
       return raw ? JSON.parse(raw) : [];

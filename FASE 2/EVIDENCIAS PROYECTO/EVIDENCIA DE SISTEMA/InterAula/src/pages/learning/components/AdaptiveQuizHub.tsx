@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useCalmMode } from '../../../context/CalmModeContext';
 import { profileService } from '../../../services/profile.service';
 import type { NeededSubject } from '../../../types/profile';
 import {
@@ -7,6 +9,7 @@ import {
   INTEREST_THEMES,
   type InterestTheme,
   type AdaptiveQuizQuestion,
+  type QuizAttemptProgress,
 } from '../../../services/adaptiveQuiz.service';
 import {
   SparklesIcon,
@@ -31,10 +34,20 @@ interface AdaptiveQuizHubProps {
 
 export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubProps) {
   const { user } = useAuth();
+  const { preferences } = useCalmMode();
   const [subjects, setSubjects] = useState<string[]>(CRITICAL_SUBJECTS);
   const [selectedSubject, setSelectedSubject] = useState<string>(CRITICAL_SUBJECTS[0]);
   const [selectedTheme, setSelectedTheme] = useState<InterestTheme>(INTEREST_THEMES[0]);
   const [neededSubjectsList, setNeededSubjectsList] = useState<NeededSubject[]>([]);
+  const [untimedMode, setUntimedMode] = useState<boolean>(preferences.untimedQuizzes !== false);
+  const [quizHistory, setQuizHistory] = useState<QuizAttemptProgress[]>(() =>
+    adaptiveQuizService.getQuizHistory()
+  );
+  const [missedTopics, setMissedTopics] = useState<string[]>([]);
+
+  useEffect(() => {
+    setUntimedMode(preferences.untimedQuizzes !== false);
+  }, [preferences.untimedQuizzes]);
 
   // Estado del juego
   const [questions, setQuestions] = useState<AdaptiveQuizQuestion[]>([]);
@@ -80,6 +93,7 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
     setIsAnswered(false);
     setScore(0);
     setCorrectCount(0);
+    setMissedTopics([]);
 
     try {
       const generated = await adaptiveQuizService.generateQuiz(selectedSubject, selectedTheme, 3);
@@ -100,6 +114,8 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
     if (q && optionId === q.correctOptionId) {
       setScore((prev) => prev + 100);
       setCorrectCount((prev) => prev + 1);
+    } else if (q) {
+      setMissedTopics((prev) => [...prev, q.prompt]);
     }
   };
 
@@ -114,10 +130,11 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
       adaptiveQuizService.saveQuizProgress({
         subject: selectedSubject,
         theme: selectedTheme.name,
-        score: score + (selectedOptionId === questions[currentIdx]?.correctOptionId ? 100 : 0),
+        score: score,
         totalQuestions: questions.length,
         completedAt: new Date().toISOString(),
       });
+      setQuizHistory(adaptiveQuizService.getQuizHistory());
     }
   };
 
@@ -213,24 +230,72 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                 border: '1.5px solid #86efac',
                 padding: '20px',
                 borderRadius: '14px',
-                textAlign: 'center',
+                textAlign: 'left',
                 marginBottom: '10px',
               }}
             >
-              <div style={{ fontSize: '2.4rem', marginBottom: '8px' }}>🎉</div>
-              <h3 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: '#166534' }}>
-                ¡Excelente progreso!
-              </h3>
-              <p style={{ margin: '0 0 14px', fontSize: '0.92rem', color: '#15803d' }}>
-                Completaste el micro-desafío de <strong>{selectedSubject}</strong> con analogías de{' '}
-                <strong>{selectedTheme.name}</strong>. Obtuviste {score} puntos ({correctCount} de{' '}
-                {questions.length} respuestas correctas).
-              </p>
-              <div style={{ display: 'inline-flex', gap: '10px', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 700 }}>
-                  🌱 Cada concepto reforzado afianza tu autonomía académica.
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '2rem' }}>🎉</span>
+                <div>
+                  <h3 style={{ margin: '0 0 2px', fontSize: '1.2rem', fontWeight: 800, color: '#166534' }}>
+                    ¡Excelente progreso en {selectedSubject}!
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#15803d' }}>
+                    Obtuviste <strong>{score} puntos</strong> ({correctCount} de {questions.length} respuestas correctas) con analogías de{' '}
+                    <strong>{selectedTheme.name}</strong>.
+                  </p>
+                </div>
               </div>
+
+              {missedTopics.length > 0 ? (
+                <div
+                  style={{
+                    marginTop: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #bbf7d0',
+                  }}
+                >
+                  <strong style={{ fontSize: '0.84rem', color: '#166534', display: 'block', marginBottom: '6px' }}>
+                    📌 Conceptos recomendados para reforzar con un tutor o apunte:
+                  </strong>
+                  <ul style={{ margin: '0 0 10px 0', paddingLeft: '18px', fontSize: '0.84rem', color: '#334155', lineHeight: 1.5 }}>
+                    {missedTopics.map((topic, i) => (
+                      <li key={i}>{topic}</li>
+                    ))}
+                  </ul>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <Link
+                      to="/tutoring"
+                      className="ia-btn-primary"
+                      style={{ textDecoration: 'none', padding: '7px 14px', fontSize: '0.82rem' }}
+                    >
+                      Solicitar Apoyo de un Tutor en {selectedSubject}
+                    </Link>
+                    <Link
+                      to="/resources"
+                      className="ia-btn-secondary"
+                      style={{ textDecoration: 'none', padding: '7px 14px', fontSize: '0.82rem' }}
+                    >
+                      Buscar Apuntes de {selectedSubject}
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginTop: '10px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#166534', fontWeight: 700 }}>
+                    🌱 ¡Dominio completo en este desafío! Si quieres compartir lo aprendido, puedes apoyar a otros compañeros.
+                  </span>
+                  <Link
+                    to="/my-tutoring"
+                    className="ia-btn-secondary"
+                    style={{ textDecoration: 'none', padding: '6px 12px', fontSize: '0.8rem' }}
+                  >
+                    Ofrecer Apoyo en esta Materia
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
@@ -356,8 +421,31 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
             </div>
           </div>
 
-          {/* Botón de Lanzamiento */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+          {/* Botón de Lanzamiento y Modo de Ritmo */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                color: '#334155',
+                cursor: 'pointer',
+                padding: '8px 12px',
+                borderRadius: '10px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={untimedMode}
+                onChange={(e) => setUntimedMode(e.target.checked)}
+              />
+              <span>Modo sin límite de tiempo (Ritmo pausado sin presión)</span>
+            </label>
+
             <button
               type="button"
               onClick={handleStartQuiz}
@@ -386,6 +474,35 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
               </span>
             </button>
           </div>
+
+          {/* Historial de Intentos Recientes */}
+          {quizHistory.length > 0 && (
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '4px' }}>
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155', margin: '0 0 10px 0' }}>
+                Tu Historial de Práctica Reciente ({quizHistory.length})
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+                {quizHistory.slice(0, 4).map((attempt, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: '#f8fafc',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: '#0f172a' }}>{attempt.subject}</div>
+                    <div style={{ color: '#6d28d9', fontWeight: 600 }}>Analogía: {attempt.theme}</div>
+                    <div style={{ color: '#15803d', fontWeight: 700, marginTop: '4px' }}>
+                      Puntaje: {attempt.score} pts ({attempt.totalQuestions} preguntas)
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* Reproductor del Quiz Interactivo */

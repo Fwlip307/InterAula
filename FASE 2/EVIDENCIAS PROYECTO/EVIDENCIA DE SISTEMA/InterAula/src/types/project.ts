@@ -61,6 +61,7 @@ export interface Project {
   };
   milestones?: ProjectMilestone[];
   cover_url?: string | null;
+  start_date?: string | null;
   created_at: string;
   updated_at: string;
   owner?: Profile | { id: string; display_name?: string; first_name?: string; last_name?: string; institution?: string; career?: string };

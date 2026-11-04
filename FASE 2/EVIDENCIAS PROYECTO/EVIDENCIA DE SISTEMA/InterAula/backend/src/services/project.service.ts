@@ -345,6 +345,7 @@ export const projectBackendService = {
           }))
         : [],
       cover_url: dto.cover_url || null,
+      start_date: dto.start_date || null,
       created_at: remoteProject?.created_at || now,
       updated_at: now,
     };
@@ -483,6 +484,7 @@ export const projectBackendService = {
           'external_links',
           'milestones',
           'cover_url',
+          'start_date',
         ];
         for (const key of editableFields) {
           if (dto[key] !== undefined) {
@@ -906,5 +908,69 @@ export const projectBackendService = {
     });
 
     return { success: true, message: 'Proyecto eliminado correctamente' };
+  },
+
+  /**
+   * Remover un integrante del equipo (solo el creador del proyecto) y liberar su cupo en la vacante asociada.
+   */
+  async removeProjectMember(
+    user: AuthenticatedUser,
+    token: string,
+    projectId: string,
+    memberProfileId: string
+  ) {
+    const store = persistentStore.read();
+    const localProj = store.projects.find((p) => p.id === projectId);
+    const client = getAuthenticatedSupabase(token);
+
+    let ownerId = localProj?.owner_id;
+    if (!ownerId) {
+      const { data: remoteProj } = await client
+        .from('projects')
+        .select('owner_id')
+        .eq('id', projectId)
+        .maybeSingle();
+      ownerId = remoteProj?.owner_id;
+    }
+
+    if (ownerId !== user.id && user.role !== 'admin') {
+      throw new Error('Acceso denegado: Solo el creador del proyecto puede gestionar los integrantes del equipo');
+    }
+
+    if (memberProfileId === ownerId) {
+      throw new Error('No puedes eliminar al líder o creador del proyecto');
+    }
+
+    persistentStore.write((db) => {
+      const member = db.project_members.find(
+        (m) => m.project_id === projectId && (m.profile_id === memberProfileId || m.id === memberProfileId)
+      );
+      if (member) {
+        if (member.position_id) {
+          const pos = db.project_positions.find((p) => p.id === member.position_id);
+          if (pos) {
+            pos.slots_filled = Math.max(0, (pos.slots_filled || 1) - 1);
+            if (pos.status === 'filled' && pos.slots_filled < pos.slots) {
+              pos.status = 'open';
+            }
+          }
+        }
+        db.project_members = db.project_members.filter(
+          (m) => !(m.project_id === projectId && (m.profile_id === memberProfileId || m.id === memberProfileId))
+        );
+      }
+    });
+
+    try {
+      await client
+        .from('project_members')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('profile_id', memberProfileId);
+    } catch {
+      // Fallback local ya persistido
+    }
+
+    return { success: true, message: 'Integrante removido del equipo correctamente' };
   },
 };

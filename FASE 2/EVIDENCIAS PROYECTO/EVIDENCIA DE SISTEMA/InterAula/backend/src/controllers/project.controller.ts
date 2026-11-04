@@ -161,4 +161,14 @@ export const projectController = {
       next(err);
     }
   },
+
+  async removeProjectMember(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { id, memberId } = req.params;
+      const result = await projectBackendService.removeProjectMember(req.user!, req.token!, id, memberId);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };

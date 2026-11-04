@@ -53,6 +53,7 @@ export interface CreateProjectDTO {
   agreements?: ProjectAgreements;
   external_links?: Record<string, string>;
   milestones?: ProjectMilestone[];
+  start_date?: string | null;
   positions?: Array<string | PositionInputDTO>;
 }
 
@@ -255,5 +256,12 @@ export const projectService = {
    */
   async deleteProject(projectId: string): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.PROJECTS.BY_ID(projectId));
+  },
+
+  /**
+   * Remover un integrante del equipo (solo líder del proyecto) y liberar su cupo.
+   */
+  async removeProjectMember(projectId: string, profileId: string): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.PROJECTS.MEMBER_BY_ID(projectId, profileId));
   },
 };

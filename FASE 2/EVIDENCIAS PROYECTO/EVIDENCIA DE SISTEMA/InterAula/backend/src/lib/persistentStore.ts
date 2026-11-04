@@ -107,6 +107,7 @@ export interface StoredProject {
     completed: boolean;
   }>;
   cover_url?: string | null;
+  start_date?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -26,7 +26,9 @@ import {
 import EmptyState from '../components/common/EmptyState';
 import { getUserDisplayName, formatTutoringDateTime, formatTutoringStatus } from '../utils/formatters';
 import { tutoringService } from '../services/tutoring.service';
+import { projectService } from '../services/project.service';
 import type { TutoringSession } from '../types/tutoring';
+import type { Project } from '../types/project';
 import '../styles/dashboard.css';
 
 export default function Dashboard() {
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
   const [catalogSubjects, setCatalogSubjects] = useState<Subject[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<TutoringSession[]>([]);
+  const [openProjects, setOpenProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,6 +57,7 @@ export default function Dashboard() {
           subjectsData,
           studentSessions,
           tutorSessions,
+          projectsData,
         ] = await Promise.all([
           profileService.getMyProfile(),
           profileService.getOfferedSubjects(user.id),
@@ -61,6 +65,7 @@ export default function Dashboard() {
           profileService.getSubjects(),
           tutoringService.getMySessionsAsStudent().catch(() => []),
           tutoringService.getMySessionsAsTutor().catch(() => []),
+          projectService.getProjects().catch(() => []),
         ]);
 
         if (isMounted) {
@@ -68,6 +73,7 @@ export default function Dashboard() {
           setOfferedSubjects(offeredData);
           setNeededSubjects(neededData);
           setCatalogSubjects(subjectsData.slice(0, 8));
+          setOpenProjects(projectsData.filter((p) => p.status === 'open' || p.status === 'recruiting').slice(0, 3));
           const activeSessions = [...(studentSessions || []), ...(tutorSessions || [])]
             .filter((s) => s.status === 'pending' || s.status === 'accepted')
             .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
@@ -206,12 +212,12 @@ export default function Dashboard() {
       <section className="ia-welcome-hero">
         <div className="ia-welcome-hero-content">
           <div className="ia-welcome-hero-greeting">
-            <p className="ia-welcome-hero-time">{getGreetingPhrase()}</p>
+            <p className="ia-welcome-hero-time">{getGreetingPhrase()} · InterAula: Aprender juntos, a nuestra manera</p>
             <h1 className="ia-welcome-hero-name">{greetingName}</h1>
             <p className="ia-welcome-hero-desc">
               {profile?.career && profile?.institution
-                ? `Estudiante de ${profile.career} en ${profile.institution}. Tu comunidad para aprender, compartir conocimiento y preparar evaluaciones entre pares.`
-                : 'Tu espacio de aprendizaje colaborativo universitario. Conéctate con tutores acreditados, accede a salas virtuales y fortalece tus conocimientos.'}
+                ? `Estudiante de ${profile.career} en ${profile.institution}. Tu espacio colaborativo, accesible e interdisciplinario para solicitar tutorías, compartir conocimientos y formar equipos.`
+                : 'Tu espacio de aprendizaje colaborativo, inclusivo e interdisciplinario. Solicita apoyo a tu propio ritmo, comparte lo que sabes y participa en proyectos.'}
             </p>
 
             {/* Badges de estado integrados en el Hero */}
@@ -475,6 +481,56 @@ export default function Dashboard() {
               </p>
             )}
           </div>
+
+          {/* Proyectos Interdisciplinarios Abiertos */}
+          <div className="ia-card">
+            <div className="ia-card-header">
+              <h2 className="ia-card-title">
+                <BriefcaseIcon size={20} color="#7c3aed" /> Proyectos interdisciplinarios buscando equipo
+              </h2>
+              <Link to="/projects" className="ia-card-action">
+                Ir al Hub de Proyectos
+              </Link>
+            </div>
+            {openProjects.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {openProjects.map((proj) => (
+                  <div
+                    key={proj.id}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: '#f8fafc',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.94rem' }}>{proj.title}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                        {proj.category || 'Desarrollo'} · {(proj.positions || []).length} rol(es) publicados
+                      </div>
+                    </div>
+                    <Link to="/projects" className="ia-btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', textDecoration: 'none' }}>
+                      Ver vacantes
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                Publica una iniciativa o postula a un equipo multidisciplinario en el{' '}
+                <Link to="/projects" style={{ color: '#2563eb', fontWeight: 700, textDecoration: 'none' }}>
+                  Hub de Proyectos Interdisciplinarios
+                </Link>
+                .
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Columna Derecha: Ficha del Estudiante y Resumen */}
@@ -572,24 +628,21 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Guía Rápida para el Estudiante */}
+          {/* Accesos Rápidos a Recursos, Foro y Accesibilidad */}
           <div className="ia-card" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)' }}>
             <h2 className="ia-card-title" style={{ marginBottom: '12px', fontSize: '0.98rem' }}>
-              <SparklesIcon size={18} color="#2563eb" /> ¿Cómo aprovechar InterAula?
+              <SparklesIcon size={18} color="#2563eb" /> Herramientas y Accesibilidad
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: '#475569' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ color: '#2563eb', fontWeight: 700 }}>1.</span>
-                <span>Busca tutores con insignias de acreditación para asegurar calidad en la materia.</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ color: '#2563eb', fontWeight: 700 }}>2.</span>
-                <span>Llega a tu sesión con dudas concretas y ejercicios para aprovechar el tiempo.</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                <span style={{ color: '#2563eb', fontWeight: 700 }}>3.</span>
-                <span>Si dominas un ramo con nota sobresaliente, ¡certifícate y apoya a tus compañeros!</span>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Link to="/resources" className="ia-btn-secondary" style={{ justifyContent: 'flex-start', textDecoration: 'none', fontSize: '0.84rem' }}>
+                📚 Biblioteca y Editor de Apuntes
+              </Link>
+              <Link to="/forum" className="ia-btn-secondary" style={{ justifyContent: 'flex-start', textDecoration: 'none', fontSize: '0.84rem' }}>
+                💬 Foro Académico Colaborativo
+              </Link>
+              <Link to="/settings" className="ia-btn-secondary" style={{ justifyContent: 'flex-start', textDecoration: 'none', fontSize: '0.84rem' }}>
+                🧘 Accesibilidad, Modo Calma y Preferencias
+              </Link>
             </div>
           </div>
         </div>

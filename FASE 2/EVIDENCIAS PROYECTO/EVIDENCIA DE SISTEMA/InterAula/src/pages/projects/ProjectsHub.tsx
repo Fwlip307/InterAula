@@ -54,11 +54,11 @@ const QUICK_ROLE_PRESETS = [
 ];
 
 const COMPENSATION_LABELS: Record<ProjectCompensationType, { label: string; badgeClass: string }> = {
-  unpaid_academic: { label: 'Académico / Colaborativo (Sin pago)', badgeClass: 'ia-badge-blue' },
-  paid: { label: 'Remunerado', badgeClass: 'ia-badge-success' },
-  milestone_based: { label: 'Pago por Hitos / Entregables', badgeClass: 'ia-badge-purple' },
-  revenue_share: { label: 'Participación / Revenue Share', badgeClass: 'ia-badge-amber' },
-  negotiable: { label: 'Compensación a Convenir', badgeClass: 'ia-badge-neutral' },
+  unpaid_academic: { label: 'Colaboración Voluntaria / Proyecto Académico', badgeClass: 'ia-badge-blue' },
+  paid: { label: 'Proyecto con Remuneración Declarada', badgeClass: 'ia-badge-success' },
+  milestone_based: { label: 'Incentivo por Hitos / Entregables', badgeClass: 'ia-badge-purple' },
+  revenue_share: { label: 'Participación / Proyecto Personal', badgeClass: 'ia-badge-amber' },
+  negotiable: { label: 'Condiciones por Acordar', badgeClass: 'ia-badge-neutral' },
 };
 
 const STATUS_LABELS: Record<string, { label: string; badgeClass: string }> = {
@@ -88,6 +88,7 @@ export default function ProjectsHub() {
   // Filtros de descubrimiento
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterSkill, setFilterSkill] = useState<string>('');
   const [filterModality, setFilterModality] = useState<string>('all');
   const [filterCompensation, setFilterCompensation] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -132,6 +133,7 @@ export default function ProjectsHub() {
   const [formAgreementIp, setFormAgreementIp] = useState<string>('Coautoría académica compartida entre los integrantes activos');
   const [formGithubUrl, setFormGithubUrl] = useState<string>('');
   const [formFigmaUrl, setFormFigmaUrl] = useState<string>('');
+  const [formStartDate, setFormStartDate] = useState<string>('');
   const [formPositions, setFormPositions] = useState<PositionInputDTO[]>([
     {
       title: 'Frontend Developer',
@@ -252,6 +254,7 @@ export default function ProjectsHub() {
     setFormAgreementIp('Coautoría académica compartida entre los integrantes activos');
     setFormGithubUrl('');
     setFormFigmaUrl('');
+    setFormStartDate('');
     setFormPositions([
       {
         title: 'Frontend Developer',
@@ -292,6 +295,7 @@ export default function ProjectsHub() {
     setFormAgreementIp(proj.agreements?.intellectual_property || 'Coautoría compartida');
     setFormGithubUrl(proj.external_links?.github || '');
     setFormFigmaUrl(proj.external_links?.figma || '');
+    setFormStartDate(proj.start_date || '');
 
     const currentPos = proj.positions && proj.positions.length > 0 ? proj.positions : projectPositions;
     setFormPositions(
@@ -378,6 +382,7 @@ export default function ProjectsHub() {
         github: formGithubUrl.trim(),
         figma: formFigmaUrl.trim(),
       },
+      start_date: formStartDate.trim() || null,
       positions: formPositions.filter((p) => p.title && p.title.trim()),
     };
 
@@ -504,6 +509,18 @@ export default function ProjectsHub() {
     }
   };
 
+  const handleRemoveMember = async (memberProfileId: string, memberName: string) => {
+    if (!selectedProject) return;
+    try {
+      await projectService.removeProjectMember(selectedProject.id, memberProfileId);
+      showFeedback(`Integrante "${memberName}" removido del equipo y cupo liberado.`);
+      await openProjectWorkspace(selectedProject);
+      await loadAll();
+    } catch (err: any) {
+      showFeedback(err?.message || 'No se pudo remover al integrante del equipo.', true);
+    }
+  };
+
   const handleAddMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject || !newMilestoneTitle.trim()) return;
@@ -558,6 +575,17 @@ export default function ProjectsHub() {
           ? proj.open_slots_count
           : (proj.positions || []).filter((p) => p.status === 'open').length;
       if (openSlots <= 0 && (proj.positions || []).length > 0) return false;
+    }
+
+    if (filterSkill.trim()) {
+      const sk = filterSkill.trim().toLowerCase();
+      const matchTech = (proj.technologies || []).some((t) => t.toLowerCase().includes(sk));
+      const matchPosSkill = (proj.positions || []).some(
+        (pos) =>
+          pos.title.toLowerCase().includes(sk) ||
+          (pos.skills_required || []).some((s) => s.toLowerCase().includes(sk))
+      );
+      if (!matchTech && !matchPosSkill) return false;
     }
 
     if (searchTerm.trim()) {
@@ -775,6 +803,19 @@ export default function ProjectsHub() {
                   className="ia-input"
                   value={formMaxMembers}
                   onChange={(e) => setFormMaxMembers(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="ia-form-group">
+                <label className="ia-label" htmlFor="proj-start-date">
+                  Fecha Estimada de Inicio (Opcional)
+                </label>
+                <input
+                  id="proj-start-date"
+                  type="date"
+                  className="ia-input"
+                  value={formStartDate}
+                  onChange={(e) => setFormStartDate(e.target.value)}
                 />
               </div>
 
@@ -1523,7 +1564,7 @@ export default function ProjectsHub() {
               <aside>
                 <div className="ia-card">
                   <h3 className="ia-card-title" style={{ marginBottom: '10px' }}>
-                    Condiciones Económicas
+                    Condiciones de Colaboración
                   </h3>
                   <div style={{ marginBottom: '10px' }}>
                     <span
@@ -1543,10 +1584,23 @@ export default function ProjectsHub() {
                       </span>
                     </p>
                   )}
-                  <p style={{ fontSize: '0.84rem', color: 'var(--ia-text-body)', margin: 0, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--ia-text-body)', margin: '0 0 10px 0', lineHeight: 1.5 }}>
                     {selectedProject.compensation_notes ||
                       'Este proyecto se rige bajo los acuerdos transparentes publicados por su creador.'}
                   </p>
+                  <div
+                    style={{
+                      fontSize: '0.76rem',
+                      color: 'var(--ia-text-muted)',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      background: 'var(--ia-bg-subtle)',
+                      border: '1px solid var(--ia-border)',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    ℹ️ Las condiciones de participación o compensación son declaradas directamente por el creador del proyecto para acordar con los postulantes.
+                  </div>
                 </div>
 
                 <div className="ia-card">
@@ -1670,6 +1724,14 @@ export default function ProjectsHub() {
                           >
                             Cubierta
                           </button>
+                          <button
+                            type="button"
+                            className={pos.status === 'closed' ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                            style={{ flex: 1, padding: '6px', fontSize: '0.76rem' }}
+                            onClick={() => handleTogglePositionStatus(pos, 'closed')}
+                          >
+                            Cerrada
+                          </button>
                         </div>
                       ) : alreadyApplied ? (
                         <span className="ia-badge ia-badge-blue" style={{ width: '100%', justifyContent: 'center', padding: '8px' }}>
@@ -1727,9 +1789,26 @@ export default function ProjectsHub() {
                         {m.profile_institution || 'Duoc UC'}
                       </div>
                     </div>
-                    <span className={`ia-badge ${m.member_role === 'owner' ? 'ia-badge-purple' : 'ia-badge-blue'}`}>
-                      {m.member_role === 'owner' ? 'Creador' : 'Miembro'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className={`ia-badge ${m.member_role === 'owner' ? 'ia-badge-purple' : 'ia-badge-blue'}`}>
+                        {m.member_role === 'owner' ? 'Creador' : 'Miembro'}
+                      </span>
+                      {user?.id && selectedProject.owner_id === user.id && m.member_role !== 'owner' && (
+                        <button
+                          type="button"
+                          className="ia-btn-icon-danger"
+                          title="Remover integrante y liberar cupo"
+                          onClick={() =>
+                            handleRemoveMember(
+                              m.profile_id,
+                              m.profile_name || getUserDisplayName(m.profile as any)
+                            )
+                          }
+                        >
+                          <TrashIcon size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1956,6 +2035,17 @@ export default function ProjectsHub() {
                     placeholder="Buscar por proyecto, rol (Frontend, 3D, QA...), tecnología o problema..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ flex: '1 1 180px' }}>
+                  <input
+                    type="text"
+                    aria-label="Filtrar por habilidad o rol"
+                    className="ia-input"
+                    placeholder="Habilidad o rol (ej: React, Python, UX)..."
+                    value={filterSkill}
+                    onChange={(e) => setFilterSkill(e.target.value)}
                   />
                 </div>
 

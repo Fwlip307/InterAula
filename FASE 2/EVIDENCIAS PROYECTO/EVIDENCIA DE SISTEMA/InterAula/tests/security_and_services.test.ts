@@ -476,3 +476,33 @@ describe('Biblioteca de Apuntes, Validación de Archivos y Exportadores Estructu
     }, /formato válido de apunte InterAula/);
   });
 });
+
+import {
+  DEFAULT_ACCESSIBILITY_PREFERENCES,
+  LEARNING_PREFERENCES,
+} from '../src/types/profile.ts';
+
+describe('Inclusión, Accesibilidad Transversal y Preferencias Voluntarias de Aprendizaje', () => {
+  it('DEFAULT_ACCESSIBILITY_PREFERENCES define valores por defecto accesibles y predecibles', () => {
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.calmMode, false);
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.fontSize, 'normal');
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.contrast, 'standard');
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.reduceMotion, false);
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.spacing, 'standard');
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.untimedQuizzes, true);
+  });
+
+  it('LEARNING_PREFERENCES incluye todas las opciones voluntarias de apoyo pedagógico sin diagnósticos clínicos', () => {
+    const ids = LEARNING_PREFERENCES.map((p) => p.id);
+    assert.ok(ids.includes('written_support'));
+    assert.ok(ids.includes('practical_examples'));
+    assert.ok(ids.includes('visual_support'));
+    assert.ok(ids.includes('step_by_step'));
+    assert.ok(ids.includes('message_communication'));
+    assert.ok(ids.includes('individual_sessions'));
+    assert.ok(ids.includes('extra_response_time'));
+    assert.ok(ids.includes('low_stimulus'));
+    assert.ok(ids.includes('structured_sessions'));
+    assert.ok(ids.includes('summarized_material'));
+  });
+});

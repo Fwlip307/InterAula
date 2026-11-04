@@ -1,54 +1,104 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import {
+  DEFAULT_ACCESSIBILITY_PREFERENCES,
+  type AccessibilityPreferences,
+} from '../types/profile';
 
 const CALM_MODE_STORAGE_KEY = 'ia_calm_mode';
+const ACCESSIBILITY_STORAGE_KEY = 'ia_accessibility_prefs';
 
 export interface CalmModeContextValue {
   isCalmMode: boolean;
   setCalmMode: (enabled: boolean) => void;
   toggleCalmMode: () => void;
+  preferences: AccessibilityPreferences;
+  updatePreferences: (partial: Partial<AccessibilityPreferences>) => void;
+  resetPreferences: () => void;
 }
 
 const CalmModeContext = createContext<CalmModeContextValue | undefined>(undefined);
 
-function getInitialCalmMode(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const saved = window.localStorage.getItem(CALM_MODE_STORAGE_KEY);
-    if (saved !== null) {
-      return saved === 'true';
-    }
-    if (typeof window.matchMedia === 'function') {
-      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-  } catch {
-    // Ignore storage read errors in restricted environments
+function loadInitialPreferences(): AccessibilityPreferences {
+  if (typeof window === 'undefined') {
+    return { ...DEFAULT_ACCESSIBILITY_PREFERENCES };
   }
-  return false;
+  try {
+    const prefersReduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const legacyCalm = window.localStorage.getItem(CALM_MODE_STORAGE_KEY);
+    const savedRaw = window.localStorage.getItem(ACCESSIBILITY_STORAGE_KEY);
+
+    if (savedRaw) {
+      const parsed = JSON.parse(savedRaw) as Partial<AccessibilityPreferences>;
+      const calm =
+        typeof parsed.calmMode === 'boolean'
+          ? parsed.calmMode
+          : legacyCalm !== null
+          ? legacyCalm === 'true'
+          : prefersReduced;
+
+      return {
+        ...DEFAULT_ACCESSIBILITY_PREFERENCES,
+        ...parsed,
+        calmMode: calm,
+        reduceMotion: typeof parsed.reduceMotion === 'boolean' ? parsed.reduceMotion : calm || prefersReduced,
+      };
+    }
+
+    const initialCalm = legacyCalm !== null ? legacyCalm === 'true' : prefersReduced;
+    return {
+      ...DEFAULT_ACCESSIBILITY_PREFERENCES,
+      calmMode: initialCalm,
+      reduceMotion: initialCalm || prefersReduced,
+    };
+  } catch {
+    return { ...DEFAULT_ACCESSIBILITY_PREFERENCES };
+  }
 }
 
 export function CalmModeProvider({ children }: { children: ReactNode }) {
-  const [isCalmMode, setIsCalmMode] = useState<boolean>(getInitialCalmMode);
+  const [preferences, setPreferences] = useState<AccessibilityPreferences>(loadInitialPreferences);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(CALM_MODE_STORAGE_KEY, String(isCalmMode));
+      window.localStorage.setItem(CALM_MODE_STORAGE_KEY, String(preferences.calmMode));
+      window.localStorage.setItem(ACCESSIBILITY_STORAGE_KEY, JSON.stringify(preferences));
     } catch {
-      // Ignore storage write errors
+      // Ignore storage write errors in restricted environments
     }
 
     if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('ia-calm-mode', isCalmMode);
-      document.documentElement.setAttribute('data-calm-mode', isCalmMode ? 'true' : 'false');
+      const root = document.documentElement;
+      root.classList.toggle('ia-calm-mode', preferences.calmMode);
+      root.setAttribute('data-calm-mode', preferences.calmMode ? 'true' : 'false');
+      root.setAttribute('data-font-size', preferences.fontSize || 'normal');
+      root.setAttribute('data-contrast', preferences.contrast || 'standard');
+      root.setAttribute('data-spacing', preferences.spacing || 'standard');
+      root.setAttribute(
+        'data-reduce-motion',
+        preferences.reduceMotion || preferences.calmMode ? 'true' : 'false'
+      );
+
       if (document.body) {
-        document.body.classList.toggle('ia-calm-mode', isCalmMode);
+        document.body.classList.toggle('ia-calm-mode', preferences.calmMode);
       }
     }
-  }, [isCalmMode]);
+  }, [preferences]);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === CALM_MODE_STORAGE_KEY && e.newValue !== null) {
-        setIsCalmMode(e.newValue === 'true');
+        const enabled = e.newValue === 'true';
+        setPreferences((prev) => ({ ...prev, calmMode: enabled }));
+      } else if (e.key === ACCESSIBILITY_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue) as Partial<AccessibilityPreferences>;
+          setPreferences((prev) => ({ ...prev, ...parsed }));
+        } catch {
+          // Ignore malformed storage payload
+        }
       }
     };
     window.addEventListener('storage', handleStorage);
@@ -56,15 +106,46 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setCalmMode = useCallback((enabled: boolean) => {
-    setIsCalmMode(enabled);
+    setPreferences((prev) => ({
+      ...prev,
+      calmMode: enabled,
+      reduceMotion: enabled ? true : prev.reduceMotion,
+    }));
   }, []);
 
   const toggleCalmMode = useCallback(() => {
-    setIsCalmMode((prev) => !prev);
+    setPreferences((prev) => {
+      const nextCalm = !prev.calmMode;
+      return {
+        ...prev,
+        calmMode: nextCalm,
+        reduceMotion: nextCalm ? true : prev.reduceMotion,
+      };
+    });
+  }, []);
+
+  const updatePreferences = useCallback((partial: Partial<AccessibilityPreferences>) => {
+    setPreferences((prev) => ({
+      ...prev,
+      ...partial,
+    }));
+  }, []);
+
+  const resetPreferences = useCallback(() => {
+    setPreferences({ ...DEFAULT_ACCESSIBILITY_PREFERENCES });
   }, []);
 
   return (
-    <CalmModeContext.Provider value={{ isCalmMode, setCalmMode, toggleCalmMode }}>
+    <CalmModeContext.Provider
+      value={{
+        isCalmMode: preferences.calmMode,
+        setCalmMode,
+        toggleCalmMode,
+        preferences,
+        updatePreferences,
+        resetPreferences,
+      }}
+    >
       {children}
     </CalmModeContext.Provider>
   );
@@ -77,8 +158,10 @@ export function useCalmMode(): CalmModeContextValue {
       isCalmMode: false,
       setCalmMode: () => {},
       toggleCalmMode: () => {},
+      preferences: DEFAULT_ACCESSIBILITY_PREFERENCES,
+      updatePreferences: () => {},
+      resetPreferences: () => {},
     };
   }
   return ctx;
 }
-

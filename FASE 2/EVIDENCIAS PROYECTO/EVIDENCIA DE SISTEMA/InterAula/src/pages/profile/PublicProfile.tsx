@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { profileService } from '../../services/profile.service';
+import { projectService } from '../../services/project.service';
+import { notesService, type AcademicNote } from '../../services/notes.service';
 import type {
   Profile,
   OfferedSubject,
   NeededSubject,
 } from '../../types/profile';
-import { LEARNING_PREFERENCES } from '../../types/profile';
+import type { Project } from '../../types/project';
 import {
   BookOpenIcon,
   UsersIcon,
-  SparklesIcon,
+  BriefcaseIcon,
   CheckIcon,
   ExternalLinkIcon,
   MapPinIcon,
@@ -36,6 +38,8 @@ export default function PublicProfile() {
   const [neededSubjects, setNeededSubjects] = useState<NeededSubject[]>([]);
   const [tutorStats, setTutorStats] = useState<TutorStatistics | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
+  const [userProjects, setUserProjects] = useState<Project[]>([]);
+  const [sharedNotes, setSharedNotes] = useState<AcademicNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -48,12 +52,14 @@ export default function PublicProfile() {
         setLoading(true);
         setNotFound(false);
 
-        const [p, offered, needed, stats, uBadges] = await Promise.all([
+        const [p, offered, needed, stats, uBadges, allProjects, authorNotes] = await Promise.all([
           profileService.getProfileById(id),
           profileService.getOfferedSubjects(id),
           profileService.getNeededSubjects(id),
           tutoringService.getTutorStats(id),
           tutoringService.getUserBadges(id),
+          projectService.getProjects().catch(() => []),
+          notesService.getNotes({ author_id: id }).catch(() => []),
         ]);
 
         if (isMounted) {
@@ -65,6 +71,14 @@ export default function PublicProfile() {
             setNeededSubjects(needed);
             setTutorStats(stats);
             setBadges(uBadges);
+
+            const relatedProjects = allProjects.filter(
+              (proj) =>
+                proj.owner_id === id ||
+                (proj.members || []).some((m) => m.profile_id === id)
+            );
+            setUserProjects(relatedProjects);
+            setSharedNotes(authorNotes.filter((n) => !n.isDraft && n.visibility !== 'private'));
           }
         }
       } catch (err) {
@@ -171,7 +185,7 @@ export default function PublicProfile() {
           <div className="ia-profile-actions">
             {profile.available_for_tutoring && offeredSubjects.length > 0 && (
               <span className="ia-badge ia-badge-success">
-                <CheckIcon size={12} /> Tutor disponible
+                <CheckIcon size={12} /> Disponible para Apoyo entre Pares
               </span>
             )}
           </div>
@@ -180,7 +194,7 @@ export default function PublicProfile() {
 
       {/* Contenido del Perfil Público */}
       <div className="ia-content-grid">
-        {/* Columna Izquierda: Bio y Materias */}
+        {/* Columna Izquierda: Bio, Materias, Proyectos y Apuntes */}
         <div>
           {/* Sobre el estudiante */}
           <div className="ia-card">
@@ -198,55 +212,11 @@ export default function PublicProfile() {
             )}
           </div>
 
-          {/* Preferencias de Aprendizaje y Estilo de Estudio si existen */}
-          {profile.learning_preferences && profile.learning_preferences.length > 0 && (
-            <div className="ia-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <SparklesIcon size={18} color="#2563eb" />
-                <h2 className="ia-card-title" style={{ margin: 0 }}>
-                  Preferencia de Aprendizaje y Estilo de Estudio
-                </h2>
-              </div>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 10px 0' }}>
-                Métodos pedagógicos solicitados para las sesiones de tutoría en el Aula Virtual:
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {profile.learning_preferences.map((prefId) => {
-                  const match = LEARNING_PREFERENCES.find((p) => p.id === prefId);
-                  const isHighlighted = prefId === 'low_stimulus' || prefId === 'active_challenges' || prefId === 'written_support';
-                  return (
-                    <div
-                      key={prefId}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        border: `1px solid ${isHighlighted ? '#bfdbfe' : '#e2e8f0'}`,
-                        backgroundColor: isHighlighted ? '#eff6ff' : '#f8fafc',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '2px',
-                      }}
-                    >
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isHighlighted ? '#1d4ed8' : '#334155' }}>
-                        {match?.label || prefId}
-                      </span>
-                      {match?.description && (
-                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                          {match.description}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Materias que puede enseñar (Solo visible si es tutor acreditado) */}
+          {/* Materias que puede enseñar */}
           {offeredSubjects.length > 0 && (
             <div className="ia-card">
               <h2 className="ia-card-title" style={{ marginBottom: '14px' }}>
-                <BookOpenIcon size={20} color="#2563eb" /> Materias que puede enseñar ({offeredSubjects.length})
+                <BookOpenIcon size={20} color="#2563eb" /> Materias en las que ofrece apoyo ({offeredSubjects.length})
               </h2>
 
               <div className="ia-catalog-list">
@@ -266,11 +236,11 @@ export default function PublicProfile() {
                     <div>
                       {item.is_verified ? (
                         <span className="ia-badge ia-badge-success">
-                          <ShieldCheckIcon size={12} /> Verificado
+                          <ShieldCheckIcon size={12} /> Tutor Par Verificado
                         </span>
                       ) : (
                         <span className="ia-badge ia-badge-blue">
-                          Comunitario
+                          Apoyo entre Pares
                         </span>
                       )}
                     </div>
@@ -310,9 +280,94 @@ export default function PublicProfile() {
               </p>
             )}
           </div>
+
+          {/* Proyectos Interdisciplinarios del Estudiante */}
+          <div className="ia-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h2 className="ia-card-title" style={{ margin: 0 }}>
+                <BriefcaseIcon size={19} color="#7c3aed" /> Proyectos Interdisciplinarios ({userProjects.length})
+              </h2>
+              <Link to="/projects" className="ia-card-action">
+                Ir al Hub de Proyectos →
+              </Link>
+            </div>
+
+            {userProjects.length > 0 ? (
+              <div className="ia-catalog-list">
+                {userProjects.map((proj) => {
+                  const isOwner = proj.owner_id === id;
+                  return (
+                    <div key={proj.id} className="ia-catalog-item">
+                      <div className="ia-catalog-item-info">
+                        <div>
+                          <div className="ia-catalog-item-title">{proj.title}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                            {proj.category || 'Desarrollo'} · {proj.career || 'Interdisciplinario'}
+                          </div>
+                          {proj.short_description && (
+                            <p className="ia-catalog-item-desc" style={{ marginTop: '4px' }}>
+                              {proj.short_description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`ia-badge ${isOwner ? 'ia-badge-purple' : 'ia-badge-blue'}`}>
+                        {isOwner ? 'Creador / Líder' : 'Integrante'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>
+                Aún no registra participación pública en proyectos del Hub.
+              </p>
+            )}
+          </div>
+
+          {/* Apuntes Compartidos por el Estudiante */}
+          <div className="ia-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h2 className="ia-card-title" style={{ margin: 0 }}>
+                <BookOpenIcon size={19} color="#d97706" /> Apuntes y Recursos Compartidos ({sharedNotes.length})
+              </h2>
+              <Link to="/resources" className="ia-card-action">
+                Ver Biblioteca →
+              </Link>
+            </div>
+
+            {sharedNotes.length > 0 ? (
+              <div className="ia-catalog-list">
+                {sharedNotes.map((note) => (
+                  <div key={note.id} className="ia-catalog-item">
+                    <div className="ia-catalog-item-info">
+                      <div>
+                        <div className="ia-catalog-item-title">{note.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                          {note.subjectName || 'Materia General'} · {note.downloadsCount || 0} descargas
+                        </div>
+                        {note.summary && (
+                          <p className="ia-catalog-item-desc" style={{ marginTop: '4px' }}>
+                            {note.summary}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="ia-badge ia-badge-neutral">
+                      {(note.fileExtension || '.md').replace('.', '').toUpperCase()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontStyle: 'italic', margin: 0 }}>
+                Sin apuntes públicos compartidos por el momento.
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Columna Derecha: Reputación, Insignias, Proyectos, Habilidades y Contacto */}
+        {/* Columna Derecha: Reputación, Insignias, Habilidades y Contacto */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Reputación y Estadísticas de Tutor (Solo para tutores habilitados) */}
           {offeredSubjects.length > 0 && <TutorStats stats={tutorStats} />}

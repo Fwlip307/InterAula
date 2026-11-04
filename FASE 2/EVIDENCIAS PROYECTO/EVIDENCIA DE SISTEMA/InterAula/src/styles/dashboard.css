@@ -1491,3 +1491,76 @@ html.ia-calm-mode .ia-welcome-cta-primary:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Preferencias Transversales de Accesibilidad (WCAG 2.2 AA)
+   ========================================================================== */
+
+html[data-font-size="large"] {
+  font-size: 108%;
+}
+
+html[data-font-size="xlarge"] {
+  font-size: 116%;
+}
+
+html[data-contrast="high"] {
+  --ia-text-main: #000000;
+  --ia-text-body: #0f172a;
+  --ia-text-muted: #1e293b;
+  --ia-border: #64748b;
+  --ia-border-strong: #334155;
+  --ia-primary: #1d4ed8;
+  --ia-primary-hover: #1e3a8a;
+}
+
+html[data-spacing="spacious"] body,
+html[data-spacing="spacious"] p,
+html[data-spacing="spacious"] li {
+  line-height: 1.8 !important;
+  letter-spacing: 0.015em;
+}
+
+html[data-spacing="spacious"] .ia-card {
+  padding: 26px;
+}
+
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Indicadores de foco visibles WCAG 2.2 AA para navegación por teclado */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid var(--ia-primary, #2563eb) !important;
+  outline-offset: 2px !important;
+}
+
+/* Modo Calma en la portada pública (.ia-landing) */
+html.ia-calm-mode .ia-landing {
+  background-color: #f3f5f1 !important;
+  color: #1e293b !important;
+}
+
+html.ia-calm-mode .ia-landing-hero,
+html.ia-calm-mode .ia-cta-banner {
+  background: #fafbf9 !important;
+  color: #1e293b !important;
+  border: 1px solid #bfc9bc !important;
+  box-shadow: none !important;
+}
+
+html.ia-calm-mode .ia-cta-banner h2,
+html.ia-calm-mode .ia-cta-banner p {
+  color: #1e293b !important;
+}
+

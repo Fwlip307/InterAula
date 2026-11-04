@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCalmMode } from '../context/CalmModeContext';
 import { profileService } from '../services/profile.service';
+import { projectService } from '../services/project.service';
 import type { Subject } from '../types/profile';
+import type { Project } from '../types/project';
 import {
   GraduationCapIcon,
   BookOpenIcon,
@@ -12,24 +15,33 @@ import {
   CheckIcon,
   ArrowLeftIcon,
   CalendarIcon,
+  BriefcaseIcon,
 } from '../components/common/Icons';
 import interaulaLogo from '../assets/branding/interaula-logo.png';
 import '../styles/home.css';
 
 export default function Home() {
   const { user } = useAuth();
+  const { isCalmMode, toggleCalmMode } = useCalmMode();
   const navigate = useNavigate();
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     async function loadCatalog() {
       try {
-        const subs = await profileService.getSubjects();
+        const [subs, projs] = await Promise.all([
+          profileService.getSubjects().catch(() => []),
+          projectService.getProjects().catch(() => []),
+        ]);
         if (subs && subs.length > 0) {
           setSubjects(subs.slice(0, 8));
         }
+        if (projs && projs.length > 0) {
+          setFeaturedProjects(projs.filter((p) => p.status === 'open' || p.status === 'recruiting').slice(0, 3));
+        }
       } catch (err) {
-        console.error('[Home] Error cargando asignaturas:', err);
+        console.error('[Home] Error cargando catálogo:', err);
       }
     }
     loadCatalog();
@@ -49,19 +61,44 @@ export default function Home() {
             <span className="ia-landing-brand-name">InterAula</span>
           </Link>
 
-          <nav className="ia-landing-nav">
+          <nav className="ia-landing-nav" aria-label="Navegación de portada">
+            <a href="#pilares" className="ia-landing-nav-link">
+              Pilares Inclusivos
+            </a>
+            <a href="#materias" className="ia-landing-nav-link">
+              Tutorías y Materias
+            </a>
+            <a href="#proyectos" className="ia-landing-nav-link">
+              Hub de Proyectos
+            </a>
             <a href="#como-funciona" className="ia-landing-nav-link">
               ¿Cómo funciona?
             </a>
-            <a href="#materias" className="ia-landing-nav-link">
-              Materias
-            </a>
-            <a href="#pilares" className="ia-landing-nav-link">
-              Beneficios
-            </a>
           </nav>
 
-          <div className="ia-landing-auth-btns">
+          <div className="ia-landing-auth-btns" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={toggleCalmMode}
+              aria-pressed={isCalmMode}
+              title={isCalmMode ? 'Desactivar Modo Calma' : 'Activar Modo Calma (Bajo estímulo visual)'}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '9999px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                border: `1.5px solid ${isCalmMode ? '#475569' : '#cbd5e1'}`,
+                backgroundColor: isCalmMode ? '#334155' : '#f8fafc',
+                color: isCalmMode ? '#ffffff' : '#334155',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>{isCalmMode ? '🧘 Modo Calma Activo' : '🧘 Modo Calma'}</span>
+            </button>
+
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
@@ -91,17 +128,17 @@ export default function Home() {
         <div className="ia-landing-hero-inner">
           <div className="ia-landing-badge">
             <GraduationCapIcon size={16} color="#1e40af" />
-            <span>Red Académica de Tutorías Universitarias</span>
+            <span>InterAula: Aprender juntos, a nuestra manera</span>
           </div>
 
           <h1 className="ia-landing-title">
-            Aprende y supera tus asignaturas con{' '}
-            <span className="ia-landing-title-highlight">tutores de tu propia carrera</span>
+            Aprendizaje colaborativo, accesible e{' '}
+            <span className="ia-landing-title-highlight">interdisciplinario entre pares</span>
           </h1>
 
           <p className="ia-landing-desc">
-            InterAula conecta a estudiantes de educación superior para preparar evaluaciones, resolver dudas
-            y certificar conocimientos mediante mentorías entre pares y validación académica rigurosa.
+            Recibe apoyo en las asignaturas que necesitas reforzar, enseña las materias que dominas,
+            personaliza la interfaz a tu ritmo de estudio y forma equipos en el Hub de Proyectos Interdisciplinarios.
           </p>
 
           <div className="ia-landing-hero-actions">
@@ -128,32 +165,129 @@ export default function Home() {
               style={{ padding: '12px 22px', fontSize: '1rem', cursor: 'pointer' }}
             >
               <BookOpenIcon size={18} color="#2563eb" />
-              <span>Explorar asignaturas</span>
+              <span>Solicitar u ofrecer tutoría</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/projects')}
+              className="ia-landing-btn-outline"
+              style={{ padding: '12px 22px', fontSize: '1rem', cursor: 'pointer' }}
+            >
+              <BriefcaseIcon size={18} color="#7c3aed" />
+              <span>Explorar Hub de Proyectos</span>
             </button>
           </div>
 
           <div className="ia-landing-trust-bar">
             <div className="ia-landing-trust-item">
-              <ShieldCheckIcon size={18} color="#16a34a" />
-              <span>Certificados de notas oficiales Duoc UC</span>
-            </div>
-            <div className="ia-landing-trust-item">
-              <SparklesIcon size={18} color="#7c3aed" />
-              <span>Evaluación técnica con IA para tutores</span>
-            </div>
-            <div className="ia-landing-trust-item">
               <UsersIcon size={18} color="#2563eb" />
-              <span>Comunidad 100% entre pares universitarios</span>
+              <span>1. Aprendizaje colaborativo entre pares</span>
+            </div>
+            <div className="ia-landing-trust-item">
+              <SparklesIcon size={18} color="#16a34a" />
+              <span>2. Inclusión y accesibilidad transversal (WCAG 2.2 AA)</span>
+            </div>
+            <div className="ia-landing-trust-item">
+              <BriefcaseIcon size={18} color="#7c3aed" />
+              <span>3. Colaboración en proyectos interdisciplinarios</span>
             </div>
           </div>
         </div>
       </section>
 
+      {/* PILARES / BENEFICIOS DE LA PLATAFORMA */}
+      <section id="pilares" className="ia-landing-section">
+        <div className="ia-landing-section-header">
+          <div className="ia-landing-section-tag">Nuestros 3 Pilares</div>
+          <h2 className="ia-landing-section-title">InterAula: Aprender juntos, a nuestra manera</h2>
+          <p className="ia-landing-section-desc">
+            Un entorno académico diseñado para que cada estudiante aprenda con comodidad, claridad y colaboración real.
+          </p>
+        </div>
+
+        <div className="ia-pillars-grid">
+          {/* Pilar 1 */}
+          <div className="ia-pillar-card">
+            <div className="ia-pillar-icon blue">
+              <UsersIcon size={26} color="#2563eb" />
+            </div>
+            <h3 className="ia-pillar-title">1. Aprendizaje Colaborativo</h3>
+            <p className="ia-pillar-desc">
+              El corazón de InterAula son las tutorías entre pares: un mismo estudiante puede pedir apoyo en una materia y enseñar otra que domina.
+            </p>
+            <ul className="ia-pillar-feature-list">
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Tutores Pares Verificados y Apoyo Académico entre Pares</span>
+              </li>
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Solicitudes con preferencias pedagógicas y de comunicación</span>
+              </li>
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Biblioteca de apuntes, foro académico y quizzes adaptativos</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Pilar 2 */}
+          <div className="ia-pillar-card">
+            <div className="ia-pillar-icon green">
+              <ShieldCheckIcon size={26} color="#16a34a" />
+            </div>
+            <h3 className="ia-pillar-title">2. Inclusión y Accesibilidad Transversal</h3>
+            <p className="ia-pillar-desc">
+              Cada persona aprende distinto. La plataforma se adapta a tus preferencias visuales, sensoriales y pedagógicas sin etiquetas públicas.
+            </p>
+            <ul className="ia-pillar-feature-list">
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Modo Calma, alto contraste, tamaño de fuente y espaciado</span>
+              </li>
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Cuestionarios sin límite de tiempo y pistas paso a paso</span>
+              </li>
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Preferencias de aprendizaje 100% privadas y voluntarias</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Pilar 3 */}
+          <div className="ia-pillar-card">
+            <div className="ia-pillar-icon purple">
+              <BriefcaseIcon size={26} color="#7c3aed" />
+            </div>
+            <h3 className="ia-pillar-title">3. Colaboración Interdisciplinaria</h3>
+            <p className="ia-pillar-desc">
+              Conecta con estudiantes de distintas carreras y especialidades para construir proyectos reales, portafolio e iniciativas de innovación.
+            </p>
+            <ul className="ia-pillar-feature-list">
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Publicación de roles, vacantes y habilidades requeridas</span>
+              </li>
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Condiciones transparentes (voluntarias, académicas o declaradas)</span>
+              </li>
+              <li className="ia-pillar-feature-item">
+                <CheckIcon size={16} color="#16a34a" />
+                <span>Postulación auditable y gestión de equipo e hitos</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* MATERIAS DESTACADAS */}
-      <section id="materias" className="ia-landing-section" style={{ paddingBottom: '40px' }}>
+      <section id="materias" className="ia-landing-section" style={{ paddingBottom: '30px' }}>
         <div className="ia-landing-section-header">
           <div className="ia-landing-section-tag">Catálogo formativo</div>
-          <h2 className="ia-landing-section-title">Asignaturas disponibles</h2>
+          <h2 className="ia-landing-section-title">Asignaturas disponibles para tutorías</h2>
           <p className="ia-landing-section-desc">
             Encuentra apoyo en los ramos más desafiantes o comparte tu experiencia en las asignaturas que ya dominas.
           </p>
@@ -173,132 +307,119 @@ export default function Home() {
             ))
           ) : (
             <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>
-              Cargando asignaturas disponibles...
+              Explora el catálogo completo de asignaturas dentro de la plataforma.
             </div>
           )}
         </div>
       </section>
 
-      {/* PILARES / BENEFICIOS */}
-      <section id="pilares" className="ia-landing-section">
+      {/* PROYECTOS INTERDISCIPLINARIOS ABIERTOS */}
+      <section id="proyectos" className="ia-landing-section" style={{ paddingTop: '10px', paddingBottom: '40px' }}>
         <div className="ia-landing-section-header">
-          <div className="ia-landing-section-tag">¿Por qué InterAula?</div>
-          <h2 className="ia-landing-section-title">Construido para el éxito académico</h2>
+          <div className="ia-landing-section-tag">Hub de Proyectos Interdisciplinarios</div>
+          <h2 className="ia-landing-section-title">Proyectos buscando colaboradores</h2>
           <p className="ia-landing-section-desc">
-            Una plataforma orientada a resultados reales, sin intermediarios externos y diseñada para la comunidad universitaria.
+            Únete a iniciativas estudiantiles de distintas áreas o publica tu propio proyecto con roles y acuerdos claros.
           </p>
         </div>
 
-        <div className="ia-pillars-grid">
-          {/* Pilar 1 */}
-          <div className="ia-pillar-card">
-            <div className="ia-pillar-icon blue">
-              <UsersIcon size={26} color="#2563eb" />
-            </div>
-            <h3 className="ia-pillar-title">Tutorías 1 a 1 y Talleres</h3>
-            <p className="ia-pillar-desc">
-              Aprende de estudiantes que ya cursaron y aprobaron con éxito tus asignaturas con metodologías cercanas y prácticas.
-            </p>
-            <ul className="ia-pillar-feature-list">
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Sesiones personalizadas a tu propio ritmo</span>
-              </li>
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Talleres grupales antes de certámenes</span>
-              </li>
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Flexibilidad de horarios según tu malla</span>
-              </li>
-            </ul>
+        {featuredProjects.length > 0 ? (
+          <div className="ia-pillars-grid">
+            {featuredProjects.map((proj) => (
+              <div key={proj.id} className="ia-pillar-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      color: '#6d28d9',
+                      backgroundColor: '#f3e8ff',
+                      padding: '3px 10px',
+                      borderRadius: '9999px',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    {proj.category || 'Proyecto Colaborativo'}
+                  </span>
+                  <h3 className="ia-pillar-title" style={{ marginBottom: '6px' }}>{proj.title}</h3>
+                  <p className="ia-pillar-desc" style={{ marginBottom: '12px' }}>
+                    {proj.short_description || proj.description}
+                  </p>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                    {(proj.positions || []).slice(0, 3).map((pos) => (
+                      <span
+                        key={pos.id}
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: '#eff6ff',
+                          color: '#1d4ed8',
+                        }}
+                      >
+                        Vacante: {pos.title}
+                      </span>
+                    ))}
+                  </div>
+                  <Link
+                    to={user ? '/projects' : '/login?redirect=/projects'}
+                    className="ia-landing-btn-outline"
+                    style={{ width: '100%', justifyContent: 'center', textDecoration: 'none' }}
+                  >
+                    Ver vacantes y condiciones
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
-
-          {/* Pilar 2 */}
-          <div className="ia-pillar-card">
-            <div className="ia-pillar-icon green">
-              <ShieldCheckIcon size={26} color="#16a34a" />
-            </div>
-            <h3 className="ia-pillar-title">Validación Rigurosa de Tutores</h3>
-            <p className="ia-pillar-desc">
-              Garantizamos la idoneidad académica revisando certificados oficiales de notas y evaluando conocimientos con IA.
+        ) : (
+          <div style={{ textAlign: 'center', padding: '24px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '0.95rem' }}>
+              ¿Tienes una idea de aplicación, investigación, diseño o emprendimiento académico?
             </p>
-            <ul className="ia-pillar-feature-list">
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Verificación de certificados PDF de notas</span>
-              </li>
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Evaluación técnica de dominio conceptual</span>
-              </li>
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Insignias de acreditación visibles</span>
-              </li>
-            </ul>
+            <Link to={user ? '/projects' : '/register'} className="ia-landing-btn-primary" style={{ textDecoration: 'none' }}>
+              Publicar el primer proyecto en el Hub
+            </Link>
           </div>
-
-          {/* Pilar 3 */}
-          <div className="ia-pillar-card">
-            <div className="ia-pillar-icon purple">
-              <SparklesIcon size={26} color="#7c3aed" />
-            </div>
-            <h3 className="ia-pillar-title">Aula Virtual y Recursos</h3>
-            <p className="ia-pillar-desc">
-              Espacio integral para estudiar: salas virtuales con pizarra colaborativa, banco de guías y resúmenes compartidos.
-            </p>
-            <ul className="ia-pillar-feature-list">
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Salas virtuales sin necesidad de instalar software</span>
-              </li>
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Banco colaborativo de apuntes y ejercicios</span>
-              </li>
-              <li className="ia-pillar-feature-item">
-                <CheckIcon size={16} color="#16a34a" />
-                <span>Flashcards y quizzes de autoevaluación</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* CÓMO FUNCIONA */}
       <section id="como-funciona" className="ia-landing-section" style={{ backgroundColor: '#f8fafc', borderRadius: '24px', margin: '20px auto' }}>
         <div className="ia-landing-section-header">
           <div className="ia-landing-section-tag">Paso a paso</div>
-          <h2 className="ia-landing-section-title">¿Cómo funciona InterAula?</h2>
+          <h2 className="ia-landing-section-title">¿Cómo participar en InterAula?</h2>
           <p className="ia-landing-section-desc">
-            Comenzar es simple y toma solo un par de minutos para encontrar el apoyo que necesitas.
+            Un flujo claro y predecible para aprender, enseñar y colaborar en equipo.
           </p>
         </div>
 
         <div className="ia-steps-grid">
           <div className="ia-step-card">
             <div className="ia-step-number">1</div>
-            <h3 className="ia-step-title">Crea tu cuenta institucional</h3>
+            <h3 className="ia-step-title">Personaliza tu experiencia</h3>
             <p className="ia-step-desc">
-              Regístrate con tu correo y selecciona tu institución, carrera y sede para acceder a la red de tu comunidad.
+              Crea tu cuenta, selecciona tu carrera y ajusta tus preferencias de lectura, Modo Calma y estilo de aprendizaje privado.
             </p>
           </div>
 
           <div className="ia-step-card">
             <div className="ia-step-number">2</div>
-            <h3 className="ia-step-title">Busca tu tutor o materia</h3>
+            <h3 className="ia-step-title">Solicita u ofrece tutorías</h3>
             <p className="ia-step-desc">
-              Filtra por asignatura, consulta el perfil de tutores acreditados y agenda una sesión según tus horarios.
+              Coordina sesiones 1 a 1 indicando cómo te resulta más cómodo aprender, o comparte tus conocimientos con otros compañeros.
             </p>
           </div>
 
           <div className="ia-step-card">
             <div className="ia-step-number">3</div>
-            <h3 className="ia-step-title">Aprende y aprueba tus ramos</h3>
+            <h3 className="ia-step-title">Colabora en proyectos y recursos</h3>
             <p className="ia-step-desc">
-              Conéctate a la sesión en vivo, aclara tus dudas con explicaciones claras y evalúa a tu tutor al finalizar.
+              Descarga apuntes, practica con cuestionarios sin estrés y postula a roles en el Hub de Proyectos Interdisciplinarios.
             </p>
           </div>
         </div>
@@ -307,9 +428,9 @@ export default function Home() {
       {/* LLAMADO A LA ACCIÓN FINAL */}
       <div className="ia-landing-section">
         <div className="ia-cta-banner">
-          <h2>¿Listo para mejorar tu rendimiento académico?</h2>
+          <h2>InterAula: Aprender juntos, a nuestra manera</h2>
           <p>
-            Únete a la comunidad de estudiantes universitarios que colaboran y se preparan juntos día a día.
+            Únete a la comunidad académica colaborativa, accesible e interdisciplinaria.
           </p>
           {user ? (
             <Link to="/dashboard" className="ia-cta-banner-btn">
@@ -342,16 +463,19 @@ export default function Home() {
               {user ? 'Mi Portal' : 'Iniciar sesión'}
             </Link>
             <Link to="/tutoring" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}>
-              Catálogo de Asignaturas
+              Tutorías y Retos
             </Link>
-            <a href="#pilares" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}>
-              Beneficios
-            </a>
+            <Link to="/projects" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}>
+              Hub de Proyectos
+            </Link>
+            <Link to="/resources" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}>
+              Biblioteca de Apuntes
+            </Link>
           </div>
         </div>
 
         <div className="ia-landing-footer-copy">
-          © {new Date().getFullYear()} InterAula · Plataforma Universitaria de Tutorías y Acompañamiento Académico.
+          © {new Date().getFullYear()} InterAula · Aprender juntos, a nuestra manera · Plataforma Académica Colaborativa, Inclusiva e Interdisciplinaria.
         </div>
       </footer>
     </div>
