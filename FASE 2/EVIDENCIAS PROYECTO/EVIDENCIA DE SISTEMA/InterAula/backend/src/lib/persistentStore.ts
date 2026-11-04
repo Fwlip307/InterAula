@@ -238,7 +238,11 @@ export function isSchemaMissingError(error: any): boolean {
     msg.includes('could not find the') ||
     msg.includes('does not exist') ||
     msg.includes('schema cache') ||
-    msg.includes('fetch failed')
+    msg.includes('fetch failed') ||
+    msg.includes('expected 3 parts in jwt') ||
+    msg.includes('invalid jwt') ||
+    msg.includes('no suitable key') ||
+    msg.includes('wrong key type')
   );
 }
 

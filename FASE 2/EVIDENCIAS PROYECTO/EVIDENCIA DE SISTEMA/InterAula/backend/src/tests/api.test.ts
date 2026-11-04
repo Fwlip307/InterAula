@@ -267,6 +267,8 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
 
 
   describe('6. Evolución Completa: Foro Académico, Biblioteca de Apuntes y Hub de Proyectos', () => {
+    const MOCK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
     test('Foro: CRUD completo de publicaciones, respuestas, votos únicos, permisos de autor y solución aceptada', async () => {
       const { forumBackendService } = await import('../services/forum.service.js');
       const { persistentStore } = await import('../lib/persistentStore.js');
@@ -276,7 +278,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       const otherUser = { id: '00000000-0000-0000-0000-000000000202', email: 'otro.usuario@duocuc.cl' };
 
       // 1. Crear publicación
-      const created = await forumBackendService.createPost(author, 'fake-jwt', {
+      const created = await forumBackendService.createPost(author, MOCK_TOKEN, {
         title: '¿Cómo diseñar índices compuestos en PostgreSQL?',
         description: 'Necesito optimizar una consulta que filtra por fecha y estado en una tabla grande.',
         category: 'Bases de Datos',
@@ -290,7 +292,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 2. Otro usuario no puede editar ni eliminar la publicación del autor
       await assert.rejects(
         async () => {
-          await forumBackendService.updatePost(otherUser, 'fake-jwt', created.id, {
+          await forumBackendService.updatePost(otherUser, MOCK_TOKEN, created.id, {
             title: 'Intento de edición no autorizada',
           });
         },
@@ -299,13 +301,13 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
 
       await assert.rejects(
         async () => {
-          await forumBackendService.deletePost(otherUser, 'fake-jwt', created.id);
+          await forumBackendService.deletePost(otherUser, MOCK_TOKEN, created.id);
         },
         /Solo el autor puede eliminar/
       );
 
       // 3. El autor sí puede editar su publicación
-      const updated = await forumBackendService.updatePost(author, 'fake-jwt', created.id, {
+      const updated = await forumBackendService.updatePost(author, MOCK_TOKEN, created.id, {
         title: '¿Cómo diseñar índices compuestos B-Tree en PostgreSQL?',
       });
       assert.match(updated.title, /B-Tree/);
@@ -322,7 +324,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 5. Crear respuesta, editarla y marcarla como solución aceptada por el autor del post
       const reply = await forumBackendService.createReply(
         otherUser,
-        'fake-jwt',
+        MOCK_TOKEN,
         created.id,
         'Debes colocar primero la columna de igualdad (estado) y luego la de rango (fecha).'
       );
@@ -331,7 +333,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // El autor del post no puede editar el texto de la respuesta de otro usuario
       await assert.rejects(
         async () => {
-          await forumBackendService.updateReply(author, 'fake-jwt', reply.id, 'Texto alterado');
+          await forumBackendService.updateReply(author, MOCK_TOKEN, reply.id, 'Texto alterado');
         },
         /Solo el autor puede editar esta respuesta/
       );
@@ -339,19 +341,19 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // Otro usuario que no es dueño del post no puede marcar la respuesta como solución
       await assert.rejects(
         async () => {
-          await forumBackendService.markReplyAsSolution(otherUser, 'fake-jwt', created.id, reply.id);
+          await forumBackendService.markReplyAsSolution(otherUser, MOCK_TOKEN, created.id, reply.id);
         },
         /Solo el autor de la consulta puede marcar una respuesta como solución/
       );
 
       // El autor del post marca la respuesta como solución aceptada
-      const sol = await forumBackendService.markReplyAsSolution(author, 'fake-jwt', created.id, reply.id);
+      const sol = await forumBackendService.markReplyAsSolution(author, MOCK_TOKEN, created.id, reply.id);
       assert.equal(sol.isSolved, true);
       assert.equal(sol.acceptedReplyId, reply.id);
 
       // 6. Eliminar respuesta y publicación por sus respectivos autores
-      await forumBackendService.deleteReply(otherUser, 'fake-jwt', reply.id);
-      await forumBackendService.deletePost(author, 'fake-jwt', created.id);
+      await forumBackendService.deleteReply(otherUser, MOCK_TOKEN, reply.id);
+      await forumBackendService.deletePost(author, MOCK_TOKEN, created.id);
     });
 
     test('Biblioteca de Apuntes: CRUD, control de versiones anti-sobrescritura, visibilidad privada y descargas', async () => {
@@ -363,7 +365,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       const visitor = { id: '00000000-0000-0000-0000-000000000302', email: 'estudiante@duocuc.cl' };
 
       // 1. Crear apunte desde el Editor Integrado
-      const note = await notesBackendService.createNote(owner, 'fake-jwt', {
+      const note = await notesBackendService.createNote(owner, MOCK_TOKEN, {
         title: 'Guía Completa de Programación Orientada a Objetos',
         summary: 'Herencia, polimorfismo, encapsulamiento y principios SOLID.',
         subject_name: 'Programación Orientada a Objetos',
@@ -382,7 +384,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       assert.equal(note.downloadsCount, 0);
 
       // 2. Actualizar apunte incrementa versión a 2
-      const updatedV2 = await notesBackendService.updateNote(owner, 'fake-jwt', note.id, {
+      const updatedV2 = await notesBackendService.updateNote(owner, MOCK_TOKEN, note.id, {
         title: 'Guía Completa de POO y Principios SOLID',
         expected_version: 1,
       });
@@ -391,7 +393,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 3. Petición atrasada con expected_version=1 debe ser rechazada para no sobrescribir cambios nuevos
       await assert.rejects(
         async () => {
-          await notesBackendService.updateNote(owner, 'fake-jwt', note.id, {
+          await notesBackendService.updateNote(owner, MOCK_TOKEN, note.id, {
             title: 'Versión obsoleta que intenta pisar cambios',
             expected_version: 1,
           });
@@ -400,7 +402,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       );
 
       // 4. Apunte privado no es accesible para otros usuarios
-      await notesBackendService.updateNote(owner, 'fake-jwt', note.id, {
+      await notesBackendService.updateNote(owner, MOCK_TOKEN, note.id, {
         visibility: 'private',
         expected_version: 2,
       });
@@ -419,7 +421,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 6. Rechazar subida con extensión peligrosa
       await assert.rejects(
         async () => {
-          await notesBackendService.createNote(owner, 'fake-jwt', {
+          await notesBackendService.createNote(owner, MOCK_TOKEN, {
             title: 'Archivo inválido',
             source_type: 'upload',
             file_name: 'script.bat',
@@ -439,7 +441,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       const applicant = { id: '00000000-0000-0000-0000-000000000402', email: 'dev.frontend@duocuc.cl' };
 
       // 1. Publicar proyecto con vacantes estructuradas y acuerdos económicos
-      const project = await projectBackendService.createProject(leader, 'fake-jwt', {
+      const project = await projectBackendService.createProject(leader, MOCK_TOKEN, {
         title: 'Sistema de Gestión de Laboratorios 3D',
         short_description: 'Plataforma web e interactiva para reserva de equipamiento.',
         description: 'Proyecto interdisciplinario con roles de Frontend, Backend y Modelado 3D.',
@@ -477,7 +479,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 2. El creador no puede postular a su propio proyecto
       await assert.rejects(
         async () => {
-          await projectBackendService.applyToPosition(leader, 'fake-jwt', project.id, positionId, {
+          await projectBackendService.applyToPosition(leader, MOCK_TOKEN, project.id, positionId, {
             message: 'Quiero postular a mi propio proyecto',
             accepted_agreements: true,
           });
@@ -488,7 +490,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 3. No se puede postular sin aceptar explícitamente los acuerdos
       await assert.rejects(
         async () => {
-          await projectBackendService.applyToPosition(applicant, 'fake-jwt', project.id, positionId, {
+          await projectBackendService.applyToPosition(applicant, MOCK_TOKEN, project.id, positionId, {
             message: 'Postulación sin aceptar acuerdos',
             accepted_agreements: false,
           });
@@ -499,7 +501,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 4. Postulación válida con aceptación explícita de acuerdos
       const application = await projectBackendService.applyToPosition(
         applicant,
-        'fake-jwt',
+        MOCK_TOKEN,
         project.id,
         positionId,
         {
@@ -517,7 +519,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
         async () => {
           await projectBackendService.applyToPosition(
             applicant,
-            'fake-jwt',
+            MOCK_TOKEN,
             project.id,
             positionId,
             {
@@ -532,7 +534,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       // 6. El creador acepta la postulación -> llena la vacante (1/1 -> filled) y suma al postulante a project_members
       const reviewed = await projectBackendService.reviewApplication(
         leader,
-        'fake-jwt',
+        MOCK_TOKEN,
         application.id,
         'accepted',
         'Bienvenido al equipo'
