@@ -1,5 +1,6 @@
 # ==============================================================================
 # InterAula - Orquestación de Contenedores de Producción con Docker Compose
+# Estructura separada: ./frontend y ./backend
 # ==============================================================================
 
 services:
@@ -19,6 +20,8 @@ services:
       - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - interaula-backend-data:/app/data
     networks:
       - interaula-network
     healthcheck:
@@ -30,7 +33,7 @@ services:
 
   frontend:
     build:
-      context: .
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=/api
@@ -55,3 +58,6 @@ services:
 networks:
   interaula-network:
     driver: bridge
+
+volumes:
+  interaula-backend-data:

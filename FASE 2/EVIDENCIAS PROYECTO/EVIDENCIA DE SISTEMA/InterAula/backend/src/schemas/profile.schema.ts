@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const accessibilityPreferencesSchema = z
   .object({
+    themeMode: z.enum(['light', 'dark', 'calm']).optional(),
+    darkMode: z.boolean().optional(),
     calmMode: z.boolean().optional(),
     fontSize: z.enum(['normal', 'large', 'xlarge']).optional(),
     contrast: z.enum(['standard', 'high']).optional(),

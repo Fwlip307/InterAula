@@ -592,4 +592,186 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       const parsedInvalid = updateProfileSchema.safeParse(invalidFontSize);
       assert.equal(parsedInvalid.success, false);
     });
+
+    test('Mi espacio de aprendizaje: creación de rutas, avance por etapas, tareas con subtareas, evaluación de temas y explicaciones adaptables', async () => {
+      const { learningSpaceService } = await import('../services/learningSpace.service.js');
+      const studentId = 'usr-learning-space-01';
+      const token = 'mock-jwt-token';
+
+      // 1. Actualizar configuración del perfil de aprendizaje
+      const updatedConfig = await learningSpaceService.updateConfig(studentId, token, {
+        onboardingCompleted: true,
+        explanationStyle: ['step_by_step', 'visual_support'],
+        organizationStyle: ['short_tasks', 'frequent_breaks'],
+        communicationStyle: ['message_first'],
+        environmentStyle: ['calm_interface', 'untimed_practice'],
+        defaultStudyIntervalMinutes: 25,
+        defaultBreakMinutes: 5,
+        subjectsToReinforce: ['Programación de Algoritmos'],
+        learningGoalSummary: 'Aprobar programación comprendiendo estructuras de datos paso a paso.',
+      });
+      assert.equal(updatedConfig.onboardingCompleted, true);
+      assert.equal(updatedConfig.defaultStudyIntervalMinutes, 25);
+      assert.deepEqual(updatedConfig.subjectsToReinforce, ['Programación de Algoritmos']);
+
+      // 2. Crear ruta de aprendizaje personalizada y verificar etapas generadas
+      const createdPath = await learningSpaceService.createLearningPath(studentId, token, {
+        subject_name: 'Programación de Algoritmos',
+        title: 'Arreglos y ciclos iterativos',
+        goal: 'Resolver problemas de recorrido y filtrado de arreglos sin errores de índice',
+        pace: 'paso_a_paso',
+        preferred_mode: 'paso_a_paso',
+      });
+      assert.equal(createdPath.progress_percent, 0);
+      assert.equal(createdPath.stages.length, 4);
+
+      // 3. Completar primera etapa -> avance debe ser 25%
+      const afterStage1 = await learningSpaceService.toggleStageCompletion(
+        studentId,
+        token,
+        createdPath.id,
+        createdPath.stages[0].id,
+        true
+      );
+      assert.equal(afterStage1.progress_percent, 25);
+      assert.equal(afterStage1.status, 'active');
+
+      // Completar las 3 etapas restantes -> avance 100% y estado 'completed'
+      for (let i = 1; i < createdPath.stages.length; i++) {
+        await learningSpaceService.toggleStageCompletion(
+          studentId,
+          token,
+          createdPath.id,
+          createdPath.stages[i].id,
+          true
+        );
+      }
+      const pathsList = await learningSpaceService.listLearningPaths(studentId, token);
+      assert.equal(pathsList[0].progress_percent, 100);
+      assert.equal(pathsList[0].status, 'completed');
+
+      // 3b. Editar ruta y agregar una 5ta etapa personalizada -> avance se recalcula a 80% y estado vuelve a 'active'
+      const editedPath = await learningSpaceService.updateLearningPath(
+        studentId,
+        token,
+        createdPath.id,
+        {
+          title: 'Arreglos, ciclos y matrices',
+          goal: 'Dominar arreglos unidimensionales y matrices antes del certamen',
+          pace: 'constante',
+          preferred_mode: 'ejemplos',
+        }
+      );
+      assert.equal(editedPath.title, 'Arreglos, ciclos y matrices');
+      assert.equal(editedPath.pace, 'constante');
+      assert.equal(editedPath.preferred_mode, 'ejemplos');
+
+      const withFifthStage = await learningSpaceService.addStageToPath(
+        studentId,
+        token,
+        createdPath.id,
+        {
+          title: 'Etapa 5: Ejercicios de matrices 2D',
+          description: 'Practicar recorrido con doble ciclo for.',
+          practice_prompt: 'Resolver suma de diagonal principal.',
+        }
+      );
+      assert.equal(withFifthStage.stages.length, 5);
+      assert.equal(withFifthStage.progress_percent, 80);
+      assert.equal(withFifthStage.status, 'active');
+
+      // 3c. Aislamiento por usuario: otro estudiante no puede modificar ni eliminar la ruta
+      const otherStudentId = 'usr-learning-space-02';
+      await assert.rejects(
+        async () => {
+          await learningSpaceService.updateLearningPath(otherStudentId, token, createdPath.id, {
+            title: 'Intento no autorizado',
+          });
+        },
+        /Ruta de aprendizaje no encontrada o sin permisos/
+      );
+      await assert.rejects(
+        async () => {
+          await learningSpaceService.deleteLearningPath(otherStudentId, token, createdPath.id);
+        },
+        /Ruta no encontrada o sin permisos/
+      );
+
+      // 4. Crear tarea de estudio con subtareas y prioridad, y verificar completitud automática
+      const task = await learningSpaceService.createStudyTask(studentId, token, {
+        subject_name: 'Programación de Algoritmos',
+        title: 'Resolver guía práctica de arreglos',
+        priority: 'alta',
+        study_interval_minutes: 20,
+        break_minutes: 5,
+      });
+      assert.equal(task.subtasks.length, 3);
+      assert.equal(task.status, 'pending');
+      assert.equal(task.priority, 'alta');
+
+      const completedSubtasks = task.subtasks.map((st) => ({ ...st, completed: true }));
+      const completedTask = await learningSpaceService.updateStudyTask(studentId, token, task.id, {
+        subtasks: completedSubtasks,
+        priority: 'baja',
+      });
+      assert.equal(completedTask.status, 'completed');
+      assert.equal(completedTask.priority, 'baja');
+
+      // Aislamiento por usuario en tareas
+      await assert.rejects(
+        async () => {
+          await learningSpaceService.deleteStudyTask(otherStudentId, token, task.id);
+        },
+        /Tarea no encontrada o sin permisos/
+      );
+
+      // 5. Registrar evaluación de dominio por tema
+      const consolidated = await learningSpaceService.recordTopicAssessment(studentId, token, {
+        subject_name: 'Programación de Algoritmos',
+        topic_name: 'Recorrido de arreglos con for',
+        score: 90,
+        total_questions: 100,
+        recurring_errors: [],
+      });
+      assert.equal(consolidated.mastery_level, 'consolidado');
+
+      const needsPractice = await learningSpaceService.recordTopicAssessment(studentId, token, {
+        subject_name: 'Programación de Algoritmos',
+        topic_name: 'Recursividad',
+        score: 40,
+        total_questions: 100,
+        recurring_errors: ['Falta caso base de parada'],
+      });
+      assert.equal(needsPractice.mastery_level, 'necesita_practicar');
+
+      // 6. Generar explicación adaptable en los 6 modos ("Aprende a tu manera") y verificar diferenciación real y fuente
+      const modes = [
+        'sencilla',
+        'paso_a_paso',
+        'ejemplos',
+        'visual',
+        'profunda',
+        'comprobar',
+      ] as const;
+      const summaries = new Set<string>();
+      const examples = new Set<string>();
+
+      for (const mode of modes) {
+        const exp = await learningSpaceService.generateAdaptiveExplanation({
+          subject_name: 'Programación de Algoritmos',
+          topic: 'Recursividad',
+          mode,
+          goal: 'Entender el caso base',
+        });
+        assert.equal(exp.mode, mode);
+        assert.ok(exp.source === 'pedagogical_engine' || exp.source === 'ai_gemini');
+        assert.ok(exp.summary.length > 20);
+        assert.ok(exp.key_points.length >= 3);
+        assert.ok(exp.comprehension_check.options.length >= 3);
+        summaries.add(exp.summary);
+        examples.add(exp.practical_example);
+      }
+      assert.equal(summaries.size, 6);
+      assert.equal(examples.size, 6);
+    });
   });

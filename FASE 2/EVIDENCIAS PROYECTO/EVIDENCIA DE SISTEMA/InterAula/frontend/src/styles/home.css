@@ -1,0 +1,1177 @@
+/* ==========================================================================
+   InterAula - Landing Page / Inicio de la Plataforma (home.css)
+   Diseño académico, limpio, moderno y estructurado
+   ========================================================================== */
+
+.ia-landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-family: var(--ia-font, Inter, system-ui, -apple-system, sans-serif);
+}
+
+/* Header de la landing */
+.ia-landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ia-landing-header-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.ia-landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #0f172a;
+}
+
+.ia-landing-brand-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1e3a8a;
+}
+
+.ia-landing-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.ia-landing-nav-link {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.ia-landing-nav-link:hover {
+  color: #2563eb;
+}
+
+.ia-landing-auth-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ia-landing-btn-login {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  text-decoration: none;
+  padding: 0.56rem 1.05rem;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.ia-landing-btn-login:hover {
+  color: #1d4ed8;
+  background-color: #f1f5f9;
+  border-color: #dbeafe;
+}
+
+.ia-landing-btn-primary {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 0.6rem 1.2rem;
+  border-radius: 11px;
+  text-decoration: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.2);
+  border: 1px solid #1d4ed8;
+  cursor: pointer;
+}
+
+.ia-landing-btn-primary:hover {
+  background: #1e40af;
+  border-color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.26);
+  color: #ffffff !important;
+}
+
+.ia-landing-btn-outline,
+.ia-landing-btn-portal {
+  background-color: #ffffff;
+  color: #1e293b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 0.6rem 1.15rem;
+  border-radius: 11px;
+  text-decoration: none;
+  border: 1px solid #cbd5e1;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ia-landing-btn-outline:hover,
+.ia-landing-btn-portal:hover {
+  background-color: #f8fafc;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.08);
+}
+
+/* HERO SECTION CON FOTOGRAFÍA ACADÉMICA VERIFICADA */
+.ia-landing-hero {
+  background: linear-gradient(180deg, #f3f8ff 0%, #ffffff 100%);
+  padding: 64px 24px 56px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ia-landing-hero-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.ia-landing-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 44px;
+  align-items: center;
+  text-align: left;
+}
+
+.ia-landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #e0ecff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  margin-bottom: 18px;
+  letter-spacing: 0.015em;
+}
+
+.ia-landing-title {
+  font-size: 2.75rem;
+  font-weight: 900;
+  line-height: 1.14;
+  color: #0f172a;
+  margin: 0 0 18px 0;
+  letter-spacing: -0.03em;
+}
+
+.ia-landing-title-highlight {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0f766e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ia-landing-desc {
+  font-size: 1.08rem;
+  line-height: 1.65;
+  color: #334155;
+  max-width: 640px;
+  margin: 0 0 28px 0;
+}
+
+.ia-landing-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.ia-landing-trust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ia-landing-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.ia-landing-hero-visual {
+  position: relative;
+}
+
+.ia-photo-frame {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+}
+
+.ia-photo-frame img {
+  width: 100%;
+  height: 370px;
+  object-fit: cover;
+  display: block;
+}
+
+.ia-photo-caption {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.79rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.ia-hero-float-badge {
+  position: absolute;
+  bottom: 58px;
+  left: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+}
+
+.ia-section-photo-card {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  margin-bottom: 18px;
+}
+
+.ia-section-photo-card img {
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+  display: block;
+}
+
+.ia-section-photo-card__caption {
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: #475569;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* SECTION CONTAINER */
+.ia-landing-section {
+  padding: 72px 32px;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.ia-landing-section-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 48px auto;
+}
+
+.ia-landing-section-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.ia-landing-section-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px 0;
+}
+
+.ia-landing-section-desc {
+  font-size: 1rem;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* PILARES / CARDS GRID */
+.ia-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.ia-pillar-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px 26px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.ia-pillar-card:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+  transform: translateY(-3px);
+}
+
+.ia-pillar-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.ia-pillar-icon.blue { background-color: #eff6ff; }
+.ia-pillar-icon.green { background-color: #f0fdf4; }
+.ia-pillar-icon.purple { background-color: #faf5ff; }
+
+.ia-pillar-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.ia-pillar-desc {
+  font-size: 0.92rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 18px 0;
+  flex: 1;
+}
+
+.ia-pillar-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ia-pillar-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+/* PASOS / HOW IT WORKS */
+.ia-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  position: relative;
+}
+
+.ia-step-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px 24px;
+  position: relative;
+}
+
+.ia-step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.ia-step-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.ia-step-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* MATERIAS DESTACADAS */
+.ia-subjects-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ia-subject-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.ia-subject-chip:hover {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* BANNER DE LLAMADO FINAL */
+.ia-cta-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 50%, #2563eb 100%);
+  border-radius: 20px;
+  padding: 48px 40px;
+  color: #ffffff;
+  text-align: center;
+  margin: 40px 24px;
+}
+
+.ia-cta-banner h2 {
+  font-size: 2.1rem;
+  font-weight: 900;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+}
+
+.ia-cta-banner p {
+  font-size: 1.05rem;
+  color: #e0e7ff;
+  max-width: 620px;
+  margin: 0 auto 28px auto;
+  line-height: 1.5;
+}
+
+.ia-cta-banner-btn {
+  background: #ffffff;
+  color: #1e3a8a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  padding: 12px 28px;
+  border-radius: 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.ia-cta-banner-btn:hover {
+  background: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+/* FOOTER DE LA LANDING */
+.ia-landing-footer {
+  background: #0f172a;
+  color: #94a3b8;
+  padding: 48px 24px 28px 24px;
+  border-top: 1px solid #1e293b;
+  margin-top: auto;
+}
+
+.ia-landing-footer-inner {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.ia-landing-footer-brand {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ia-landing-footer-copy {
+  max-width: 1600px;
+  margin: 20px auto 0 auto;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* RESPONSIVE Y SECCIONES EDITORIALES NUEVAS */
+.ia-landing-calm-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.ia-landing-calm-btn:hover {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background-color: #eff6ff;
+}
+
+.ia-landing-calm-btn.active {
+  background-color: #dce9e4;
+  border-color: #8eb3a4;
+  color: #1d4d3c;
+  font-weight: 700;
+}
+
+.ia-landing-btn-lg {
+  padding: 0.78rem 1.45rem;
+  font-size: 0.95rem;
+  border-radius: 12px;
+}
+
+/* Sección 2: El problema que buscamos resolver */
+.ia-problem-section {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ia-problem-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.ia-problem-paragraph {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #334155;
+  margin: 0 0 16px 0;
+}
+
+.ia-problem-contrast {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ia-contrast-block {
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ia-contrast-block--before {
+  background-color: #f8fafc;
+}
+
+.ia-contrast-block--after {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+.ia-contrast-block h3 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.ia-contrast-block ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+/* Sección 3: 7 pasos de Cómo funciona InterAula */
+.ia-seven-steps-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 28px;
+}
+
+.ia-seven-step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.ia-seven-step-num {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 6px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.ia-seven-step-body h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.ia-seven-step-body p {
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Sección 4: Mi espacio de aprendizaje (Sección destacada) */
+.ia-featured-space-section {
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 20px;
+}
+
+.ia-featured-space-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.ia-space-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.ia-space-showcase__path-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ia-showcase-chip {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e40af;
+  background-color: #eff6ff;
+  padding: 4px 10px;
+  border-radius: 9999px;
+}
+
+.ia-showcase-progress {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.ia-space-showcase__path-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+.ia-showcase-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ia-showcase-stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #475569;
+}
+
+.ia-showcase-stage.done {
+  background-color: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.ia-showcase-stage.current {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e3a8a;
+}
+
+.ia-showcase-stage strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.ia-showcase-stage span {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.ia-space-showcase__explainer {
+  border-left: 1px solid #e2e8f0;
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ia-showcase-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 12px;
+}
+
+.ia-showcase-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ia-showcase-mode-tabs button {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.ia-showcase-mode-tabs button.active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.ia-space-showcase__explainer-body {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  flex: 1;
+}
+
+.ia-space-showcase__explainer-body h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.96rem;
+  color: #0f172a;
+}
+
+.ia-space-showcase__explainer-body p,
+.ia-space-showcase__explainer-body ol {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #334155;
+  padding-left: 0;
+  list-style: none;
+}
+
+.ia-space-showcase__explainer-body li + li {
+  margin-top: 6px;
+}
+
+/* Sección 5: Tutorías colaborativas */
+.ia-two-col-feature {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 36px;
+  align-items: center;
+}
+
+.ia-clean-check-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ia-clean-check-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.94rem;
+  color: #1e293b;
+  line-height: 1.5;
+}
+
+.ia-subjects-showcase-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 26px;
+}
+
+.ia-subjects-showcase-box h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.08rem;
+  color: #0f172a;
+}
+
+.ia-subjects-showcase-box p {
+  margin: 0 0 16px 0;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+/* Sección 6: Inclusión y accesibilidad */
+.ia-inclusion-section {
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ia-inclusion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.ia-inclusion-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.ia-inclusion-item h3 {
+  margin: 10px 0 6px 0;
+  font-size: 1.02rem;
+  color: #0f172a;
+}
+
+.ia-inclusion-item p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #475569;
+}
+
+/* Sección 7: Proyectos */
+.ia-project-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1e40af;
+  background-color: #eff6ff;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  margin-bottom: 10px;
+}
+
+.ia-project-role-tag {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background-color: #f1f5f9;
+  color: #334155;
+}
+
+.ia-empty-projects-showcase {
+  text-align: center;
+  padding: 32px 24px;
+  background: #f8fafc;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.ia-empty-projects-showcase p {
+  margin: 0 auto 16px auto;
+  max-width: 600px;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 960px) {
+  .ia-landing-hero-grid,
+  .ia-pillars-grid,
+  .ia-steps-grid,
+  .ia-problem-layout,
+  .ia-seven-steps-list,
+  .ia-space-showcase,
+  .ia-two-col-feature,
+  .ia-inclusion-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ia-space-showcase__explainer {
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    padding-left: 0;
+    padding-top: 20px;
+  }
+
+  .ia-landing-title {
+    font-size: 2.15rem;
+  }
+
+  .ia-landing-nav {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Modo Calma Perceptible en la Portada Institucional (.ia-landing)
+   ========================================================================== */
+
+html.ia-calm-mode .ia-landing {
+  background-color: #ebf0e8 !important;
+  color: #1c2b24 !important;
+}
+
+html.ia-calm-mode .ia-landing-header {
+  background: #f6f8f4 !important;
+  border-bottom-color: #c4d1bf !important;
+  backdrop-filter: none !important;
+}
+
+html.ia-calm-mode .ia-landing-hero {
+  background: #f2f5ef !important;
+  border-bottom-color: #c4d1bf !important;
+}
+
+html.ia-calm-mode .ia-landing-title-highlight {
+  background: none !important;
+  -webkit-text-fill-color: #2c5b6c !important;
+  color: #2c5b6c !important;
+}
+
+html.ia-calm-mode .ia-pillar-card,
+html.ia-calm-mode .ia-seven-step-row,
+html.ia-calm-mode .ia-space-showcase,
+html.ia-calm-mode .ia-inclusion-item,
+html.ia-calm-mode .ia-subject-chip,
+html.ia-calm-mode .ia-photo-frame,
+html.ia-calm-mode .ia-section-photo-card,
+html.ia-calm-mode .ia-hero-float-badge {
+  background: #f6f8f4 !important;
+  border-color: #c4d1bf !important;
+  box-shadow: none !important;
+}
+
+html.ia-calm-mode .ia-featured-space-section,
+html.ia-calm-mode .ia-subjects-showcase-box,
+html.ia-calm-mode .ia-contrast-block--before,
+html.ia-calm-mode .ia-space-showcase__explainer-body,
+html.ia-calm-mode .ia-showcase-stage,
+html.ia-calm-mode .ia-empty-projects-showcase {
+  background: #e4ebe0 !important;
+  border-color: #c4d1bf !important;
+}
+
+html.ia-calm-mode .ia-contrast-block--after,
+html.ia-calm-mode .ia-showcase-stage.current {
+  background: #dce9e7 !important;
+  border-color: #acc8c2 !important;
+}
+
+html.ia-calm-mode .ia-landing-btn-primary {
+  background: #2c5b6c !important;
+  border-color: #2c5b6c !important;
+  box-shadow: none !important;
+}
+
+html.ia-calm-mode .ia-landing-btn-outline,
+html.ia-calm-mode .ia-landing-btn-portal {
+  background: #f6f8f4 !important;
+  border-color: #b0c0ab !important;
+  color: #1c2b24 !important;
+  box-shadow: none !important;
+}
+
+html.ia-calm-mode .ia-cta-banner {
+  background: #e2ebe6 !important;
+  border: 1px solid #b5c9bf !important;
+  color: #1c2b24 !important;
+  box-shadow: none !important;
+}
+
+html.ia-calm-mode .ia-cta-banner h2,
+html.ia-calm-mode .ia-cta-banner p {
+  color: #1c2b24 !important;
+}
+
+html.ia-calm-mode .ia-cta-banner-btn {
+  background: #2c5b6c !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html.ia-calm-mode .ia-landing-footer {
+  background: #1c2b24 !important;
+  border-top-color: #2d4238 !important;
+}
+
+/* ==========================================================================
+   Modo Oscuro en la Portada Institucional (.ia-landing)
+   ========================================================================== */
+
+html.ia-dark-mode .ia-landing {
+  background-color: #0b1120 !important;
+  color: #f8fafc !important;
+}
+
+html.ia-dark-mode .ia-landing-header {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-bottom-color: #283548 !important;
+}
+
+html.ia-dark-mode .ia-landing-hero,
+html.ia-dark-mode .ia-featured-space-section {
+  background: #0f172a !important;
+  border-color: #283548 !important;
+}
+
+html.ia-dark-mode .ia-pillar-card,
+html.ia-dark-mode .ia-seven-step-row,
+html.ia-dark-mode .ia-space-showcase,
+html.ia-dark-mode .ia-inclusion-item,
+html.ia-dark-mode .ia-subject-chip,
+html.ia-dark-mode .ia-photo-frame,
+html.ia-dark-mode .ia-section-photo-card,
+html.ia-dark-mode .ia-hero-float-badge,
+html.ia-dark-mode .ia-subjects-showcase-box,
+html.ia-dark-mode .ia-space-showcase__explainer-body,
+html.ia-dark-mode .ia-showcase-stage,
+html.ia-dark-mode .ia-empty-projects-showcase {
+  background: #111827 !important;
+  border-color: #283548 !important;
+  color: #f8fafc !important;
+}
+
+html.ia-dark-mode .ia-landing-nav-link {
+  color: #cbd5e1 !important;
+}
+
+html.ia-dark-mode .ia-landing-brand-name {
+  color: #ffffff !important;
+}
+
+html.ia-dark-mode .ia-landing-auth-btns .ia-unified-mode-btn {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+html.ia-dark-mode .ia-landing-btn-login {
+  color: #cbd5e1 !important;
+  border-color: #334155 !important;
+}
+
+

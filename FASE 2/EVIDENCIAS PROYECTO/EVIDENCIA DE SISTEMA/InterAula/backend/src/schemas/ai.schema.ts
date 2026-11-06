@@ -18,6 +18,7 @@ export const aiGenerateQuizSchema = z
   .object({
     subject_name: z.string().trim().min(1, 'Se requiere el nombre de la asignatura'),
     theme_id: z.string().trim().min(1, 'Se requiere el identificador de temática'),
+    topic: z.string().trim().optional(),
     count: z.number().int().min(1).max(10).default(3),
   });
 

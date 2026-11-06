@@ -35,39 +35,49 @@ graph TD
 
 ---
 
-## 📂 2. Estructura del Proyecto
+## 2. Estructura del Proyecto
 
 ```text
 InterAula/
+├── frontend/                      # Aplicación cliente (React 19 + TypeScript + Vite)
+│   ├── public/                    # Activos estáticos públicos
+│   ├── src/
+│   │   ├── components/            # Componentes comunes, layout y sistema de iconos SVG
+│   │   ├── constants/             # Endpoints REST y reglas de negocio centralizadas
+│   │   ├── context/               # AuthContext y CalmModeContext (Accesibilidad WCAG 2.2 AA)
+│   │   ├── lib/                   # Cliente HTTP (apiClient.ts) y cliente Supabase
+│   │   ├── pages/                 # Vistas (Home, LearningSpace, Dashboard, Tutoring, Projects, Forum, etc.)
+│   │   ├── router/                # Enrutamiento SPA con carga diferida (AppRouter.tsx)
+│   │   ├── services/              # Servicios del frontend (learningSpace, tutoring, projects, notes, etc.)
+│   │   ├── styles/                # Hojas de estilo modulares (home.css, dashboard.css)
+│   │   └── types/                 # Definiciones de tipos TypeScript
+│   ├── tests/                     # Pruebas automatizadas del frontend
+│   ├── Dockerfile                 # Construcción multi-stage con Nginx
+│   ├── nginx.conf                 # Configuración SPA + proxy inverso /api
+│   ├── package.json
+│   └── vite.config.ts
 ├── backend/                       # Backend REST propio en Node.js + Express
 │   ├── src/
 │   │   ├── config/                # Carga y validación de variables de entorno
-│   │   ├── controllers/           # Controladores HTTP desacoplados
-│   │   ├── lib/                   # Clientes Supabase (autenticado, público, admin)
+│   │   ├── controllers/           # Controladores HTTP (incluye learningSpace.controller.ts)
+│   │   ├── lib/                   # Clientes Supabase y persistentStore resiliente
 │   │   ├── middlewares/           # Middlewares (requireAuth, validateRequest, errorHandler)
-│   │   ├── routes/                # Enrutadores modulares (/profiles, /tutoring, etc.)
+│   │   ├── routes/                # Enrutadores modulares (/learning-space, /profiles, /tutoring, /projects, etc.)
 │   │   ├── schemas/               # Esquemas de validación estricta con Zod
-│   │   ├── services/              # Lógica de negocio y reglas de dominio
+│   │   ├── services/              # Lógica de negocio y motor de explicaciones adaptables
 │   │   ├── tests/                 # Suite de pruebas automatizadas de la API
-│   │   ├── types/                 # Tipos TypeScript compartidos en el backend
 │   │   ├── app.ts                 # Configuración de Express, CORS, Helmet y rutas
 │   │   └── server.ts              # Inicio del servidor HTTP y graceful shutdown
-│   ├── .env.example               # Plantilla de variables privadas del backend
+│   ├── Dockerfile                 # Construcción de contenedor del backend
 │   ├── package.json
 │   └── tsconfig.json
-├── src/                           # Frontend React 19
-│   ├── components/                # Componentes reutilizables e inclusivos
-│   ├── lib/
-│   │   ├── apiClient.ts           # Cliente HTTP centralizado con inyección de JWT
-│   │   └── supabase.ts            # Cliente Supabase del frontend
-│   ├── pages/                     # Vistas (Dashboard, Perfil, Tutorías, Hub, Foro, etc.)
-│   ├── services/                  # Servicios frontend conectados a apiClient
-│   └── types/                     # Tipos de datos de la interfaz
 ├── supabase/
-│   └── migrations/                # Migraciones SQL y políticas de seguridad RLS
-├── tests/                         # Pruebas automatizadas del frontend
-├── .env.example                   # Plantilla de variables públicas del cliente
-└── package.json                   # Scripts unificados de ejecución y pruebas
+│   └── migrations/                # Migraciones SQL idempotentes y políticas RLS (001 a 015)
+├── docker-compose.yml             # Orquestación de contenedores frontend y backend
+├── docker-start.bat               # Script de inicio rápido en Docker (WSL2)
+├── docker-stop.bat                # Script de detención limpia
+├── .env.example                   # Plantilla de variables de entorno
+└── package.json                   # Scripts orquestadores en la raíz
 ```
 
 ---
@@ -237,6 +247,20 @@ Todos los endpoints tienen el prefijo `/api`.
 | `PATCH`| `/applications/:id/withdraw` | Requerida | Retirar postulación pendiente. |
 | `PATCH`| `/applications/:id/review` | Requerida | Resolver postulación (`accepted`, `rejected` - solo dueño del proyecto). |
 | `DELETE`| `/:id` | Requerida | Eliminar proyecto propio. |
+
+### Mi espacio de aprendizaje (`/learning-space`)
+| Método | Ruta | Autenticación | Permisos / Reglas |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/overview` | Requerida | Retorna configuración privada, rutas activas, tareas con subtareas y evaluaciones de temas del estudiante. |
+| `PUT` | `/config` | Requerida | Actualiza preferencias del perfil de aprendizaje en 4 categorías estructuradas. |
+| `POST` | `/paths` | Requerida | Crea ruta de aprendizaje personalizada y genera sus etapas paso a paso. |
+| `PATCH`| `/paths/:pathId/stages/:stageId` | Requerida | Marca o desmarca una etapa y recalcula el progreso porcentual real. |
+| `DELETE`| `/paths/:pathId` | Requerida | Elimina una ruta de aprendizaje del propietario. |
+| `POST` | `/tasks` | Requerida | Crea una tarea de estudio desglosada en subtareas con intervalos configurables. |
+| `PATCH`| `/tasks/:taskId` | Requerida | Actualiza subtareas, intervalos o estado de la tarea (`pending`, `in_progress`, `paused`, `completed`). |
+| `DELETE`| `/tasks/:taskId` | Requerida | Elimina una tarea de estudio propia. |
+| `POST` | `/assessments` | Requerida | Registra comprobación de comprensión y clasifica dominio del tema (`consolidado`, `en_desarrollo`, `necesita_practicar`). |
+| `POST` | `/explain` | Requerida | Genera explicación adaptable ("Aprende a tu manera") en 6 modos (`sencilla`, `paso_a_paso`, `ejemplos`, `visual`, `profunda`, `comprobar`). |
 
 ### Inteligencia Artificial Segura (`/ai`)
 | Método | Ruta | Autenticación | Permisos / Reglas |

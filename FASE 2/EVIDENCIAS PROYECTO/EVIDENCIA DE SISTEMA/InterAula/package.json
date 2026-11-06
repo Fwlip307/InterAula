@@ -1,33 +1,20 @@
 {
-  "name": "interaula",
+  "name": "interaula-monorepo",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
-    "build": "tsc -b && vite build",
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
     "build:backend": "npm --prefix backend run build",
-    "lint": "oxlint src backend/src tests",
-    "test": "node ./backend/node_modules/tsx/dist/cli.mjs --test tests/security_and_services.test.ts",
+    "build:all": "npm --prefix frontend run build && npm --prefix backend run build",
+    "lint": "npm --prefix frontend run lint",
+    "test": "npm --prefix frontend test",
+    "test:frontend": "npm --prefix frontend test",
     "test:backend": "npm --prefix backend test",
-    "test:all": "npm test && npm --prefix backend test",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.115.0",
-    "pdfjs-dist": "^6.4.299",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.3"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "oxlint": "^1.79.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.2"
+    "test:all": "npm --prefix frontend test && npm --prefix backend test",
+    "preview": "npm --prefix frontend run preview"
   }
 }

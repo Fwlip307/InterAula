@@ -7,6 +7,7 @@ import forumRoutes from './forum.routes.js';
 import notesRoutes from './notes.routes.js';
 import projectRoutes from './project.routes.js';
 import aiRoutes from './ai.routes.js';
+import learningSpaceRoutes from './learningSpace.routes.js';
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use('/forum', forumRoutes);
 router.use('/notes', notesRoutes);
 router.use('/projects', projectRoutes);
 router.use('/ai', aiRoutes);
+router.use('/learning-space', learningSpaceRoutes);
 
 export default router;

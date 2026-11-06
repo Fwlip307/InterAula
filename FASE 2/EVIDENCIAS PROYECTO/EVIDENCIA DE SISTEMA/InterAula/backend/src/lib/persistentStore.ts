@@ -162,6 +162,83 @@ export interface StoredProjectMember {
   joined_at: string;
 }
 
+export interface StoredLearningSpaceConfig {
+  user_id: string;
+  onboardingCompleted: boolean;
+  shareWithTutors?: boolean;
+  explanationStyle: string[];
+  organizationStyle: string[];
+  communicationStyle: string[];
+  environmentStyle: string[];
+  defaultStudyIntervalMinutes: number;
+  defaultBreakMinutes: number;
+  subjectsToReinforce: string[];
+  learningGoalSummary: string;
+  updated_at: string;
+}
+
+export interface StoredLearningPath {
+  id: string;
+  user_id: string;
+  subject_id?: string | null;
+  subject_name: string;
+  title: string;
+  goal: string;
+  pace: 'paso_a_paso' | 'constante' | 'intensivo';
+  preferred_mode: 'sencilla' | 'paso_a_paso' | 'ejemplos' | 'visual' | 'profunda' | 'comprobar';
+  status: 'active' | 'completed' | 'paused';
+  progress_percent: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StoredLearningPathStage {
+  id: string;
+  path_id: string;
+  order_index: number;
+  title: string;
+  description: string;
+  content_topic: string;
+  practice_prompt: string;
+  completed: boolean;
+  completed_at?: string | null;
+  created_at: string;
+}
+
+export interface StoredStudySubtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface StoredStudyTask {
+  id: string;
+  user_id: string;
+  subject_name: string;
+  title: string;
+  priority?: 'baja' | 'media' | 'alta';
+  status: 'pending' | 'in_progress' | 'paused' | 'completed';
+  study_interval_minutes: number;
+  break_minutes: number;
+  subtasks: StoredStudySubtask[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StoredTopicAssessment {
+  id: string;
+  user_id: string;
+  subject_name: string;
+  topic_name: string;
+  mastery_level: 'consolidado' | 'en_desarrollo' | 'necesita_practicar' | 'pendiente';
+  score: number;
+  total_questions: number;
+  recurring_errors: string[];
+  last_practiced_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface RuntimeDatabaseSchema {
   forum_posts: StoredForumPost[];
   forum_replies: StoredForumReply[];
@@ -171,6 +248,11 @@ interface RuntimeDatabaseSchema {
   project_positions: StoredProjectPosition[];
   project_applications: StoredProjectApplication[];
   project_members: StoredProjectMember[];
+  learning_space_configs: StoredLearningSpaceConfig[];
+  learning_paths: StoredLearningPath[];
+  learning_path_stages: StoredLearningPathStage[];
+  study_tasks: StoredStudyTask[];
+  topic_assessments: StoredTopicAssessment[];
 }
 
 const DEFAULT_DB: RuntimeDatabaseSchema = {
@@ -182,6 +264,11 @@ const DEFAULT_DB: RuntimeDatabaseSchema = {
   project_positions: [],
   project_applications: [],
   project_members: [],
+  learning_space_configs: [],
+  learning_paths: [],
+  learning_path_stages: [],
+  study_tasks: [],
+  topic_assessments: [],
 };
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
@@ -204,6 +291,11 @@ function ensureLoaded(): RuntimeDatabaseSchema {
         project_positions: Array.isArray(parsed.project_positions) ? parsed.project_positions : [],
         project_applications: Array.isArray(parsed.project_applications) ? parsed.project_applications : [],
         project_members: Array.isArray(parsed.project_members) ? parsed.project_members : [],
+        learning_space_configs: Array.isArray(parsed.learning_space_configs) ? parsed.learning_space_configs : [],
+        learning_paths: Array.isArray(parsed.learning_paths) ? parsed.learning_paths : [],
+        learning_path_stages: Array.isArray(parsed.learning_path_stages) ? parsed.learning_path_stages : [],
+        study_tasks: Array.isArray(parsed.study_tasks) ? parsed.study_tasks : [],
+        topic_assessments: Array.isArray(parsed.topic_assessments) ? parsed.topic_assessments : [],
       };
       return memoryCache;
     }

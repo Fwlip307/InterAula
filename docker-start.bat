@@ -6,8 +6,8 @@ echo ==========================================================
 echo 1. Asegurando que el servicio Docker este activo...
 wsl -d Ubuntu-24.04 -u root service docker start
 
-echo 2. Levantando los contenedores con Docker Compose...
-wsl -d Ubuntu-24.04 -u root --cd "/mnt/c/Users/FELIPE/Documents/GitHub/InterAula/FASE 2/EVIDENCIAS PROYECTO/EVIDENCIA DE SISTEMA/InterAula" docker compose up -d
+echo 2. Compilando y levantando los contenedores actualizados con Docker Compose...
+wsl -d Ubuntu-24.04 -u root --cd "/mnt/c/Users/FELIPE/Documents/GitHub/InterAula/FASE 2/EVIDENCIAS PROYECTO/EVIDENCIA DE SISTEMA/InterAula" docker compose up -d --build --force-recreate
 
 echo.
 echo 3. Verificando estado de los contenedores:
