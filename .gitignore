@@ -1,0 +1,16 @@
+# Local credentials in every project copy
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Installed dependencies and generated output
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Local logs
+logs/
+*.log
