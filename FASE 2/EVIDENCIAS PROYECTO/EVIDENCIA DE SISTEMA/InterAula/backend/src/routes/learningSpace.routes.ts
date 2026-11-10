@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import { learningSpaceController } from '../controllers/learningSpace.controller.js';
+import { createRateLimiter } from '../middlewares/rateLimit.middleware.js';
 
 const router = Router();
 
@@ -22,7 +23,7 @@ router.delete('/tasks/:taskId', learningSpaceController.deleteTask);
 
 router.post('/assessments', learningSpaceController.recordAssessment);
 router.put('/topics', learningSpaceController.recordAssessment);
-router.post('/explain', learningSpaceController.explainAdaptively);
+router.post('/explain', createRateLimiter(20), learningSpaceController.explainAdaptively);
 
 export default router;
 

@@ -106,15 +106,6 @@ export function validateNoteFile(file: File): { valid: boolean; error?: string; 
   return { valid: true, extension: ext };
 }
 
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('No se pudo leer el archivo seleccionado'));
-    reader.readAsDataURL(file);
-  });
-}
-
 export const notesService = {
   /**
    * Obtiene los apuntes disponibles según filtros y permisos de visibilidad.
@@ -138,7 +129,7 @@ export const notesService = {
       return Array.isArray(notes) ? notes : [];
     } catch (err) {
       console.error('[notesService] Error en getNotes:', err);
-      return [];
+      throw err;
     }
   },
 
@@ -151,7 +142,7 @@ export const notesService = {
       return Array.isArray(notes) ? notes : [];
     } catch (err) {
       console.error('[notesService] Error en getMyNotes:', err);
-      return [];
+      throw err;
     }
   },
 
@@ -163,7 +154,7 @@ export const notesService = {
       return await apiClient.get<AcademicNote>(API_ENDPOINTS.NOTES.BY_ID(noteId));
     } catch (err) {
       console.error('[notesService] Error en getNoteById:', err);
-      return null;
+      throw err;
     }
   },
 
@@ -203,7 +194,7 @@ export const notesService = {
   },
 
   /**
-   * Sube un archivo académico validado a Supabase Storage (o genera Data URL segura si el bucket aún no está creado en remoto).
+   * Sube un archivo académico validado al almacenamiento privado de Supabase.
    */
   async uploadFile(userId: string, file: File): Promise<{
     fileUrl: string;
@@ -230,34 +221,9 @@ export const notesService = {
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const storagePath = `${userId}/${Date.now()}_${sanitizedName}`;
 
-    try {
-      const { error: uploadErr } = await supabase.storage
-        .from('academic-notes')
-        .upload(storagePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (!uploadErr) {
-        const { data: pubData } = supabase.storage.from('academic-notes').getPublicUrl(storagePath);
-        if (pubData?.publicUrl) {
-          return {
-            fileUrl: pubData.publicUrl,
-            fileName: file.name,
-            fileMime: file.type || 'application/octet-stream',
-            fileSize: file.size,
-            fileExtension: check.extension,
-            extractedText,
-          };
-        }
-      }
-    } catch {
-      // Si el bucket remoto aún no ha sido creado en Supabase, continuamos con almacenamiento embebido seguro
-    }
-
-    // Si el archivo es <= 3MB lo codificamos en Data URL para descarga directa persistente; si es mayor, usamos Blob URL de sesión
-    const fileUrl =
-      file.size <= 3 * 1024 * 1024 ? await fileToDataUrl(file) : URL.createObjectURL(file);
+    const { error: uploadErr } = await supabase.storage.from('academic-notes').upload(storagePath, file, { upsert: false });
+    if (uploadErr) throw new Error('No se pudo guardar el archivo. Reintenta la carga antes de publicar el apunte.');
+    const fileUrl = `storage://academic-notes/${storagePath}`;
 
     return {
       fileUrl,

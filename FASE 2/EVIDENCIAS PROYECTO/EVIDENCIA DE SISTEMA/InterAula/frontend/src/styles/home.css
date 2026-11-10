@@ -1175,3 +1175,27 @@ html.ia-dark-mode .ia-landing-btn-login {
 }
 
 
+.ia-landing-mobile-nav { display: none; }
+@media (max-width: 600px) {
+  .ia-landing-header-inner { flex-wrap: wrap; gap: 10px; padding: 12px 16px; }
+  .ia-landing-auth-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; flex: 1; }
+  .ia-landing-auth-btns .ia-unified-mode-btn { padding: 6px 10px; }
+  .ia-landing-auth-btns .ia-unified-mode-text { display: none; }
+  .ia-landing-auth-btns .ia-landing-btn-primary { padding: 8px 10px; }
+  .ia-landing-mobile-nav { display: flex; width: 100%; }
+  .ia-landing-mobile-nav select { width: 100%; padding: 7px 10px; color: var(--ia-text-main, #0f172a); border: 1px solid var(--ia-border, #cbd5e1); border-radius: 8px; background: var(--ia-bg-card, #fff); }
+  .ia-landing-hero-inner { padding-top: 32px; }
+}
+
+.ia-login-short { display: none; }
+@media (max-width: 600px) {
+  .ia-landing-brand { gap: 6px; }
+  .ia-landing-brand img { width: 26px !important; height: 26px !important; }
+  .ia-landing-brand-name { font-size: 1.08rem; }
+  .ia-landing-auth-btns { flex: 0 1 auto; }
+  .ia-landing-auth-btns .ia-unified-mode-badge { display: none; }
+  .ia-landing-btn-login { padding: 7px 5px; font-size: 0.8rem; }
+  .ia-login-full { display: none; }
+  .ia-login-short { display: inline; }
+  .ia-landing-btn-primary { font-size: 0.8rem; }
+}

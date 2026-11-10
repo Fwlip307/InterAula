@@ -24,17 +24,6 @@ export interface AvailableTutor {
   badges: UserBadge[];
 }
 
-/**
- * Helper interno para obtener el usuario autenticado obligatorio en mutaciones.
- */
-async function getRequiredAuthUser() {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError || !authData?.user) {
-    throw new Error('Debes iniciar sesión para realizar esta acción');
-  }
-  return authData.user;
-}
-
 export const tutoringService = {
   /**
    * Obtiene la lista de tutores disponibles (available_for_tutoring = true)
@@ -46,30 +35,7 @@ export const tutoringService = {
     onlyVerified?: boolean;
   }): Promise<AvailableTutor[]> {
     try {
-      // 1. Consultar perfiles que están activos para tutorías
-      let query = supabase
-        .from('profiles')
-        .select(`
-          *,
-          profile_offered_subjects (
-            profile_id,
-            subject_id,
-            level,
-            description,
-            is_verified,
-            verified_at,
-            subject:subjects (
-              id,
-              name,
-              category,
-              is_pilot,
-              pilot_priority
-            )
-          )
-        `)
-        .eq('available_for_tutoring', true);
-
-      const { data: profilesData } = await query;
+      const profilesData = await apiClient.get<any[]>(API_ENDPOINTS.TUTORING.TUTORS, { params: filters });
 
       // 2. Filtrar solo los que tienen al menos una materia ofrecida válida
       let filtered = (profilesData || []).filter((p: any) => {
@@ -144,7 +110,7 @@ export const tutoringService = {
       return results;
     } catch (err: any) {
       console.error('[tutoringService] Error inesperado en getAvailableTutors:', err);
-      return [];
+      throw err;
     }
   },
 
@@ -177,67 +143,14 @@ export const tutoringService = {
    * Obtiene las sesiones donde el usuario es el estudiante solicitante.
    */
   async getMySessionsAsStudent(): Promise<TutoringSession[]> {
-    try {
-      const sessions = await apiClient.get<TutoringSession[]>(API_ENDPOINTS.TUTORING.MY_SESSIONS, {
-        params: { role: 'student' },
-      });
-      return sessions;
-    } catch (apiErr) {
-      console.warn('[tutoringService] Backend API fallback para getMySessionsAsStudent:', apiErr);
-      const user = await getRequiredAuthUser();
-
-      const { data, error } = await supabase
-        .from('tutoring_sessions')
-        .select(`
-          *,
-          tutor:profiles!tutoring_sessions_tutor_id_fkey(*),
-          subject:subjects(*),
-          review:tutoring_reviews(*)
-        `)
-        .eq('student_id', user.id)
-        .order('scheduled_at', { ascending: false });
-
-      if (error) {
-        console.error('[tutoringService] Error en getMySessionsAsStudent:', error.message);
-        throw new Error('No fue posible cargar tus tutorías como estudiante');
-      }
-
-      return (data || []).map((session: any) => ({
-        ...session,
-        review: Array.isArray(session.review) ? session.review[0] || null : session.review,
-      })) as TutoringSession[];
-    }
+    return apiClient.get(API_ENDPOINTS.TUTORING.MY_SESSIONS, { params: { role: 'student' } });
   },
 
   /**
    * Obtiene las solicitudes de tutoría donde el usuario es el tutor asignado.
    */
   async getMySessionsAsTutor(): Promise<TutoringSession[]> {
-    try {
-      const sessions = await apiClient.get<TutoringSession[]>(API_ENDPOINTS.TUTORING.MY_SESSIONS, {
-        params: { role: 'tutor' },
-      });
-      return sessions;
-    } catch (apiErr) {
-      console.warn('[tutoringService] Backend API fallback para getMySessionsAsTutor:', apiErr);
-      const user = await getRequiredAuthUser();
-
-      const { data } = await supabase
-        .from('tutoring_sessions')
-        .select(`
-          *,
-          student:profiles!tutoring_sessions_student_id_fkey(*),
-          subject:subjects(*),
-          review:tutoring_reviews(*)
-        `)
-        .eq('tutor_id', user.id)
-        .order('scheduled_at', { ascending: false });
-
-      return (data || []).map((session: any) => ({
-        ...session,
-        review: Array.isArray(session.review) ? session.review[0] || null : session.review,
-      })) as TutoringSession[];
-    }
+    return apiClient.get(API_ENDPOINTS.TUTORING.MY_SESSIONS, { params: { role: 'tutor' } });
   },
 
   /**
@@ -301,103 +214,15 @@ export const tutoringService = {
    * Obtiene una sesión específica por su ID verificando permisos de participante.
    */
   async getSessionById(sessionId: string): Promise<TutoringSession> {
-    const user = await getRequiredAuthUser();
-
-    const { data, error } = await supabase
-      .from('tutoring_sessions')
-      .select(`
-        *,
-        student:profiles!tutoring_sessions_student_id_fkey(*),
-        tutor:profiles!tutoring_sessions_tutor_id_fkey(*),
-        subject:subjects(*),
-        review:tutoring_reviews(*)
-      `)
-      .eq('id', sessionId)
-      .single();
-
-    if (error || !data) {
-      console.error('[tutoringService] Error en getSessionById:', error?.message);
-      throw new Error('No fue posible cargar la sesión de tutoría');
-    }
-
-    if (data.student_id !== user.id && data.tutor_id !== user.id) {
-      throw new Error('No tienes permisos para acceder a esta sesión');
-    }
-
-    return {
-      ...data,
-      review: Array.isArray(data.review) ? data.review[0] || null : data.review,
-    } as TutoringSession;
+    return apiClient.get(API_ENDPOINTS.TUTORING.SESSION_BY_ID(sessionId));
   },
 
   /**
    * Registra y audita la asistencia y permanencia en el aula virtual.
    */
-  async registerClassroomAttendance(
-    sessionId: string,
-    action: 'join' | 'heartbeat' | 'leave',
-    durationMinutes: number = 0
-  ): Promise<SessionAttendanceResult | null> {
-    try {
-      const { data, error } = await supabase.rpc('register_session_attendance', {
-        p_session_id: sessionId,
-        p_action: action,
-        p_duration_minutes: durationMinutes,
-      });
-
-      if (error) {
-        // Fallback resiliente si la función RPC aún no está creada en Supabase
-        const now = new Date().toISOString();
-        const user = await getRequiredAuthUser();
-        const { data: session } = await supabase
-          .from('tutoring_sessions')
-          .select('id, student_id, tutor_id, room_id, student_joined_at, tutor_joined_at, both_connected_at, actual_duration_minutes, attendance_verified')
-          .eq('id', sessionId)
-          .single();
-
-        if (session) {
-          const isStudent = session.student_id === user.id;
-          const isTutor = session.tutor_id === user.id;
-          const payload: Record<string, any> = { updated_at: now };
-
-          if (action === 'join') {
-            if (isStudent && !session.student_joined_at) payload.student_joined_at = now;
-            if (isTutor && !session.tutor_joined_at) payload.tutor_joined_at = now;
-            if ((isStudent && session.tutor_joined_at) || (isTutor && session.student_joined_at)) {
-              payload.both_connected_at = now;
-              payload.attendance_verified = true;
-            }
-          } else if (durationMinutes > 0) {
-            payload.actual_duration_minutes = Math.max(session.actual_duration_minutes || 0, durationMinutes);
-          }
-
-          const { data: updated } = await supabase
-            .from('tutoring_sessions')
-            .update(payload)
-            .eq('id', sessionId)
-            .select()
-            .single();
-
-          if (updated) {
-            return {
-              session_id: updated.id,
-              room_id: updated.room_id || `ia-aula-${sessionId.replace(/-/g, '').slice(0, 10)}`,
-              student_joined_at: updated.student_joined_at,
-              tutor_joined_at: updated.tutor_joined_at,
-              both_connected_at: updated.both_connected_at,
-              actual_duration_minutes: updated.actual_duration_minutes || 0,
-              attendance_verified: updated.attendance_verified || false,
-            };
-          }
-        }
-        return null;
-      }
-
-      return data as SessionAttendanceResult;
-    } catch (err: any) {
-      console.error('[tutoringService] Error en registerClassroomAttendance:', err);
-      return null;
-    }
+  async registerClassroomAttendance(sessionId: string, action: 'join' | 'heartbeat' | 'leave', _durationMinutes = 0): Promise<SessionAttendanceResult | null> {
+    try { return await apiClient.post(API_ENDPOINTS.TUTORING.ATTENDANCE, { session_id: sessionId, action }); }
+    catch (error) { console.error('[Asistencia] No se pudo registrar el evento:', error); return null; }
   },
 
   /**

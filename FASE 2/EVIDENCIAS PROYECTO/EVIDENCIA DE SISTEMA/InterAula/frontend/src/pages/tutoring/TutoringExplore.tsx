@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { profileService } from '../../services/profile.service';
@@ -49,7 +50,9 @@ const CRITICAL_INFORMATICS_SUBJECTS = [
 
 export default function TutoringExplore() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'tutors' | 'workshops' | 'my_classes' | 'quizzes' | 'materials'>('tutors');
+  const [recommendationParams] = useSearchParams();
+  const recommendedWorkshopId = recommendationParams.get('workshop');
+  const [activeTab,setActiveTab]=useModuleTab(['tutors','workshops','my_classes','quizzes','materials'] as const,'tutors');
   const { isCalmMode, toggleCalmMode } = useCalmMode();
 
   // Tutores 1 a 1
@@ -82,6 +85,12 @@ export default function TutoringExplore() {
   const [workshopsLoading, setWorkshopsLoading] = useState<boolean>(false);
   const [isCreateWorkshopModalOpen, setIsCreateWorkshopModalOpen] = useState<boolean>(false);
   const [workshopActionLoading, setWorkshopActionLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!recommendedWorkshopId || activeTab !== 'workshops' || workshopsLoading) return;
+    const target = document.getElementById('workshop-' + recommendedWorkshopId);
+    if (target) { target.scrollIntoView({ block: 'center' }); target.focus({ preventScroll: true }); }
+  }, [recommendedWorkshopId,activeTab,workshopsLoading,workshops]);
 
   // Cargar catálogo de materias y asignaturas acreditadas del usuario
   useEffect(() => {
@@ -1355,8 +1364,8 @@ export default function TutoringExplore() {
               }}
             >
               {workshops.map((w) => (
+                <div key={w.id} id={'workshop-' + w.id} tabIndex={-1}>
                 <WorkshopCard
-                  key={w.id}
                   workshop={w}
                   currentUserId={user?.id}
                   onEnroll={handleEnroll}
@@ -1366,6 +1375,7 @@ export default function TutoringExplore() {
                   onDeleteWorkshop={handleDeleteWorkshop}
                   actionLoading={workshopActionLoading}
                 />
+                </div>
               ))}
             </div>
           )}

@@ -28,6 +28,7 @@ export const notesController = {
         authorId: author_id as string,
         sort: (sort as any) || 'recent',
         currentUserId: req.user?.id,
+        token: req.token,
       });
 
       res.json({ success: true, data: notes });
@@ -38,7 +39,7 @@ export const notesController = {
 
   async getMyNotes(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const notes = await notesBackendService.getMyNotes(req.user!);
+      const notes = await notesBackendService.getMyNotes(req.user!, req.token);
       res.json({ success: true, data: notes });
     } catch (err) {
       next(err);
@@ -48,7 +49,7 @@ export const notesController = {
   async getNoteById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const note = await notesBackendService.getNoteById(id, req.user?.id);
+      const note = await notesBackendService.getNoteById(id, req.user?.id, req.token);
       if (!note) {
         return res.status(404).json({ success: false, error: 'Apunte no encontrado' });
       }
@@ -90,7 +91,7 @@ export const notesController = {
   async registerDownload(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await notesBackendService.registerDownload(id);
+      const result = await notesBackendService.registerDownload(id, req.user?.id, req.token);
       res.json(result);
     } catch (err) {
       next(err);

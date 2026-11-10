@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { supabasePublic } from './supabase.js';
+import { env } from '../config/env.js';
+import { HttpError } from './httpError.js';
 
 export interface StoredForumPost {
   id: string;
@@ -271,12 +273,13 @@ const DEFAULT_DB: RuntimeDatabaseSchema = {
   topic_assessments: [],
 };
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = path.resolve(process.env.APP_DATA_DIR || path.join(process.cwd(), 'data'));
 const STORE_PATH = path.join(DATA_DIR, 'runtime_store.json');
 
 let memoryCache: RuntimeDatabaseSchema | null = null;
 
 function ensureLoaded(): RuntimeDatabaseSchema {
+  if (env.persistenceMode !== 'local') throw new HttpError(503, 'Esta operación requiere conexión con la base de datos.');
   if (memoryCache) return memoryCache;
   try {
     if (fs.existsSync(STORE_PATH)) {
@@ -312,9 +315,11 @@ function flushToDisk(): void {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-    fs.writeFileSync(STORE_PATH, JSON.stringify(memoryCache, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('[persistentStore] No se pudo persistir en disco (usando memoria activa):', err);
+    const temporaryPath = STORE_PATH + '.tmp';
+    fs.writeFileSync(temporaryPath, JSON.stringify(memoryCache, null, 2), 'utf-8');
+    fs.renameSync(temporaryPath, STORE_PATH);
+  } catch {
+    throw new HttpError(503, 'No se pudieron guardar los datos locales. Intenta nuevamente.');
   }
 }
 
@@ -331,11 +336,7 @@ export function isSchemaMissingError(error: any): boolean {
     msg.includes('could not find the') ||
     msg.includes('does not exist') ||
     msg.includes('schema cache') ||
-    msg.includes('fetch failed') ||
-    msg.includes('expected 3 parts in jwt') ||
-    msg.includes('invalid jwt') ||
-    msg.includes('no suitable key') ||
-    msg.includes('wrong key type')
+    (env.persistenceMode === 'local' && msg.includes('fetch failed'))
   );
 }
 
@@ -347,7 +348,7 @@ export async function resolveProfileSummary(userId: string, fallbackEmail?: stri
 }> {
   try {
     const { data } = await supabasePublic
-      .from('profiles')
+      .from('public_profiles')
       .select('id, display_name, first_name, last_name, institution, career')
       .eq('id', userId)
       .maybeSingle();
@@ -387,13 +388,21 @@ export const persistentStore = {
   },
 
   write(mutator: (db: RuntimeDatabaseSchema) => void): RuntimeDatabaseSchema {
-    const db = ensureLoaded();
-    mutator(db);
-    flushToDisk();
-    return db;
+    const previous = ensureLoaded();
+    const next = structuredClone(previous);
+    mutator(next);
+    memoryCache = next;
+    try {
+      flushToDisk();
+      return next;
+    } catch (error) {
+      memoryCache = previous;
+      throw error;
+    }
   },
 
   resetForTests(): void {
+    if (env.nodeEnv !== 'test') throw new Error('El reinicio de datos solo está disponible en pruebas.');
     memoryCache = structuredClone(DEFAULT_DB);
     flushToDisk();
   },

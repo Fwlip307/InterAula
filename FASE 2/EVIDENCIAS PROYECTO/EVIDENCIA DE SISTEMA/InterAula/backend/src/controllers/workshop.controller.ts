@@ -7,7 +7,7 @@ export const workshopController = {
     try {
       const subjectId = req.query.subjectId as string | undefined;
       const currentUserId = req.user?.id;
-      const workshops = await workshopBackendService.getUpcomingWorkshops(subjectId, currentUserId);
+      const workshops = await workshopBackendService.getUpcomingWorkshops(subjectId, currentUserId, req.token);
       res.json({ success: true, data: workshops });
     } catch (err) {
       next(err);
@@ -18,7 +18,7 @@ export const workshopController = {
     try {
       const { id } = req.params;
       const currentUserId = req.user?.id;
-      const workshop = await workshopBackendService.getWorkshopById(id, currentUserId);
+      const workshop = await workshopBackendService.getWorkshopById(id, currentUserId, req.token);
       if (!workshop) {
         return res.status(404).json({ success: false, error: 'Taller no encontrado' });
       }

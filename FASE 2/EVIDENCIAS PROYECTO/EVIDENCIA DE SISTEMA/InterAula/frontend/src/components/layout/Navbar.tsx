@@ -5,6 +5,7 @@ import { useCalmMode } from '../../context/CalmModeContext';
 import { profileService } from '../../services/profile.service';
 import type { Profile } from '../../types/profile';
 import ThemeModeMenu from './ThemeModeMenu';
+import GlobalNavigationSearch from './GlobalNavigationSearch';
 import {
   AcademicCapIcon,
   UserIcon,
@@ -70,7 +71,7 @@ export default function Navbar() {
   return (
     <header className="ia-navbar">
       <div className="ia-navbar-inner">
-        <Link to="/dashboard" className="ia-brand">
+        <Link to="/dashboard" className="ia-brand" aria-label="InterAula, ir al inicio">
           <AcademicCapIcon size={24} color={isCalmMode ? '#475569' : '#2563eb'} />
           <span className="ia-brand-name">InterAula</span>
         </Link>
@@ -100,6 +101,7 @@ export default function Navbar() {
         </nav>
 
         <div className="ia-nav-user">
+          <GlobalNavigationSearch onOpen={() => { setMenuOpen(false); setMobileOpen(false); }} />
           <ThemeModeMenu variant="app" />
 
           <div ref={dropdownRef} style={{ position: 'relative' }}>
@@ -132,6 +134,10 @@ export default function Navbar() {
                 <Link to="/profile" className="ia-dropdown-item" onClick={() => setMenuOpen(false)}>
                   <UserIcon size={15} />
                   <span>Ver mi perfil</span>
+                </Link>
+                <Link to="/profile?tab=interests" className="ia-dropdown-item" onClick={() => setMenuOpen(false)}>
+                  <CompassIcon size={15} />
+                  <span>Mis intereses y recomendaciones</span>
                 </Link>
                 <Link to="/profile/edit" className="ia-dropdown-item" onClick={() => setMenuOpen(false)}>
                   <EditIcon size={15} />
@@ -222,6 +228,9 @@ export default function Navbar() {
             onClick={() => setMobileOpen(false)}
           >
             Editar Perfil
+          </Link>
+          <Link to="/profile?tab=interests" className="ia-mobile-nav-item" onClick={() => setMobileOpen(false)}>
+            Mis intereses y recomendaciones
           </Link>
           <Link
             to="/profile?tab=tutoring"

@@ -1,3 +1,4 @@
+import { verificationService } from '../../../services/verification.service';
 import React, { useState, useEffect } from 'react';
 import {
   XIcon,
@@ -53,31 +54,9 @@ export default function TeacherEndorsementModal({
   const activeSubject = availableSubjects.find((s) => s.id === selectedSubjectId) || availableSubjects[0];
   const subjectName = activeSubject?.name || 'Materia';
 
-  const validateInstitutionalEmail = (email: string): boolean => {
-    const trimmed = email.trim().toLowerCase();
-    const disallowedDomains = [
-      'gmail.com',
-      'yahoo.com',
-      'yahoo.es',
-      'hotmail.com',
-      'hotmail.es',
-      'outlook.com',
-      'live.com',
-      'icloud.com',
-    ];
+  const validateInstitutionalEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
-    const atIndex = trimmed.indexOf('@');
-    if (atIndex === -1) return false;
-
-    const domain = trimmed.slice(atIndex + 1);
-    if (disallowedDomains.includes(domain)) {
-      return false;
-    }
-
-    return domain.includes('.');
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -88,25 +67,21 @@ export default function TeacherEndorsementModal({
 
     if (!professorEmail.trim() || !validateInstitutionalEmail(professorEmail)) {
       setErrorMessage(
-        'Debes ingresar un correo electrónico institucional oficial (por ejemplo: @duoc.cl, @profesor.duoc.cl, @uchile.cl, @inacap.cl). No se admiten correos personales gratuitos como Gmail o Hotmail.'
+        'Ingresa el correo con el que el docente está registrado como validador en InterAula.'
       );
       return;
     }
 
     setIsSubmitting(true);
 
-    // Simulación del envío de token de validación docente
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await verificationService.requestTeacherEndorsement({subject_id:selectedSubjectId,professor_name:professorName.trim(),professor_email:professorEmail.trim(),message:customMessage.trim()});
       setIsSuccess(true);
-      if (onSuccess) {
-        onSuccess({
-          professorName: professorName.trim(),
-          professorEmail: professorEmail.trim(),
-          subjectName,
-        });
-      }
-    }, 1000);
+      onSuccess?.({professorName:professorName.trim(),professorEmail:professorEmail.trim(),subjectName});
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo registrar la solicitud.');
+    } finally { setIsSubmitting(false); }
+
   };
 
   const handleResetAndClose = () => {
@@ -177,7 +152,7 @@ export default function TeacherEndorsementModal({
                 Solicitud de Respaldo Docente
               </div>
               <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                Certificación Institucional con Enlace Seguro de Aprobación
+                Revisión por un docente registrado en InterAula
               </div>
             </div>
           </div>
@@ -223,10 +198,10 @@ export default function TeacherEndorsementModal({
                 <CheckIcon size={28} />
               </div>
               <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
-                Solicitud Enviada al Docente
+                Solicitud registrada
               </h3>
               <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.5, margin: '0 auto 16px', maxWidth: '440px' }}>
-                Hemos enviado un correo formal con un enlace seguro de confirmación al profesor <strong>{professorName}</strong> ({professorEmail}).
+                Registramos una solicitud en el panel del docente <strong>{professorName}</strong> ({professorEmail}).
               </p>
               <div
                 style={{
@@ -267,7 +242,7 @@ export default function TeacherEndorsementModal({
                   lineHeight: 1.45,
                 }}
               >
-                <strong>¿Cómo funciona?</strong> InterAula enviará un correo institucional a tu docente con un enlace de acceso directo. Tu profesor podrá certificar con un solo clic que cuentas con las competencias académicas para enseñar esta materia.
+                <strong>¿Cómo funciona?</strong> Indica el correo de un docente validador registrado en InterAula. La solicitud quedará guardada en su panel para que revise tus antecedentes y emita un dictamen.
               </div>
 
               {errorMessage && (
@@ -342,7 +317,7 @@ export default function TeacherEndorsementModal({
                   </div>
                 </div>
                 <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
-                  Solo correos con dominio educativo oficial (@duoc.cl, @inacap.cl, @uchile.cl, etc.). Se rechazan correos personales.
+                  El servidor comprobará que la cuenta pertenezca a un docente validador registrado.
                 </div>
               </div>
 
@@ -399,7 +374,7 @@ export default function TeacherEndorsementModal({
                     gap: '6px',
                   }}
                 >
-                  <span>{isSubmitting ? 'Enviando...' : 'Enviar Solicitud al Profesor'}</span>
+                  <span>{isSubmitting ? 'Registrando...' : 'Registrar solicitud docente'}</span>
                   <SendIcon size={14} color="#ffffff" />
                 </button>
               </div>

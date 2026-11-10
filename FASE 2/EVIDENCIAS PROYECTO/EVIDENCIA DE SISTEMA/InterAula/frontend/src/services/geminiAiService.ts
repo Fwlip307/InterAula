@@ -76,7 +76,7 @@ export async function evaluateAnswerWithGemini(
   acceptedAnswers: string[]
 ): Promise<boolean | null> {
   try {
-    const res = await apiClient.post<{ score: number; passed: boolean; feedback: string }>(
+    const res = await apiClient.post<{ score: number; passed: boolean; feedback: string; evaluated?: boolean }>(
       API_ENDPOINTS.AI.EVALUATE_ANSWER,
       {
         question: questionPrompt,
@@ -85,6 +85,7 @@ export async function evaluateAnswerWithGemini(
       }
     );
 
+    if (res?.evaluated === false) return null;
     if (res && typeof res.passed === 'boolean') {
       return res.passed;
     }

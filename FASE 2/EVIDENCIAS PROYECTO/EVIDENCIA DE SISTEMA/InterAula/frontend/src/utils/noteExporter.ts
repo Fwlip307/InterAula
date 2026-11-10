@@ -1,3 +1,4 @@
+import { safeNoteHtml, escapeHtml } from './safeHtml';
 import type { AcademicNote } from '../services/notes.service';
 
 export interface StructuredBlock {
@@ -699,17 +700,17 @@ export function exportNoteToWordDoc(note: Partial<AcademicNote>): string {
   </style>
 </head>
 <body>
-  <h1>${note.title || 'Apunte Académico'}</h1>
+  <h1>${escapeHtml(note.title || 'Apunte Académico')}</h1>
   <div class="meta">
-    <strong>Asignatura:</strong> ${note.subjectName || 'General'} &nbsp;|&nbsp;
-    <strong>Carrera:</strong> ${note.career || 'Ingeniería'} &nbsp;|&nbsp;
-    <strong>Categoría:</strong> ${note.category || 'Apunte'}<br/>
-    <strong>Autor:</strong> ${note.authorName || 'Estudiante'} &nbsp;|&nbsp;
+    <strong>Asignatura:</strong> ${escapeHtml(note.subjectName || 'General')} &nbsp;|&nbsp;
+    <strong>Carrera:</strong> ${escapeHtml(note.career || 'Ingeniería')} &nbsp;|&nbsp;
+    <strong>Categoría:</strong> ${escapeHtml(note.category || 'Apunte')}<br/>
+    <strong>Autor:</strong> ${escapeHtml(note.authorName || 'Estudiante')} &nbsp;|&nbsp;
     <strong>Fecha:</strong> ${new Date(note.updatedAt || Date.now()).toLocaleDateString('es-CL')}
-    ${note.summary ? `<br/><strong>Resumen:</strong> ${note.summary}` : ''}
+    ${note.summary ? `<br/><strong>Resumen:</strong> ${escapeHtml(note.summary)}` : ''}
   </div>
   <div>
-    ${note.contentHtml || `<p>${(note.contentMarkdown || '').replace(/\n/g, '<br/>')}</p>`}
+    ${safeNoteHtml(note.contentHtml || `<p>${escapeHtml(note.contentMarkdown || '').replace(/\n/g, '<br/>')}</p>`)}
   </div>
 </body>
 </html>`;

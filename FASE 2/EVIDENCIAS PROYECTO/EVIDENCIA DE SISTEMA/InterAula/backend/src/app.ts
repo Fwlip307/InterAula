@@ -4,6 +4,7 @@ import cors from 'cors';
 import { env } from './config/env.js';
 import apiRouter from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { HttpError } from './lib/httpError.js';
 
 export const app = express();
 
@@ -19,7 +20,7 @@ app.use(
       if (env.corsOrigins.includes(origin) || env.corsOrigins.includes('*')) {
         return callback(null, true);
       }
-      return callback(new Error(`Origen CORS no autorizado: ${origin}`));
+      return callback(new HttpError(403, 'Origen no autorizado.'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

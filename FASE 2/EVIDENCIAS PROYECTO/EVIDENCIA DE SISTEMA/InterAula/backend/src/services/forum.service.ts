@@ -1,3 +1,5 @@
+import { env } from '../config/env.js';
+import { remoteForumService } from './remote/forum.service.js';
 import { getAuthenticatedSupabase, supabasePublic } from '../lib/supabase.js';
 import {
   persistentStore,
@@ -20,7 +22,7 @@ function formatTimeAgo(dateString?: string): string {
   return `Hace ${diffDays} d`;
 }
 
-function mapPostToDto(item: any, currentUserId?: string, votedPostIds?: Set<string>) {
+export function mapPostToDto(item: any, currentUserId?: string, votedPostIds?: Set<string>) {
   const authorProfile = item.author;
   const authorName =
     item.author_name ||
@@ -51,7 +53,7 @@ function mapPostToDto(item: any, currentUserId?: string, votedPostIds?: Set<stri
   };
 }
 
-function mapReplyToDto(item: any) {
+export function mapReplyToDto(item: any) {
   const authorProfile = item.author;
   const authorName =
     item.author_name ||
@@ -83,9 +85,10 @@ export interface ForumQueryOptions {
   subjectId?: string;
   sort?: 'recent' | 'popular' | 'activity';
   currentUserId?: string;
+  token?: string;
 }
 
-export const forumBackendService = {
+const localForumService = {
   /**
    * Obtener lista de publicaciones en el foro con filtros y ordenamiento
    */
@@ -192,7 +195,7 @@ export const forumBackendService = {
   /**
    * Obtener detalle de una publicación junto con sus respuestas
    */
-  async getPostById(postId: string, currentUserId?: string) {
+  async getPostById(postId: string, currentUserId?: string, _token?: string) {
     const store = persistentStore.read();
     const votedPostIds = new Set<string>(
       currentUserId
@@ -492,7 +495,7 @@ export const forumBackendService = {
   /**
    * Votar o quitar voto de una publicación (sin votos duplicados por usuario)
    */
-  async upvotePost(postId: string, user?: AuthenticatedUser) {
+  async upvotePost(postId: string, user?: AuthenticatedUser, _token?: string) {
     const store = persistentStore.read();
     const localPost = store.forum_posts.find((p) => p.id === postId);
 
@@ -614,7 +617,7 @@ export const forumBackendService = {
   /**
    * Obtener respuestas de una publicación
    */
-  async getReplies(postId: string) {
+  async getReplies(postId: string, _token?: string) {
     const detail = await this.getPostById(postId);
     return detail?.replies || [];
   },
@@ -855,3 +858,5 @@ export const forumBackendService = {
     };
   },
 };
+
+export const forumBackendService = env.persistenceMode === 'local' ? localForumService : remoteForumService;

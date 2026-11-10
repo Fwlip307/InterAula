@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { profileService } from '../../services/profile.service';
@@ -22,6 +22,14 @@ import {
 
 export default function Settings() {
   const { user } = useAuth();
+  const {hash}=useLocation();
+  useEffect(()=>{
+    const id=hash.slice(1);
+    if(['accessibility','learning-preferences','notifications','security'].includes(id)) {
+      const section=document.getElementById(id);
+      section?.scrollIntoView({block:'start'});section?.focus({preventScroll:true});
+    }
+  },[hash]);
   const { preferences, themeMode, setThemeMode, updatePreferences, resetPreferences } = useCalmMode();
 
   const [learningPrefs, setLearningPrefs] = useState<LearningPreference[]>([]);
@@ -176,7 +184,7 @@ export default function Settings() {
       )}
 
       {/* 1. Preferencias de Accesibilidad Visual y Sensorial */}
-      <div className="ia-card">
+      <div className="ia-card ia-search-section" id="accessibility" tabIndex={-1}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
           <h2 className="ia-card-title" style={{ margin: 0 }}>
             <SettingsIcon size={20} color="#2563eb" /> Preferencias de Accesibilidad y Confort Sensorial
@@ -436,7 +444,7 @@ export default function Settings() {
       </div>
 
       {/* 2. Perfil Privado de Preferencias de Aprendizaje */}
-      <div className="ia-card">
+      <div className="ia-card ia-search-section" id="learning-preferences" tabIndex={-1}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
           <h2 className="ia-card-title" style={{ margin: 0 }}>
             <SparklesIcon size={20} color="#2563eb" /> Mi Forma de Aprender (Privado y Opcional)
@@ -489,7 +497,7 @@ export default function Settings() {
       </div>
 
       {/* 3. Preferencias de Notificaciones */}
-      <div className="ia-card">
+      <div className="ia-card ia-search-section" id="notifications" tabIndex={-1}>
         <h2 className="ia-card-title" style={{ marginBottom: '12px' }}>
           <SettingsIcon size={20} color="#2563eb" /> Preferencias de Avisos y Notificaciones
         </h2>
@@ -585,7 +593,7 @@ export default function Settings() {
       </div>
 
       {/* 4. Seguridad y Autenticación */}
-      <div className="ia-card">
+      <div className="ia-card ia-search-section" id="security" tabIndex={-1}>
         <h2 className="ia-card-title" style={{ marginBottom: '16px' }}>
           <ShieldCheckIcon size={20} color="#16a34a" /> Seguridad y Autenticación de la Cuenta
         </h2>

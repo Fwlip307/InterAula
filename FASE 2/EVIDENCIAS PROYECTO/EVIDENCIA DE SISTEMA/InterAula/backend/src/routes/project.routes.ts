@@ -25,10 +25,10 @@ router.get('/my-applications', requireAuth, projectController.getMyApplications)
 router.get('/:id', optionalAuth, projectController.getProjectById);
 
 // Vacantes de un proyecto
-router.get('/:id/positions', projectController.getProjectPositions);
+router.get('/:id/positions', optionalAuth, projectController.getProjectPositions);
 
 // Miembros de un proyecto
-router.get('/:id/members', projectController.getProjectMembers);
+router.get('/:id/members', optionalAuth, projectController.getProjectMembers);
 
 // Postulaciones recibidas en un proyecto (solo el creador)
 router.get('/:id/applications', requireAuth, projectController.getProjectApplications);

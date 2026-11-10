@@ -20,7 +20,7 @@ ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 
 # Copiar manifiestos e instalar dependencias con resolución nativa de plataforma
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copiar configuración y código fuente
 COPY tsconfig*.json vite.config.ts index.html ./

@@ -43,6 +43,7 @@ import TeacherEndorsementModal from './components/TeacherEndorsementModal';
 import OfferedSubjectsSection from './components/OfferedSubjectsSection';
 import ProfilePersonalInfoTab, { type PersonalInfoFormData } from './components/ProfilePersonalInfoTab';
 import ProfileLearningTab from './components/ProfileLearningTab';
+import InterestPreferences from '../../components/recommendations/InterestPreferences';
 import {
   getAllInstitutions,
   getCareersForInstitution,
@@ -56,13 +57,13 @@ export default function ProfileView() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const tabParam = searchParams.get('tab');
-  const initialTab: 'personal' | 'tutoring' | 'learning' =
-    tabParam === 'tutoring' || tabParam === 'learning' || tabParam === 'personal'
+  const initialTab: 'personal' | 'tutoring' | 'learning' | 'interests' =
+    tabParam === 'tutoring' || tabParam === 'learning' || tabParam === 'personal' || tabParam === 'interests'
       ? tabParam
       : 'personal';
 
-  // Apartado activo ('personal' | 'tutoring' | 'learning')
-  const [activeTab, setActiveTab] = useState<'personal' | 'tutoring' | 'learning'>(initialTab);
+  // Apartado activo ('personal' | 'tutoring' | 'learning' | 'interests')
+  const [activeTab, setActiveTab] = useState<'personal' | 'tutoring' | 'learning' | 'interests'>(initialTab);
 
   // Datos del perfil y listas
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -224,7 +225,7 @@ export default function ProfileView() {
   // Sincronizar estado cuando los parámetros de la URL cambien
   useEffect(() => {
     const t = searchParams.get('tab');
-    if (t === 'tutoring' || t === 'learning' || t === 'personal') {
+    if (t === 'tutoring' || t === 'learning' || t === 'personal' || t === 'interests') {
       setActiveTab(t);
     }
     if (searchParams.get('edit') === 'true') {
@@ -233,7 +234,7 @@ export default function ProfileView() {
     }
   }, [searchParams]);
 
-  const handleTabChange = (newTab: 'personal' | 'tutoring' | 'learning') => {
+  const handleTabChange = (newTab: 'personal' | 'tutoring' | 'learning' | 'interests') => {
     setActiveTab(newTab);
     const params: Record<string, string> = { tab: newTab };
     if (newTab === 'personal' && isEditingPersonal) {
@@ -643,7 +644,13 @@ export default function ProfileView() {
             </span>
           )}
         </button>
+        <button type="button" className="ia-btn-secondary" aria-pressed={activeTab === 'interests'}
+          onClick={() => handleTabChange('interests')} style={{ whiteSpace: 'nowrap', alignSelf: 'center' }}>
+          Mis intereses
+        </button>
       </div>
+
+      {activeTab === 'interests' && <InterestPreferences key={user?.id} />}
 
       {/* ========================================================================= */}
       {/* APARTADO 1: INFORMACIÓN PERSONAL Y ACADÉMICA (Todo en mi perfil)          */}
@@ -1439,7 +1446,7 @@ export default function ProfileView() {
               setAvailableForTutoring(true);
             }
           }
-          setBotSuccessToast(`Solicitud enviada al profesor ${data.professorName} para ${data.subjectName}.`);
+          setBotSuccessToast(`Solicitud registrada para revisión de ${data.professorName} en ${data.subjectName}.`);
           setTimeout(() => setBotSuccessToast(null), 5000);
         }}
       />

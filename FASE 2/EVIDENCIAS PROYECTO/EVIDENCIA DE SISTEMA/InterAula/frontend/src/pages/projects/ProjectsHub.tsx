@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
 import {
   projectService,
@@ -78,8 +79,11 @@ const MODALITY_LABELS: Record<ProjectModality, string> = {
 
 export default function ProjectsHub() {
   const { user } = useAuth();
+  const [recommendationParams] = useSearchParams();
+  const recommendedProjectId = recommendationParams.get('project');
 
-  const [activeTab, setActiveTab] = useState<'explore' | 'my_projects' | 'my_applications'>('explore');
+  const [activeTab,setActiveTab]=useModuleTab(['explore','my_projects','my_applications'] as const,'explore');
+  const navigationLocation=useLocation();
   const [projects, setProjects] = useState<Project[]>([]);
   const [myProjects, setMyProjects] = useState<Project[]>([]);
   const [myApplications, setMyApplications] = useState<ProjectApplication[]>([]);
@@ -227,6 +231,31 @@ export default function ProjectsHub() {
       setLoadingDetail(false);
     }
   };
+
+  useEffect(() => {
+    if (!recommendedProjectId) return;
+    let live = true; setLoadingDetail(true);
+    (async () => {
+      try {
+        const detail = await projectService.getProjectById(recommendedProjectId);
+        if (!detail) throw new Error('Proyecto no disponible.');
+        const [positions,members,applications] = await Promise.all([
+          projectService.getProjectPositions(detail.id), projectService.getProjectMembers(detail.id),
+          detail.owner_id === user?.id ? projectService.getProjectApplications(detail.id) : Promise.resolve([]),
+        ]);
+        if (live) {
+          setSelectedProject(detail); setWorkspaceTab('overview'); setProjectPositions(positions);
+          setProjectMembers(members); setProjectApplications(applications);
+        }
+      } catch { if (live) setErrorMsg('No se pudo abrir el proyecto sugerido. Puede haber cambiado su disponibilidad.'); }
+      finally { if (live) setLoadingDetail(false); }
+    })();
+    return () => { live = false; };
+  }, [recommendedProjectId,user?.id]);
+
+  useEffect(()=>{
+    if(!recommendedProjectId)setSelectedProject(null);
+  },[navigationLocation.key,recommendedProjectId]);
 
   const openCreateModal = () => {
     setEditingProject(null);

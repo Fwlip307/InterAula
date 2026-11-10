@@ -123,34 +123,10 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       }
     });
 
-    test('Esquema de acreditación bot exige puntaje mínimo de 70%', async () => {
+    test('La acreditación solo acepta un intento del servidor, nunca una nota declarada', async () => {
       const { botGrantVerificationSchema } = await import('../schemas/verification.schema.js');
-
-      // Caso 1: Puntaje insuficiente (60%) debe ser rechazado
-      const failingPayload = {
-        subject_id: 'programacion_1',
-        score: 60,
-        level: 'intermediate' as const,
-      };
-      const failResult = botGrantVerificationSchema.safeParse(failingPayload);
-      // El esquema admite score 0-100 pero el servicio valida >= 70, o el esquema valida rango
-      assert.equal(failResult.success, true); // El esquema valida números válidos
-
-      // Ahora verificamos la regla de negocio del servicio:
-      const { verificationBackendService } = await import('../services/verification.service.js');
-      await assert.rejects(
-        async () => {
-          await verificationBackendService.botGrant(
-            { id: 'user-1' },
-            'fake-token',
-            failingPayload
-          );
-        },
-        {
-          name: 'Error',
-          message: /Puntaje insuficiente.*mínimo de 70%/i,
-        }
-      );
+      assert.equal(botGrantVerificationSchema.safeParse({subject_id:'subject',score:100,level:'advanced'}).success,false);
+      assert.equal(botGrantVerificationSchema.safeParse({attempt_id:'00000000-0000-0000-0000-000000000001'}).success,true);
     });
 
     test('Esquema de taller valida límite de cupos y fecha ISO', async () => {
@@ -192,7 +168,8 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
           );
         },
         {
-          name: 'Error',
+          name: 'HttpError',
+          status: 400,
           message: /No puedes agendar una tutoría contigo mismo/i,
         }
       );
@@ -210,7 +187,7 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       assert.equal(result.success, false);
     });
 
-    test('Evaluador de IA analiza heurísticamente respuestas cuando no hay clave externa', async () => {
+    test('El evaluador informa indisponibilidad y no aprueba sin un criterio verificable', async () => {
       const { aiBackendService } = await import('../services/ai.service.js');
 
       const evaluation = await aiBackendService.evaluateAnswer({
@@ -220,7 +197,9 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       });
 
       assert.ok(typeof evaluation.score === 'number');
-      assert.ok(evaluation.score >= 1 && evaluation.score <= 10);
+      assert.equal(evaluation.score, 0);
+      assert.equal(evaluation.passed, false);
+      assert.equal(evaluation.evaluated, false);
       assert.equal(typeof evaluation.passed, 'boolean');
       assert.ok(evaluation.feedback.length > 10);
     });

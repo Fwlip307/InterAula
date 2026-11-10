@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
 import { profileService } from '../../services/profile.service';
@@ -28,7 +29,7 @@ type TutorTabType = 'requests' | 'confirmed' | 'student_sessions' | 'history' | 
 
 export default function MyTutoring() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TutorTabType>('requests');
+  const [activeTab,setActiveTab]=useModuleTab<TutorTabType>(['requests','confirmed','student_sessions','history','workshops','offerings','materials'],'requests');
   const [tutorSessions, setTutorSessions] = useState<TutoringSession[]>([]);
   const [studentSessions, setStudentSessions] = useState<TutoringSession[]>([]);
   const [hostedWorkshops, setHostedWorkshops] = useState<TutoringWorkshop[]>([]);

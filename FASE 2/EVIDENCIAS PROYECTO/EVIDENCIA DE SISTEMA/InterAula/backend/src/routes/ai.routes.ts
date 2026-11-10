@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { aiController } from '../controllers/ai.controller.js';
+import { requireAuth } from '../middlewares/auth.middleware.js';
+import { createRateLimiter } from '../middlewares/rateLimit.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
 import {
   aiGenerateQuestionsSchema,
@@ -11,6 +13,7 @@ const router = Router();
 
 // Estado del motor de IA
 router.get('/status', aiController.getStatus);
+router.use(requireAuth, createRateLimiter());
 
 // Generar preguntas de retos o acreditación técnica
 router.post(

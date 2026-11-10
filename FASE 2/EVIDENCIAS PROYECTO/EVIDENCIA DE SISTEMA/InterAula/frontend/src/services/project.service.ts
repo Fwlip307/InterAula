@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import type {
@@ -70,117 +69,49 @@ export const projectService = {
    * Obtener proyectos públicos activos a través del backend propio.
    */
   async getProjects(): Promise<Project[]> {
-    try {
-      const data = await apiClient.get<Project[]>(API_ENDPOINTS.PROJECTS.BASE);
-      if (Array.isArray(data)) return data;
-    } catch (apiErr) {
-      console.warn('[projectService] Lectura de respaldo en getProjects:', apiErr);
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*, owner:profiles(*)')
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false });
-
-      if (error || !data) return [];
-      return data as Project[];
-    } catch {
-      return [];
-    }
+    return apiClient.get(API_ENDPOINTS.PROJECTS.BASE);
   },
 
   /**
    * Obtener detalle de un proyecto por ID a través del backend propio.
    */
   async getProjectById(id: string): Promise<Project | null> {
-    try {
-      const data = await apiClient.get<Project>(API_ENDPOINTS.PROJECTS.BY_ID(id));
-      if (data) return data;
-    } catch {
-      // Fallback lectura pública
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*, owner:profiles(*)')
-        .eq('id', id)
-        .single();
-
-      if (error) return null;
-      return data as Project;
-    } catch {
-      return null;
-    }
+    return apiClient.get(API_ENDPOINTS.PROJECTS.BY_ID(id));
   },
 
   /**
    * Obtener proyectos creados por el usuario en sesión.
    */
   async getMyProjects(): Promise<Project[]> {
-    try {
-      const data = await apiClient.get<Project[]>(API_ENDPOINTS.PROJECTS.ME);
-      return Array.isArray(data) ? data : [];
-    } catch (apiErr) {
-      console.warn('[projectService] Error en getMyProjects:', apiErr);
-      return [];
-    }
+    return apiClient.get(API_ENDPOINTS.PROJECTS.ME);
   },
 
   /**
    * Obtener vacantes / posiciones de un proyecto.
    */
   async getProjectPositions(projectId: string): Promise<ProjectPosition[]> {
-    try {
-      const data = await apiClient.get<ProjectPosition[]>(API_ENDPOINTS.PROJECTS.POSITIONS(projectId));
-      if (Array.isArray(data)) return data;
-    } catch {
-      // Ignorar y devolver vacío
-    }
-    return [];
+    return apiClient.get(API_ENDPOINTS.PROJECTS.POSITIONS(projectId));
   },
 
   /**
    * Obtener miembros integrantes de un proyecto.
    */
   async getProjectMembers(projectId: string): Promise<ProjectMember[]> {
-    try {
-      const data = await apiClient.get<ProjectMember[]>(API_ENDPOINTS.PROJECTS.MEMBERS(projectId));
-      if (Array.isArray(data)) return data;
-    } catch {
-      // Ignorar
-    }
-    return [];
+    return apiClient.get(API_ENDPOINTS.PROJECTS.MEMBERS(projectId));
   },
 
   /**
    * Obtener postulaciones recibidas en un proyecto propio (solo creador).
    */
   async getProjectApplications(projectId: string): Promise<ProjectApplication[]> {
-    try {
-      const data = await apiClient.get<ProjectApplication[]>(
-        API_ENDPOINTS.PROJECTS.PROJECT_APPLICATIONS(projectId)
-      );
-      return Array.isArray(data) ? data : [];
-    } catch (err) {
-      console.error('[projectService] Error en getProjectApplications:', err);
-      return [];
-    }
+    return apiClient.get(API_ENDPOINTS.PROJECTS.PROJECT_APPLICATIONS(projectId));
   },
 
   /**
    * Obtener postulaciones enviadas por el usuario actual.
    */
   async getMyApplications(): Promise<ProjectApplication[]> {
-    try {
-      const data = await apiClient.get<ProjectApplication[]>(API_ENDPOINTS.PROJECTS.MY_APPLICATIONS);
-      return Array.isArray(data) ? data : [];
-    } catch (apiErr) {
-      console.warn('[projectService] Error en getMyApplications:', apiErr);
-      return [];
-    }
+    return apiClient.get(API_ENDPOINTS.PROJECTS.MY_APPLICATIONS);
   },
 
   /**

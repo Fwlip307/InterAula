@@ -1,3 +1,5 @@
+import { HttpError } from '../lib/httpError.js';
+import { env } from '../config/env.js';
 import { getAuthenticatedSupabase, supabasePublic } from '../lib/supabase.js';
 import type { AuthenticatedUser } from '../types/index.js';
 
@@ -98,25 +100,6 @@ export const profileBackendService = {
       .single();
 
     if (error) {
-      const errMsg = String(error.message || '').toLowerCase();
-      if (error.code === 'PGRST204' || errMsg.includes('accessibility_preferences') || errMsg.includes('schema cache')) {
-        const fallbackPayload = { ...payload };
-        delete (fallbackPayload as any).accessibility_preferences;
-        delete (fallbackPayload as any).available_for_projects;
-        delete (fallbackPayload as any).project_bio;
-        const retry = await client
-          .from('profiles')
-          .update(fallbackPayload)
-          .eq('id', user.id)
-          .select()
-          .single();
-        if (!retry.error && retry.data) {
-          return {
-            ...retry.data,
-            accessibility_preferences: sanitizedUpdates.accessibility_preferences ?? null,
-          };
-        }
-      }
       throw new Error(`No fue posible actualizar el perfil: ${error.message}`);
     }
 
@@ -187,14 +170,14 @@ export const profileBackendService = {
   async addNeededSubject(
     user: AuthenticatedUser,
     token: string,
-    data: { subject_id: string; level: string; notes?: string }
+    data: { subject_id: string; current_level: string; notes?: string }
   ) {
     const client = getAuthenticatedSupabase(token);
 
     const payload = {
       profile_id: user.id,
       subject_id: data.subject_id,
-      level: data.level,
+      current_level: data.current_level,
       notes: data.notes?.trim() || null,
     };
 
@@ -211,13 +194,13 @@ export const profileBackendService = {
     return inserted;
   },
 
-  async removeNeededSubject(user: AuthenticatedUser, token: string, id: string) {
+  async removeNeededSubject(user: AuthenticatedUser, token: string, subjectId: string) {
     const client = getAuthenticatedSupabase(token);
 
     const { error } = await client
       .from('profile_needed_subjects')
       .delete()
-      .eq('id', id)
+      .eq('subject_id', subjectId)
       .eq('profile_id', user.id);
 
     if (error) {
@@ -253,15 +236,8 @@ export const profileBackendService = {
 
     const { data, error } = await query;
     if (error) {
-      if (String(error.message || '').toLowerCase().includes('fetch failed')) {
-        return [
-          { id: 'subj-1', name: 'Programación de Algoritmos', code: 'PGY1121', category: 'Informática', is_pilot: true, pilot_priority: 1 },
-          { id: 'subj-2', name: 'Base de Datos Aplicada', code: 'BDY1102', category: 'Informática', is_pilot: true, pilot_priority: 2 },
-          { id: 'subj-3', name: 'Arquitectura de Software', code: 'ASY4131', category: 'Informática', is_pilot: true, pilot_priority: 3 },
-          { id: 'subj-4', name: 'Cálculo Diferencial', code: 'MAT2110', category: 'Matemáticas', is_pilot: false, pilot_priority: 4 },
-        ];
-      }
-      throw new Error(`Error consultando catálogo de asignaturas: ${error.message}`);
+      if (env.persistenceMode === 'local') return [];
+      throw new HttpError(503, 'No se pudo cargar el catálogo de asignaturas. Intenta nuevamente.');
     }
 
     return data || [];

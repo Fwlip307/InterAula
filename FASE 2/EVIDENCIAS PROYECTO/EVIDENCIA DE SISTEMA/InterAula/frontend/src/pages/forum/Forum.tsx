@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCalmMode } from '../../context/CalmModeContext';
 import {
@@ -40,6 +40,9 @@ const POST_TYPE_LABELS: Record<ForumPostType, { label: string; bg: string; color
 
 export default function Forum() {
   const { user } = useAuth();
+  const [recommendationParams] = useSearchParams();
+  const recommendedPostId = recommendationParams.get('post');
+  const navigationLocation=useLocation();
   const { isCalmMode } = useCalmMode();
 
   const [questions, setQuestions] = useState<ForumQuestion[]>([]);
@@ -104,6 +107,7 @@ export default function Forum() {
       setQuestions(data);
     } catch (err) {
       console.error('[Forum] Error cargando publicaciones:', err);
+      setErrorMsg('No se pudieron cargar las publicaciones. Reintenta en unos instantes.');
     } finally {
       setLoading(false);
     }
@@ -130,6 +134,22 @@ export default function Forum() {
       setLoadingThread(false);
     }
   };
+
+  useEffect(() => {
+    if (!recommendedPostId) return;
+    let live = true; setLoadingThread(true);
+    forumService.getPostById(recommendedPostId).then(post => {
+      if (!live) return;
+      if (!post) { setErrorMsg('Esta publicación ya no está disponible.'); return; }
+      setSelectedPost(post); setReplies(post.replies || []);
+    }).catch(() => { if (live) setErrorMsg('No se pudo abrir la publicación sugerida. Intenta nuevamente.'); })
+      .finally(() => { if (live) setLoadingThread(false); });
+    return () => { live = false; };
+  }, [recommendedPostId]);
+
+  useEffect(()=>{
+    if(!recommendedPostId){setSelectedPost(null);setReplies([]);}
+  },[navigationLocation.key,recommendedPostId]);
 
   const openCreateModal = () => {
     setEditingPost(null);

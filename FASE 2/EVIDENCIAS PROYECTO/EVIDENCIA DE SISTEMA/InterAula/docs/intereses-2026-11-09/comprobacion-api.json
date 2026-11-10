@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-09",
+  "remoteMigration018Applied": false,
+  "results": [
+    {
+      "path": "/api/health",
+      "status": 200
+    },
+    {
+      "path": "/api/recommendations/topics",
+      "status": 503
+    },
+    {
+      "path": "/api/recommendations/preferences",
+      "status": 401
+    },
+    {
+      "path": "/api/recommendations/feed",
+      "status": 401
+    },
+    {
+      "path": "http://127.0.0.1:5173",
+      "status": 200
+    }
+  ]
+}

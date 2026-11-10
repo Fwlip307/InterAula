@@ -17,6 +17,8 @@ router.get('/tutors', tutoringController.getAvailableTutors);
 // Sesiones del usuario autenticado (estudiante o tutor)
 router.get('/my-sessions', requireAuth, tutoringController.getMySessions);
 
+router.get('/sessions/:id', requireAuth, tutoringController.getSessionById);
+
 // Solicitar nueva sesión de tutoría (con validación anti-solapamiento)
 router.post(
   '/sessions',

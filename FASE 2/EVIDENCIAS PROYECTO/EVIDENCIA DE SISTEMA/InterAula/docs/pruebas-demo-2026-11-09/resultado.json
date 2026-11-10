@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-09",
+  "scope": "Automated tests: real recommendation service with SQL/RLS on isolated PostgreSQL. Remote seed: executed by user and verified via public application endpoints.",
+  "backendTests": 78,
+  "passed": 78,
+  "failed": 0,
+  "demoInterests": 22,
+  "demoScenarioGroups": 29,
+  "remoteDemoLoaded": true,
+  "seed": "supabase/DATOS_PRUEBA_INTERESES.sql",
+  "cleanup": "supabase/RETIRAR_DATOS_PRUEBA_INTERESES.sql",
+  "expectedRows": {
+    "profiles": 68,
+    "notes": 89,
+    "forumPosts": 22,
+    "projects": 66,
+    "workshops": 110
+  },
+  "demoSuitePresent": false,
+  "remoteConfirmation": "User SQL result and live public application endpoints",
+  "remoteCountsReportedBySql": {
+    "interests": 22,
+    "profiles": 68,
+    "notes": 89,
+    "forumPosts": 22,
+    "projects": 66,
+    "workshops": 110
+  },
+  "liveChecks": [
+    {
+      "endpoint": "/api/notes",
+      "status": 200,
+      "total": 23,
+      "demoVisible": 23
+    },
+    {
+      "endpoint": "/api/forum/posts",
+      "status": 200,
+      "total": 23,
+      "demoVisible": 22
+    },
+    {
+      "endpoint": "/api/projects",
+      "status": 200,
+      "total": 23,
+      "demoVisible": 22
+    },
+    {
+      "endpoint": "/api/workshops",
+      "status": 200,
+      "total": 66,
+      "demoVisible": 66
+    }
+  ]
+}

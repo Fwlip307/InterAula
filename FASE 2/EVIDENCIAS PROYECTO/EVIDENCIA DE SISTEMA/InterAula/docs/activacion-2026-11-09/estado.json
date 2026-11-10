@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-09",
+  "dockerBuildSucceeded": true,
+  "frontendHealthy": true,
+  "backendHealthy": true,
+  "applicationUrl": "http://localhost",
+  "databaseActivationApplied": true,
+  "activationFile": "supabase/ACTIVAR_INTERESES.sql",
+  "activationValidatedInIsolatedPostgres": true,
+  "results": [
+    {
+      "path": "/api/health",
+      "status": 200
+    },
+    {
+      "path": "/api/recommendations/topics",
+      "status": 200,
+      "count": 22
+    },
+    {
+      "path": "/api/workshops",
+      "status": 200,
+      "count": 0
+    },
+    {
+      "path": "/api/recommendations/preferences",
+      "status": 401,
+      "error": "No autorizado: Se requiere una sesión activa con token Bearer."
+    }
+  ],
+  "activationConfirmedBy": "User SQL result and live public API"
+}

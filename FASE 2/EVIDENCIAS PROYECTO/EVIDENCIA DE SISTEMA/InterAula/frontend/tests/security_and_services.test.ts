@@ -20,6 +20,37 @@ import {
 // Test 4: Reglas de negocio y endpoints centralizados (Anti-Hardcoding)
 import { API_ENDPOINTS } from '../src/constants/apiEndpoints.ts';
 import { BUSINESS_RULES } from '../src/constants/businessRules.ts';
+import { NAVIGATION_DESTINATIONS, searchNavigation } from '../src/navigation/navigationSearch.ts';
+
+describe('Buscador global de módulos y opciones',()=>{
+  it('lleva directamente a Quiero aprender y Puedo compartir en intereses',()=>{
+    assert.equal(searchNavigation('quiero aprender')[0].href,'/profile?tab=interests&intent=learn');
+    assert.equal(searchNavigation('puedo compartir')[0].href,'/profile?tab=interests&intent=teach');
+    assert.equal(searchNavigation('me interesa')[0].href,'/profile?tab=interests&intent=interest');
+  });
+  it('ignora tildes, mayúsculas y espacios al buscar',()=>{
+    assert.equal(searchNavigation('  CONFIGURACION  ')[0].href,'/settings');
+    assert.equal(searchNavigation('configuración')[0].id,searchNavigation('CONFIGURACION')[0].id);
+    assert.equal(searchNavigation('acreditacion')[0].id,'accreditation');
+  });
+  it('encuentra sinónimos y combina palabras de la opción buscada',()=>{
+    assert.ok(searchNavigation('ensenar').some(entry=>entry.id==='interest-teach'));
+    assert.ok(searchNavigation('apuntes propios').some(entry=>entry.id==='my-notes'));
+    assert.ok(searchNavigation('talleres').some(entry=>entry.href==='/tutoring?tab=workshops'));
+    assert.equal(searchNavigation('borradores')[0].href,'/resources?tab=drafts');
+  });
+  it('cubre todos los módulos sin destinos externos ni IDs duplicados',()=>{
+    assert.equal(new Set(NAVIGATION_DESTINATIONS.map(entry=>entry.id)).size,NAVIGATION_DESTINATIONS.length);
+    const paths=new Set(NAVIGATION_DESTINATIONS.map(entry=>entry.href.split(/[?#]/)[0]));
+    for(const pathname of ['/','/dashboard','/learning-space','/profile','/tutoring','/my-tutoring','/resources','/projects','/forum','/settings'])assert.ok(paths.has(pathname));
+    assert.ok(NAVIGATION_DESTINATIONS.every(entry=>entry.href.startsWith('/')&&!entry.href.startsWith('//')));
+  });
+  it('muestra opciones al abrir y un vacío seguro para búsquedas inexistentes',()=>{
+    assert.equal(searchNavigation('  ').length,NAVIGATION_DESTINATIONS.length);
+    assert.deepEqual(searchNavigation('zzzxxyynoseccion'),[]);
+    assert.deepEqual(searchNavigation('<script>alert(document.cookie)</script>'),[]);
+  });
+});
 
 describe('Seguridad y Autorización', () => {
   it('isCertifiedAccount debe rechazar cualquier email o ID arbitrario (no hardcoding)', () => {
@@ -290,19 +321,9 @@ describe('Centralización de Reglas de Negocio y Endpoints (Anti-Hardcoding)', (
 import { verificationService } from '../src/services/verification.service.ts';
 
 describe('Seguridad de Servicios y Prevención de Bypass (Fail-Closed)', () => {
-  it('verificationService.botGrant rechaza puntajes inferiores al 70% sin invocar el backend', async () => {
-    await assert.rejects(
-      async () => {
-        await verificationService.botGrant({
-          subject_id: 'sub-123',
-          score: 65,
-          level: 'basic',
-        });
-      },
-      {
-        message: /Puntaje insuficiente \(65%\)\. Se requiere un mínimo de 70%/,
-      }
-    );
+  it('la acreditación tiene endpoints separados para intento y respuestas del servidor', () => {
+    assert.equal(API_ENDPOINTS.VERIFICATION.ATTEMPTS, '/verification/attempts');
+    assert.equal(API_ENDPOINTS.VERIFICATION.ANSWERS('attempt-1'), '/verification/attempts/attempt-1/answers');
   });
 
   it('verificationService.assignPracticalExercise rechaza títulos vacíos preventivamente', async () => {

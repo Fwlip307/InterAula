@@ -9,17 +9,7 @@ export const createVerificationRequestSchema = z
   })
   .strict();
 
-export const botGrantVerificationSchema = z
-  .object({
-    subject_id: z.string().trim().min(1, 'El ID de la materia es obligatorio'),
-    subject_name: z.string().trim().optional(),
-    score: z.number().min(0).max(V_RULES.MAX_BOT_SCORE, `El puntaje debe estar entre 0 y ${V_RULES.MAX_BOT_SCORE}`),
-    level: z.enum(['basic', 'intermediate', 'advanced']),
-    correct_answers: z.number().int().min(0).optional(),
-    total_questions: z.number().int().min(V_RULES.MIN_QUESTIONS).optional(),
-    notes: z.string().trim().max(V_RULES.MAX_NOTES_LENGTH).optional(),
-  })
-  .strict();
+export { grantAssessmentSchema as botGrantVerificationSchema } from '../services/assessment.service.js';
 
 export const assignPracticalExerciseSchema = z
   .object({

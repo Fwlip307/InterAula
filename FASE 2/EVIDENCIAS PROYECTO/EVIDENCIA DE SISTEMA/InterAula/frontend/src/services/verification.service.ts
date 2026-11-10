@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
-import { BUSINESS_RULES } from '../constants/businessRules';
 import type {
   TutorVerificationRequest,
   AcademicValidator,
@@ -34,33 +33,33 @@ async function getOptionalAuthUser() {
   return authData.user;
 }
 
-const VERIFICATION_REQUEST_SELECT = `
-  *,
-  subject:subjects (
-    id,
-    name,
-    category,
-    is_pilot,
-    pilot_priority
-  ),
-  tutor:profiles!tutor_verification_requests_tutor_id_fkey (
-    id,
-    first_name,
-    last_name,
-    display_name,
-    avatar_url,
-    institution,
-    career,
-    email
-  ),
-  reviewer:profiles!tutor_verification_requests_reviewed_by_fkey (
-    id,
-    first_name,
-    last_name,
-    display_name,
-    avatar_url
-  )
-`;
+export interface AssessmentQuestion {
+  id: string;
+  type: 'choice' | 'redaction';
+  prompt: string;
+  options?: { id: string; text: string }[];
+  codeSnippet?: string;
+  placeholder?: string;
+}
+export interface ServerAssessment {
+  id: string;
+  subjectId: string;
+  subjectName: string;
+  level: 'basic';
+  totalQuestions: number;
+  expiresAt: string;
+  question: AssessmentQuestion;
+}
+export interface ServerAssessmentAnswer {
+  correct: boolean;
+  feedback: string;
+  score: number;
+  answered: number;
+  totalQuestions: number;
+  finished: boolean;
+  passed: boolean;
+  nextQuestion: AssessmentQuestion | null;
+}
 
 export const verificationService = {
   /**
@@ -88,70 +87,33 @@ export const verificationService = {
    * Obtiene todas las solicitudes de verificación realizadas por el usuario en sesión a través del backend.
    */
   async getMyVerificationRequests(): Promise<TutorVerificationRequest[]> {
-    try {
-      const data = await apiClient.get<TutorVerificationRequest[]>(API_ENDPOINTS.VERIFICATION.MY_REQUESTS);
-      return data;
-    } catch (apiErr) {
-      console.warn('[verificationService] Backend API fallback para getMyVerificationRequests:', apiErr);
-      const user = await getRequiredAuthUser();
-
-      const { data, error } = await supabase
-        .from('tutor_verification_requests')
-        .select(VERIFICATION_REQUEST_SELECT)
-        .eq('tutor_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[verificationService] Error en getMyVerificationRequests:', error.message);
-        return [];
-      }
-
-      return (data || []) as TutorVerificationRequest[];
-    }
+    return apiClient.get(API_ENDPOINTS.VERIFICATION.MY_REQUESTS);
   },
 
   /**
    * Obtiene la lista de solicitudes de verificación pendientes de revisión para el validador académico.
    */
   async getVerificationRequestsForValidator(): Promise<TutorVerificationRequest[]> {
-    try {
-      const data = await apiClient.get<TutorVerificationRequest[]>(API_ENDPOINTS.VERIFICATION.FOR_VALIDATOR);
-      return data;
-    } catch (apiErr) {
-      console.warn('[verificationService] Backend API fallback para getVerificationRequestsForValidator:', apiErr);
-      await getRequiredAuthUser();
-
-      const { data, error } = await supabase
-        .from('tutor_verification_requests')
-        .select(VERIFICATION_REQUEST_SELECT)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('[verificationService] Error en getVerificationRequestsForValidator:', error.message);
-        throw new Error(error.message || 'No fue posible cargar las solicitudes de verificación');
-      }
-
-      return (data || []) as TutorVerificationRequest[];
-    }
+    return apiClient.get(API_ENDPOINTS.VERIFICATION.FOR_VALIDATOR);
   },
 
   /**
    * Concede acreditación mediante evaluación del Bot en el backend propio (exige score >= 70%)
    */
-  async botGrant(params: {
-    subject_id: string;
-    subject_name?: string;
-    score: number;
-    level: 'basic' | 'intermediate' | 'advanced';
-    correct_answers?: number;
-    total_questions?: number;
-    notes?: string;
-  }) {
-    const minScore = BUSINESS_RULES.VERIFICATION.MIN_BOT_ACCREDITATION_SCORE;
-    if (params.score < minScore) {
-      throw new Error(`Puntaje insuficiente (${params.score}%). Se requiere un mínimo de ${minScore}% para acreditarse.`);
-    }
+  async startAssessment(subjectId: string): Promise<ServerAssessment> {
+    return apiClient.post<ServerAssessment>(API_ENDPOINTS.VERIFICATION.ATTEMPTS, { subject_id: subjectId });
+  },
+
+  async answerAssessment(attemptId: string, questionId: string, answer: string): Promise<ServerAssessmentAnswer> {
+    return apiClient.post<ServerAssessmentAnswer>(API_ENDPOINTS.VERIFICATION.ANSWERS(attemptId), { question_id: questionId, answer });
+  },
+
+  async botGrant(params: { attempt_id: string }): Promise<{ subject_id: string; level: 'basic'; score: number }> {
     return apiClient.post(API_ENDPOINTS.VERIFICATION.BOT_GRANT, params);
+  },
+
+  async requestTeacherEndorsement(params: { subject_id: string; professor_name: string; professor_email: string; message: string }) {
+    return apiClient.post(API_ENDPOINTS.VERIFICATION.ENDORSEMENTS, params);
   },
 
   /**

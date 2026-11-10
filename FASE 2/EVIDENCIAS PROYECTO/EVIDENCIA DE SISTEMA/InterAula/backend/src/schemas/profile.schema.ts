@@ -65,7 +65,7 @@ export const updateProfileSchema = z
 
 export const addOfferedSubjectSchema = z
   .object({
-    subject_id: z.string().trim().min(1, 'El identificador de materia es obligatorio'),
+    subject_id: z.string().uuid('Selecciona una asignatura del catálogo oficial'),
     level: z.enum(['basic', 'intermediate', 'advanced'], {
       errorMap: () => ({ message: 'Nivel académico inválido. Valores permitidos: basic, intermediate, advanced' }),
     }),
@@ -75,10 +75,10 @@ export const addOfferedSubjectSchema = z
 
 export const addNeededSubjectSchema = z
   .object({
-    subject_id: z.string().trim().min(1, 'El identificador de materia es obligatorio'),
-    level: z.enum(['basic', 'intermediate', 'advanced'], {
+    subject_id: z.string().uuid('Selecciona una asignatura del catálogo oficial'),
+    current_level: z.enum(['basic', 'intermediate', 'advanced'], {
       errorMap: () => ({ message: 'Nivel académico inválido. Valores permitidos: basic, intermediate, advanced' }),
-    }),
+    }).default('basic'),
     notes: z.string().trim().max(500, 'Las notas no pueden exceder 500 caracteres').optional(),
   })
   .strict();

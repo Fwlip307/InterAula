@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { learningSpaceService } from '../../services/learningSpace.service';
@@ -46,20 +46,15 @@ import {
 } from '../../components/common/Icons';
 import '../../styles/dashboard.css';
 
+import { useModuleTab } from '../../hooks/useModuleTab';
+
 type SpaceTab = 'overview' | 'paths' | 'explain' | 'tasks' | 'reinforce' | 'profile';
 
 export const LearningSpace = () => {
   const { user } = useAuth();
   const { isCalmMode, themeMode, setThemeMode, preferences, updatePreferences } = useCalmMode();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const initialTab = (searchParams.get('tab') as SpaceTab) || 'overview';
-  const [activeTab, setActiveTab] = useState<SpaceTab>(
-    ['overview', 'paths', 'explain', 'tasks', 'reinforce', 'profile'].includes(initialTab)
-      ? initialTab
-      : 'overview'
-  );
+  const [activeTab,setActiveTab]=useModuleTab<SpaceTab>(['overview','paths','explain','tasks','reinforce','profile'],'overview');
 
   // Estado principal cargado desde el backend
   const [loading, setLoading] = useState(true);
@@ -146,7 +141,6 @@ export const LearningSpace = () => {
 
   const handleTabChange = (tab: SpaceTab) => {
     setActiveTab(tab);
-    setSearchParams({ tab });
   };
 
   const loadSpaceData = useCallback(async () => {

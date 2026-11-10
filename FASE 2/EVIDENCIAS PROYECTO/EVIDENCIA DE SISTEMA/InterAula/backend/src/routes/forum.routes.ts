@@ -38,7 +38,7 @@ router.put(
 router.delete('/posts/:id', requireAuth, forumController.deletePost);
 
 // Votar o quitar voto de una publicación
-router.post('/posts/:id/upvote', optionalAuth, forumController.upvotePost);
+router.post('/posts/:id/upvote', requireAuth, forumController.upvotePost);
 
 // Marcar pregunta como resuelta (solo autor o admin)
 router.patch(

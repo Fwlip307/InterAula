@@ -1,3 +1,5 @@
+import { env } from '../config/env.js';
+import { remoteLearningSpaceService } from './remote/learningSpace.service.js';
 import { getAuthenticatedSupabase as createSupabaseUserClient } from '../lib/supabase.js';
 import { callFreeGenerativeAI, randomizeQuestionOptions } from './ai.service.js';
 import {
@@ -51,7 +53,7 @@ export interface AdaptiveExplanationResponse {
   };
 }
 
-const DEFAULT_CONFIG: Omit<StoredLearningSpaceConfig, 'user_id' | 'updated_at'> = {
+export const DEFAULT_CONFIG: Omit<StoredLearningSpaceConfig, 'user_id' | 'updated_at'> = {
   onboardingCompleted: false,
   shareWithTutors: false,
   explanationStyle: ['step_by_step', 'practical_examples'],
@@ -77,7 +79,7 @@ const MODE_LABELS: Record<AdaptiveExplanationRequestInput['mode'], string> = {
   comprobar: 'Comprobar comprensión',
 };
 
-function buildDefaultStagesForGoal(
+export function buildDefaultStagesForGoal(
   subjectName: string,
   title: string,
   goal: string
@@ -137,7 +139,7 @@ function buildDefaultSubtasksForTask(title: string): Array<{ id: string; title: 
   ];
 }
 
-function computeMasteryLevel(
+export function computeMasteryLevel(
   score: number,
   totalQuestions: number
 ): StoredTopicAssessment['mastery_level'] {
@@ -148,7 +150,7 @@ function computeMasteryLevel(
   return 'necesita_practicar';
 }
 
-export const learningSpaceService = {
+const localLearningSpaceService = {
   /**
    * Obtener configuración del espacio de aprendizaje del estudiante
    */
@@ -1477,3 +1479,5 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
     };
   },
 };
+
+export const learningSpaceService = env.persistenceMode === 'local' ? localLearningSpaceService : { ...remoteLearningSpaceService, generateAdaptiveExplanation: localLearningSpaceService.generateAdaptiveExplanation, buildCuratedAdaptiveExplanation: localLearningSpaceService.buildCuratedAdaptiveExplanation };

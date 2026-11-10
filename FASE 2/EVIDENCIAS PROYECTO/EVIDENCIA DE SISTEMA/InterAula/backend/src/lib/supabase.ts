@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
+import { HttpError } from './httpError.js';
 
 /**
  * Cliente público general de Supabase (anon).
@@ -43,8 +44,7 @@ let adminClient: SupabaseClient | null = null;
 
 export function getAdminSupabase(): SupabaseClient {
   if (!env.supabaseServiceRoleKey) {
-    // Si no hay service_role configurada, recurre al cliente público
-    return supabasePublic;
+    throw new HttpError(503, 'La acreditación automática no está disponible. Puedes solicitar revisión docente.');
   }
 
   if (!adminClient) {

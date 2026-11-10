@@ -25,6 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    // Remove the former shared learning cache; private data is fetched for the active session.
+    try { localStorage.removeItem('interaula_learning_space_v1'); } catch { /* Storage may be unavailable. */ }
 
     // Recupera la sesión guardada al iniciar la aplicación
     const loadSession = async () => {
@@ -56,6 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!mounted) return;
 
+      if (_event === 'SIGNED_OUT') {
+        try {
+          localStorage.removeItem('interaula_learning_space_v1');
+          localStorage.removeItem('ia_adaptive_quiz_history');
+        } catch { /* Storage may be unavailable. */ }
+      }
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setLoading(false);

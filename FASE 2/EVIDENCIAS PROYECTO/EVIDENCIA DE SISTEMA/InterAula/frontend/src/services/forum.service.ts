@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
 
@@ -49,118 +48,16 @@ export interface ForumFilterParams {
   sort?: 'recent' | 'popular' | 'activity';
 }
 
-function formatTimeAgo(dateString?: string): string {
-  if (!dateString) return 'Reciente';
-  const diffMs = Date.now() - new Date(dateString).getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 2) return 'Recién publicado';
-  if (diffMin < 60) return `Hace ${diffMin} min`;
-  const diffHours = Math.floor(diffMin / 60);
-  if (diffHours < 24) return `Hace ${diffHours} h`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `Hace ${diffDays} d`;
-}
-
 export const forumService = {
   /**
    * Obtiene la lista de publicaciones del foro a través del backend propio.
    */
   async getPosts(filters?: ForumFilterParams): Promise<ForumQuestion[]> {
-    try {
-      const query = new URLSearchParams();
-      if (filters?.category && filters.category !== 'Todas' && filters.category !== 'all') {
-        query.set('category', filters.category);
-      }
-      if (filters?.search?.trim()) {
-        query.set('search', filters.search.trim());
-      }
-      if (filters?.post_type && filters.post_type !== 'all') {
-        query.set('post_type', filters.post_type);
-      }
-      if (filters?.status && filters.status !== 'all') {
-        query.set('status', filters.status);
-      }
-      if (filters?.subject_id && filters.subject_id !== 'all') {
-        query.set('subject_id', filters.subject_id);
-      }
-      if (filters?.sort) {
-        query.set('sort', filters.sort);
-      }
-
-      const qs = query.toString();
-      const endpoint = qs ? `${API_ENDPOINTS.FORUM.POSTS}?${qs}` : API_ENDPOINTS.FORUM.POSTS;
-      const posts = await apiClient.get<ForumQuestion[]>(endpoint);
-      if (Array.isArray(posts)) {
-        return posts;
-      }
-    } catch (apiErr) {
-      console.warn('[forumService] Lectura directa de respaldo para getPosts:', apiErr);
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('forum_posts')
-        .select(`
-          id,
-          title,
-          description,
-          category,
-          tags,
-          votes_count,
-          replies_count,
-          is_solved,
-          created_at,
-          updated_at,
-          author_id,
-          author:profiles(id, display_name, first_name, last_name, institution)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error || !data || data.length === 0) {
-        return [];
-      }
-
-      return data.map((item: any) => {
-        const authorProfile = item.author;
-        const authorName = authorProfile
-          ? authorProfile.display_name || `${authorProfile.first_name || ''} ${authorProfile.last_name || ''}`.trim() || 'Estudiante'
-          : 'Estudiante';
-        const institution = authorProfile?.institution || 'Duoc UC';
-
-        return {
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          author: authorName,
-          authorInstitution: institution,
-          category: item.category || 'General',
-          postType: item.post_type || 'pregunta',
-          tags: Array.isArray(item.tags) ? item.tags : [],
-          repliesCount: item.replies_count ?? 0,
-          votesCount: item.votes_count ?? 0,
-          timeAgo: formatTimeAgo(item.created_at),
-          isSolved: Boolean(item.is_solved),
-          authorId: item.author_id,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at || item.created_at,
-        };
-      });
-    } catch {
-      return [];
-    }
+    return apiClient.get(API_ENDPOINTS.FORUM.POSTS, {params: filters});
   },
 
-  /**
-   * Obtiene el detalle completo de una publicación y sus respuestas.
-   */
-  async getPostById(postId: string): Promise<ForumQuestion | null> {
-    try {
-      const post = await apiClient.get<ForumQuestion>(API_ENDPOINTS.FORUM.POST_BY_ID(postId));
-      return post;
-    } catch (err) {
-      console.error('[forumService] Error en getPostById:', err);
-      return null;
-    }
+  async getPostById(id: string): Promise<ForumQuestion | null> {
+    return apiClient.get(API_ENDPOINTS.FORUM.POST_BY_ID(id));
   },
 
   /**
@@ -272,13 +169,8 @@ export const forumService = {
   /**
    * Obtiene respuestas de una publicación.
    */
-  async getReplies(postId: string): Promise<ForumReply[]> {
-    try {
-      const replies = await apiClient.get<ForumReply[]>(API_ENDPOINTS.FORUM.REPLIES(postId));
-      return Array.isArray(replies) ? replies : [];
-    } catch {
-      return [];
-    }
+  async getReplies(id: string): Promise<ForumReply[]> {
+    return apiClient.get(API_ENDPOINTS.FORUM.REPLIES(id));
   },
 
   /**

@@ -139,27 +139,8 @@ export const profileService = {
       return publicData as Profile;
     }
 
-    // 2. Respaldo directo sobre profiles aplicando estricta política de privacidad
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error || !data) {
-      console.warn('[profileService] Perfil no encontrado:', error?.message || viewError?.message);
-      return null;
-    }
-
-    const authUser = await getOptionalAuthUser();
-    const isOwner = authUser?.id === data.id;
-
-    return {
-      ...data,
-      email: data.show_email || isOwner ? data.email : null,
-      phone: data.show_phone || isOwner ? data.phone : null,
-      learning_preferences: isOwner ? data.learning_preferences : [],
-    } as Profile;
+    if (viewError) throw new Error('No se pudo cargar el perfil público. Intenta nuevamente.');
+    return null;
   },
 
   // Actualizar datos del perfil del usuario en sesión a través del backend propio
@@ -175,45 +156,7 @@ export const profileService = {
 
   // Catálogo de materias
   async getSubjects(onlyPilot?: boolean): Promise<Subject[]> {
-    let query = supabase
-      .from('subjects')
-      .select('*')
-      .order('is_pilot', { ascending: false })
-      .order('pilot_priority', { ascending: true })
-      .order('name', { ascending: true });
-
-    if (onlyPilot) {
-      query = query.eq('is_pilot', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error || !data || data.length === 0) {
-      const { getAllCatalogSubjects } = await import('./catalogResolver');
-      const catalog = getAllCatalogSubjects();
-      return catalog.map((cs) => ({
-        id: cs.id,
-        name: cs.name,
-        category: cs.areaName,
-        is_pilot: cs.isBoosted || false,
-        created_at: new Date().toISOString(),
-      }));
-    }
-
-    const list = (data || []) as Subject[];
-    const hasProgWeb = list.some((s) => s.name?.toLowerCase().includes('programación web'));
-    if (!hasProgWeb) {
-      list.push({
-        id: 'informatica_software.programacion_web',
-        name: 'Programación Web',
-        category: 'Tecnología e Informática',
-        is_pilot: true,
-        pilot_priority: 1,
-        created_at: new Date().toISOString(),
-      });
-    }
-
-    return list;
+    return apiClient.get<Subject[]>(API_ENDPOINTS.PROFILES.SUBJECTS, { params: { onlyPilot } });
   },
 
   // Materias que un perfil enseña / ofrece

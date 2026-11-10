@@ -14,6 +14,7 @@ export const forumController = {
         subjectId: subject_id as string,
         sort: (sort as any) || 'recent',
         currentUserId: req.user?.id,
+        token: req.token,
       });
       res.json({ success: true, data: posts });
     } catch (err) {
@@ -24,7 +25,7 @@ export const forumController = {
   async getPostById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const post = await forumBackendService.getPostById(id, req.user?.id);
+      const post = await forumBackendService.getPostById(id, req.user?.id, req.token);
       if (!post) {
         return res.status(404).json({ success: false, error: 'Publicación no encontrada' });
       }
@@ -66,7 +67,7 @@ export const forumController = {
   async upvotePost(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const result = await forumBackendService.upvotePost(id, req.user);
+      const result = await forumBackendService.upvotePost(id, req.user, req.token);
       res.json(result);
     } catch (err) {
       next(err);
@@ -87,7 +88,7 @@ export const forumController = {
   async getReplies(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const replies = await forumBackendService.getReplies(id);
+      const replies = await forumBackendService.getReplies(id, req.token);
       res.json({ success: true, data: replies });
     } catch (err) {
       next(err);

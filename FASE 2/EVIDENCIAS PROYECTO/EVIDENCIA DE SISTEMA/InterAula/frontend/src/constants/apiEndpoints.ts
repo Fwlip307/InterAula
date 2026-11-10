@@ -6,10 +6,18 @@
 export const API_ENDPOINTS = {
   // Estado del servidor
   HEALTH: '/health',
+  RECOMMENDATIONS: {
+    TOPICS: '/recommendations/topics',
+    PREFERENCES: '/recommendations/preferences',
+    FEED: '/recommendations/feed',
+    DISMISSALS: '/recommendations/dismissals',
+    DISMISSAL: (kind: string, id: string) => `/recommendations/dismissals/${encodeURIComponent(kind)}/${encodeURIComponent(id)}`,
+  },
 
   // Perfiles de usuario y asignaturas
   PROFILES: {
     ME: '/profiles/me',
+    SUBJECTS: '/profiles/catalog/subjects',
     BY_ID: (id: string) => `/profiles/${id}`,
     OFFERED_SUBJECTS: '/profiles/offered-subjects',
     OFFERED_SUBJECT_BY_ID: (subjectId: string) => `/profiles/offered-subjects/${subjectId}`,
@@ -20,10 +28,12 @@ export const API_ENDPOINTS = {
   // Sesiones de tutoría individual
   TUTORING: {
     SESSIONS: '/tutoring/sessions',
+    TUTORS: '/tutoring/tutors',
+    SESSION_BY_ID: (id: string) => `/tutoring/sessions/${id}`,
     MY_SESSIONS: '/tutoring/my-sessions',
     SESSION_STATUS: (sessionId: string) => `/tutoring/sessions/${sessionId}/status`,
     SESSION_REVIEWS: (sessionId: string) => `/tutoring/sessions/${sessionId}/reviews`,
-    ATTENDANCE: '/tutoring/attendance',
+    ATTENDANCE: '/tutoring/sessions/attendance',
   },
 
   // Talleres grupales
@@ -43,6 +53,9 @@ export const API_ENDPOINTS = {
     MY_REQUESTS: '/verification/my-requests',
     FOR_VALIDATOR: '/verification/for-validator',
     BOT_GRANT: '/verification/bot-grant',
+    ATTEMPTS: '/verification/attempts',
+    ANSWERS: (id: string) => `/verification/attempts/${id}/answers`,
+    ENDORSEMENTS: '/verification/endorsements',
     CERTIFICATE: (requestId: string) => `/verification/requests/${requestId}/certificate`,
     CERTIFICATE_EXTRACTION: '/verification/certificate-extraction',
     PRACTICAL_EXERCISE: (requestId: string) => `/verification/requests/${requestId}/practical-exercise`,

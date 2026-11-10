@@ -558,6 +558,12 @@ const VARIATION_ANGLES = [
 ];
 
 export const aiBackendService = {
+  // Only reviewed questions for this exact subject are eligible for accreditation.
+  getAccreditationQuestions(subject: string): ChallengeQuestionDTO[] {
+    const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const candidates = CURATED_QUESTIONS.filter(question => normalize(question.subject) === normalize(subject));
+    return fisherYatesShuffle(candidates).slice(0, 10).map(question => randomizeQuestionOptions({ ...question }));
+  },
   /**
    * Consulta el estado de la integración de IA
    */
@@ -566,6 +572,7 @@ export const aiBackendService = {
     const isConfigured = Boolean(key && key.trim().length > 5);
     return {
       configured: true,
+      evaluationConfigured: isConfigured,
       provider: isConfigured ? 'gemini' : 'hybrid_generative_ai',
       models: isConfigured
         ? ['gemini-1.5-flash', 'gemini-2.0-flash']
@@ -759,7 +766,7 @@ Responde ÚNICAMENTE con un arreglo JSON válido:
     answer: string;
     rubric?: string;
     level?: string;
-  }): Promise<{ score: number; passed: boolean; feedback: string }> {
+  }): Promise<{ score: number; passed: boolean; feedback: string; evaluated: boolean }> {
     const geminiKey = process.env.GEMINI_API_KEY;
 
     if (geminiKey && geminiKey.trim().length > 5) {
@@ -810,10 +817,11 @@ Evalúa la respuesta y responde ÚNICAMENTE con un JSON en este formato:
           if (rawText) {
             const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(cleanJson);
-            if (typeof parsed.score === 'number') {
+            if (typeof parsed.score === 'number' && Number.isFinite(parsed.score) && parsed.score >= 1 && parsed.score <= 10) {
               return {
                 score: parsed.score,
-                passed: Boolean(parsed.passed ?? parsed.score >= 6),
+                passed: parsed.score >= 6,
+                evaluated: true,
                 feedback: parsed.feedback || 'Evaluación semántica procesada por IA.',
               };
             }
@@ -824,19 +832,11 @@ Evalúa la respuesta y responde ÚNICAMENTE con un JSON en este formato:
       }
     }
 
-    // Evaluación heurística de respaldo en el servidor
-    const cleanAnswer = data.answer.trim();
-    const wordCount = cleanAnswer.split(/\s+/).length;
-    const hasTechnicalKeywords = cleanAnswer.length > 20;
-    const score = wordCount >= 8 && hasTechnicalKeywords ? 8 : wordCount >= 4 ? 6 : 4;
-
     return {
-      score,
-      passed: score >= 6,
-      feedback:
-        score >= 6
-          ? 'Respuesta conceptualmente consistente. Demuestra nociones técnicas acordes a los requerimientos de la asignatura.'
-          : 'Respuesta breve o incompleta. Se recomienda profundizar con terminología técnica precisa.',
+      score: 0,
+      passed: false,
+      evaluated: false,
+      feedback: 'No fue posible verificar el contenido de esta respuesta. No se asignó una aprobación; utiliza una actividad con respuestas verificables o solicita revisión docente.',
     };
   },
 

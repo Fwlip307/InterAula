@@ -9,6 +9,9 @@ import {
   type StoredProjectMember,
 } from '../lib/persistentStore.js';
 import type { AuthenticatedUser } from '../types/index.js';
+import { HttpError } from '../lib/httpError.js';
+import { env } from '../config/env.js';
+import { remoteProjectService } from './remote/project.service.js';
 
 function mapStoredProjectToDto(
   p: StoredProject,
@@ -37,7 +40,7 @@ function mapStoredProjectToDto(
   };
 }
 
-export const projectBackendService = {
+const localProjectService = {
   /**
    * Obtener proyectos públicos activos con sus roles y equipo
    */
@@ -85,10 +88,15 @@ export const projectBackendService = {
   /**
    * Obtener detalle de proyecto por ID
    */
-  async getProjectById(id: string) {
+  async getProjectById(id: string, currentUserId?: string, token?: string) {
     const store = persistentStore.read();
     const localProj = store.projects.find((p) => p.id === id);
     if (localProj) {
+      const isOwner = localProj.owner_id === currentUserId;
+      const isMember = Boolean(currentUserId && store.project_members.some(m => m.project_id === id && m.profile_id === currentUserId));
+      if (!isOwner && (localProj.status === 'draft' || (localProj.visibility !== 'public' && !isMember))) {
+        throw new HttpError(404, 'Proyecto no encontrado');
+      }
       return mapStoredProjectToDto(
         localProj,
         store.project_positions,
@@ -97,7 +105,7 @@ export const projectBackendService = {
       );
     }
 
-    const { data, error } = await supabasePublic
+    const { data, error } = await (token ? getAuthenticatedSupabase(token) : supabasePublic)
       .from('projects')
       .select('*, owner:profiles(*)')
       .eq('id', id)
@@ -153,7 +161,8 @@ export const projectBackendService = {
   /**
    * Obtener posiciones de un proyecto
    */
-  async getProjectPositions(projectId: string) {
+  async getProjectPositions(projectId: string, currentUserId?: string, token?: string) {
+    if (!await this.getProjectById(projectId, currentUserId, token)) throw new HttpError(404, 'Proyecto no encontrado');
     const store = persistentStore.read();
     const localPositions = store.project_positions.filter((pos) => pos.project_id === projectId);
     if (localPositions.length > 0) {
@@ -176,7 +185,8 @@ export const projectBackendService = {
   /**
    * Obtener miembros de un proyecto
    */
-  async getProjectMembers(projectId: string) {
+  async getProjectMembers(projectId: string, currentUserId?: string, token?: string) {
+    if (!await this.getProjectById(projectId, currentUserId, token)) throw new HttpError(404, 'Proyecto no encontrado');
     const store = persistentStore.read();
     const localMembers = store.project_members
       .filter((m) => m.project_id === projectId)
@@ -974,3 +984,5 @@ export const projectBackendService = {
     return { success: true, message: 'Integrante removido del equipo correctamente' };
   },
 };
+
+export const projectBackendService = env.persistenceMode === 'local' ? localProjectService : remoteProjectService;

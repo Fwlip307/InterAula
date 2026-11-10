@@ -15,7 +15,7 @@ export const projectController = {
   async getProjectById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const project = await projectBackendService.getProjectById(id);
+      const project = await projectBackendService.getProjectById(id, req.user?.id, req.token);
       if (!project) {
         return res.status(404).json({ success: false, error: 'Proyecto no encontrado' });
       }
@@ -37,7 +37,7 @@ export const projectController = {
   async getProjectPositions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const positions = await projectBackendService.getProjectPositions(id);
+      const positions = await projectBackendService.getProjectPositions(id, req.user?.id, req.token);
       res.json({ success: true, data: positions });
     } catch (err) {
       next(err);
@@ -47,7 +47,7 @@ export const projectController = {
   async getProjectMembers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const members = await projectBackendService.getProjectMembers(id);
+      const members = await projectBackendService.getProjectMembers(id, req.user?.id, req.token);
       res.json({ success: true, data: members });
     } catch (err) {
       next(err);

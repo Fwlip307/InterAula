@@ -1,27 +1,40 @@
 @echo off
-title InterAula - Contenedores Docker Activos (No cerrar esta ventana)
-echo ==========================================================
-echo       Iniciando InterAula en Docker (WSL2 Ubuntu)
-echo ==========================================================
-echo 1. Asegurando que el servicio Docker este activo...
-wsl -d Ubuntu-24.04 -u root service docker start
-
-echo 2. Compilando y levantando los contenedores actualizados con Docker Compose...
-wsl -d Ubuntu-24.04 -u root --cd "/mnt/c/Users/FELIPE/Documents/GitHub/InterAula/FASE 2/EVIDENCIAS PROYECTO/EVIDENCIA DE SISTEMA/InterAula" docker compose up -d --build --force-recreate
-
-echo.
-echo 3. Verificando estado de los contenedores:
-wsl -d Ubuntu-24.04 -u root --cd "/mnt/c/Users/FELIPE/Documents/GitHub/InterAula/FASE 2/EVIDENCIAS PROYECTO/EVIDENCIA DE SISTEMA/InterAula" docker compose ps
-
-echo.
-echo ==========================================================
-echo  InterAula ya esta en ejecucion:
-echo    - Frontend (App Web):   http://localhost
-echo    - Backend (API REST):   http://localhost:3001/api/health
-echo.
-echo  IMPORTANTE: Mantenga esta ventana abierta mientras use
-echo  InterAula para evitar que Windows suspenda WSL2.
-echo  (Presione Ctrl+C para dejar de ver los logs)
-echo ==========================================================
-echo.
-wsl -d Ubuntu-24.04 -u root --cd "/mnt/c/Users/FELIPE/Documents/GitHub/InterAula/FASE 2/EVIDENCIAS PROYECTO/EVIDENCIA DE SISTEMA/InterAula" docker compose logs -f --tail=25
+setlocal
+pushd "%~dp0"
+where docker >nul 2>&1
+if errorlevel 1 (
+  echo Docker no esta instalado o no esta disponible en PATH.
+  popd
+  exit /b 1
+)
+docker info >nul 2>&1
+if errorlevel 1 (
+  echo Iniciando Docker Desktop. Espere a que el motor este listo...
+  powershell.exe -NoProfile -Command "$desktop = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'; if (-not (Test-Path -LiteralPath $desktop)) { exit 1 }; Start-Process -FilePath $desktop -WindowStyle Hidden"
+  if errorlevel 1 (
+    echo No se encontro Docker Desktop. Abra Docker Desktop manualmente.
+    popd
+    exit /b 1
+  )
+  powershell.exe -NoProfile -Command "$deadline = (Get-Date).AddSeconds(120); do { docker info *> $null; if ($LASTEXITCODE -eq 0) { exit 0 }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); exit 1"
+  if errorlevel 1 (
+    echo Docker Desktop no quedo listo. Revise su ventana y vuelva a intentarlo.
+    popd
+    exit /b 1
+  )
+)
+if not exist "backend\.env" (
+  echo Falta backend\.env. Copie backend\.env.example y configure Supabase.
+  popd
+  exit /b 1
+)
+docker compose --env-file "backend\.env" up -d --build
+if errorlevel 1 (
+  echo Fallo la construccion o el inicio de InterAula. Revise el error anterior.
+  popd
+  exit /b 1
+)
+docker compose --env-file "backend\.env" ps
+echo InterAula: http://localhost
+popd
+endlocal

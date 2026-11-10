@@ -3,6 +3,10 @@ import type { AuthenticatedRequest } from '../types/index.js';
 import { tutoringBackendService } from '../services/tutoring.service.js';
 
 export const tutoringController = {
+  async getSessionById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try { res.json({ success: true, data: await tutoringBackendService.getSessionById(req.user!, req.token!, req.params.id) }); }
+    catch (error) { next(error); }
+  },
   async getAvailableTutors(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { subjectId, search, onlyVerified } = req.query;

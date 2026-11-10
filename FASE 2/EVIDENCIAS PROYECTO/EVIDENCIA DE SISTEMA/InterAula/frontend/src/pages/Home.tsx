@@ -161,8 +161,8 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link to="/login" className="ia-landing-btn-login">
-                  Iniciar sesión
+                <Link to="/login" className="ia-landing-btn-login" aria-label="Iniciar sesión">
+                  <span className="ia-login-full">Iniciar sesión</span><span className="ia-login-short">Ingresar</span>
                 </Link>
                 <Link to="/register" className="ia-landing-btn-primary">
                   <span>Registrarse</span>
@@ -171,6 +171,17 @@ export default function Home() {
               </>
             )}
           </div>
+          <nav className="ia-landing-mobile-nav" aria-label="Secciones de presentación">
+            <select aria-label="Ir a una sección" defaultValue="" onChange={(event) => { if (event.target.value) document.getElementById(event.target.value)?.scrollIntoView(); }}>
+              <option value="" disabled>Explorar InterAula</option>
+              <option value="proposito">Propósito</option>
+              <option value="como-funciona">Cómo funciona</option>
+              <option value="espacio-aprendizaje">Mi espacio de aprendizaje</option>
+              <option value="tutorias">Tutorías</option>
+              <option value="inclusion">Inclusión</option>
+              <option value="proyectos">Proyectos</option>
+            </select>
+          </nav>
         </div>
       </header>
 
@@ -194,10 +205,9 @@ export default function Home() {
               </h1>
 
               <p className="ia-landing-desc">
-                InterAula es una plataforma académica colaborativa e inclusiva donde los estudiantes
-                pueden organizar su aprendizaje según su propio ritmo, recibir explicaciones adaptadas a
-                su forma de comprender, solicitar y ofrecer tutorías entre pares, compartir recursos de
-                estudio y participar en proyectos interdisciplinarios.
+                Organiza tu estudio a tu ritmo, recibe explicaciones adaptadas y encuentra apoyo en
+                tutorías entre estudiantes. Comparte apuntes y participa en proyectos con personas de
+                distintas carreras.
               </p>
 
               <div className="ia-landing-hero-actions">

@@ -7,8 +7,11 @@ import {
 } from '../lib/persistentStore.js';
 import { BUSINESS_RULES } from '../constants/businessRules.js';
 import type { AuthenticatedUser } from '../types/index.js';
+import { sanitizeNoteHtml, sanitizeNoteJson } from '../lib/html.js';
+import { env } from '../config/env.js';
+import { remoteNotesService } from './remote/notes.service.js';
 
-function validateUploadedFileMeta(body: {
+export function validateUploadedFileMeta(body: {
   source_type?: 'editor' | 'upload';
   file_name?: string | null;
   file_size?: number;
@@ -37,7 +40,7 @@ function validateUploadedFileMeta(body: {
   }
 }
 
-function mapNoteToDto(item: any) {
+export function mapNoteToDto(item: any) {
   const authorProfile = item.author;
   const authorName =
     item.author_name ||
@@ -58,9 +61,9 @@ function mapNoteToDto(item: any) {
     folder: item.folder || 'General',
     title: item.title,
     summary: item.summary || '',
-    contentHtml: item.content_html || '',
+    contentHtml: sanitizeNoteHtml(item.content_html || ''),
     contentMarkdown: item.content_markdown || '',
-    contentJson: item.content_json || {},
+    contentJson: sanitizeNoteJson(item.content_json || {}),
     sourceType: item.source_type || 'editor',
     fileUrl: item.file_url || null,
     fileName: item.file_name || null,
@@ -88,9 +91,10 @@ export interface NotesQueryOptions {
   authorId?: string;
   sort?: 'recent' | 'popular' | 'title';
   currentUserId?: string;
+  token?: string;
 }
 
-export const notesBackendService = {
+const localNotesService = {
   /**
    * Obtener apuntes accesibles (públicos, compartidos si hay sesión, y propios)
    */
@@ -191,17 +195,18 @@ export const notesBackendService = {
   /**
    * Obtener únicamente los apuntes y borradores del usuario autenticado
    */
-  async getMyNotes(user: AuthenticatedUser) {
+  async getMyNotes(user: AuthenticatedUser, token?: string) {
     return this.getNotes({
       authorId: user.id,
       currentUserId: user.id,
+      token,
     });
   },
 
   /**
    * Obtener un apunte por ID verificando permisos de visibilidad
    */
-  async getNoteById(noteId: string, currentUserId?: string) {
+  async getNoteById(noteId: string, currentUserId?: string, _token?: string) {
     const store = persistentStore.read();
     const localNote = store.academic_notes.find((n) => n.id === noteId);
 
@@ -257,9 +262,9 @@ export const notesBackendService = {
       folder: body.folder || 'General',
       title: body.title.trim(),
       summary: (body.summary || '').trim(),
-      content_html: body.content_html || '',
+      content_html: sanitizeNoteHtml(body.content_html || ''),
       content_markdown: body.content_markdown || '',
-      content_json: body.content_json || {},
+      content_json: sanitizeNoteJson(body.content_json || {}),
       source_type: body.source_type || 'editor',
       file_url: body.file_url || null,
       file_name: body.file_name || null,
@@ -394,7 +399,9 @@ export const notesBackendService = {
 
     for (const key of allowedFields) {
       if (body[key] !== undefined) {
-        updatePayload[key] = typeof body[key] === 'string' && key === 'title' ? body[key].trim() : body[key];
+        updatePayload[key] = key === 'content_html' ? sanitizeNoteHtml(body[key])
+          : key === 'content_json' ? sanitizeNoteJson(body[key])
+          : typeof body[key] === 'string' && key === 'title' ? body[key].trim() : body[key];
       }
     }
 
@@ -460,7 +467,7 @@ export const notesBackendService = {
   /**
    * Registrar descarga real de un apunte
    */
-  async registerDownload(noteId: string) {
+  async registerDownload(noteId: string, _currentUserId?: string, _token?: string) {
     const store = persistentStore.read();
     const localNote = store.academic_notes.find((n) => n.id === noteId);
 
@@ -491,3 +498,5 @@ export const notesBackendService = {
   },
 };
 
+
+export const notesBackendService = env.persistenceMode === 'local' ? localNotesService : remoteNotesService;

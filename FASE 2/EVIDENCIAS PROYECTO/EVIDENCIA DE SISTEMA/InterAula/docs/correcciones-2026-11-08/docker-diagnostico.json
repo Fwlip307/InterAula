@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-08",
+  "initialIssue": "dockerDesktopLinuxEngine named pipe unavailable",
+  "action": "Started installed Docker Desktop in background",
+  "engineReady": true,
+  "engineVersion": "29.8.2",
+  "wslVersion": "2.6.3.0",
+  "composeConfigValid": true,
+  "applicationContainersStarted": false,
+  "buildFailure": "failed to copy: local error: tls: bad record MAC",
+  "failedImage": "node:22-alpine",
+  "downloadChecks": [
+    { "source": "Docker Hub via Compose", "result": "TLS bad record MAC" },
+    { "source": "Docker Hub via docker pull", "result": "TLS bad record MAC" },
+    { "source": "Google Docker Hub cache via docker pull", "result": "TLS bad record MAC" },
+    { "source": "Docker Hub layer via Node on Windows", "result": "Connection terminated: UND_ERR_SOCKET" },
+    { "source": "Docker Hub after confirming WARP disconnected", "result": "TLS bad record MAC" },
+    { "source": "Docker Hub after user confirmed VPN off", "result": "TLS bad record MAC" },
+    { "source": "Docker Hub after restarting Docker Desktop with VPN off", "result": "TLS bad record MAC" }
+  ],
+  "vpnAndProxyCheck": {
+    "detectedClient": "Cloudflare WARP",
+    "clientStatus": "Disconnected",
+    "windowsManualProxyEnabled": false,
+    "windowsAutoConfigProxyEnabled": false,
+    "winHttpProxyConfigured": false,
+    "proxyEnvironmentVariablesConfigured": false,
+    "otherKnownVpnOrProxyProcessesDetected": false,
+    "dockerInternalProxyConfigured": true,
+    "vpnOrProxyConfigurationChanged": false
+  },
+  "networkRootCauseConfirmed": false,
+  "dockerDesktopRestartedAfterVpnOff": true,
+  "nextDiagnosticStep": "Repeat download from a different network connection",
+  "globalDockerConfigurationChanged": false,
+  "tlsVerificationDisabled": false,
+  "localBackendRestored": true,
+  "databaseMigrationsApplied": false
+}

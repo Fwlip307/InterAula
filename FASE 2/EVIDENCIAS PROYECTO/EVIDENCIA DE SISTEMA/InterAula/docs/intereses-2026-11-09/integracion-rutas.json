@@ -1,0 +1,14 @@
+{
+  "scope": "Actual AppRouter and pages with synthetic identity and service responses; no real account or remote mutations.",
+  "profileTab": true,
+  "dashboardLink": true,
+  "noteReader": true,
+  "forumThread": true,
+  "projectWorkspace": true,
+  "workshopTabAndFocus": true,
+  "mobile": {
+    "width": 390,
+    "documentWidth": 390
+  },
+  "exceptions": []
+}

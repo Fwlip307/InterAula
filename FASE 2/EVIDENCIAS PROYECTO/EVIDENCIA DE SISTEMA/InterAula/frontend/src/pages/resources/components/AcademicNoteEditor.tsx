@@ -1,3 +1,4 @@
+import { safeNoteHtml, escapeHtml } from '../../../utils/safeHtml';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   notesService,
@@ -278,11 +279,11 @@ export default function AcademicNoteEditor({
     if (documentFormat === 'presentation') {
       const targetSlide = slides[activeSlideIdx] || slides[0];
       if (targetSlide && editorRef.current.innerHTML !== targetSlide.htmlContent) {
-        editorRef.current.innerHTML = targetSlide.htmlContent;
+        editorRef.current.innerHTML = safeNoteHtml(targetSlide.htmlContent);
       }
     } else {
       if (editorRef.current.innerHTML !== contentHtml) {
-        editorRef.current.innerHTML = contentHtml;
+        editorRef.current.innerHTML = safeNoteHtml(contentHtml);
       }
     }
   }, [editorMode, documentFormat, activeSlideIdx]);
@@ -637,7 +638,7 @@ function resolverPasoAPaso(entrada) {
     if (editorMode !== 'edit') setEditorMode('edit');
     if (editorRef.current) {
       editorRef.current.focus();
-      document.execCommand('insertHTML', false, snippet);
+      document.execCommand('insertHTML', false, safeNoteHtml(snippet));
       syncEditorHtml();
       markDirty();
     }
@@ -795,9 +796,9 @@ function ejemplo() {
           if (imported.contentJson.orientation) setOrientation(imported.contentJson.orientation);
           if (Array.isArray(imported.contentJson.slides)) setSlides(imported.contentJson.slides);
         }
-        const nextHtml = imported.contentHtml || `<p>${imported.contentMarkdown || ''}</p>`;
+        const nextHtml = safeNoteHtml(imported.contentHtml || `<p>${escapeHtml(imported.contentMarkdown || '')}</p>`);
         setContentHtml(nextHtml);
-        if (editorRef.current) editorRef.current.innerHTML = nextHtml;
+        if (editorRef.current) editorRef.current.innerHTML = safeNoteHtml(nextHtml);
         markDirty();
       } else {
         if (!title.trim()) {
@@ -808,7 +809,7 @@ function ejemplo() {
           .map((block) => `<p>${block.replace(/\r?\n/g, '<br/>')}</p>`)
           .join('');
         setContentHtml(paragraphs);
-        if (editorRef.current) editorRef.current.innerHTML = paragraphs;
+        if (editorRef.current) editorRef.current.innerHTML = safeNoteHtml(paragraphs);
         markDirty();
       }
     } catch (err: any) {
@@ -947,7 +948,7 @@ function ejemplo() {
                 justifyContent: 'center',
               }}
               dangerouslySetInnerHTML={{
-                __html: slides[activeSlideIdx]?.htmlContent || '',
+                __html: safeNoteHtml(slides[activeSlideIdx]?.htmlContent || ''),
               }}
             />
           </div>
@@ -2163,6 +2164,13 @@ function ejemplo() {
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
+              onPaste={(event) => {
+                const html = event.clipboardData.getData('text/html');
+                if (html) {
+                  event.preventDefault();
+                  insertHtmlSnippet(html);
+                }
+              }}
               onInput={() => {
                 syncEditorHtml();
                 markDirty();
@@ -2222,9 +2230,9 @@ function ejemplo() {
               <div
                 dangerouslySetInnerHTML={{
                   __html:
-                    documentFormat === 'presentation'
+                    safeNoteHtml(documentFormat === 'presentation'
                       ? serializeSlidesToHtml(slides)
-                      : contentHtml,
+                      : contentHtml),
                 }}
               />
             </div>

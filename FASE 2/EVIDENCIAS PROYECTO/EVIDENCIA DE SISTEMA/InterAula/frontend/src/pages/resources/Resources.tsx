@@ -1,5 +1,7 @@
+import { safeNoteHtml, escapeHtml } from '../../utils/safeHtml';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
 import { profileService } from '../../services/profile.service';
 import {
@@ -50,8 +52,11 @@ function formatFileSize(bytes?: number): string {
 
 export default function Resources() {
   const { user } = useAuth();
+  const [recommendationParams] = useSearchParams();
+  const recommendedNoteId = recommendationParams.get('note');
 
-  const [activeTab, setActiveTab] = useState<'community' | 'mine' | 'drafts'>('community');
+  const [activeTab,setActiveTab]=useModuleTab(['community','mine','drafts'] as const,'community');
+  const navigationLocation=useLocation();
   const [notes, setNotes] = useState<AcademicNote[]>([]);
   const [myNotes, setMyNotes] = useState<AcademicNote[]>([]);
   const [subjectsList, setSubjectsList] = useState<string[]>(DEFAULT_SUBJECTS);
@@ -139,6 +144,21 @@ export default function Resources() {
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
+
+  useEffect(() => {
+    if (!recommendedNoteId) return;
+    let live = true;
+    notesService.getNoteById(recommendedNoteId).then(note => {
+      if (!live) return;
+      if (!note) { setErrorMsg('Este apunte ya no está disponible.'); return; }
+      setSelectedNote(note); setViewMode('reader');
+    }).catch(() => { if (live) setErrorMsg('No se pudo abrir el apunte sugerido. Puede haber cambiado su disponibilidad.'); });
+    return () => { live = false; };
+  }, [recommendedNoteId]);
+
+  useEffect(()=>{
+    if(!recommendedNoteId){setViewMode('library');setSelectedNote(null);}
+  },[navigationLocation.key,recommendedNoteId]);
 
   const handleOpenNewEditor = () => {
     setSelectedNote(null);
@@ -714,9 +734,8 @@ export default function Resources() {
               marginBottom: '20px',
             }}
             dangerouslySetInnerHTML={{
-              __html:
-                selectedNote.contentHtml ||
-                `<p>${(selectedNote.contentMarkdown || selectedNote.summary || '').replace(/\n/g, '<br/>')}</p>`,
+              __html: safeNoteHtml(selectedNote.contentHtml ||
+                `<p>${escapeHtml(selectedNote.contentMarkdown || selectedNote.summary || '').replace(/\n/g, '<br/>')}</p>`),
             }}
           />
 

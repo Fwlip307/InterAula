@@ -9,6 +9,7 @@ export interface AppConfig {
   supabaseAnonKey: string;
   supabaseServiceRoleKey?: string;
   geminiApiKey?: string;
+  persistenceMode: 'supabase' | 'local';
 }
 
 function loadConfig(): AppConfig {
@@ -25,6 +26,10 @@ function loadConfig(): AppConfig {
 
   const corsRaw = process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000';
   const corsOrigins = corsRaw.split(',').map((origin) => origin.trim()).filter(Boolean);
+  const persistenceMode = process.env.NODE_ENV === 'test' ? 'local' : 'supabase';
+  if (process.env.PERSISTENCE_MODE === 'local' && process.env.NODE_ENV !== 'test') {
+    throw new Error('La persistencia local está reservada para pruebas aisladas.');
+  }
 
   return {
     port: parseInt(process.env.PORT || '3001', 10),
@@ -34,6 +39,7 @@ function loadConfig(): AppConfig {
     supabaseAnonKey,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || undefined,
     geminiApiKey: process.env.GEMINI_API_KEY || undefined,
+    persistenceMode,
   };
 }
 

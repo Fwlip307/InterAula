@@ -1,0 +1,60 @@
+{
+  "scope": "Public pages live; private components use synthetic responses. No real mutations.",
+  "mobile": {
+    "headerHeight": 139.1875,
+    "width": 390,
+    "documentWidth": 390,
+    "missingSections": []
+  },
+  "html": {
+    "executed": false,
+    "unsafeAttributes": 0,
+    "alignment": "center",
+    "position": ""
+  },
+  "assessment": {
+    "calls": [
+      {
+        "operation": "start",
+        "id": "subject-fixture"
+      },
+      {
+        "operation": "start",
+        "id": "subject-fixture"
+      },
+      {
+        "operation": "answer",
+        "id": "attempt-fixture",
+        "questionId": "q1",
+        "answer": "a"
+      },
+      {
+        "operation": "answer",
+        "id": "attempt-fixture",
+        "questionId": "q2",
+        "answer": "respuesta"
+      },
+      {
+        "operation": "grant",
+        "payload": {
+          "attempt_id": "attempt-fixture"
+        }
+      }
+    ],
+    "certified": {
+      "id": "subject-fixture",
+      "name": "Programación de Algoritmos",
+      "level": "basic"
+    },
+    "closed": true
+  },
+  "endorsement": {
+    "payload": {
+      "subject_id": "subject-fixture",
+      "professor_name": "Docente Prueba",
+      "professor_email": "docente@universidad.test",
+      "message": ""
+    },
+    "text": "Solicitud de Respaldo Docente\nRevisión por un docente registrado en InterAula\nSolicitud registrada\n\nRegistramos una solicitud en el panel del docente Docente Prueba (docente@universidad.test).\n\nMateria: Programación de Algoritmos\nInstitución: Universidad de prueba\nEstado: Pendiente de confirmación docente\nEntendido"
+  }
+}

@@ -2,6 +2,16 @@
 
 InterAula es una plataforma integral de tutorías universitarias, aprendizaje colaborativo neuroinclusivo (DUA) y acreditación docente entre pares. El sistema opera bajo una arquitectura desacoplada de **Frontend** (React 19 + TypeScript + Vite) y **Backend REST propio** (Node.js + Express + TypeScript + Zod), respaldada por servicios cloud en **PostgreSQL (Supabase)** para persistencia y almacenamiento de archivos privados.
 
+**Estado del 7 de noviembre de 2026:** las correcciones están implementadas y probadas localmente. Su activación remota requiere verificar el historial de la base, aplicar las migraciones 016 y 017 y configurar la clave administrativa exclusivamente en el backend. Las migraciones no se han aplicado al proyecto remoto durante esta revisión. Consulta [correcciones, activación y recomendaciones por intereses](docs/CORRECCIONES_Y_RECOMENDACIONES.md) antes de desplegar.
+
+**9 de noviembre:** implementados **Perfil → Mis intereses** y **Para ti** en el portal, con selección por cuenta, recomendaciones explicadas, ocultar/deshacer y personalización opcional. Requiere la migración 018; el clustering queda para la siguiente fase. [Uso, activación y validación](docs/INTERESES_Y_PARA_TI.md).
+
+**Activación confirmada:** el usuario ejecutó las migraciones 016–018 mediante el archivo único. La API devuelve 22 temas y permite consultar talleres. Los contenedores están saludables; abrir http://localhost, iniciar sesión y elegir temas en **Perfil → Mis intereses**. La configuración privada de acreditación automática sigue siendo un paso separado.
+
+**Datos de demostración:** [carga SQL, retiro y matriz de pruebas para los 22 intereses](docs/PRUEBAS_RECOMENDACIONES.md). Los archivos DEMO son opcionales y no se ejecutan automáticamente con Docker ni con las migraciones.
+
+**Buscador global:** la barra superior permite encontrar módulos y opciones con **Ctrl + K**, incluyendo «Quiero aprender», «Borradores» y «Mis postulaciones». [Uso y alcance](docs/BUSCADOR_GLOBAL.md).
+
 ---
 
 ## 🏛️ 1. Arquitectura del Sistema
@@ -13,7 +23,7 @@ graph TD
     SupaAuth["🔑 Supabase Auth<br/>(JWT / PKCE Sessions)"]
     SupaDB[("🗄️ PostgreSQL Cloud<br/>(Supabase + RLS)")]
     SupaStorage["📦 Supabase Storage<br/>(Private Buckets)"]
-    AIModel["🧠 Motor de Evaluación IA<br/>(Local Heurístico / Gemini)"]
+    AIModel["🧠 Motor de Evaluación IA<br/>(Banco validado / Gemini opcional)"]
 
     Client -->|1. Inicia sesión| SupaAuth
     SupaAuth -->|2. Retorna Session Token| Client
@@ -44,7 +54,7 @@ InterAula/
 │   ├── src/
 │   │   ├── components/            # Componentes comunes, layout y sistema de iconos SVG
 │   │   ├── constants/             # Endpoints REST y reglas de negocio centralizadas
-│   │   ├── context/               # AuthContext y CalmModeContext (Accesibilidad WCAG 2.2 AA)
+│   │   ├── context/               # AuthContext y CalmModeContext (ajustes de accesibilidad)
 │   │   ├── lib/                   # Cliente HTTP (apiClient.ts) y cliente Supabase
 │   │   ├── pages/                 # Vistas (Home, LearningSpace, Dashboard, Tutoring, Projects, Forum, etc.)
 │   │   ├── router/                # Enrutamiento SPA con carga diferida (AppRouter.tsx)
@@ -60,7 +70,7 @@ InterAula/
 │   ├── src/
 │   │   ├── config/                # Carga y validación de variables de entorno
 │   │   ├── controllers/           # Controladores HTTP (incluye learningSpace.controller.ts)
-│   │   ├── lib/                   # Clientes Supabase y persistentStore resiliente
+│   │   ├── lib/                   # Clientes Supabase; persistentStore solo para pruebas
 │   │   ├── middlewares/           # Middlewares (requireAuth, validateRequest, errorHandler)
 │   │   ├── routes/                # Enrutadores modulares (/learning-space, /profiles, /tutoring, /projects, etc.)
 │   │   ├── schemas/               # Esquemas de validación estricta con Zod
@@ -72,9 +82,9 @@ InterAula/
 │   ├── package.json
 │   └── tsconfig.json
 ├── supabase/
-│   └── migrations/                # Migraciones SQL idempotentes y políticas RLS (001 a 015)
+│   └── migrations/                # Historial SQL y políticas RLS (001 a 018; revisar antes de aplicar)
 ├── docker-compose.yml             # Orquestación de contenedores frontend y backend
-├── docker-start.bat               # Script de inicio rápido en Docker (WSL2)
+├── docker-start.bat               # Inicio con Docker Compose desde la ubicación del proyecto
 ├── docker-stop.bat                # Script de detención limpia
 ├── .env.example                   # Plantilla de variables de entorno
 └── package.json                   # Scripts orquestadores en la raíz
@@ -85,7 +95,7 @@ InterAula/
 ## ⚙️ 3. Requisitos y Configuración de Entorno
 
 ### Requisitos Previos
-- **Node.js**: v20.x o superior (probado en Node.js v24.x)
+- **Node.js**: v20.x o superior (comprobado localmente con v22.17.0)
 - **npm**: v10.x o superior
 
 ### 1. Variables de Entorno del Frontend (`.env` en la raíz)
@@ -116,7 +126,7 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_ANON_KEY=tu-clave-anonima-publica
-SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key-opcional-solo-servidor
+SUPABASE_SERVICE_ROLE_KEY=
 
 # Opcional para habilitar IA de Google Gemini en el servidor
 GEMINI_API_KEY=
@@ -127,6 +137,8 @@ GEMINI_API_KEY=
 ## 🚀 4. Ejecución en Entorno Local
 
 Puedes iniciar los servicios de forma individual o conjunta:
+
+Instala primero las dependencias con `npm ci --prefix frontend` y `npm ci --prefix backend`. La acreditación automática necesita `SUPABASE_SERVICE_ROLE_KEY` solo en `backend/.env`; no se usa la clave pública como sustituto administrativo. Sin Gemini, las respuestas abiertas se presentan como no evaluadas. El banco determinista solo habilita asignaturas con al menos cinco preguntas y acredita el nivel básico.
 
 ### Iniciar el Backend REST
 ```bash
@@ -189,7 +201,7 @@ Todos los endpoints tienen el prefijo `/api`.
 | `DELETE` | `/offered-subjects/:subjectId`| Requerida | Elimina materia ofrecida por el usuario autenticado. |
 | `GET` | `/:userId/needed-subjects` | Pública | Materias que un estudiante requiere reforzar. |
 | `POST` | `/needed-subjects` | Requerida | Registra materia de interés formativo. |
-| `DELETE` | `/needed-subjects/:id` | Requerida | Elimina materia requerida del usuario autenticado. |
+| `DELETE` | `/needed-subjects/:id` | Requerida | El parámetro es el UUID de la asignatura; elimina la relación del usuario autenticado. |
 
 ### Tutorías Individuales (`/tutoring`)
 | Método | Ruta | Autenticación | Permisos / Reglas |
@@ -220,7 +232,10 @@ Todos los endpoints tienen el prefijo `/api`.
 | `GET` | `/my-requests` | Requerida | Solicitudes de verificación del postulante autenticado. |
 | `GET` | `/for-validator` | Requerida | Panel docente (exclusivo para validador académico o admin). |
 | `POST` | `/requests` | Requerida | Crear solicitud formal de acreditación técnica en una asignatura. |
-| `POST` | `/bot-grant` | Requerida | Concesión automatizada por bot. **Exige umbral de seguridad >= 70%**. |
+| `POST` | `/attempts` | Requerida | Inicia un intento; conserva las respuestas correctas en el servidor. |
+| `POST` | `/attempts/:id/answers` | Requerida | Procesa una respuesta del intento propio y calcula el resultado. |
+| `POST` | `/bot-grant` | Requerida | Recibe únicamente `attempt_id`; confirma un intento aprobado con al menos 70%, nivel básico. |
+| `POST` | `/endorsements` | Requerida | Registra una solicitud en el panel de un validador registrado; no envía correos. |
 | `POST` | `/requests/:id/practical-exercise` | Requerida | Asignar caso práctico (solo docente validador). |
 | `POST` | `/requests/:id/practical-submission`| Requerida | Entrega de solución técnica y defensa conceptual del postulante. |
 | `POST` | `/requests/:id/review` | Requerida | Dictamen resolutivo (`approved`, `rejected`, `requires_reevaluation`). **Prohíbe auto-evaluación docente**. |
@@ -232,7 +247,7 @@ Todos los endpoints tienen el prefijo `/api`.
 | :--- | :--- | :--- | :--- |
 | `GET` | `/posts` | Pública | Consultar publicaciones por categoría o término de búsqueda. |
 | `POST` | `/posts` | Requerida | Publicar consulta (asigna autor verificado por sesión). |
-| `POST` | `/posts/:id/upvote` | Opcional | Incrementar votos de utilidad de una pregunta. |
+| `POST` | `/posts/:id/upvote` | Requerida | Alternar el voto propio de utilidad mediante una operación transaccional. |
 | `PATCH`| `/posts/:id/solved` | Requerida | Marcar pregunta como resuelta (solo autor o moderador). |
 
 ### Proyectos Colaborativos (`/projects`)
@@ -284,14 +299,22 @@ Todos los endpoints tienen el prefijo `/api`.
    - **Variables de Entorno Centralizadas**: Puertos, URLs de backend y credenciales públicas se configuran en `.env` (tipadas en `src/config/env.ts` para frontend y `backend/src/config/env.ts` para backend). Claves privadas (como `GEMINI_API_KEY` o `SUPABASE_SERVICE_ROLE_KEY`) nunca se exponen al cliente.
    - **Endpoints Centralizados**: Catálogo único en `src/constants/apiEndpoints.ts` que elimina URLs repetidas y cadenas mágicas.
    - **Reglas de Negocio Centralizadas**: Módulo de dominio en `backend/src/constants/businessRules.ts` y `src/constants/businessRules.ts` (umbrales de aprobación >= 70%, capacidades mínimas/máximas de talleres, límites de duración y miembros de proyectos).
-   - **Roles y Permisos Basados en Base de Datos**: No se utilizan emails (`user.email === ...`) ni UUIDs estáticos para autorizar acciones. Toda verificación de roles (como tutor acreditado o validador académico) se comprueba formalmente en PostgreSQL mediante relaciones y funciones RPC seguras.
-   - **Aislamiento de Datos Ficticios**: No existen mocks, datos de muestra (`DEFAULT_SAMPLE_PROJECTS`) ni UUIDs inventados dentro del flujo de producción. Los fixtures y pruebas se mantienen estrictamente aislados en la suite de tests.
+   - **Roles y Permisos**: Las operaciones corregidas verifican identidad, propiedad y roles registrados. Las migraciones antiguas 009 y 010 contienen eliminación de tablas y cambios sobre cuentas concretas; no deben repetirse sobre una base existente sin revisar su historial.
+   - **Persistencia de Producción**: Los módulos corregidos usan PostgreSQL y comunican los errores de guardado. El respaldo JSON está limitado a `NODE_ENV=test`; no importa ni sincroniza automáticamente archivos locales anteriores.
+
+Estas medidas requieren las políticas y funciones SQL correspondientes instaladas. Las cuotas de API viven en memoria por proceso; varias réplicas necesitan un contador compartido. Las pruebas con PostgreSQL embebido no sustituyen la validación con cuentas reales y Storage en el entorno de despliegue.
 
 ---
 
-## 🐳 8. Preparación para Dockerización (Siguiente Fase)
+## 🐳 8. Docker Compose
 
-El proyecto se encuentra desacoplado y preparado para su posterior empaquetado en contenedores:
+Con Docker Desktop/Engine y Compose disponibles, `docker-start.bat` utiliza la ubicación del proyecto y `backend/.env`. `docker-stop.bat` detiene los contenedores sin eliminar volúmenes. El inicio comprueba que Docker esté instalado y que su motor responda; si está apagado, indica abrir Docker Desktop y esperar a que aparezca `Engine running`.
+
+El 8 de noviembre la descarga de imágenes falló con `tls: bad record MAC`. **El 9 de noviembre la descarga, construcción y ejecución se completaron correctamente**: frontend y backend están `healthy` y la aplicación responde en http://localhost. No se modificó la configuración TLS de Docker ni de Windows. El script abre Docker Desktop en segundo plano y espera hasta dos minutos si el motor está apagado.
+
+Docker utiliza Supabase externo. Para activar las funciones nuevas, ejecutar una vez [ACTIVAR_INTERESES.sql](supabase/ACTIVAR_INTERESES.sql) en el SQL Editor del proyecto; reúne las migraciones 016–018. Mientras falte esa activación, la aplicación indica que las sugerencias todavía no están habilitadas.
+
+Configuración incluida:
 - El backend expone configuración completa por variables de entorno y maneja apagado elegante (*graceful shutdown*).
 - Los artefactos de compilación se generan en `dist/` tanto para el frontend como para el backend.
 - La separación de puertos (`5173` para Frontend y `3001` para Backend) permite orquestarlos mediante un archivo `docker-compose.yml` con red interna y proxy inverso Nginx.

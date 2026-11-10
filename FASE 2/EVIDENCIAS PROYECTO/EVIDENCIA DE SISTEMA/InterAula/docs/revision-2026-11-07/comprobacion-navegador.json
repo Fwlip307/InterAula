@@ -1,0 +1,446 @@
+{
+  "pages": [
+    {
+      "name": "inicio-escritorio",
+      "url": "http://localhost:5173/",
+      "title": "interaula",
+      "h1": [
+        "InterAula: Aprender juntos, a nuestra manera"
+      ],
+      "headings": [
+        "No todas las personas aprenden al mismo ritmo ni de la misma forma",
+        "Estudio tradicional aislado",
+        "La propuesta de InterAula",
+        "Cómo funciona InterAula",
+        "Configuras cómo prefieres aprender",
+        "Ingresas a Mi espacio de aprendizaje",
+        "Avanzas con rutas divididas en pasos manejables",
+        "Cambias el modo de explicación cuando lo necesites",
+        "Practicas, evalúas tu avance y refuerzas sin presión",
+        "Solicitas u ofreces tutorías colaborativas entre pares",
+        "Colaboras en proyectos, apuntes y foro académico",
+        "Mi espacio de aprendizaje: de una materia compleja a un camino claro",
+        "Meta: Comprender estructuras iterativas y arreglos para el certamen",
+        "Tutorías colaborativas: pide apoyo en lo difícil y enseña lo que dominas",
+        "Asignaturas activas en el catálogo",
+        "Accesibilidad real integrada en toda la experiencia",
+        "Modo Calma y control visual",
+        "Organización por subtareas y pausas",
+        "Práctica sin límite de tiempo",
+        "Privacidad de tus preferencias",
+        "Hub de Proyectos Interdisciplinarios",
+        "Comienza hoy en InterAula: Aprender juntos, a nuestra manera"
+      ],
+      "viewport": 1440,
+      "documentWidth": 1425,
+      "brokenImages": [],
+      "unlabeledButtons": 0,
+      "inputs": [],
+      "deadAnchors": [],
+      "links": [
+        {
+          "text": "InterAula",
+          "href": "/"
+        },
+        {
+          "text": "Propósito",
+          "href": "#proposito"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Mi espacio de aprendizaje",
+          "href": "#espacio-aprendizaje"
+        },
+        {
+          "text": "Tutorías",
+          "href": "#tutorias"
+        },
+        {
+          "text": "Inclusión",
+          "href": "#inclusion"
+        },
+        {
+          "text": "Hub de Proyectos",
+          "href": "#proyectos"
+        },
+        {
+          "text": "Iniciar sesión",
+          "href": "/login"
+        },
+        {
+          "text": "Registrarse",
+          "href": "/register"
+        },
+        {
+          "text": "Crear mi espacio de aprendizaje",
+          "href": "/register"
+        },
+        {
+          "text": "Iniciar sesión",
+          "href": "/login"
+        },
+        {
+          "text": "Probar Mi espacio de aprendizaje",
+          "href": "/register"
+        },
+        {
+          "text": "Explorar Hub de Proyectos",
+          "href": "/login?redirect=/projects"
+        },
+        {
+          "text": "Crear o explorar proyectos",
+          "href": "/register"
+        },
+        {
+          "text": "Crear cuenta gratuita",
+          "href": "/register"
+        },
+        {
+          "text": "Iniciar sesión",
+          "href": "/login"
+        },
+        {
+          "text": "Mi espacio de aprendizaje",
+          "href": "/login"
+        },
+        {
+          "text": "Tutorías colaborativas",
+          "href": "/tutoring"
+        },
+        {
+          "text": "Hub de Proyectos",
+          "href": "/projects"
+        },
+        {
+          "text": "Biblioteca de Apuntes",
+          "href": "/resources"
+        }
+      ],
+      "text": "InterAula\nPropósito\nCómo funciona\nMi espacio de aprendizaje\nTutorías\nInclusión\nHub de Proyectos\nModo\nCLARO\nIniciar sesión\nRegistrarse\nPlataforma académica colaborativa, inclusiva y adaptable\nInterAula: Aprender juntos, a nuestra manera\n\nInterAula es una plataforma académica colaborativa e inclusiva donde los estudiantes pueden organizar su aprendizaje según su propio ritmo, recibir explicaciones adaptadas a su forma de comprender, solicitar y ofrecer tutorías entre pares, compartir recursos de estudio y participar en proyectos interdisciplinarios.\n\nCrear mi espacio de aprendizaje\nIniciar sesión\nRutas paso a paso y 6 modos de explicación\nTutorías colaborativas entre pares\nHub de Proyectos Interdisciplinarios\nAprendizaje adaptado a tu ritmo\nExplicaciones sencillas, paso a paso, visuales o con casos reales\nInclusivo · DUA\nComunidad universitaria colaborativa e interdisciplinaria\nFotografía: Brooke Cagle / Unsplash\nEL DESAFÍO UNIVERSITARIO\nNo todas las personas aprenden al mismo ritmo ni de la misma forma\n\nEn la educación superior es frecuente enfrentarse a unidades extensas, explicaciones rápidas o materiales que asumen una única manera de estudiar. Cuando un tema no queda claro a la primera, muchos estudiantes experimentan sobrecarga, bloqueo al organizar sus tareas o dificultad para encontrar apoyo oportuno.\n\nInterAula nace para cambiar esa experiencia: combina un entorno personalizable que divide el estudio en etapas manejables con una red humana de compañeros dispuestos a explicar, compartir apuntes y construir proyectos en comunidad.\n\nOrganización paso a paso y planificación de estudio sin sobrecarga\nFoto: Green Chameleon / Unsplash\nEstudio tradicional aislado\nContenidos extensos presentados de una sola forma rígida\nBloqueo al no saber por qué paso empezar una asignatura\nEvaluaciones con presión de tiempo que dificultan concentrarse\nFalta de conexión con compañeros de otras especialidades\nLa propuesta de InterAula\nExplicaciones adaptables: sencilla, paso a paso, visual o práctica\nRutas de aprendizaje y tareas desglosadas a tu propio ritmo\nTutorías entre pares informadas con tus preferencias de estudio\nProyectos interdisciplinarios para aplicar lo aprendido en equipo\nRECORRIDO DEL ESTUDIANTE\nCómo funciona InterAula\n\nUn flujo continuo que conecta tu organización personal con el apoyo colaborativo de toda la comunidad.\n\n01\nConfiguras cómo prefieres aprender\n\nCreas tu perfil académico y defines de forma privada si prefieres explicaciones paso a paso, ejemplos prácticos, apoyo visual o sesiones tranquilas.\n\n02\nIngresas a Mi espacio de aprendizaje\n\nAccedes a tu entorno central donde se reúnen tus asignaturas a reforzar, objetivos del semestre, rutas activas y próximas actividades.\n\n03\nAvanzas con rutas divididas en pasos manejables\n\nTransformas cualquier asignatura o evaluación compleja en etapas breves, ordenadas y fáciles de retomar sin sobrecarga.\n\n04\nCambias el modo de explicación cuando lo necesites\n\nAlternas entre explicación sencilla, paso a paso, con ejemplos prácticos, esquema visual o profundización técnica sin perder tu progreso.\n\n05\nPracticas, evalúas tu avance y refuerzas sin presión\n\nCompruebas lo aprendido sin cronómetros punitivos, identificando qué temas ya están consolidados y cuáles conviene repasar.\n\n06\nSolicitas u ofreces tutorías colaborativas entre pares\n\nPides apoyo en las materias que te cuestan compartiendo tu estilo de estudio, o enseñas aquellas asignaturas que ya dominas.\n\n07\nColaboras en proyectos, apuntes y foro académico\n\nIntegras tus conocimientos en el Hub de Proyectos Interdisciplinarios, la Biblioteca de Apuntes y el Foro estudiantil.\n\nEL CORAZÓN DE INTERAULA\nMi espacio de aprendizaje: de una materia compleja a un camino claro\n\nCada asignatura o meta académica se transforma en una secuencia estructurada de etapas pequeñas. En cada etapa puedes cambiar el modo en que recibes la explicación, practicar sin límite de tiempo y pedir apoyo directo a un tutor par.\n\nProbar Mi espacio de aprendizaje\nAsignatura: Programación de Algoritmos\nAvance de ruta: 50% (2 de 4 etapas)\nMeta: Comprender estructuras iterativas y arreglos para el certamen\nEtapa 1: Conceptos base e índices\nCompletada · Explicación sencilla + esquema visual\nEtapa 2: Recorrido paso a paso con ciclo for\nCompletada · Práctica guiada sin reloj\nEtapa 3: Búsqueda y filtrado en arreglos\nEn curso · Explora los modos de explicación a la derecha\nEtapa 4: Comprobación de comprensión o tutoría 1 a 1\nSiguiente paso · Conecta con un tutor si quedan dudas\nAprende a tu manera (Cambia el modo de explicación)\nSencilla\nPaso a paso\nCon ejemplos\nVisualmente\nSecuencia paso a paso\n1. Definimos el índice inicial en la posición 0 del arreglo.\n2. Comprobamos que el índice sea menor al largo total de elementos.\n3. Leemos el valor actual y avanzamos una posición en cada vuelta.\nAPOYO MUTUO ENTRE COMPAÑEROS\nTutorías colaborativas: pide apoyo en lo difícil y enseña lo que dominas\n\nEn InterAula nadie está encasillado en un único rol. Un mismo estudiante puede solicitar tutorías en las asignaturas que necesita reforzar y, al mismo tiempo, acreditarse como tutor par en las materias donde tiene fortaleza.\n\nComparte voluntariamente con tu tutor cómo te resulta más cómodo aprender antes de la sesión.\nDistingue entre Tutores Pares Verificados (con nota o evaluación técnica) y Apoyo Académico entre Pares.\nCoordina sesiones individuales 1 a 1 o inscríbete en talleres grupales de repaso.\nMentoría horizontal entre estudiantes de educación superior\nFoto: Priscilla Du Preez / Unsplash\nAsignaturas activas en el catálogo\n\nSelecciona una materia para explorar tutores disponibles, apuntes y rutas de estudio:\n\nCatálogo académico disponible al iniciar sesión.\nDISEÑO INCLUSIVO Y RESPETUOSO\nAccesibilidad real integrada en toda la experiencia\n\nDiseñado para reducir la fatiga visual y la sobrecarga cognitiva, sin solicitar diagnósticos clínicos ni exponer etiquetas en tu perfil público.\n\nModo Calma y control visual\n\nActiva en cualquier momento una interfaz sobria de bajo estímulo, ajusta el tamaño de texto, el espaciado de lectura, el contraste y reduce las animaciones.\n\nOrganización por subtareas y pausas\n\nDivide entregas grandes en pasos pequeños con intervalos de enfoque y descanso configurables a tu medida, que puedes pausar y retomar sin presión.\n\nPráctica sin límite de tiempo\n\nDesactiva los temporizadores en tus cuestionarios de práctica y utiliza pistas paso a paso para consolidar conceptos a tu propio ritmo.\n\nPrivacidad de tus prefer"
+    },
+    {
+      "name": "inicio-movil",
+      "url": "http://localhost:5173/",
+      "title": "interaula",
+      "h1": [
+        "InterAula: Aprender juntos, a nuestra manera"
+      ],
+      "headings": [
+        "No todas las personas aprenden al mismo ritmo ni de la misma forma",
+        "Estudio tradicional aislado",
+        "La propuesta de InterAula",
+        "Cómo funciona InterAula",
+        "Configuras cómo prefieres aprender",
+        "Ingresas a Mi espacio de aprendizaje",
+        "Avanzas con rutas divididas en pasos manejables",
+        "Cambias el modo de explicación cuando lo necesites",
+        "Practicas, evalúas tu avance y refuerzas sin presión",
+        "Solicitas u ofreces tutorías colaborativas entre pares",
+        "Colaboras en proyectos, apuntes y foro académico",
+        "Mi espacio de aprendizaje: de una materia compleja a un camino claro",
+        "Meta: Comprender estructuras iterativas y arreglos para el certamen",
+        "Tutorías colaborativas: pide apoyo en lo difícil y enseña lo que dominas",
+        "Asignaturas activas en el catálogo",
+        "Accesibilidad real integrada en toda la experiencia",
+        "Modo Calma y control visual",
+        "Organización por subtareas y pausas",
+        "Práctica sin límite de tiempo",
+        "Privacidad de tus preferencias",
+        "Hub de Proyectos Interdisciplinarios",
+        "Crear un juego de aprendizaje de realidad virtual",
+        "Comienza hoy en InterAula: Aprender juntos, a nuestra manera"
+      ],
+      "viewport": 390,
+      "documentWidth": 390,
+      "brokenImages": [],
+      "unlabeledButtons": 0,
+      "inputs": [],
+      "deadAnchors": [],
+      "links": [
+        {
+          "text": "InterAula",
+          "href": "/"
+        },
+        {
+          "text": "Propósito",
+          "href": "#proposito"
+        },
+        {
+          "text": "Cómo funciona",
+          "href": "#como-funciona"
+        },
+        {
+          "text": "Mi espacio de aprendizaje",
+          "href": "#espacio-aprendizaje"
+        },
+        {
+          "text": "Tutorías",
+          "href": "#tutorias"
+        },
+        {
+          "text": "Inclusión",
+          "href": "#inclusion"
+        },
+        {
+          "text": "Hub de Proyectos",
+          "href": "#proyectos"
+        },
+        {
+          "text": "Iniciar sesión",
+          "href": "/login"
+        },
+        {
+          "text": "Registrarse",
+          "href": "/register"
+        },
+        {
+          "text": "Crear mi espacio de aprendizaje",
+          "href": "/register"
+        },
+        {
+          "text": "Iniciar sesión",
+          "href": "/login"
+        },
+        {
+          "text": "Probar Mi espacio de aprendizaje",
+          "href": "/register"
+        },
+        {
+          "text": "Comunicación Oral y Escrita",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Redacción Académica y Profesional",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Comprensión Lectora",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Pensamiento Crítico",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Resolución de Problemas",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Trabajo en Equipo",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Liderazgo",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Ética Profesional",
+          "href": "/login?redirect=/tutoring"
+        },
+        {
+          "text": "Explorar Hub de Proyectos",
+          "href": "/login?redirect=/projects"
+        },
+        {
+          "text": "Ver roles y postular",
+          "href": "/login?redirect=/projects"
+        },
+        {
+          "text": "Crear cuenta gratuita",
+          "href": "/register"
+        },
+        {
+          "text": "Iniciar sesión",
+          "href": "/login"
+        },
+        {
+          "text": "Mi espacio de aprendizaje",
+          "href": "/login"
+        },
+        {
+          "text": "Tutorías colaborativas",
+          "href": "/tutoring"
+        },
+        {
+          "text": "Hub de Proyectos",
+          "href": "/projects"
+        },
+        {
+          "text": "Biblioteca de Apuntes",
+          "href": "/resources"
+        }
+      ],
+      "text": "InterAula\nModo\nCLARO\nIniciar sesión\nRegistrarse\nPlataforma académica colaborativa, inclusiva y adaptable\nInterAula: Aprender juntos, a nuestra manera\n\nInterAula es una plataforma académica colaborativa e inclusiva donde los estudiantes pueden organizar su aprendizaje según su propio ritmo, recibir explicaciones adaptadas a su forma de comprender, solicitar y ofrecer tutorías entre pares, compartir recursos de estudio y participar en proyectos interdisciplinarios.\n\nCrear mi espacio de aprendizaje\nIniciar sesión\nRutas paso a paso y 6 modos de explicación\nTutorías colaborativas entre pares\nHub de Proyectos Interdisciplinarios\nAprendizaje adaptado a tu ritmo\nExplicaciones sencillas, paso a paso, visuales o con casos reales\nInclusivo · DUA\nComunidad universitaria colaborativa e interdisciplinaria\nFotografía: Brooke Cagle / Unsplash\nEL DESAFÍO UNIVERSITARIO\nNo todas las personas aprenden al mismo ritmo ni de la misma forma\n\nEn la educación superior es frecuente enfrentarse a unidades extensas, explicaciones rápidas o materiales que asumen una única manera de estudiar. Cuando un tema no queda claro a la primera, muchos estudiantes experimentan sobrecarga, bloqueo al organizar sus tareas o dificultad para encontrar apoyo oportuno.\n\nInterAula nace para cambiar esa experiencia: combina un entorno personalizable que divide el estudio en etapas manejables con una red humana de compañeros dispuestos a explicar, compartir apuntes y construir proyectos en comunidad.\n\nOrganización paso a paso y planificación de estudio sin sobrecarga\nFoto: Green Chameleon / Unsplash\nEstudio tradicional aislado\nContenidos extensos presentados de una sola forma rígida\nBloqueo al no saber por qué paso empezar una asignatura\nEvaluaciones con presión de tiempo que dificultan concentrarse\nFalta de conexión con compañeros de otras especialidades\nLa propuesta de InterAula\nExplicaciones adaptables: sencilla, paso a paso, visual o práctica\nRutas de aprendizaje y tareas desglosadas a tu propio ritmo\nTutorías entre pares informadas con tus preferencias de estudio\nProyectos interdisciplinarios para aplicar lo aprendido en equipo\nRECORRIDO DEL ESTUDIANTE\nCómo funciona InterAula\n\nUn flujo continuo que conecta tu organización personal con el apoyo colaborativo de toda la comunidad.\n\n01\nConfiguras cómo prefieres aprender\n\nCreas tu perfil académico y defines de forma privada si prefieres explicaciones paso a paso, ejemplos prácticos, apoyo visual o sesiones tranquilas.\n\n02\nIngresas a Mi espacio de aprendizaje\n\nAccedes a tu entorno central donde se reúnen tus asignaturas a reforzar, objetivos del semestre, rutas activas y próximas actividades.\n\n03\nAvanzas con rutas divididas en pasos manejables\n\nTransformas cualquier asignatura o evaluación compleja en etapas breves, ordenadas y fáciles de retomar sin sobrecarga.\n\n04\nCambias el modo de explicación cuando lo necesites\n\nAlternas entre explicación sencilla, paso a paso, con ejemplos prácticos, esquema visual o profundización técnica sin perder tu progreso.\n\n05\nPracticas, evalúas tu avance y refuerzas sin presión\n\nCompruebas lo aprendido sin cronómetros punitivos, identificando qué temas ya están consolidados y cuáles conviene repasar.\n\n06\nSolicitas u ofreces tutorías colaborativas entre pares\n\nPides apoyo en las materias que te cuestan compartiendo tu estilo de estudio, o enseñas aquellas asignaturas que ya dominas.\n\n07\nColaboras en proyectos, apuntes y foro académico\n\nIntegras tus conocimientos en el Hub de Proyectos Interdisciplinarios, la Biblioteca de Apuntes y el Foro estudiantil.\n\nEL CORAZÓN DE INTERAULA\nMi espacio de aprendizaje: de una materia compleja a un camino claro\n\nCada asignatura o meta académica se transforma en una secuencia estructurada de etapas pequeñas. En cada etapa puedes cambiar el modo en que recibes la explicación, practicar sin límite de tiempo y pedir apoyo directo a un tutor par.\n\nProbar Mi espacio de aprendizaje\nAsignatura: Programación de Algoritmos\nAvance de ruta: 50% (2 de 4 etapas)\nMeta: Comprender estructuras iterativas y arreglos para el certamen\nEtapa 1: Conceptos base e índices\nCompletada · Explicación sencilla + esquema visual\nEtapa 2: Recorrido paso a paso con ciclo for\nCompletada · Práctica guiada sin reloj\nEtapa 3: Búsqueda y filtrado en arreglos\nEn curso · Explora los modos de explicación a la derecha\nEtapa 4: Comprobación de comprensión o tutoría 1 a 1\nSiguiente paso · Conecta con un tutor si quedan dudas\nAprende a tu manera (Cambia el modo de explicación)\nSencilla\nPaso a paso\nCon ejemplos\nVisualmente\nSecuencia paso a paso\n1. Definimos el índice inicial en la posición 0 del arreglo.\n2. Comprobamos que el índice sea menor al largo total de elementos.\n3. Leemos el valor actual y avanzamos una posición en cada vuelta.\nAPOYO MUTUO ENTRE COMPAÑEROS\nTutorías colaborativas: pide apoyo en lo difícil y enseña lo que dominas\n\nEn InterAula nadie está encasillado en un único rol. Un mismo estudiante puede solicitar tutorías en las asignaturas que necesita reforzar y, al mismo tiempo, acreditarse como tutor par en las materias donde tiene fortaleza.\n\nComparte voluntariamente con tu tutor cómo te resulta más cómodo aprender antes de la sesión.\nDistingue entre Tutores Pares Verificados (con nota o evaluación técnica) y Apoyo Académico entre Pares.\nCoordina sesiones individuales 1 a 1 o inscríbete en talleres grupales de repaso.\nMentoría horizontal entre estudiantes de educación superior\nFoto: Priscilla Du Preez / Unsplash\nAsignaturas activas en el catálogo\n\nSelecciona una materia para explorar tutores disponibles, apuntes y rutas de estudio:\n\nComunicación Oral y Escrita\nRedacción Académica y Profesional\nComprensión Lectora\nPensamiento Crítico\nResolución de Problemas\nTrabajo en Equipo\nLiderazgo\nÉtica Profesional\nDISEÑO INCLUSIVO Y RESPETUOSO\nAccesibilidad real integrada en toda la experiencia\n\nDiseñado para reducir la fatiga visual y la sobrecarga cognitiva, sin solicitar diagnósticos clínicos ni exponer etiquetas en tu perfil público.\n\nModo Calma y control visual\n\nActiva en cualquier momento una interfaz sobria de bajo estímulo, ajusta el tamaño de texto, el espaciado de lectura, el contraste y reduce las animaciones.\n\nOrganización por subtareas y pausas\n\nDivide entregas grandes en pasos pequeños con intervalos de enfoque y descanso configurables a tu medida, que puedes pausar y retomar sin presión.\n\nPráctica sin límite de tiempo\n\nDesactiva los temporizadores en tus cuestionarios de práctica y utiliza pistas paso a paso para consolidar conceptos a tu pr"
+    },
+    {
+      "name": "login-movil",
+      "url": "http://localhost:5173/login",
+      "title": "interaula",
+      "h1": [
+        "Iniciar sesión"
+      ],
+      "headings": [],
+      "viewport": 390,
+      "documentWidth": 390,
+      "brokenImages": [],
+      "unlabeledButtons": 0,
+      "inputs": [
+        {
+          "id": "login-email",
+          "type": "email",
+          "label": true
+        },
+        {
+          "id": "login-password",
+          "type": "password",
+          "label": true
+        }
+      ],
+      "deadAnchors": [],
+      "links": [
+        {
+          "text": "InterAula",
+          "href": "/"
+        },
+        {
+          "text": "Inicio",
+          "href": "/"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/login"
+        },
+        {
+          "text": "Registro",
+          "href": "/register"
+        },
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "/forgot-password"
+        },
+        {
+          "text": "Regístrate aquí",
+          "href": "/register"
+        }
+      ],
+      "text": "InterAula\nInicio\nIngresar\nRegistro\nPortal Académico\nIniciar sesión\n\nIngresa a tu cuenta de InterAula para acceder a tutorías e intercambios académicos.\n\nCorreo electrónico\nContraseña\n¿Olvidaste tu contraseña?\nIngresar a InterAula\no continuar con\nContinuar con Google\n\n¿Aún no tienes cuenta? Regístrate aquí"
+    },
+    {
+      "name": "registro-escritorio",
+      "url": "http://localhost:5173/register",
+      "title": "interaula",
+      "h1": [
+        "Crear cuenta"
+      ],
+      "headings": [],
+      "viewport": 1440,
+      "documentWidth": 1425,
+      "brokenImages": [],
+      "unlabeledButtons": 0,
+      "inputs": [
+        {
+          "id": "reg-email",
+          "type": "email",
+          "label": true
+        },
+        {
+          "id": "reg-password",
+          "type": "password",
+          "label": true
+        },
+        {
+          "id": "reg-confirm",
+          "type": "password",
+          "label": true
+        },
+        {
+          "id": "",
+          "type": "checkbox",
+          "label": false
+        }
+      ],
+      "deadAnchors": [],
+      "links": [
+        {
+          "text": "InterAula",
+          "href": "/"
+        },
+        {
+          "text": "Inicio",
+          "href": "/"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/login"
+        },
+        {
+          "text": "Registro",
+          "href": "/register"
+        },
+        {
+          "text": "Inicia sesión aquí",
+          "href": "/login"
+        }
+      ],
+      "text": "InterAula\nInicio\nIngresar\nRegistro\nNueva Cuenta\nCrear cuenta\n\nÚnete a InterAula para participar en tutorías y grupos de estudio académicos.\n\nCorreo electrónico institucional o personal\nContraseña\nConfirmar contraseña\nAcepto las normas de uso, integridad académica y privacidad de la plataforma InterAula.\nCrear cuenta en InterAula\no continuar con\nContinuar con Google\n\n¿Ya tienes una cuenta? Inicia sesión aquí"
+    },
+    {
+      "name": "acceso-privado",
+      "url": "http://localhost:5173/login",
+      "title": "interaula",
+      "h1": [
+        "Iniciar sesión"
+      ],
+      "headings": [],
+      "viewport": 1440,
+      "documentWidth": 1425,
+      "brokenImages": [],
+      "unlabeledButtons": 0,
+      "inputs": [
+        {
+          "id": "login-email",
+          "type": "email",
+          "label": true
+        },
+        {
+          "id": "login-password",
+          "type": "password",
+          "label": true
+        }
+      ],
+      "deadAnchors": [],
+      "links": [
+        {
+          "text": "InterAula",
+          "href": "/"
+        },
+        {
+          "text": "Inicio",
+          "href": "/"
+        },
+        {
+          "text": "Ingresar",
+          "href": "/login"
+        },
+        {
+          "text": "Registro",
+          "href": "/register"
+        },
+        {
+          "text": "¿Olvidaste tu contraseña?",
+          "href": "/forgot-password"
+        },
+        {
+          "text": "Regístrate aquí",
+          "href": "/register"
+        }
+      ],
+      "text": "InterAula\nInicio\nIngresar\nRegistro\nPortal Académico\nIniciar sesión\n\nIngresa a tu cuenta de InterAula para acceder a tutorías e intercambios académicos.\n\nCorreo electrónico\nContraseña\n¿Olvidaste tu contraseña?\nIngresar a InterAula\no continuar con\nContinuar con Google\n\n¿Aún no tienes cuenta? Regístrate aquí"
+    }
+  ],
+  "errors": [],
+  "failures": []
+}

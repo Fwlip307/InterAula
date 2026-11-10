@@ -129,7 +129,7 @@ export default function VirtualClassroom() {
 
         if (data.student_joined_at) setStudentConnected(true);
         if (data.tutor_joined_at) setTutorConnected(true);
-        if (data.attendance_verified || (data.student_joined_at && data.tutor_joined_at)) {
+        if (data.attendance_verified) {
           setAttendanceVerified(true);
         }
         if (data.actual_duration_minutes) {
@@ -141,9 +141,9 @@ export default function VirtualClassroom() {
         try {
           const workshopData = await tutoringService.getWorkshopById(sessionId);
           setWorkshop(workshopData);
-          setAttendanceVerified(true);
-          setStudentConnected(true);
-          setTutorConnected(true);
+          setAttendanceVerified(false);
+          setStudentConnected(false);
+          setTutorConnected(false);
           return;
         } catch {
           throw new Error('No se encontró una sesión individual ni taller grupal registrado con el identificador proporcionado.');

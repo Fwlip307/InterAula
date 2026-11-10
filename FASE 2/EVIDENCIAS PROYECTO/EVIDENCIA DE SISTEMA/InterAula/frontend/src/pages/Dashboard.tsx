@@ -35,6 +35,7 @@ import type { TutoringSession } from '../types/tutoring';
 import type { Project } from '../types/project';
 import type { LearningSpaceOverview } from '../types/learningSpace';
 import '../styles/dashboard.css';
+import ForYouSection from '../components/recommendations/ForYouSection';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const [openProjects, setOpenProjects] = useState<Project[]>([]);
   const [learningOverview, setLearningOverview] = useState<LearningSpaceOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -56,6 +58,7 @@ export default function Dashboard() {
       if (!user) return;
       try {
         setLoading(true);
+        setLoadError('');
         const [
           profileData,
           offeredData,
@@ -90,6 +93,7 @@ export default function Dashboard() {
         }
       } catch (err) {
         console.error('[Dashboard] Error al cargar datos:', err);
+        if (isMounted) setLoadError('No se pudieron cargar todos los datos del portal. Reintenta en unos instantes.');
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -120,6 +124,7 @@ export default function Dashboard() {
 
   return (
     <div>
+      {loadError && <p role="alert" className="ia-assessment-error">{loadError} <button type="button" className="ia-btn-secondary" onClick={() => window.location.reload()}>Reintentar</button></p>}
       {/* Barra de Acceso Rápido al Inicio Principal y Estado de Tutor */}
       <div
         style={{
@@ -262,6 +267,8 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      <ForYouSection key={user?.id} />
 
       {/* MÓDULOS DE ACCESO RÁPIDO (4 Columnas) */}
       <section className="ia-quick-access-4">
