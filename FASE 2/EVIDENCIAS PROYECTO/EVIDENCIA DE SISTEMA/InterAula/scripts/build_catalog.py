@@ -45,14 +45,17 @@ def format_institution_name(name_raw, tipo):
     return title_case_spanish(name_raw)
 
 def main():
-    source_file = 'catalogo_anidado.json'
-    if not os.path.exists(source_file):
-        alt = r'C:\Users\marti_d4ww26d\Downloads\catalogo_anidado.json'
-        if os.path.exists(alt):
-            source_file = alt
-        else:
-            print('No se encontro catalogo_anidado.json')
-            return
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(os.getcwd(), 'catalogo_anidado.json'),
+        os.path.join(script_dir, '..', 'catalogo_anidado.json'),
+        os.path.join(script_dir, '..', '..', 'InterAula', 'catalogo_anidado.json'),
+        os.path.join(script_dir, 'catalogo_anidado.json')
+    ]
+    source_file = next((p for p in candidates if os.path.exists(p)), None)
+    if not source_file:
+        print('No se encontro catalogo_anidado.json en las rutas esperadas del repositorio.')
+        return
 
     print(f'Leyendo {source_file}...')
     with open(source_file, encoding='utf-8', errors='ignore') as f:

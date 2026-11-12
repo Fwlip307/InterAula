@@ -3,6 +3,7 @@ import { HttpError, requireDatabaseResult } from '../lib/httpError.js';
 import { clientFor } from './remote/database.js';
 import { rankRecommendations, type InterestTopic, type RecommendationPreferences,
   type RecommendationCandidate, type RecommendationKind } from './recommendationEngine.js';
+export type { RecommendationKind };
 
 const metadataFields = 'id,title,created_at';
 async function result(query: PromiseLike<any>, message?: string): Promise<any> {

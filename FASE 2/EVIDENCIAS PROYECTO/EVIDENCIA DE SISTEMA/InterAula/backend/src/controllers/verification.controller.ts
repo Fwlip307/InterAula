@@ -1,6 +1,8 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { verificationBackendService } from '../services/verification.service.js';
+import { assessmentService } from '../services/assessment.service.js';
+import { clientFor, result } from '../services/remote/database.js';
 
 export const verificationController = {
   async getMyRequests(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -106,6 +108,42 @@ export const verificationController = {
       res.json({ success: true, data: { isValidator } });
     } catch (err) {
       next(err);
+    }
+  },
+
+  async requestTeacherEndorsement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { subject_id, professor_name, professor_email, message } = req.body;
+      const data = await result(
+        clientFor(req.token).rpc('request_teacher_endorsement', {
+          p_subject_id: subject_id,
+          p_name: professor_name,
+          p_email: professor_email,
+          p_message: message,
+        }),
+        'No se pudo registrar la solicitud. Comprueba que el docente sea un validador registrado y que no exista otra solicitud activa para esta asignatura.'
+      );
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async startAssessmentAttempt(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await assessmentService.start(req.user!, req.token!, req.body.subject_id);
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async answerAssessmentAttempt(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await assessmentService.answer(req.user!, req.params.id, req.body);
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
     }
   },
 };

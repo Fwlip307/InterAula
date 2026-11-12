@@ -9,7 +9,20 @@ export const createVerificationRequestSchema = z
   })
   .strict();
 
-export { grantAssessmentSchema as botGrantVerificationSchema } from '../services/assessment.service.js';
+export {
+  startAssessmentSchema,
+  answerAssessmentSchema,
+  grantAssessmentSchema as botGrantVerificationSchema,
+} from '../services/assessment.service.js';
+
+export const teacherEndorsementSchema = z
+  .object({
+    subject_id: z.string().uuid('ID de asignatura inválido'),
+    professor_name: z.string().trim().min(2, 'El nombre del docente debe tener al menos 2 caracteres').max(120),
+    professor_email: z.string().trim().email('Correo electrónico del docente inválido').max(254),
+    message: z.string().trim().max(1500, 'El mensaje no puede superar 1500 caracteres'),
+  })
+  .strict();
 
 export const assignPracticalExerciseSchema = z
   .object({
