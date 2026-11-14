@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Subject } from '../../../types/profile';
+import type { CameraPolicy, ParticipationMode } from '../../../types/tutoring';
 import { tutoringService } from '../../../services/tutoring.service';
 import { getAllCatalogSubjects } from '../../../services/catalogResolver';
 import {
@@ -34,6 +35,13 @@ export default function CreateWorkshopModal({
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [maxStudents, setMaxStudents] = useState(20);
   const [description, setDescription] = useState('');
+  const [prepWhat, setPrepWhat] = useState('');
+  const [prepSteps, setPrepSteps] = useState('');
+  const [prepEnd, setPrepEnd] = useState('');
+  const [cameraPolicy, setCameraPolicy] = useState<CameraPolicy>('optional');
+  const [participationMode, setParticipationMode] = useState<ParticipationMode>('mixed');
+  const [participationRules, setParticipationRules] = useState('');
+  const [anticipatedMaterialsRaw, setAnticipatedMaterialsRaw] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -88,6 +96,19 @@ export default function CreateWorkshopModal({
 
     try {
       setSubmitting(true);
+      const materials = anticipatedMaterialsRaw
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+      const agendaPreview =
+        prepWhat.trim() || prepSteps.trim() || prepEnd.trim()
+          ? {
+              what_we_will_see: prepWhat.trim() || 'Por definir',
+              step_by_step: prepSteps.trim() || 'Por definir',
+              how_it_ends: prepEnd.trim() || 'Por definir',
+            }
+          : null;
+
       const created = await tutoringService.createWorkshop({
         subject_id: activeSubjectId,
         title: title.trim(),
@@ -95,6 +116,11 @@ export default function CreateWorkshopModal({
         scheduled_at: scheduledDateTime.toISOString(),
         duration_minutes: durationMinutes,
         max_students: maxStudents,
+        agenda_preview: agendaPreview,
+        camera_policy: cameraPolicy,
+        participation_mode: participationMode,
+        participation_rules: participationRules.trim() || null,
+        anticipated_materials: materials,
       });
 
       onSuccess();
@@ -414,6 +440,36 @@ export default function CreateWorkshopModal({
               placeholder="Ej: Resolveremos ejercicios prácticos y repasaremos los puntos más difíciles."
               style={{ width: '100%', fontSize: '0.84rem' }}
             />
+          </div>
+
+          {/* Guion anticipado y material previo (opcional) */}
+          <div style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>
+              Guion anticipado y reglas claras (Opcional)
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label className="ia-label" style={{ display: 'block', marginBottom: '2px', fontSize: '0.76rem' }}>Uso de cámara</label>
+                <select className="ia-select" value={cameraPolicy} onChange={(e) => setCameraPolicy(e.target.value as CameraPolicy)} style={{ width: '100%', fontSize: '0.8rem' }}>
+                  <option value="optional">Cámara opcional</option>
+                  <option value="recommended">Recomendada (sin presión)</option>
+                  <option value="off">Cámara desactivada</option>
+                </select>
+              </div>
+              <div>
+                <label className="ia-label" style={{ display: 'block', marginBottom: '2px', fontSize: '0.76rem' }}>Participación</label>
+                <select className="ia-select" value={participationMode} onChange={(e) => setParticipationMode(e.target.value as ParticipationMode)} style={{ width: '100%', fontSize: '0.8rem' }}>
+                  <option value="mixed">Mixta (voz, chat o señales)</option>
+                  <option value="chat_first">Prioritaria por chat</option>
+                  <option value="voice_or_chat">Voz o chat libre</option>
+                </select>
+              </div>
+            </div>
+            <input type="text" className="ia-input" placeholder="1. Qué veremos en el taller" value={prepWhat} onChange={(e) => setPrepWhat(e.target.value)} style={{ fontSize: '0.8rem' }} />
+            <input type="text" className="ia-input" placeholder="2. Paso a paso de la sesión" value={prepSteps} onChange={(e) => setPrepSteps(e.target.value)} style={{ fontSize: '0.8rem' }} />
+            <input type="text" className="ia-input" placeholder="3. Cómo cerramos (dudas / resumen)" value={prepEnd} onChange={(e) => setPrepEnd(e.target.value)} style={{ fontSize: '0.8rem' }} />
+            <input type="text" className="ia-input" placeholder="Reglas de participación (ej: Puedes preguntar por chat cuando quieras)" value={participationRules} onChange={(e) => setParticipationRules(e.target.value)} style={{ fontSize: '0.8rem' }} />
+            <textarea className="ia-textarea" rows={2} placeholder="Material anticipado (un enlace o archivo por línea)" value={anticipatedMaterialsRaw} onChange={(e) => setAnticipatedMaterialsRaw(e.target.value)} style={{ fontSize: '0.8rem' }} />
           </div>
 
           {/* Aviso del Aula Virtual */}

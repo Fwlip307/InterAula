@@ -95,3 +95,17 @@ export async function evaluateAnswerWithGemini(
     return null;
   }
 }
+
+export interface AiTaskBreakdownStep {
+  title: string;
+  estimated_minutes: number;
+  order_index: number;
+}
+
+export async function breakdownTaskWithAi(params: {
+  title: string;
+  subject_name?: string;
+  context?: string;
+}): Promise<AiTaskBreakdownStep[]> {
+  return apiClient.post<AiTaskBreakdownStep[]>(API_ENDPOINTS.AI.BREAKDOWN_TASK, params);
+}

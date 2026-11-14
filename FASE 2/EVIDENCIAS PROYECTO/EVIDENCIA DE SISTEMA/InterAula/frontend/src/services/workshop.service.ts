@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { apiClient } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
-import type { TutoringWorkshop,CreateWorkshopDTO } from '../types/tutoring';
+import type { TutoringWorkshop,CreateWorkshopDTO,SessionPrepDTO } from '../types/tutoring';
 let channel:ReturnType<typeof supabase.channel>|null=null;
 function ensureChannel(){
   if(typeof window==='undefined'||channel)return;
@@ -27,6 +27,7 @@ export const workshopService={
   async enrollInWorkshop(id:string):Promise<void>{await apiClient.post(API_ENDPOINTS.WORKSHOPS.ENROLL(id));changed(id,'workshop_status_changed');},
   async unenrollFromWorkshop(id:string):Promise<void>{await apiClient.delete(API_ENDPOINTS.WORKSHOPS.ENROLL(id));changed(id,'workshop_status_changed');},
   async updateWorkshopStatus(id:string,status:string):Promise<void>{await apiClient.patch(API_ENDPOINTS.WORKSHOPS.STATUS(id),{status});changed(id,'workshop_status_changed');},
+  async updateWorkshopPrep(id:string,prep:SessionPrepDTO):Promise<TutoringWorkshop>{const w=await apiClient.patch<TutoringWorkshop>(API_ENDPOINTS.WORKSHOPS.PREP(id),prep);changed(id,'workshop_status_changed');return w;},
   async deleteWorkshop(id:string):Promise<void>{await apiClient.delete(API_ENDPOINTS.WORKSHOPS.BY_ID(id));changed(id,'workshop_deleted');},
   getMyWorkshopsAsStudent():Promise<TutoringWorkshop[]>{return apiClient.get(API_ENDPOINTS.WORKSHOPS.ME_AS_STUDENT);},
   getMyWorkshopsAsTutor():Promise<TutoringWorkshop[]>{return apiClient.get(API_ENDPOINTS.WORKSHOPS.ME_AS_TUTOR);},

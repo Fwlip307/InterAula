@@ -11,6 +11,9 @@ import type {
   UserBadge,
   SessionStatus,
   SessionAttendanceResult,
+  SessionPrepDTO,
+  ClassroomSignalRecord,
+  ClassroomSignalState,
 } from '../types/tutoring';
 import { workshopService } from './workshop.service';
 
@@ -22,6 +25,7 @@ export interface AvailableTutor {
   offeredSubjects: OfferedSubject[];
   statistics: TutorStatistics | null;
   badges: UserBadge[];
+  inclusiveAccredited?: boolean;
 }
 
 export const tutoringService = {
@@ -33,6 +37,7 @@ export const tutoringService = {
     subjectId?: string;
     search?: string;
     onlyVerified?: boolean;
+    onlyInclusive?: boolean;
   }): Promise<AvailableTutor[]> {
     try {
       const profilesData = await apiClient.get<any[]>(API_ENDPOINTS.TUTORING.TUTORS, { params: filters });
@@ -105,6 +110,7 @@ export const tutoringService = {
         offeredSubjects: (p.profile_offered_subjects || []) as OfferedSubject[],
         statistics: statsMap.get(p.id) || null,
         badges: badgesMap.get(p.id) || [],
+        inclusiveAccredited: Boolean(p.inclusive_accredited),
       }));
 
       return results;
@@ -243,6 +249,18 @@ export const tutoringService = {
     return (data || []) as UserBadge[];
   },
 
+  updateSessionPrep(sessionId: string, prep: SessionPrepDTO): Promise<TutoringSession> {
+    return apiClient.patch(API_ENDPOINTS.TUTORING.SESSION_PREP(sessionId), prep);
+  },
+
+  getRoomSignals(roomId: string): Promise<ClassroomSignalRecord[]> {
+    return apiClient.get(API_ENDPOINTS.TUTORING.ROOM_SIGNALS(roomId));
+  },
+
+  updateRoomSignal(roomId: string, signal: ClassroomSignalState): Promise<ClassroomSignalRecord> {
+    return apiClient.put(API_ENDPOINTS.TUTORING.ROOM_SIGNALS(roomId), { signal });
+  },
+
   // Delegación a workshopService para modularidad y persistencia en Supabase
   createWorkshop: workshopService.createWorkshop.bind(workshopService),
   getUpcomingWorkshops: workshopService.getUpcomingWorkshops.bind(workshopService),
@@ -250,6 +268,7 @@ export const tutoringService = {
   enrollInWorkshop: workshopService.enrollInWorkshop.bind(workshopService),
   unenrollFromWorkshop: workshopService.unenrollFromWorkshop.bind(workshopService),
   updateWorkshopStatus: workshopService.updateWorkshopStatus.bind(workshopService),
+  updateWorkshopPrep: workshopService.updateWorkshopPrep.bind(workshopService),
   deleteWorkshop: workshopService.deleteWorkshop.bind(workshopService),
   getMyWorkshopsAsStudent: workshopService.getMyWorkshopsAsStudent.bind(workshopService),
   getMyWorkshopsAsTutor: workshopService.getMyWorkshopsAsTutor.bind(workshopService),

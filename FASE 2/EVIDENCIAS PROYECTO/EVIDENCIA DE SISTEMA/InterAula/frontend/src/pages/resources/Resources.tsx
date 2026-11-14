@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
+import { useCalmMode } from '../../context/CalmModeContext';
+import { ReadAloudControls } from '../../components/common/ReadAloudControls';
 import { profileService } from '../../services/profile.service';
 import {
   notesService,
@@ -52,6 +54,7 @@ function formatFileSize(bytes?: number): string {
 
 export default function Resources() {
   const { user } = useAuth();
+  const { preferences, updatePreferences } = useCalmMode();
   const [recommendationParams] = useSearchParams();
   const recommendedNoteId = recommendationParams.get('note');
 
@@ -720,6 +723,31 @@ export default function Resources() {
                 ? `${selectedNote.fileName || 'Archivo'} (${formatFileSize(selectedNote.fileSize)})`
                 : 'Apunte nativo InterAula'}
             </div>
+          </div>
+
+          {/* Controles de lectura inclusiva (voz alta y regla guiada) */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '14px',
+            }}
+          >
+            <ReadAloudControls
+              text={`${selectedNote.title}. ${selectedNote.summary || ''} ${selectedNote.contentMarkdown || (selectedNote.contentHtml || '').replace(/<[^>]+>/g, ' ')}`}
+              label="Escuchar apunte"
+            />
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--ia-text-muted)' }}>
+              <input
+                type="checkbox"
+                checked={Boolean(preferences.readingRuler)}
+                onChange={(e) => updatePreferences({ readingRuler: e.target.checked })}
+              />
+              Regla de lectura guiada
+            </label>
           </div>
 
           {/* Contenido renderizado del apunte */}

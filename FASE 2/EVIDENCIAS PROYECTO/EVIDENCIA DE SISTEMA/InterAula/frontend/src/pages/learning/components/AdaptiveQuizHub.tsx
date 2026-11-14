@@ -23,6 +23,7 @@ import {
   TargetIcon,
   RotateCcwIcon,
 } from '../../../components/common/Icons';
+import { ReadAloudControls } from '../../../components/common/ReadAloudControls';
 
 const CRITICAL_SUBJECTS = [
   'Programación de Algoritmos',
@@ -1132,9 +1133,16 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
               )}
 
               <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--ia-text-main)', margin: '0 0 10px', lineHeight: 1.45 }}>
-                  {currentQ.prompt}
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--ia-text-main)', margin: 0, lineHeight: 1.45, flex: 1 }}>
+                    {currentQ.prompt}
+                  </h3>
+                  <ReadAloudControls
+                    text={`${currentQ.prompt}${currentQ.options ? '. ' + currentQ.options.map((o) => o.text).join('. ') : ''}`}
+                    label="Escuchar pregunta"
+                    compact
+                  />
+                </div>
 
                 {currentQ.codeSnippet && (
                   <pre

@@ -32,6 +32,8 @@ export const API_ENDPOINTS = {
     SESSION_BY_ID: (id: string) => `/tutoring/sessions/${id}`,
     MY_SESSIONS: '/tutoring/my-sessions',
     SESSION_STATUS: (sessionId: string) => `/tutoring/sessions/${sessionId}/status`,
+    SESSION_PREP: (sessionId: string) => `/tutoring/sessions/${sessionId}/prep`,
+    ROOM_SIGNALS: (roomId: string) => `/tutoring/rooms/${roomId}/signals`,
     SESSION_REVIEWS: (sessionId: string) => `/tutoring/sessions/${sessionId}/reviews`,
     ATTENDANCE: '/tutoring/sessions/attendance',
   },
@@ -42,6 +44,7 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/workshops/${id}`,
     ENROLL: (id: string) => `/workshops/${id}/enroll`,
     STATUS: (id: string) => `/workshops/${id}/status`,
+    PREP: (id: string) => `/workshops/${id}/prep`,
     ME_AS_STUDENT: '/workshops/me/as-student',
     ME_AS_TUTOR: '/workshops/me/as-tutor',
   },
@@ -61,6 +64,10 @@ export const API_ENDPOINTS = {
     PRACTICAL_EXERCISE: (requestId: string) => `/verification/requests/${requestId}/practical-exercise`,
     PRACTICAL_SUBMIT: (requestId: string) => `/verification/requests/${requestId}/practical-submission`,
     REVIEW: (requestId: string) => `/verification/requests/${requestId}/review`,
+    INCLUSIVE_ME: '/verification/inclusive-accreditation/me',
+    INCLUSIVE_CREATE: '/verification/inclusive-accreditation',
+    INCLUSIVE_VALIDATOR: '/verification/inclusive-accreditation/validator',
+    INCLUSIVE_REVIEW: (id: string) => `/verification/inclusive-accreditation/${id}/review`,
   },
 
   // Foro de dudas académicas
@@ -99,6 +106,11 @@ export const API_ENDPOINTS = {
     REVIEW_APPLICATION: (applicationId: string) => `/projects/applications/${applicationId}/review`,
     APPLICATION_STATUS: (applicationId: string) => `/projects/applications/${applicationId}/status`,
     MILESTONES: (projectId: string) => `/projects/${projectId}/milestones`,
+    DELIVERABLES: (projectId: string) => `/projects/${projectId}/deliverables`,
+    DELIVERABLE_BY_ID: (projectId: string, deliverableId: string) =>
+      `/projects/${projectId}/deliverables/${deliverableId}`,
+    DELIVERABLE_COMMENTS: (projectId: string, deliverableId: string) =>
+      `/projects/${projectId}/deliverables/${deliverableId}/comments`,
   },
 
   // Inteligencia artificial y evaluación semántica
@@ -107,6 +119,7 @@ export const API_ENDPOINTS = {
     GENERATE_QUESTIONS: '/ai/generate-questions',
     GENERATE_QUIZ: '/ai/generate-quiz',
     EVALUATE_ANSWER: '/ai/evaluate-answer',
+    BREAKDOWN_TASK: '/ai/breakdown-task',
   },
 
   // Mi espacio de aprendizaje (Rutas personalizadas, explicaciones adaptables, tareas y refuerzo)
@@ -122,5 +135,8 @@ export const API_ENDPOINTS = {
     TASK_BY_ID: (taskId: string) => `/learning-space/tasks/${taskId}`,
     ASSESSMENTS: '/learning-space/assessments',
     EXPLAIN: '/learning-space/explain',
+    IDEAS: '/learning-space/ideas',
+    IDEA_BY_ID: (ideaId: string) => `/learning-space/ideas/${ideaId}`,
+    IDEA_CONVERT: (ideaId: string) => `/learning-space/ideas/${ideaId}/convert-to-task`,
   },
 } as const;

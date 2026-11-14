@@ -129,3 +129,30 @@ export const updatePositionStatusSchema = z
     status: z.enum(['open', 'paused', 'filled', 'closed']),
   })
   .strict();
+
+export const createDeliverableSchema = z
+  .object({
+    title: z.string().trim().min(2, 'El título del entregable es obligatorio').max(200),
+    description: z.string().trim().max(1500).optional().default(''),
+    expected_format: z.string().trim().max(200).optional().default('Documento o avance escrito'),
+    assignee_id: z.string().uuid().nullable().optional(),
+    due_date: z.string().datetime().nullable().optional(),
+  })
+  .strict();
+
+export const updateDeliverableSchema = z
+  .object({
+    title: z.string().trim().min(2).max(200).optional(),
+    description: z.string().trim().max(1500).optional(),
+    expected_format: z.string().trim().max(200).optional(),
+    assignee_id: z.string().uuid().nullable().optional(),
+    due_date: z.string().datetime().nullable().optional(),
+    status: z.enum(['pending', 'in_progress', 'review', 'completed']).optional(),
+  })
+  .strict();
+
+export const addDeliverableCommentSchema = z
+  .object({
+    content: z.string().trim().min(1, 'El comentario no puede estar vacío').max(1000),
+  })
+  .strict();

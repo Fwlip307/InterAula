@@ -241,6 +241,59 @@ export interface StoredTopicAssessment {
   updated_at: string;
 }
 
+export interface StoredQuickIdea {
+  id: string;
+  user_id: string;
+  context_type: 'learning_space' | 'tutoring' | 'workshop' | 'general';
+  context_id?: string | null;
+  content: string;
+  resolved: boolean;
+  converted_task_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StoredClassroomSignal {
+  id: string;
+  room_id: string;
+  user_id: string;
+  signal: 'green' | 'yellow' | 'blue' | 'red';
+  updated_at: string;
+}
+
+export interface StoredInclusiveAccreditation {
+  id: string;
+  tutor_id: string;
+  status: 'pending' | 'approved' | 'revoked';
+  training_name: string;
+  evidence_notes: string;
+  verified_by?: string | null;
+  verified_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StoredProjectDeliverable {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  expected_format: string;
+  assignee_id?: string | null;
+  due_date?: string | null;
+  status: 'pending' | 'in_progress' | 'review' | 'completed';
+  comments: Array<{
+    id: string;
+    author_id: string;
+    author_name: string;
+    content: string;
+    created_at: string;
+  }>;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface RuntimeDatabaseSchema {
   forum_posts: StoredForumPost[];
   forum_replies: StoredForumReply[];
@@ -255,6 +308,10 @@ interface RuntimeDatabaseSchema {
   learning_path_stages: StoredLearningPathStage[];
   study_tasks: StoredStudyTask[];
   topic_assessments: StoredTopicAssessment[];
+  quick_ideas: StoredQuickIdea[];
+  classroom_signals: StoredClassroomSignal[];
+  inclusive_accreditations: StoredInclusiveAccreditation[];
+  project_deliverables: StoredProjectDeliverable[];
 }
 
 const DEFAULT_DB: RuntimeDatabaseSchema = {
@@ -271,6 +328,10 @@ const DEFAULT_DB: RuntimeDatabaseSchema = {
   learning_path_stages: [],
   study_tasks: [],
   topic_assessments: [],
+  quick_ideas: [],
+  classroom_signals: [],
+  inclusive_accreditations: [],
+  project_deliverables: [],
 };
 
 const DATA_DIR = path.resolve(process.env.APP_DATA_DIR || path.join(process.cwd(), 'data'));
@@ -299,6 +360,10 @@ function ensureLoaded(): RuntimeDatabaseSchema {
         learning_path_stages: Array.isArray(parsed.learning_path_stages) ? parsed.learning_path_stages : [],
         study_tasks: Array.isArray(parsed.study_tasks) ? parsed.study_tasks : [],
         topic_assessments: Array.isArray(parsed.topic_assessments) ? parsed.topic_assessments : [],
+        quick_ideas: Array.isArray(parsed.quick_ideas) ? parsed.quick_ideas : [],
+        classroom_signals: Array.isArray(parsed.classroom_signals) ? parsed.classroom_signals : [],
+        inclusive_accreditations: Array.isArray(parsed.inclusive_accreditations) ? parsed.inclusive_accreditations : [],
+        project_deliverables: Array.isArray(parsed.project_deliverables) ? parsed.project_deliverables : [],
       };
       return memoryCache;
     }

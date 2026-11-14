@@ -15,7 +15,7 @@ import type {
   AcademicLevel,
   LearningPreference,
 } from '../../types/profile';
-import type { TutorStatistics, UserBadge } from '../../types/tutoring';
+import type { TutorStatistics, UserBadge, InclusiveTutorAccreditation } from '../../types/tutoring';
 import type { TutorVerificationRequest } from '../../types/verification';
 import {
   UserIcon,
@@ -88,6 +88,14 @@ export default function ProfileView() {
   // Estados de Apartado 3: Preferencias de Aprendizaje
   const [learningPreferences, setLearningPreferences] = useState<LearningPreference[]>([]);
   const [preferencesSuccessMsg, setPreferencesSuccessMsg] = useState<string | null>(null);
+
+  // Acreditación en acompañamiento inclusivo
+  const [inclusiveAccreditation, setInclusiveAccreditation] = useState<InclusiveTutorAccreditation | null>(null);
+  const [inclusiveTrainingName, setInclusiveTrainingName] = useState('');
+  const [inclusiveEvidenceNotes, setInclusiveEvidenceNotes] = useState('');
+  const [inclusiveSaving, setInclusiveSaving] = useState(false);
+  const [inclusiveMsg, setInclusiveMsg] = useState<string | null>(null);
+  const [validatorInclusiveList, setValidatorInclusiveList] = useState<InclusiveTutorAccreditation[]>([]);
 
   // Modales de Acreditación (Apartado 2)
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
@@ -1139,6 +1147,146 @@ export default function ProfileView() {
               </span>
             </div>
           )}
+
+          {/* Acreditación: Tutor con formación en acompañamiento inclusivo */}
+          <div
+            className="ia-card"
+            style={{
+              backgroundColor: 'var(--ia-surface, #ffffff)',
+              border: '1px solid var(--ia-border, #e2e8f0)',
+              borderRadius: '16px',
+              padding: '20px 24px',
+              marginBottom: '20px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--ia-text, #0f172a)' }}>
+                  Formación en acompañamiento inclusivo
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--ia-text-muted, #64748b)' }}>
+                  Solicita la acreditación verificable como <strong>Tutor con formación en acompañamiento inclusivo</strong>.
+                </p>
+              </div>
+              {inclusiveAccreditation && (
+                <span className={`ia-badge ${inclusiveAccreditation.status === 'approved' ? 'ia-badge-success' : 'ia-badge-primary'}`}>
+                  Estado: {inclusiveAccreditation.status === 'approved' ? 'Aprobada' : inclusiveAccreditation.status === 'pending' ? 'En revisión' : inclusiveAccreditation.status}
+                </span>
+              )}
+            </div>
+
+            {inclusiveMsg && (
+              <p style={{ fontSize: '0.82rem', marginBottom: '10px', color: 'var(--ia-primary, #2563eb)' }}>{inclusiveMsg}</p>
+            )}
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+              <button
+                type="button"
+                className="ia-btn ia-btn-ghost ia-btn-sm"
+                onClick={async () => {
+                  try {
+                    const [mine, forVal] = await Promise.all([
+                      verificationService.getMyInclusiveAccreditation(),
+                      (profile as any)?.is_academic_validator
+                        ? verificationService.getInclusiveAccreditationsForValidator().catch(() => [])
+                        : Promise.resolve([]),
+                    ]);
+                    setInclusiveAccreditation(mine);
+                    setValidatorInclusiveList(forVal);
+                  } catch {
+                    // ignore
+                  }
+                }}
+              >
+                Actualizar estado
+              </button>
+            </div>
+
+            {(!inclusiveAccreditation || inclusiveAccreditation.status !== 'approved') && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (inclusiveTrainingName.trim().length < 4) return;
+                  setInclusiveSaving(true);
+                  setInclusiveMsg(null);
+                  try {
+                    const created = await verificationService.requestInclusiveAccreditation({
+                      training_name: inclusiveTrainingName.trim(),
+                      evidence_notes: inclusiveEvidenceNotes.trim() || undefined,
+                    });
+                    setInclusiveAccreditation(created);
+                    setInclusiveMsg('Solicitud enviada para revisión de validador académico.');
+                  } catch (err: any) {
+                    setInclusiveMsg(err?.message || 'No se pudo enviar la solicitud.');
+                  } finally {
+                    setInclusiveSaving(false);
+                  }
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+              >
+                <input
+                  type="text"
+                  className="ia-input"
+                  placeholder="Nombre del curso, taller o formación en acompañamiento inclusivo"
+                  value={inclusiveTrainingName}
+                  onChange={(e) => setInclusiveTrainingName(e.target.value)}
+                  required
+                  minLength={4}
+                />
+                <textarea
+                  className="ia-textarea"
+                  rows={2}
+                  placeholder="Respaldo o descripción breve de tu formación (opcional)"
+                  value={inclusiveEvidenceNotes}
+                  onChange={(e) => setInclusiveEvidenceNotes(e.target.value)}
+                />
+                <div>
+                  <button type="submit" className="ia-btn ia-btn-primary ia-btn-sm" disabled={inclusiveSaving}>
+                    {inclusiveSaving ? 'Enviando...' : 'Solicitar acreditación inclusiva'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {(profile as any)?.is_academic_validator && validatorInclusiveList.length > 0 && (
+              <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--ia-border, #e2e8f0)' }}>
+                <div style={{ fontSize: '0.84rem', fontWeight: 700, marginBottom: '8px' }}>
+                  Revisión de validadores ({validatorInclusiveList.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {validatorInclusiveList.map((item) => (
+                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '0.82rem', padding: '8px', borderRadius: '8px', border: '1px solid var(--ia-border, #e2e8f0)' }}>
+                      <div>
+                        <strong>{item.profile?.display_name || item.profile?.email || item.profile_id}</strong> — {item.training_name} ({item.status})
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="ia-btn ia-btn-primary ia-btn-sm"
+                          onClick={async () => {
+                            const updated = await verificationService.reviewInclusiveAccreditation(item.id, 'approved');
+                            setValidatorInclusiveList((prev) => prev.map((x) => (x.id === item.id ? updated : x)));
+                          }}
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          type="button"
+                          className="ia-btn ia-btn-ghost ia-btn-sm"
+                          onClick={async () => {
+                            const updated = await verificationService.reviewInclusiveAccreditation(item.id, 'revoked');
+                            setValidatorInclusiveList((prev) => prev.map((x) => (x.id === item.id ? updated : x)));
+                          }}
+                        >
+                          Revocar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Subcomponente: Materias habilitadas para impartir */}
           <OfferedSubjectsSection

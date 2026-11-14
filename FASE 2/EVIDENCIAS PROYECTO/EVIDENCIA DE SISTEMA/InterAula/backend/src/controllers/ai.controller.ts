@@ -33,4 +33,13 @@ export const aiController = {
       next(err);
     }
   },
+
+  async breakdownTask(req: Request, res: Response, next: NextFunction) {
+    try {
+      const steps = await aiBackendService.breakdownTask(req.body);
+      res.json({ success: true, data: steps });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

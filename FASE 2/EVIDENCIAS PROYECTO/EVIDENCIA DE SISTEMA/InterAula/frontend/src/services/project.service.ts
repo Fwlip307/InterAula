@@ -12,6 +12,7 @@ import type {
   ProjectAgreements,
   ProjectMilestone,
   PositionStatus,
+  ProjectDeliverable,
 } from '../types/project';
 
 export interface PositionInputDTO {
@@ -194,5 +195,51 @@ export const projectService = {
    */
   async removeProjectMember(projectId: string, profileId: string): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.PROJECTS.MEMBER_BY_ID(projectId, profileId));
+  },
+
+  getDeliverables(projectId: string): Promise<ProjectDeliverable[]> {
+    return apiClient.get(API_ENDPOINTS.PROJECTS.DELIVERABLES(projectId));
+  },
+
+  createDeliverable(
+    projectId: string,
+    dto: {
+      title: string;
+      description?: string;
+      assignee_id?: string | null;
+      assignee_name?: string | null;
+      due_date?: string | null;
+      expected_format?: string;
+    }
+  ): Promise<ProjectDeliverable> {
+    return apiClient.post(API_ENDPOINTS.PROJECTS.DELIVERABLES(projectId), dto);
+  },
+
+  updateDeliverable(
+    projectId: string,
+    deliverableId: string,
+    dto: {
+      title?: string;
+      description?: string;
+      assignee_id?: string | null;
+      assignee_name?: string | null;
+      due_date?: string | null;
+      expected_format?: string;
+      status?: 'pending' | 'in_progress' | 'submitted' | 'reviewed';
+    }
+  ): Promise<ProjectDeliverable> {
+    return apiClient.patch(API_ENDPOINTS.PROJECTS.DELIVERABLE_BY_ID(projectId, deliverableId), dto);
+  },
+
+  addDeliverableComment(
+    projectId: string,
+    deliverableId: string,
+    content: string
+  ): Promise<ProjectDeliverable> {
+    return apiClient.post(API_ENDPOINTS.PROJECTS.DELIVERABLE_COMMENTS(projectId, deliverableId), { content });
+  },
+
+  async deleteDeliverable(projectId: string, deliverableId: string): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.PROJECTS.DELIVERABLE_BY_ID(projectId, deliverableId));
   },
 };

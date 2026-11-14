@@ -61,3 +61,20 @@ export const saveCertificateExtractionSchema = z
     calculated_level: z.enum(['basic', 'intermediate', 'advanced']).optional(),
   })
   .strict();
+
+export const inclusiveAccreditationRequestSchema = z
+  .object({
+    training_name: z
+      .string()
+      .trim()
+      .min(3, 'Indica el nombre de la formación o taller inclusivo')
+      .max(200),
+    evidence_notes: z.string().trim().min(5, 'Describe brevemente tu formación o respaldo').max(1500),
+  })
+  .strict();
+
+export const reviewInclusiveAccreditationSchema = z
+  .object({
+    status: z.enum(['approved', 'revoked']),
+  })
+  .strict();

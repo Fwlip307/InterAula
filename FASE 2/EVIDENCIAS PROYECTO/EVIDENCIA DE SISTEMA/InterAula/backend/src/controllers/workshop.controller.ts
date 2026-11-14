@@ -95,4 +95,18 @@ export const workshopController = {
       next(err);
     }
   },
+
+  async updatePrep(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const updated = await workshopBackendService.updateWorkshopPrep(
+        req.user!,
+        req.token!,
+        req.params.id,
+        req.body
+      );
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

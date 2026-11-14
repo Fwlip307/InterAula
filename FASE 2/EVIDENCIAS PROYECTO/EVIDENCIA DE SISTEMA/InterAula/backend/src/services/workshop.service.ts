@@ -56,4 +56,35 @@ export const workshopBackendService={
   async getMyWorkshopsAsTutor(user:AuthenticatedUser,token:string):Promise<any[]> {
     return decorate(await result(clientFor(token).from('workshop_summary').select('*').eq('tutor_id',user.id).order('scheduled_at',{ascending:false})),user.id,token);
   },
+  async updateWorkshopPrep(
+    user: AuthenticatedUser,
+    token: string,
+    id: string,
+    body: {
+      agenda_preview?: { what_we_will_see: string; step_by_step: string; how_it_ends: string } | null;
+      camera_policy?: 'optional' | 'recommended' | 'required';
+      participation_mode?: 'chat_only' | 'chat_or_voice' | 'voice_preferred';
+      participation_rules?: string;
+      anticipated_materials?: any[];
+    }
+  ): Promise<any> {
+    const patch: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (body.agenda_preview !== undefined) patch.agenda_preview = body.agenda_preview;
+    if (body.camera_policy !== undefined) patch.camera_policy = body.camera_policy;
+    if (body.participation_mode !== undefined) patch.participation_mode = body.participation_mode;
+    if (body.participation_rules !== undefined) patch.participation_rules = body.participation_rules;
+    if (body.anticipated_materials !== undefined) patch.anticipated_materials = body.anticipated_materials;
+
+    await existing(
+      clientFor(token)
+        .from('tutoring_workshops')
+        .update(patch)
+        .eq('id', id)
+        .eq('tutor_id', user.id)
+        .select('id')
+        .maybeSingle(),
+      'Taller no encontrado o sin permisos.'
+    );
+    return this.getWorkshopById(id, user.id, token);
+  },
 };

@@ -9,11 +9,12 @@ export const tutoringController = {
   },
   async getAvailableTutors(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { subjectId, search, onlyVerified } = req.query;
+      const { subjectId, search, onlyVerified, onlyInclusive } = req.query;
       const tutors = await tutoringBackendService.getAvailableTutors({
         subjectId: subjectId as string,
         search: search as string,
         onlyVerified: onlyVerified === 'true',
+        onlyInclusive: onlyInclusive === 'true',
       });
       res.json({ success: true, data: tutors });
     } catch (err) {
@@ -71,6 +72,47 @@ export const tutoringController = {
       const role = req.query.role === 'tutor' ? 'tutor' : 'student';
       const sessions = await tutoringBackendService.getMySessions(req.user!, req.token!, role);
       res.json({ success: true, data: sessions });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateSessionPrep(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const updated = await tutoringBackendService.updateSessionPrep(
+        req.user!,
+        req.token!,
+        req.params.id,
+        req.body
+      );
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getRoomSignals(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const signals = await tutoringBackendService.getRoomSignals(
+        req.user!,
+        req.token!,
+        req.params.roomId
+      );
+      res.json({ success: true, data: signals });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async setRoomSignal(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const updated = await tutoringBackendService.setRoomSignal(
+        req.user!,
+        req.token!,
+        req.params.roomId,
+        req.body.signal
+      );
+      res.json({ success: true, data: updated });
     } catch (err) {
       next(err);
     }

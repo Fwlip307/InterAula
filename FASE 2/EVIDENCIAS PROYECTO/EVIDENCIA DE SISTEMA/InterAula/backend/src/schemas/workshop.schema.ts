@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BUSINESS_RULES } from '../constants/businessRules.js';
+import { agendaPreviewSchema, anticipatedMaterialItemSchema } from './tutoring.schema.js';
 
 const W_RULES = BUSINESS_RULES.WORKSHOPS;
 
@@ -14,6 +15,11 @@ export const createWorkshopSchema = z
     max_participants: z.number().int().min(W_RULES.MIN_CAPACITY).max(W_RULES.MAX_CAPACITY).optional(),
     modality: z.enum(['online', 'in_person', 'hybrid']).default('online').optional(),
     location_details: z.string().trim().max(300).optional(),
+    agenda_preview: agendaPreviewSchema.nullable().optional(),
+    camera_policy: z.enum(['optional', 'recommended', 'required']).optional(),
+    participation_mode: z.enum(['chat_only', 'chat_or_voice', 'voice_preferred']).optional(),
+    participation_rules: z.string().trim().max(600).optional(),
+    anticipated_materials: z.array(anticipatedMaterialItemSchema).max(15).optional(),
   })
   .strict();
 

@@ -25,5 +25,12 @@ router.post('/assessments', learningSpaceController.recordAssessment);
 router.put('/topics', learningSpaceController.recordAssessment);
 router.post('/explain', createRateLimiter(20), learningSpaceController.explainAdaptively);
 
+// Bandeja de ideas y dudas para después
+router.get('/ideas', learningSpaceController.listQuickIdeas);
+router.post('/ideas', learningSpaceController.createQuickIdea);
+router.patch('/ideas/:ideaId', learningSpaceController.updateQuickIdea);
+router.delete('/ideas/:ideaId', learningSpaceController.deleteQuickIdea);
+router.post('/ideas/:ideaId/convert-to-task', learningSpaceController.convertQuickIdeaToTask);
+
 export default router;
 

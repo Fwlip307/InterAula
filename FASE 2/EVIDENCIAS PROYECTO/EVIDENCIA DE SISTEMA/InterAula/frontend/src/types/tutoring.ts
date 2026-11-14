@@ -3,6 +3,52 @@ import type { Profile, Subject } from './profile';
 export type SessionStatus = 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
 export type SessionModality = 'online' | 'in_person';
 
+export interface SessionAgendaPreview {
+  what_we_will_see: string;
+  step_by_step: string;
+  how_it_ends: string;
+}
+
+export type CameraPolicy = 'optional' | 'recommended' | 'off';
+export type ParticipationMode = 'mixed' | 'chat_first' | 'voice_or_chat';
+export type ClassroomSignalState = 'green' | 'yellow' | 'blue' | 'red';
+
+export interface ClassroomSignalRecord {
+  id: string;
+  room_id: string;
+  user_id: string;
+  signal: ClassroomSignalState;
+  updated_at: string;
+  user_name?: string;
+}
+
+export interface SessionPrepDTO {
+  agenda_preview?: SessionAgendaPreview | null;
+  camera_policy?: CameraPolicy;
+  participation_mode?: ParticipationMode;
+  participation_rules?: string | null;
+  anticipated_materials?: string[];
+}
+
+export interface InclusiveTutorAccreditation {
+  id: string;
+  profile_id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
+  training_name: string;
+  evidence_notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    display_name?: string | null;
+    email?: string | null;
+  };
+}
+
 export interface TutoringSession {
   id: string;
   student_id: string;
@@ -23,6 +69,11 @@ export interface TutoringSession {
   both_connected_at?: string | null;
   actual_duration_minutes?: number;
   attendance_verified?: boolean;
+  agenda_preview?: SessionAgendaPreview | null;
+  camera_policy?: CameraPolicy;
+  participation_mode?: ParticipationMode;
+  participation_rules?: string | null;
+  anticipated_materials?: string[];
   student?: Profile;
   tutor?: Profile;
   subject?: Subject;
@@ -116,6 +167,11 @@ export interface TutoringWorkshop {
   max_students: number;
   room_id: string;
   status: WorkshopStatus;
+  agenda_preview?: SessionAgendaPreview | null;
+  camera_policy?: CameraPolicy;
+  participation_mode?: ParticipationMode;
+  participation_rules?: string | null;
+  anticipated_materials?: string[];
   created_at: string;
   updated_at: string;
   tutor?: Profile;
@@ -142,4 +198,9 @@ export interface CreateWorkshopDTO {
   scheduled_at: string;
   duration_minutes: number;
   max_students?: number;
+  agenda_preview?: SessionAgendaPreview | null;
+  camera_policy?: CameraPolicy;
+  participation_mode?: ParticipationMode;
+  participation_rules?: string | null;
+  anticipated_materials?: string[];
 }

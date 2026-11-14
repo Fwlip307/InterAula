@@ -11,6 +11,8 @@ import {
   updateStudyTaskSchema,
   recordTopicAssessmentSchema,
   adaptiveExplanationRequestSchema,
+  createQuickIdeaSchema,
+  updateQuickIdeaSchema,
 } from '../schemas/learningSpace.schema.js';
 
 export const learningSpaceController = {
@@ -272,6 +274,62 @@ export const learningSpaceController = {
         success: true,
         data: explanation,
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listQuickIdeas(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = await learningSpaceService.listQuickIdeas(req.user!.id, req.token!);
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createQuickIdea(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const parsed = createQuickIdeaSchema.parse(req.body);
+      const data = await learningSpaceService.createQuickIdea(req.user!.id, req.token!, parsed);
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateQuickIdea(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const parsed = updateQuickIdeaSchema.parse(req.body);
+      const data = await learningSpaceService.updateQuickIdea(
+        req.user!.id,
+        req.token!,
+        String(req.params.ideaId),
+        parsed
+      );
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteQuickIdea(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await learningSpaceService.deleteQuickIdea(req.user!.id, req.token!, String(req.params.ideaId));
+      res.json({ success: true, message: 'Nota eliminada.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async convertQuickIdeaToTask(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = await learningSpaceService.convertQuickIdeaToTask(
+        req.user!.id,
+        req.token!,
+        String(req.params.ideaId)
+      );
+      res.status(201).json({ success: true, data });
     } catch (error) {
       next(error);
     }

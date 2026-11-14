@@ -5,6 +5,8 @@
  * e inmediato a bancos de preguntas pedagógicos curados y motor heurístico si no hay clave.
  */
 
+import { HttpError } from '../lib/httpError.js';
+
 export interface ChallengeQuestionDTO {
   id: string;
   subject: string;
@@ -1036,6 +1038,118 @@ Responde ÚNICAMENTE un arreglo JSON con esta estructura:
     } catch {
       clearTimeout(timer);
       return null;
+    }
+  },
+
+  async breakdownTask(params: {
+    title: string;
+    subject_name?: string;
+    context?: string;
+  }): Promise<Array<{ title: string; estimated_minutes: number; order_index: number }>> {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      throw new HttpError(
+        503,
+        'La división automática con IA requiere configurar GEMINI_API_KEY en el servidor. Puedes crear y editar tus subtareas manualmente.',
+        'AI_UNAVAILABLE'
+      );
+    }
+
+    const prompt = `Eres un tutor académico inclusivo experto en organización del estudio.
+Divide la siguiente actividad académica en 4 a 6 microtareas concretas, accionables y ordenadas lógicamente.
+Actividad: "${params.title}"
+Asignatura: "${params.subject_name || 'General'}"
+${params.context ? `Contexto adicional: "${params.context}"` : ''}
+
+Reglas estrictas:
+1. Cada microtarea debe describir una acción concreta y verificable (ej: "Abrir los apuntes de normalización", "Resolver dos ejercicios de 1FN").
+2. Estima una duración realista en minutos (entre 5 y 45 minutos según la complejidad real de cada paso, no pongas siempre 5 minutos).
+3. Devuelve ÚNICAMENTE un arreglo JSON válido con objetos que tengan:
+   - "order_index": número entero empezando en 1
+   - "title": string breve y claro (máximo 160 caracteres)
+   - "estimated_minutes": número entero entre 5 y 60`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.4,
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
+      );
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        throw new HttpError(
+          503,
+          'El servicio de IA no respondió correctamente. Puedes agregar tus subtareas manualmente.',
+          'AI_UNAVAILABLE'
+        );
+      }
+
+      const resJson: any = await response.json();
+      const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) {
+        throw new HttpError(
+          503,
+          'La IA no devolvió pasos válidos. Puedes crear tus subtareas manualmente.',
+          'AI_UNAVAILABLE'
+        );
+      }
+
+      const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new HttpError(
+          503,
+          'La respuesta de IA no tiene el formato esperado. Puedes agregar subtareas manualmente.',
+          'AI_UNAVAILABLE'
+        );
+      }
+
+      const normalized = parsed
+        .slice(0, 8)
+        .map((item: any, idx: number) => {
+          const title = typeof item?.title === 'string' ? item.title.trim().slice(0, 180) : '';
+          const minsRaw = Number(item?.estimated_minutes);
+          const estimated_minutes = Number.isFinite(minsRaw)
+            ? Math.min(120, Math.max(3, Math.round(minsRaw)))
+            : 15;
+          return {
+            title,
+            estimated_minutes,
+            order_index: idx + 1,
+          };
+        })
+        .filter((s) => s.title.length >= 2);
+
+      if (normalized.length === 0) {
+        throw new HttpError(
+          503,
+          'No se pudieron validar las microtareas sugeridas. Agrégalas manualmente.',
+          'AI_UNAVAILABLE'
+        );
+      }
+
+      return normalized;
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (err instanceof HttpError) throw err;
+      throw new HttpError(
+        503,
+        'No fue posible conectar con el motor de IA. Puedes crear y editar tus subtareas manualmente.',
+        'AI_UNAVAILABLE'
+      );
     }
   },
 

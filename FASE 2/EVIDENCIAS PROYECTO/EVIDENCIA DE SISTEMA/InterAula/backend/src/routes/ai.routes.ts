@@ -7,6 +7,7 @@ import {
   aiGenerateQuestionsSchema,
   aiGenerateQuizSchema,
   aiEvaluateAnswerSchema,
+  aiBreakdownTaskSchema,
 } from '../schemas/ai.schema.js';
 
 const router = Router();
@@ -34,6 +35,13 @@ router.post(
   '/evaluate-answer',
   validateRequest({ body: aiEvaluateAnswerSchema }),
   aiController.evaluateAnswer
+);
+
+// Dividir actividad grande en microtareas con IA
+router.post(
+  '/breakdown-task',
+  validateRequest({ body: aiBreakdownTaskSchema }),
+  aiController.breakdownTask
 );
 
 export default router;

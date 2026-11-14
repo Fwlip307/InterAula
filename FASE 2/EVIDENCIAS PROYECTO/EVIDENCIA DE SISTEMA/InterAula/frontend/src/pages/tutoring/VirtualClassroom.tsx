@@ -2,7 +2,15 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { tutoringService } from '../../services/tutoring.service';
-import type { TutoringSession, TutoringWorkshop } from '../../types/tutoring';
+import type {
+  TutoringSession,
+  TutoringWorkshop,
+  ClassroomSignalRecord,
+  ClassroomSignalState,
+  CameraPolicy,
+  ParticipationMode,
+} from '../../types/tutoring';
+import { QuickIdeasDrawer } from '../../components/common/QuickIdeasDrawer';
 import { getUserDisplayName, formatTutoringDuration } from '../../utils/formatters';
 import {
   ArrowLeftIcon,
@@ -49,6 +57,22 @@ export default function VirtualClassroom() {
   // Estados de Jitsi y Videollamada
   const [jitsiLoading, setJitsiLoading] = useState(true);
   const [jitsiError, setJitsiError] = useState<string | null>(null);
+  const [hasEnteredRoom, setHasEnteredRoom] = useState(false);
+  const [signals, setSignals] = useState<ClassroomSignalRecord[]>([]);
+  const [mySignal, setMySignal] = useState<ClassroomSignalState | null>(null);
+  const [savingSignal, setSavingSignal] = useState(false);
+
+  // Editor de guion anticipado y materiales (para el tutor)
+  const [showPrepEditor, setShowPrepEditor] = useState(false);
+  const [prepWhat, setPrepWhat] = useState('');
+  const [prepSteps, setPrepSteps] = useState('');
+  const [prepEnd, setPrepEnd] = useState('');
+  const [prepCamera, setPrepCamera] = useState<CameraPolicy>('optional');
+  const [prepPartMode, setPrepPartMode] = useState<ParticipationMode>('mixed');
+  const [prepRules, setPrepRules] = useState('');
+  const [prepMaterialsRaw, setPrepMaterialsRaw] = useState('');
+  const [savingPrep, setSavingPrep] = useState(false);
+  const [prepSavedMsg, setPrepSavedMsg] = useState<string | null>(null);
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const jitsiApiRef = useRef<any>(null);
   const jitsiInitializedRoomRef = useRef<string | null>(null);
@@ -198,9 +222,105 @@ export default function VirtualClassroom() {
     };
   }, []);
 
-  // Inicializar Jitsi Meet (única vez por sala)
+  // Sincronizar campos de guion anticipado cuando carga la sesión o taller
   useEffect(() => {
-    if (loading || (!session && !workshop) || !jitsiContainerRef.current) return;
+    const source = workshop || session;
+    if (!source) return;
+    setPrepWhat(source.agenda_preview?.what_we_will_see || '');
+    setPrepSteps(source.agenda_preview?.step_by_step || '');
+    setPrepEnd(source.agenda_preview?.how_it_ends || '');
+    setPrepCamera(source.camera_policy || 'optional');
+    setPrepPartMode(source.participation_mode || 'mixed');
+    setPrepRules(source.participation_rules || '');
+    setPrepMaterialsRaw((source.anticipated_materials || []).join('\n'));
+  }, [workshop, session]);
+
+  const loadRoomSignals = useCallback(async () => {
+    if (!roomId || !user) return;
+    try {
+      const list = await tutoringService.getRoomSignals(roomId);
+      setSignals(list);
+      const mine = list.find((s) => s.user_id === user.id);
+      if (mine) setMySignal(mine.signal);
+    } catch {
+      // Silencioso si no hay permisos o sala aún no iniciada
+    }
+  }, [roomId, user]);
+
+  useEffect(() => {
+    if (!hasEnteredRoom || !roomId) return;
+    void loadRoomSignals();
+    const interval = setInterval(() => {
+      void loadRoomSignals();
+    }, 12000);
+    return () => clearInterval(interval);
+  }, [hasEnteredRoom, roomId, loadRoomSignals]);
+
+  const handleSetSignal = async (signal: ClassroomSignalState) => {
+    if (!roomId) return;
+    setSavingSignal(true);
+    try {
+      const saved = await tutoringService.updateRoomSignal(roomId, signal);
+      setMySignal(saved.signal);
+      setSignals((prev) => {
+        const others = prev.filter((s) => s.user_id !== saved.user_id);
+        return [saved, ...others];
+      });
+    } catch {
+      // ignore
+    } finally {
+      setSavingSignal(false);
+    }
+  };
+
+  const handleSavePrep = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPrep(true);
+    setPrepSavedMsg(null);
+    const materials = prepMaterialsRaw
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const agenda =
+      prepWhat.trim() || prepSteps.trim() || prepEnd.trim()
+        ? {
+            what_we_will_see: prepWhat.trim() || 'Por definir',
+            step_by_step: prepSteps.trim() || 'Por definir',
+            how_it_ends: prepEnd.trim() || 'Por definir',
+          }
+        : null;
+    try {
+      if (isWorkshop && workshop) {
+        const updated = await tutoringService.updateWorkshopPrep(workshop.id, {
+          agenda_preview: agenda,
+          camera_policy: prepCamera,
+          participation_mode: prepPartMode,
+          participation_rules: prepRules.trim() || null,
+          anticipated_materials: materials,
+        });
+        setWorkshop(updated);
+      } else if (session) {
+        const updated = await tutoringService.updateSessionPrep(session.id, {
+          agenda_preview: agenda,
+          camera_policy: prepCamera,
+          participation_mode: prepPartMode,
+          participation_rules: prepRules.trim() || null,
+          anticipated_materials: materials,
+        });
+        setSession(updated);
+      }
+      setPrepSavedMsg('Guion y materiales actualizados.');
+      setShowPrepEditor(false);
+    } catch (err: any) {
+      setPrepSavedMsg(err?.message || 'No se pudo guardar el guion.');
+    } finally {
+      setSavingPrep(false);
+    }
+  };
+
+  // Inicializar Jitsi Meet (única vez por sala, al confirmar entrada desde la previsualización)
+  useEffect(() => {
+    if (!hasEnteredRoom || loading || (!session && !workshop) || !jitsiContainerRef.current) return;
     if (!roomId) return;
 
     // Evitar re-instanciar si ya está conectada esta misma sala
@@ -345,7 +465,7 @@ export default function VirtualClassroom() {
     return () => {
       isMounted = false;
     };
-  }, [loading, session, workshop, user, isStudent, isTutor, roomId, isWorkshop]);
+  }, [hasEnteredRoom, loading, session, workshop, user, isStudent, isTutor, roomId, isWorkshop]);
 
   // Temporizador de duración en vivo y heartbeat cada 60s
   useEffect(() => {
@@ -835,63 +955,173 @@ export default function VirtualClassroom() {
             backgroundColor: '#020617',
           }}
         >
-          {jitsiLoading && (
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '16px',
-                backgroundColor: '#020617',
-                zIndex: 10,
-              }}
-            >
-              <LoaderIcon size={40} color="#38bdf8" style={{ animation: 'ia-spin 1s linear infinite' }} />
-              <p style={{ color: '#94a3b8', fontSize: '0.95rem', fontWeight: 600 }}>
-                Conectando al Aula Virtual encriptada...
-              </p>
-            </div>
-          )}
-
-          {jitsiError ? (
+          {!hasEnteredRoom ? (
             <div
               style={{
                 height: '100%',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '32px',
-                textAlign: 'center',
-                gap: '16px',
+                padding: '24px',
+                overflowY: 'auto',
+                backgroundColor: '#020617',
               }}
             >
-              <AlertCircleIcon size={48} color="#f59e0b" />
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>{jitsiError}</h2>
-              <p style={{ color: '#94a3b8', maxWidth: '480px', fontSize: '0.9rem' }}>
-                Puedes unirte directamente a la sala de videollamada institucional en una pestaña externa:
-              </p>
-              <a
-                href={`https://meet.jit.si/${roomId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ia-btn ia-btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+              <div
+                style={{
+                  maxWidth: '640px',
+                  width: '100%',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid #334155',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  color: '#f8fafc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
               >
-                <ExternalLinkIcon size={16} /> Abrir Sala Virtual en Pestaña Directa
-              </a>
+                <div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase' }}>
+                    Previsualización de sala antes de entrar
+                  </span>
+                  <h2 style={{ margin: '6px 0 4px', fontSize: '1.35rem', fontWeight: 700 }}>
+                    {classroomTitle}
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: '#94a3b8' }}>
+                    {otherRoleName}: {otherDisplayName} · Duración estimada: {formatTutoringDuration(expectedDuration)}
+                  </p>
+                </div>
+
+                {(() => {
+                  const src = workshop || session;
+                  const camLabel =
+                    src?.camera_policy === 'recommended'
+                      ? 'Cámara recomendada (puedes apagarla si lo necesitas)'
+                      : src?.camera_policy === 'off'
+                      ? 'Cámara desactivada / solo audio o chat'
+                      : 'Cámara opcional';
+                  const partLabel =
+                    src?.participation_mode === 'chat_first'
+                      ? 'Participación prioritaria por chat'
+                      : src?.participation_mode === 'voice_or_chat'
+                      ? 'Voz o chat libre'
+                      : 'Mixta (voz, chat o señales visuales)';
+                  return (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                        <div style={{ backgroundColor: '#1e293b', padding: '10px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                          <div style={{ color: '#94a3b8', marginBottom: '2px' }}>Uso de cámara</div>
+                          <div style={{ fontWeight: 600 }}>{camLabel}</div>
+                        </div>
+                        <div style={{ backgroundColor: '#1e293b', padding: '10px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                          <div style={{ color: '#94a3b8', marginBottom: '2px' }}>Modalidad de participación</div>
+                          <div style={{ fontWeight: 600 }}>{partLabel}</div>
+                        </div>
+                      </div>
+
+                      {src?.agenda_preview && (
+                        <div style={{ backgroundColor: '#1e293b', padding: '12px', borderRadius: '10px', fontSize: '0.84rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <strong style={{ color: '#38bdf8' }}>Guion anticipado de la sesión</strong>
+                          <div><strong>1. Qué veremos:</strong> {src.agenda_preview.what_we_will_see}</div>
+                          <div><strong>2. Paso a paso:</strong> {src.agenda_preview.step_by_step}</div>
+                          <div><strong>3. Cómo cerramos:</strong> {src.agenda_preview.how_it_ends}</div>
+                        </div>
+                      )}
+
+                      {src?.participation_rules && (
+                        <div style={{ backgroundColor: '#1e293b', padding: '10px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                          <strong style={{ color: '#94a3b8' }}>Reglas de participación: </strong>
+                          {src.participation_rules}
+                        </div>
+                      )}
+
+                      {src?.anticipated_materials && src.anticipated_materials.length > 0 && (
+                        <div style={{ backgroundColor: '#1e293b', padding: '10px 12px', borderRadius: '10px', fontSize: '0.82rem' }}>
+                          <strong style={{ color: '#38bdf8' }}>Material anticipado:</strong>
+                          <ul style={{ margin: '6px 0 0', paddingLeft: '18px', color: '#cbd5e1' }}>
+                            {src.anticipated_materials.map((m, idx) => (
+                              <li key={idx}>{m}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    className="ia-btn ia-btn-primary"
+                    onClick={() => setHasEnteredRoom(true)}
+                  >
+                    Entrar al Aula Virtual
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
-            <div
-              ref={jitsiContainerRef}
-              style={{
-                width: '100%',
-                height: '100%',
-              }}
-            />
+            <>
+              {jitsiLoading && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    backgroundColor: '#020617',
+                    zIndex: 10,
+                  }}
+                >
+                  <LoaderIcon size={40} color="#38bdf8" style={{ animation: 'ia-spin 1s linear infinite' }} />
+                  <p style={{ color: '#94a3b8', fontSize: '0.95rem', fontWeight: 600 }}>
+                    Conectando al Aula Virtual encriptada...
+                  </p>
+                </div>
+              )}
+
+              {jitsiError ? (
+                <div
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '32px',
+                    textAlign: 'center',
+                    gap: '16px',
+                  }}
+                >
+                  <AlertCircleIcon size={48} color="#f59e0b" />
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc' }}>{jitsiError}</h2>
+                  <p style={{ color: '#94a3b8', maxWidth: '480px', fontSize: '0.9rem' }}>
+                    Puedes unirte directamente a la sala de videollamada institucional en una pestaña externa:
+                  </p>
+                  <a
+                    href={`https://meet.jit.si/${roomId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ia-btn ia-btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <ExternalLinkIcon size={16} /> Abrir Sala Virtual en Pestaña Directa
+                  </a>
+                </div>
+              ) : (
+                <div
+                  ref={jitsiContainerRef}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
 
@@ -1193,6 +1423,94 @@ export default function VirtualClassroom() {
                         </p>
                       </div>
 
+                      {/* Semáforo de comunicación (1 clic, privado para la sala) */}
+                      <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
+                          Semáforo de comunicación (1 clic)
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          {[
+                            { id: 'green' as const, label: 'Todo bien', color: '#10b981' },
+                            { id: 'yellow' as const, label: 'Más despacio', color: '#f59e0b' },
+                            { id: 'blue' as const, label: 'Prefiero chat', color: '#38bdf8' },
+                            { id: 'red' as const, label: 'Necesito pausa', color: '#ef4444' },
+                          ].map((btn) => (
+                            <button
+                              key={btn.id}
+                              type="button"
+                              disabled={savingSignal}
+                              onClick={() => handleSetSignal(btn.id)}
+                              style={{
+                                padding: '6px 8px',
+                                borderRadius: '8px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                border: mySignal === btn.id ? `2px solid ${btn.color}` : '1px solid #334155',
+                                backgroundColor: mySignal === btn.id ? 'rgba(255,255,255,0.08)' : '#1e293b',
+                                color: '#f8fafc',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                              }}
+                            >
+                              {btn.label}
+                            </button>
+                          ))}
+                        </div>
+                        {signals.length > 0 && (
+                          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {signals.map((sig) => (
+                              <div key={sig.user_id} style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
+                                {sig.user_name || 'Participante'}:{' '}
+                                <strong>
+                                  {sig.signal === 'green'
+                                    ? 'Todo bien'
+                                    : sig.signal === 'yellow'
+                                    ? 'Más despacio por favor'
+                                    : sig.signal === 'blue'
+                                    ? 'Prefiere chat'
+                                    : 'Necesita pausa breve'}
+                                </strong>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Editor de Guion Anticipado y Materiales (Tutor) */}
+                      {isTutor && (
+                        <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1' }}>Guion anticipado</span>
+                            <button
+                              type="button"
+                              className="ia-btn ia-btn-ghost ia-btn-sm"
+                              onClick={() => setShowPrepEditor((p) => !p)}
+                            >
+                              {showPrepEditor ? 'Cerrar' : 'Editar'}
+                            </button>
+                          </div>
+                          {prepSavedMsg && <p style={{ fontSize: '0.74rem', color: '#38bdf8', margin: '6px 0 0' }}>{prepSavedMsg}</p>}
+                          {showPrepEditor && (
+                            <form onSubmit={handleSavePrep} style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                              <input type="text" placeholder="1. Qué veremos" value={prepWhat} onChange={(e) => setPrepWhat(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <input type="text" placeholder="2. Paso a paso" value={prepSteps} onChange={(e) => setPrepSteps(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <input type="text" placeholder="3. Cómo cerramos" value={prepEnd} onChange={(e) => setPrepEnd(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <textarea rows={2} placeholder="Materiales previos (uno por línea)" value={prepMaterialsRaw} onChange={(e) => setPrepMaterialsRaw(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <button type="submit" className="ia-btn ia-btn-primary ia-btn-sm" disabled={savingPrep}>
+                                {savingPrep ? 'Guardando...' : 'Guardar guion'}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      )}
+
+                      <QuickIdeasDrawer
+                        contextType="workshop"
+                        contextId={sessionId || roomId}
+                        defaultSubjectName={currentSubject?.name || 'Taller'}
+                        compact
+                      />
+
                       {/* Reglas de convivencia en taller */}
                       <div style={{ backgroundColor: 'rgba(37, 99, 235, 0.12)', border: '1px solid rgba(37, 99, 235, 0.3)', padding: '12px', borderRadius: '8px' }}>
                         <h4 style={{ margin: '0 0 6px', fontSize: '0.82rem', fontWeight: 700, color: '#60a5fa' }}>
@@ -1216,6 +1534,93 @@ export default function VirtualClassroom() {
                           {session?.notes || 'No se registraron notas previas para esta sesión.'}
                         </p>
                       </div>
+
+                      {/* Semáforo de comunicación (1 clic, privado para la sala) */}
+                      <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
+                          Semáforo de comunicación (1 clic)
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          {[
+                            { id: 'green' as const, label: 'Todo bien', color: '#10b981' },
+                            { id: 'yellow' as const, label: 'Más despacio', color: '#f59e0b' },
+                            { id: 'blue' as const, label: 'Prefiero chat', color: '#38bdf8' },
+                            { id: 'red' as const, label: 'Necesito pausa', color: '#ef4444' },
+                          ].map((btn) => (
+                            <button
+                              key={btn.id}
+                              type="button"
+                              disabled={savingSignal}
+                              onClick={() => handleSetSignal(btn.id)}
+                              style={{
+                                padding: '6px 8px',
+                                borderRadius: '8px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                border: mySignal === btn.id ? `2px solid ${btn.color}` : '1px solid #334155',
+                                backgroundColor: mySignal === btn.id ? 'rgba(255,255,255,0.08)' : '#1e293b',
+                                color: '#f8fafc',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                              }}
+                            >
+                              {btn.label}
+                            </button>
+                          ))}
+                        </div>
+                        {signals.length > 0 && (
+                          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {signals.map((sig) => (
+                              <div key={sig.user_id} style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
+                                {sig.user_name || 'Participante'}:{' '}
+                                <strong>
+                                  {sig.signal === 'green'
+                                    ? 'Todo bien'
+                                    : sig.signal === 'yellow'
+                                    ? 'Más despacio por favor'
+                                    : sig.signal === 'blue'
+                                    ? 'Prefiere chat'
+                                    : 'Necesita pausa breve'}
+                                </strong>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {isTutor && (
+                        <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1' }}>Guion anticipado</span>
+                            <button
+                              type="button"
+                              className="ia-btn ia-btn-ghost ia-btn-sm"
+                              onClick={() => setShowPrepEditor((p) => !p)}
+                            >
+                              {showPrepEditor ? 'Cerrar' : 'Editar'}
+                            </button>
+                          </div>
+                          {prepSavedMsg && <p style={{ fontSize: '0.74rem', color: '#38bdf8', margin: '6px 0 0' }}>{prepSavedMsg}</p>}
+                          {showPrepEditor && (
+                            <form onSubmit={handleSavePrep} style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+                              <input type="text" placeholder="1. Qué veremos" value={prepWhat} onChange={(e) => setPrepWhat(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <input type="text" placeholder="2. Paso a paso" value={prepSteps} onChange={(e) => setPrepSteps(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <input type="text" placeholder="3. Cómo cerramos" value={prepEnd} onChange={(e) => setPrepEnd(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <textarea rows={2} placeholder="Materiales previos (uno por línea)" value={prepMaterialsRaw} onChange={(e) => setPrepMaterialsRaw(e.target.value)} style={{ fontSize: '0.76rem', padding: '5px 8px', borderRadius: '6px', backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid #334155' }} />
+                              <button type="submit" className="ia-btn ia-btn-primary ia-btn-sm" disabled={savingPrep}>
+                                {savingPrep ? 'Guardando...' : 'Guardar guion'}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      )}
+
+                      <QuickIdeasDrawer
+                        contextType="tutoring"
+                        contextId={sessionId || roomId}
+                        defaultSubjectName={currentSubject?.name || 'Tutoría'}
+                        compact
+                      />
 
                       {/* Preferencias de Aprendizaje del estudiante */}
                       <div style={{ backgroundColor: '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>

@@ -1,4 +1,5 @@
 import { env } from '../config/env.js';
+import { HttpError } from '../lib/httpError.js';
 import { remoteLearningSpaceService } from './remote/learningSpace.service.js';
 import { getAuthenticatedSupabase as createSupabaseUserClient } from '../lib/supabase.js';
 import { callFreeGenerativeAI, randomizeQuestionOptions } from './ai.service.js';
@@ -10,6 +11,7 @@ import {
   type StoredStudyTask,
   type StoredTopicAssessment,
   type StoredLearningSpaceConfig,
+  type StoredQuickIdea,
 } from '../lib/persistentStore.js';
 import type {
   UpdateLearningSpaceConfigInput,
@@ -20,6 +22,8 @@ import type {
   UpdateStudyTaskInput,
   RecordTopicAssessmentInput,
   AdaptiveExplanationRequestInput,
+  CreateQuickIdeaInput,
+  UpdateQuickIdeaInput,
 } from '../schemas/learningSpace.schema.js';
 
 export interface LearningPathWithStages extends StoredLearningPath {
@@ -956,12 +960,20 @@ const localLearningSpaceService = {
     const modeLabel = MODE_LABELS[input.mode];
     const geminiKey = process.env.GEMINI_API_KEY;
     const randomSeed = Math.floor(Math.random() * 999999);
+    const literalInstructions = input.literal_mode
+      ? `\nREGLAS OBLIGATORIAS DE LENGUAJE LITERAL Y DIRECTO:
+- Evita metáforas, analogías poéticas, ironías, sarcasmos y modismos.
+- Evita instrucciones implícitas o ambiguas.
+- Usa frases directas, literales y definiciones explícitas para cada término técnico.
+- Numera todos los pasos o secuencias de forma explícita (Paso 1, Paso 2, ...).
+- Incluye un ejemplo concreto y literal.\n`
+      : '';
 
     const prompt = `Actúa como mentor académico inclusivo en InterAula ("Aprender juntos, a nuestra manera"). Semilla de variación #${randomSeed}.
 Asignatura: "${input.subject_name}"
 Tema específico: "${input.topic}"
 Modo de explicación elegido por el estudiante: "${modeLabel}" (${input.mode})
-Objetivo del estudiante: "${input.goal || 'Comprender el tema con claridad y aplicarlo con seguridad'}"
+Objetivo del estudiante: "${input.goal || 'Comprender el tema con claridad y aplicarlo con seguridad'}"${literalInstructions}
 
 Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (genera un ejemplo nuevo y una pregunta inédita que no se repita):
 {
@@ -1477,6 +1489,97 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
       draggable_blocks: draggableVariants[blockVariantIdx],
       comprehension_check: chosenCheck,
     };
+  },
+
+  async listQuickIdeas(userId: string, _token: string): Promise<StoredQuickIdea[]> {
+    const db = persistentStore.read();
+    return db.quick_ideas
+      .filter((item) => item.user_id === userId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+
+  async createQuickIdea(
+    userId: string,
+    _token: string,
+    input: CreateQuickIdeaInput
+  ): Promise<StoredQuickIdea> {
+    const now = new Date().toISOString();
+    const created: StoredQuickIdea = {
+      id: persistentStore.newId(),
+      user_id: userId,
+      context_type: input.context_type || 'learning_space',
+      context_id: input.context_id || null,
+      content: input.content.trim(),
+      resolved: false,
+      converted_task_id: null,
+      created_at: now,
+      updated_at: now,
+    };
+    persistentStore.write((db) => {
+      db.quick_ideas.unshift(created);
+    });
+    return created;
+  },
+
+  async updateQuickIdea(
+    userId: string,
+    _token: string,
+    ideaId: string,
+    input: UpdateQuickIdeaInput
+  ): Promise<StoredQuickIdea> {
+    const db = persistentStore.read();
+    const found = db.quick_ideas.find((item) => item.id === ideaId && item.user_id === userId);
+    if (!found) {
+      throw new HttpError(404, 'Idea rápida no encontrada.');
+    }
+    let updated!: StoredQuickIdea;
+    persistentStore.write((draft) => {
+      const target = draft.quick_ideas.find((item) => item.id === ideaId && item.user_id === userId)!;
+      if (typeof input.content === 'string') target.content = input.content.trim();
+      if (typeof input.resolved === 'boolean') target.resolved = input.resolved;
+      target.updated_at = new Date().toISOString();
+      updated = { ...target };
+    });
+    return updated;
+  },
+
+  async deleteQuickIdea(userId: string, _token: string, ideaId: string): Promise<void> {
+    const db = persistentStore.read();
+    const exists = db.quick_ideas.some((item) => item.id === ideaId && item.user_id === userId);
+    if (!exists) {
+      throw new HttpError(404, 'Idea rápida no encontrada.');
+    }
+    persistentStore.write((draft) => {
+      draft.quick_ideas = draft.quick_ideas.filter(
+        (item) => !(item.id === ideaId && item.user_id === userId)
+      );
+    });
+  },
+
+  async convertQuickIdeaToTask(
+    userId: string,
+    token: string,
+    ideaId: string
+  ): Promise<{ idea: StoredQuickIdea; task: StoredStudyTask }> {
+    const db = persistentStore.read();
+    const found = db.quick_ideas.find((item) => item.id === ideaId && item.user_id === userId);
+    if (!found) {
+      throw new HttpError(404, 'Idea rápida no encontrada.');
+    }
+    const task = await localLearningSpaceService.createStudyTask(userId, token, {
+      title: found.content.slice(0, 180),
+      subject_name: 'General',
+      priority: 'media',
+    });
+    let updatedIdea!: StoredQuickIdea;
+    persistentStore.write((draft) => {
+      const target = draft.quick_ideas.find((item) => item.id === ideaId && item.user_id === userId)!;
+      target.resolved = true;
+      target.converted_task_id = task.id;
+      target.updated_at = new Date().toISOString();
+      updatedIdea = { ...target };
+    });
+    return { idea: updatedIdea, task };
   },
 };
 

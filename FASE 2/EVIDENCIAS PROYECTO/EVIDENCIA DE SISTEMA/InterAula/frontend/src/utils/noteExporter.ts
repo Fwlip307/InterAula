@@ -719,3 +719,97 @@ export function exportNoteToWordDoc(note: Partial<AcademicNote>): string {
   triggerBrowserDownload(blob, `${sanitizeFilename(note.title || 'apunte')}.doc`);
   return docHtml;
 }
+
+export interface PersonalProgressPdfInput {
+  studentName: string;
+  weeklyActiveDays: number;
+  weeklyGoalDays: number;
+  learningGoalSummary?: string;
+  paths: Array<{ title: string; subject_name: string; progress_percent: number; status: string }>;
+  tasks: Array<{ title: string; subject_name: string; status: string; completedSubtasks: number; totalSubtasks: number }>;
+  assessments: Array<{ subject_name: string; topic_name: string; mastery_level: string; score: number }>;
+  includeSupportPassport?: boolean;
+  supportLabels?: string[];
+  supportNotes?: string;
+}
+
+/**
+ * Genera un reporte PDF personal descargable de progreso y apoyos (sin datos diagnósticos).
+ */
+export function generatePersonalProgressPdf(input: PersonalProgressPdfInput): Uint8Array {
+  const sections: string[] = [];
+  sections.push(`<h2>Resumen de avance flexible</h2>`);
+  sections.push(
+    `<p>Días activos esta semana: ${input.weeklyActiveDays} de ${input.weeklyGoalDays} días propuestos.</p>`
+  );
+  if (input.learningGoalSummary?.trim()) {
+    sections.push(`<p>Objetivo general: ${escapeHtml(input.learningGoalSummary.trim())}</p>`);
+  }
+
+  sections.push(`<h2>Rutas de aprendizaje (${input.paths.length})</h2>`);
+  if (input.paths.length === 0) {
+    sections.push(`<p>Aún no hay rutas registradas.</p>`);
+  } else {
+    sections.push(
+      `<ul>${input.paths
+        .map(
+          (p) =>
+            `<li>${escapeHtml(p.subject_name)} - ${escapeHtml(p.title)}: ${p.progress_percent}% (${escapeHtml(p.status)})</li>`
+        )
+        .join('')}</ul>`
+    );
+  }
+
+  sections.push(`<h2>Tareas y pasos (${input.tasks.length})</h2>`);
+  if (input.tasks.length === 0) {
+    sections.push(`<p>Aún no hay tareas registradas.</p>`);
+  } else {
+    sections.push(
+      `<ul>${input.tasks
+        .map(
+          (t) =>
+            `<li>${escapeHtml(t.title)} (${escapeHtml(t.subject_name)}) - ${escapeHtml(t.status)}${
+              t.totalSubtasks > 0 ? ` [${t.completedSubtasks}/${t.totalSubtasks} pasos]` : ''
+            }</li>`
+        )
+        .join('')}</ul>`
+    );
+  }
+
+  sections.push(`<h2>Temas evaluados (${input.assessments.length})</h2>`);
+  if (input.assessments.length === 0) {
+    sections.push(`<p>Aún no hay evaluaciones registradas.</p>`);
+  } else {
+    sections.push(
+      `<ul>${input.assessments
+        .map(
+          (a) =>
+            `<li>${escapeHtml(a.subject_name)} - ${escapeHtml(a.topic_name)}: ${a.score}% (${escapeHtml(a.mastery_level)})</li>`
+        )
+        .join('')}</ul>`
+    );
+  }
+
+  if (input.includeSupportPassport) {
+    sections.push(`<h2>Mis apoyos para aprender (incluidos por elección propia)</h2>`);
+    if (input.supportLabels && input.supportLabels.length > 0) {
+      sections.push(`<ul>${input.supportLabels.map((lbl) => `<li>${escapeHtml(lbl)}</li>`).join('')}</ul>`);
+    } else {
+      sections.push(`<p>Sin apoyos seleccionados.</p>`);
+    }
+    if (input.supportNotes?.trim()) {
+      sections.push(`<p>Notas personales: ${escapeHtml(input.supportNotes.trim())}</p>`);
+    }
+  }
+
+  return exportNoteToPdf({
+    title: `Reporte Personal de Progreso - ${input.studentName || 'Estudiante'}`,
+    subjectName: 'Mi espacio de aprendizaje',
+    career: 'InterAula',
+    category: 'Reporte personal',
+    authorName: input.studentName || 'Estudiante',
+    summary: 'Documento personal descargado desde InterAula. Uso privado y voluntario.',
+    contentHtml: sections.join('\n'),
+    updatedAt: new Date().toISOString(),
+  });
+}

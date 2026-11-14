@@ -13,6 +13,8 @@ import {
   teacherEndorsementSchema,
   startAssessmentSchema,
   answerAssessmentSchema,
+  inclusiveAccreditationRequestSchema,
+  reviewInclusiveAccreditationSchema,
 } from '../schemas/verification.schema.js';
 
 const router = Router();
@@ -111,5 +113,27 @@ router.post(
 
 // Cancelar solicitud pendiente
 router.delete('/requests/:id', requireAuth, verificationController.cancelRequest);
+
+// Acreditación verificable de "Tutor con formación en acompañamiento inclusivo"
+router.get('/inclusive-accreditation/me', requireAuth, verificationController.getMyInclusiveAccreditation);
+router.post(
+  '/inclusive-accreditation',
+  requireAuth,
+  validateRequest({ body: inclusiveAccreditationRequestSchema }),
+  verificationController.requestInclusiveAccreditation
+);
+router.get(
+  '/inclusive-accreditation/validator',
+  requireAuth,
+  requireAcademicValidator,
+  verificationController.listInclusiveAccreditationsForValidator
+);
+router.patch(
+  '/inclusive-accreditation/:id/review',
+  requireAuth,
+  requireAcademicValidator,
+  validateRequest({ body: reviewInclusiveAccreditationSchema }),
+  verificationController.reviewInclusiveAccreditation
+);
 
 export default router;

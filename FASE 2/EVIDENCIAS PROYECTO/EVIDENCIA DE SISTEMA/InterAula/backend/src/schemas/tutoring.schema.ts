@@ -45,3 +45,39 @@ export const registerAttendanceSchema = z
     elapsed_minutes: z.number().min(0).max(T_RULES.MAX_DURATION_MINUTES).optional(),
   })
   .strict();
+
+export const agendaPreviewSchema = z
+  .object({
+    what_we_will_see: z.string().trim().min(2).max(600),
+    step_by_step: z.string().trim().min(2).max(1200),
+    how_it_ends: z.string().trim().min(2).max(600),
+  })
+  .strict();
+
+export const anticipatedMaterialItemSchema = z
+  .object({
+    id: z.string().trim().min(1).max(120).optional(),
+    title: z.string().trim().min(2).max(180),
+    kind: z.enum(['resumen', 'diapositivas', 'guia', 'temario', 'pdf', 'complementario']).default('guia'),
+    file_url: z.string().trim().max(500).optional(),
+    file_name: z.string().trim().max(240).optional(),
+    notes: z.string().trim().max(400).optional(),
+    added_at: z.string().optional(),
+  })
+  .strict();
+
+export const updateSessionPrepSchema = z
+  .object({
+    agenda_preview: agendaPreviewSchema.nullable().optional(),
+    camera_policy: z.enum(['optional', 'recommended', 'required']).optional(),
+    participation_mode: z.enum(['chat_only', 'chat_or_voice', 'voice_preferred']).optional(),
+    participation_rules: z.string().trim().max(600).optional(),
+    anticipated_materials: z.array(anticipatedMaterialItemSchema).max(15).optional(),
+  })
+  .strict();
+
+export const classroomSignalSchema = z
+  .object({
+    signal: z.enum(['green', 'yellow', 'blue', 'red']),
+  })
+  .strict();

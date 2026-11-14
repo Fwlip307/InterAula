@@ -62,6 +62,7 @@ export default function TutoringExplore() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [onlyCertified, setOnlyCertified] = useState<boolean>(false);
+  const [onlyInclusive, setOnlyInclusive] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
@@ -117,6 +118,7 @@ export default function TutoringExplore() {
         subjectId: selectedSubjectId,
         search: searchTerm,
         onlyVerified: onlyCertified,
+        onlyInclusive,
       });
       setTutors(data);
     } catch (err: any) {
@@ -125,7 +127,7 @@ export default function TutoringExplore() {
     } finally {
       setLoading(false);
     }
-  }, [selectedSubjectId, searchTerm, onlyCertified]);
+  }, [selectedSubjectId, searchTerm, onlyCertified, onlyInclusive]);
 
   const fetchWorkshops = React.useCallback(async () => {
     setWorkshopsLoading(true);
@@ -863,28 +865,52 @@ export default function TutoringExplore() {
         {/* Filtro de Calidad Académica y Asignaturas Críticas de Informática */}
         <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <button
-              type="button"
-              onClick={() => setOnlyCertified(!onlyCertified)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                border: `1px solid ${onlyCertified ? '#2563eb' : '#cbd5e1'}`,
-                backgroundColor: onlyCertified ? '#eff6ff' : '#ffffff',
-                color: onlyCertified ? '#1d4ed8' : '#64748b',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <ShieldCheckIcon size={16} color={onlyCertified ? '#2563eb' : '#94a3b8'} />
-              <span>Solo Tutores Certificados</span>
-              {onlyCertified && <CheckIcon size={14} color="#2563eb" />}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setOnlyCertified(!onlyCertified)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: `1px solid ${onlyCertified ? '#2563eb' : '#cbd5e1'}`,
+                  backgroundColor: onlyCertified ? '#eff6ff' : '#ffffff',
+                  color: onlyCertified ? '#1d4ed8' : '#64748b',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <ShieldCheckIcon size={16} color={onlyCertified ? '#2563eb' : '#94a3b8'} />
+                <span>Solo Tutores Certificados</span>
+                {onlyCertified && <CheckIcon size={14} color="#2563eb" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOnlyInclusive(!onlyInclusive)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  border: `1px solid ${onlyInclusive ? '#0f766e' : '#cbd5e1'}`,
+                  backgroundColor: onlyInclusive ? '#f0fdfa' : '#ffffff',
+                  color: onlyInclusive ? '#0f766e' : '#64748b',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>Formación en acompañamiento inclusivo</span>
+                {onlyInclusive && <CheckIcon size={14} color="#0f766e" />}
+              </button>
+            </div>
 
             <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
               Foco Piloto: Asignaturas Filtro de Informática
@@ -1151,6 +1177,21 @@ export default function TutoringExplore() {
                           <AwardIcon size={14} color="#2563eb" />
                           <span>{tutor.badges.length} {tutor.badges.length === 1 ? 'insignia' : 'insignias'}</span>
                         </div>
+                      )}
+                      {tutor.inclusiveAccredited && (
+                        <span
+                          style={{
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '999px',
+                            backgroundColor: '#f0fdfa',
+                            color: '#0f766e',
+                            border: '1px solid #99f6e4',
+                          }}
+                        >
+                          Tutor con formación en acompañamiento inclusivo
+                        </span>
                       )}
                     </div>
 

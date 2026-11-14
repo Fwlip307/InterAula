@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCalmMode } from '../../context/CalmModeContext';
+import { INCLUSIVE_SUPPORT_RESOURCES } from '../../data/inclusiveResources';
 import {
   SparklesIcon,
   XIcon,
@@ -54,7 +56,7 @@ const QUICK_OPTIONS: QuickOption[] = [
 ];
 
 // Base de conocimiento estructurada y accesible para orientación y accesibilidad cognitiva
-function getBotAnswer(query: string): {
+function getBotAnswer(query: string, literalMode = false): {
   text: string;
   steps?: string[];
   actionLink?: { label: string; path: string };
@@ -63,6 +65,19 @@ function getBotAnswer(query: string): {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+
+  if (q.includes('recurso') || q.includes('estrategia') || q.includes('lectura') || q.includes('voz')) {
+    return {
+      text: literalMode
+        ? 'Recursos de apoyo disponibles en InterAula:'
+        : 'Aquí tienes estrategias y herramientas prácticas disponibles dentro de InterAula:',
+      steps: INCLUSIVE_SUPPORT_RESOURCES.map((r) => `${r.title}: ${r.summary}`),
+      actionLink: {
+        label: 'Ir a Mi espacio de aprendizaje',
+        path: '/learning-space',
+      },
+    };
+  }
 
   if (q.includes('busc') || q.includes('encontrar') || q.includes('tutoria') || q.includes('ramo') || q.includes('materia')) {
     return {
@@ -159,10 +174,12 @@ function getBotAnswer(query: string): {
 }
 
 export default function InclusiveHelpBot() {
+  const { preferences, updatePreferences, setThemeMode } = useCalmMode();
   const [isOpen, setIsOpen] = useState(false);
   const [inputQuery, setInputQuery] = useState('');
   const [isCalmFontMode, setIsCalmFontMode] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [overwhelmedTimer, setOverwhelmedTimer] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -179,6 +196,37 @@ export default function InclusiveHelpBot() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (overwhelmedTimer === null || overwhelmedTimer <= 0) return;
+    const t = setInterval(() => {
+      setOverwhelmedTimer((prev) => (prev && prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [overwhelmedTimer]);
+
+  const handleOverwhelmedNow = () => {
+    setThemeMode('calm');
+    void updatePreferences({ disableFlashing: true, warmFilter: true });
+    setOverwhelmedTimer(60);
+    const botMsg: Message = {
+      id: `bot_calm_${Date.now()}`,
+      sender: 'bot',
+      text: preferences.literalLanguage
+        ? 'Modo Calma activado. Estímulos reducidos. Puedes tomarte 60 segundos.'
+        : 'Activé el Modo Calma con filtro cálido y sin destellos para bajar estímulos. No tienes que hacer todo ahora.',
+      steps: [
+        '1. Si te sirve, sigue el conteo silencioso de 60 segundos arriba (puedes cerrarlo cuando quieras).',
+        '2. Si deseas continuar estudiando, usa "Un paso a la vez" para ver solo una acción pequeña.',
+      ],
+      actionLink: {
+        label: 'Ir a Un paso a la vez',
+        path: '/learning-space?tab=tasks',
+      },
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((prev) => [...prev, botMsg]);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -222,7 +270,7 @@ export default function InclusiveHelpBot() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    const answer = getBotAnswer(query);
+    const answer = getBotAnswer(query, Boolean(preferences.literalLanguage));
 
     const botMsg: Message = {
       id: `bot_${Date.now()}`,
@@ -558,6 +606,73 @@ export default function InclusiveHelpBot() {
 
             <div ref={messagesEndRef} />
           </div>
+
+          {/* BOTÓN DE CONTENCIÓN Y MODO LITERAL */}
+          <div
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleOverwhelmedNow}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '8px',
+                border: '1px solid #0d9488',
+                backgroundColor: '#f0fdfa',
+                color: '#0f766e',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Me siento abrumado/a ahora
+            </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.74rem', color: '#475569', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={Boolean(preferences.literalLanguage)}
+                onChange={(e) => updatePreferences({ literalLanguage: e.target.checked })}
+              />
+              Lenguaje literal
+            </label>
+          </div>
+
+          {overwhelmedTimer !== null && (
+            <div
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#ecfdf5',
+                borderTop: '1px solid #a7f3d0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.78rem',
+                color: '#065f46',
+              }}
+            >
+              <span>
+                {overwhelmedTimer > 0
+                  ? `Pausa tranquila opcional: ${overwhelmedTimer}s`
+                  : 'Pausa completada. Avanza a tu ritmo.'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOverwhelmedTimer(null)}
+                style={{ background: 'none', border: 'none', color: '#065f46', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
 
           {/* CHIPS DE ACCESO RÁPIDO */}
           <div

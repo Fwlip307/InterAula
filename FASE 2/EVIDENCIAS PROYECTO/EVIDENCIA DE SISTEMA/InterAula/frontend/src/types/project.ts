@@ -126,3 +126,27 @@ export interface ProjectApplication {
   position?: ProjectPosition | null;
   applicant?: Profile | { id: string; display_name?: string; institution?: string; career?: string };
 }
+
+export interface ProjectDeliverableComment {
+  id: string;
+  author_id: string;
+  author_name: string;
+  content: string;
+  created_at: string;
+}
+
+export interface ProjectDeliverable {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string | null;
+  assignee_id?: string | null;
+  assignee_name?: string | null;
+  due_date?: string | null;
+  expected_format?: string | null;
+  status: 'pending' | 'in_progress' | 'submitted' | 'reviewed';
+  comments: ProjectDeliverableComment[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}

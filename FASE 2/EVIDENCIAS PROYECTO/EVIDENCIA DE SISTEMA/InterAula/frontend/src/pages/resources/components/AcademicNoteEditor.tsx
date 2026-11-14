@@ -27,6 +27,8 @@ import {
   TrashIcon,
   SparklesIcon,
 } from '../../../components/common/Icons';
+import VoiceDictationButton from '../../../components/common/VoiceDictationButton';
+import ReadAloudControls from '../../../components/common/ReadAloudControls';
 
 interface AcademicNoteEditorProps {
   initialNote?: AcademicNote | null;
@@ -1515,6 +1517,24 @@ function ejemplo() {
             >
               ↷
             </button>
+
+            <VoiceDictationButton
+              buttonLabel="Dictar"
+              onInsertText={(text: string) => {
+                if (editorRef.current) {
+                  editorRef.current.focus();
+                  const nextHtml = `${editorRef.current.innerHTML}<p>${escapeHtml(text)}</p>`;
+                  editorRef.current.innerHTML = safeNoteHtml(nextHtml);
+                  setContentHtml(editorRef.current.innerHTML);
+                }
+              }}
+            />
+
+            <ReadAloudControls
+              text={editorRef.current?.innerText || contentHtml.replace(/<[^>]+>/g, ' ')}
+              label="Escuchar"
+              compact
+            />
 
             <span style={{ width: '1px', height: '18px', background: 'var(--ia-border-strong)', margin: '0 2px' }} />
 

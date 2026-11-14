@@ -22,6 +22,17 @@ export const updateLearningSpaceConfigSchema = z.object({
   defaultBreakMinutes: z.number().int().min(1).max(60).optional(),
   subjectsToReinforce: z.array(z.string().trim().min(1).max(120)).max(30).optional(),
   learningGoalSummary: z.string().trim().max(500).optional(),
+  weeklyGoalDays: z.number().int().min(1).max(7).optional(),
+  activeStudyDates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).max(90).optional(),
+  supportPassport: z
+    .object({
+      selectedSupports: z.array(z.string().trim().min(1).max(80)).max(25).default([]),
+      customNotes: z.string().trim().max(600).default(''),
+      sharedWithTutorIds: z.array(z.string().uuid()).max(50).default([]),
+      sharedWithProjectIds: z.array(z.string().uuid()).max(50).default([]),
+      sharedItemKeys: z.array(z.string().trim().min(1).max(80)).max(25).default([]),
+    })
+    .optional(),
 });
 
 export const createLearningPathSchema = z.object({
@@ -76,6 +87,7 @@ export const createStudyTaskSchema = z.object({
         id: z.string().optional(),
         title: z.string().trim().min(1).max(200),
         completed: z.boolean().optional().default(false),
+        estimated_minutes: z.number().int().min(1).max(180).optional(),
       })
     )
     .max(25)
@@ -95,6 +107,7 @@ export const updateStudyTaskSchema = z.object({
         id: z.string().min(1),
         title: z.string().trim().min(1).max(200),
         completed: z.boolean(),
+        estimated_minutes: z.number().int().min(1).max(180).optional(),
       })
     )
     .max(25)
@@ -114,6 +127,18 @@ export const adaptiveExplanationRequestSchema = z.object({
   topic: z.string().trim().min(2).max(220),
   mode: explanationModeEnum,
   goal: z.string().trim().max(400).optional(),
+  literal_mode: z.boolean().optional().default(false),
+});
+
+export const createQuickIdeaSchema = z.object({
+  context_type: z.enum(['learning_space', 'tutoring', 'workshop', 'general']).optional().default('learning_space'),
+  context_id: z.string().trim().max(150).optional().nullable(),
+  content: z.string().trim().min(2, 'Escribe tu idea o duda (mínimo 2 caracteres)').max(1000),
+});
+
+export const updateQuickIdeaSchema = z.object({
+  content: z.string().trim().min(2).max(1000).optional(),
+  resolved: z.boolean().optional(),
 });
 
 export type UpdateLearningSpaceConfigInput = z.input<typeof updateLearningSpaceConfigSchema>;
@@ -124,4 +149,6 @@ export type CreateStudyTaskInput = z.input<typeof createStudyTaskSchema>;
 export type UpdateStudyTaskInput = z.input<typeof updateStudyTaskSchema>;
 export type RecordTopicAssessmentInput = z.input<typeof recordTopicAssessmentSchema>;
 export type AdaptiveExplanationRequestInput = z.input<typeof adaptiveExplanationRequestSchema>;
+export type CreateQuickIdeaInput = z.input<typeof createQuickIdeaSchema>;
+export type UpdateQuickIdeaInput = z.input<typeof updateQuickIdeaSchema>;
 

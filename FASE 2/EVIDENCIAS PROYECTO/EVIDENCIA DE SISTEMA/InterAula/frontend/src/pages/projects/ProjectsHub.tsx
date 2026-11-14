@@ -16,6 +16,7 @@ import type {
   ProjectCompensationType,
   PositionStatus,
   ProjectMilestone,
+  ProjectDeliverable,
 } from '../../types/project';
 import { getUserDisplayName } from '../../utils/formatters';
 import {
@@ -103,6 +104,13 @@ export default function ProjectsHub() {
   const [workspaceTab, setWorkspaceTab] = useState<'overview' | 'roles' | 'team' | 'milestones' | 'applications'>('overview');
   const [projectPositions, setProjectPositions] = useState<ProjectPosition[]>([]);
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
+  const [projectDeliverables, setProjectDeliverables] = useState<ProjectDeliverable[]>([]);
+  const [newDelivTitle, setNewDelivTitle] = useState('');
+  const [newDelivAssigneeName, setNewDelivAssigneeName] = useState('');
+  const [newDelivDueDate, setNewDelivDueDate] = useState('');
+  const [newDelivFormat, setNewDelivFormat] = useState('Documento o enlace');
+  const [delivCommentDrafts, setDelivCommentDrafts] = useState<Record<string, string>>({});
+  const [savingDeliv, setSavingDeliv] = useState(false);
   const [projectApplications, setProjectApplications] = useState<ProjectApplication[]>([]);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
 
@@ -217,16 +225,18 @@ export default function ProjectsHub() {
     setLoadingDetail(true);
     try {
       const isOwner = Boolean(user?.id && project.owner_id === user.id);
-      const [detail, positions, members, apps] = await Promise.all([
+      const [detail, positions, members, apps, deliverables] = await Promise.all([
         projectService.getProjectById(project.id),
         projectService.getProjectPositions(project.id),
         projectService.getProjectMembers(project.id),
         isOwner ? projectService.getProjectApplications(project.id) : Promise.resolve([]),
+        projectService.getDeliverables(project.id).catch(() => []),
       ]);
       if (detail) setSelectedProject(detail);
       setProjectPositions(positions.length > 0 ? positions : detail?.positions || []);
       setProjectMembers(members.length > 0 ? members : detail?.members || []);
       setProjectApplications(apps);
+      setProjectDeliverables(deliverables);
     } finally {
       setLoadingDetail(false);
     }
@@ -1917,6 +1927,187 @@ export default function ProjectsHub() {
                   ))}
                 </div>
               )}
+
+              {/* Micro-entregables y comentarios asíncronos */}
+              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--ia-border)' }}>
+                <h4 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 700, color: 'var(--ia-text-main)' }}>
+                  Micro-entregables y comentarios asíncronos ({projectDeliverables.length})
+                </h4>
+                <p style={{ margin: '0 0 14px', fontSize: '0.84rem', color: 'var(--ia-text-muted)' }}>
+                  Divide el proyecto en entregas concretas con responsable, fecha y formato esperado. Comenta por escrito sin depender de reuniones en vivo.
+                </p>
+
+                {(user?.id === selectedProject.owner_id ||
+                  projectMembers.some((m) => m.profile_id === user?.id)) && (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (newDelivTitle.trim().length < 2) return;
+                      setSavingDeliv(true);
+                      try {
+                        const created = await projectService.createDeliverable(selectedProject.id, {
+                          title: newDelivTitle.trim(),
+                          assignee_name: newDelivAssigneeName.trim() || null,
+                          due_date: newDelivDueDate || null,
+                          expected_format: newDelivFormat.trim() || 'Documento o enlace',
+                        });
+                        setProjectDeliverables((prev) => [created, ...prev]);
+                        setNewDelivTitle('');
+                        setNewDelivAssigneeName('');
+                        setNewDelivDueDate('');
+                      } finally {
+                        setSavingDeliv(false);
+                      }
+                    }}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                      gap: '8px',
+                      marginBottom: '16px',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      background: 'var(--ia-bg-body)',
+                      border: '1px solid var(--ia-border)',
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="ia-input"
+                      placeholder="Título del micro-entregable"
+                      value={newDelivTitle}
+                      onChange={(e) => setNewDelivTitle(e.target.value)}
+                      required
+                    />
+                    <input
+                      type="text"
+                      className="ia-input"
+                      placeholder="Responsable (opcional)"
+                      value={newDelivAssigneeName}
+                      onChange={(e) => setNewDelivAssigneeName(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className="ia-input"
+                      value={newDelivDueDate}
+                      onChange={(e) => setNewDelivDueDate(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      className="ia-input"
+                      placeholder="Formato esperado (ej: PDF, PR)"
+                      value={newDelivFormat}
+                      onChange={(e) => setNewDelivFormat(e.target.value)}
+                    />
+                    <button type="submit" className="ia-btn-primary" disabled={savingDeliv}>
+                      {savingDeliv ? 'Guardando...' : 'Agregar micro-entregable'}
+                    </button>
+                  </form>
+                )}
+
+                {projectDeliverables.length === 0 ? (
+                  <p style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted)' }}>
+                    Aún no hay micro-entregables definidos en este proyecto.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {projectDeliverables.map((deliv) => (
+                      <div
+                        key={deliv.id}
+                        style={{
+                          padding: '14px',
+                          borderRadius: '10px',
+                          border: '1px solid var(--ia-border)',
+                          background: 'var(--ia-bg-body)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                          <div>
+                            <strong style={{ fontSize: '0.94rem', color: 'var(--ia-text-main)' }}>
+                              {deliv.title}
+                            </strong>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)', marginTop: '2px' }}>
+                              {deliv.assignee_name ? `Responsable: ${deliv.assignee_name} · ` : ''}
+                              {deliv.due_date ? `Fecha: ${deliv.due_date} · ` : ''}
+                              Formato: {deliv.expected_format || 'Por definir'}
+                            </div>
+                          </div>
+                          <select
+                            className="ia-select"
+                            value={deliv.status}
+                            onChange={async (e) => {
+                              const nextStatus = e.target.value as ProjectDeliverable['status'];
+                              const updated = await projectService.updateDeliverable(
+                                selectedProject.id,
+                                deliv.id,
+                                { status: nextStatus }
+                              );
+                              setProjectDeliverables((prev) =>
+                                prev.map((d) => (d.id === deliv.id ? updated : d))
+                              );
+                            }}
+                            style={{ fontSize: '0.78rem', padding: '4px 8px' }}
+                          >
+                            <option value="pending">Pendiente</option>
+                            <option value="in_progress">En progreso</option>
+                            <option value="submitted">Entregado</option>
+                            <option value="reviewed">Revisado</option>
+                          </select>
+                        </div>
+
+                        {/* Comentarios asíncronos */}
+                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--ia-border)' }}>
+                          {deliv.comments.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                              {deliv.comments.map((c) => (
+                                <div key={c.id} style={{ fontSize: '0.8rem', color: 'var(--ia-text-body)' }}>
+                                  <strong>{c.author_name}:</strong> {c.content}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {user && (
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <input
+                                type="text"
+                                className="ia-input"
+                                placeholder="Dejar comentario escrito asíncrono..."
+                                value={delivCommentDrafts[deliv.id] || ''}
+                                onChange={(e) =>
+                                  setDelivCommentDrafts((prev) => ({
+                                    ...prev,
+                                    [deliv.id]: e.target.value,
+                                  }))
+                                }
+                                style={{ flex: 1, fontSize: '0.8rem' }}
+                              />
+                              <button
+                                type="button"
+                                className="ia-btn-secondary"
+                                onClick={async () => {
+                                  const text = (delivCommentDrafts[deliv.id] || '').trim();
+                                  if (text.length < 2) return;
+                                  const updated = await projectService.addDeliverableComment(
+                                    selectedProject.id,
+                                    deliv.id,
+                                    text
+                                  );
+                                  setProjectDeliverables((prev) =>
+                                    prev.map((d) => (d.id === deliv.id ? updated : d))
+                                  );
+                                  setDelivCommentDrafts((prev) => ({ ...prev, [deliv.id]: '' }));
+                                }}
+                                style={{ fontSize: '0.78rem' }}
+                              >
+                                Comentar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             /* Pestaña de Postulaciones Recibidas (Solo Creador) */

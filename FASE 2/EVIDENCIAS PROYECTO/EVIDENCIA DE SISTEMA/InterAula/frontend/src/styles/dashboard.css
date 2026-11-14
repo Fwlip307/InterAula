@@ -4030,3 +4030,74 @@ html.ia-dark-mode .ia-sequence-move-btn:hover:not(:disabled) {
 .ia-assessment-error { color: var(--ia-danger, #b91c1c); }
 .ia-assessment-dialog pre { white-space: pre-wrap; padding: 12px; background: var(--ia-bg-body, #f1f5f9); }
 .ia-assessment-dialog fieldset { margin: 16px 0; border: 1px solid var(--ia-border, #cbd5e1); }
+
+/* ==========================================================================
+   Apoyos Sensoriales Globales: Fuente de Lectura Fácil, Filtro Cálido y Sin Destellos
+   ========================================================================== */
+html[data-easy-font="true"] body,
+html[data-easy-font="true"] input,
+html[data-easy-font="true"] textarea,
+html[data-easy-font="true"] select,
+html[data-easy-font="true"] button {
+  font-family: 'Lexend', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  letter-spacing: 0.015em;
+  word-spacing: 0.05em;
+}
+
+html[data-easy-font="true"] p,
+html[data-easy-font="true"] li,
+html[data-easy-font="true"] label {
+  line-height: 1.72;
+}
+
+/* Filtro cálido suave: atenúa blancos puros sin distorsionar imágenes ni gráficos */
+html[data-warm-filter="true"]:not([data-dark-mode="true"]),
+html[data-warm-filter="true"]:not([data-dark-mode="true"]) body {
+  --ia-bg: #f3ecdc;
+  --ia-bg-body: #f3ecdc;
+  --ia-surface: #fbf6eb;
+  --ia-bg-card: #fbf6eb;
+  --ia-surface-alt: #ebe2ce;
+  --ia-bg-subtle: #eee5d3;
+  --ia-border: #d9ceb5;
+  --ia-text: #2a2419;
+  --ia-text-main: #2a2419;
+  --ia-text-body: #3e3526;
+  background-color: #f3ecdc !important;
+  color: #2a2419 !important;
+}
+
+html[data-warm-filter="true"]:not([data-dark-mode="true"]) .ia-card,
+html[data-warm-filter="true"]:not([data-dark-mode="true"]) .ia-navbar,
+html[data-warm-filter="true"]:not([data-dark-mode="true"]) .panel,
+html[data-warm-filter="true"]:not([data-dark-mode="true"]) .ia-stat-card {
+  background-color: #fbf6eb !important;
+  border-color: #d9ceb5 !important;
+}
+
+html[data-warm-filter="true"][data-dark-mode="true"],
+html[data-warm-filter="true"][data-dark-mode="true"] body {
+  --ia-bg: #171410;
+  --ia-bg-body: #171410;
+  --ia-surface: #211c15;
+  --ia-bg-card: #211c15;
+  --ia-text: #f3ead8;
+  --ia-text-main: #f3ead8;
+}
+
+/* Sin destellos ni animaciones innecesarias (respetando prefers-reduced-motion) */
+html[data-disable-flashing="true"] *,
+html[data-reduce-motion="true"] * {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

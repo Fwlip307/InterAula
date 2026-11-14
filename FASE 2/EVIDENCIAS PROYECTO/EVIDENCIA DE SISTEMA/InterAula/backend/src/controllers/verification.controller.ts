@@ -146,4 +146,89 @@ export const verificationController = {
       next(error);
     }
   },
+
+  async getMyInclusiveAccreditation(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { data, error } = await clientFor(req.token)
+        .from('inclusive_tutor_accreditations')
+        .select('*')
+        .eq('tutor_id', req.user!.id)
+        .maybeSingle();
+      if (error && !['PGRST205', '42P01'].includes(String(error.code))) {
+        throw error;
+      }
+      res.json({ success: true, data: data || null });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async requestInclusiveAccreditation(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { training_name, evidence_notes } = req.body;
+      const data = await result(
+        clientFor(req.token)
+          .from('inclusive_tutor_accreditations')
+          .upsert(
+            {
+              tutor_id: req.user!.id,
+              status: 'pending',
+              training_name,
+              evidence_notes,
+              verified_by: null,
+              verified_at: null,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'tutor_id' }
+          )
+          .select('*')
+          .single(),
+        'No se pudo registrar la solicitud de acreditación en acompañamiento inclusivo.'
+      );
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listInclusiveAccreditationsForValidator(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const data = await result(
+        clientFor(req.token)
+          .from('inclusive_tutor_accreditations')
+          .select('*')
+          .order('updated_at', { ascending: false })
+      );
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async reviewInclusiveAccreditation(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { status } = req.body;
+      const data = await result(
+        clientFor(req.token)
+          .from('inclusive_tutor_accreditations')
+          .update({
+            status,
+            verified_by: req.user!.id,
+            verified_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', req.params.id)
+          .select('*')
+          .single(),
+        'No se pudo actualizar la acreditación.'
+      );
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

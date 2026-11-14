@@ -2,9 +2,9 @@ import crypto from 'node:crypto';
 import { HttpError } from '../../lib/httpError.js';
 import { clientFor, result, existing } from './database.js';
 import { DEFAULT_CONFIG, buildDefaultStagesForGoal } from '../learningSpace.service.js';
-import type { UpdateLearningSpaceConfigInput, CreateLearningPathInput, UpdateLearningPathInput, AddLearningStageInput, CreateStudyTaskInput, UpdateStudyTaskInput, RecordTopicAssessmentInput } from '../../schemas/learningSpace.schema.js';
+import type { UpdateLearningSpaceConfigInput, CreateLearningPathInput, UpdateLearningPathInput, AddLearningStageInput, CreateStudyTaskInput, UpdateStudyTaskInput, RecordTopicAssessmentInput, CreateQuickIdeaInput, UpdateQuickIdeaInput } from '../../schemas/learningSpace.schema.js';
 import type { LearningPathWithStages } from '../learningSpace.service.js';
-import type { StoredLearningSpaceConfig, StoredStudyTask, StoredTopicAssessment } from '../../lib/persistentStore.js';
+import type { StoredLearningSpaceConfig, StoredStudyTask, StoredTopicAssessment, StoredQuickIdea } from '../../lib/persistentStore.js';
 
 async function pathDetail(userId:string,token:string,id:string):Promise<LearningPathWithStages> {
   const path=await existing(clientFor(token).from('learning_paths').select('*').eq('id',id).eq('user_id',userId).maybeSingle(),'Ruta de aprendizaje no encontrada o sin permisos.');
@@ -81,5 +81,23 @@ export const remoteLearningSpaceService = {
   async recordTopicAssessment(_userId:string,token:string,input:RecordTopicAssessmentInput):Promise<StoredTopicAssessment> {
     if(input.score>input.total_questions)throw new HttpError(400,'El puntaje no puede superar el total de preguntas.');
     return result(clientFor(token).rpc('record_learning_assessment',{p_payload:input}));
+  },
+  async listQuickIdeas(userId:string,token:string):Promise<StoredQuickIdea[]> {
+    return result(clientFor(token).from('quick_ideas').select('*').eq('user_id',userId).order('created_at',{ascending:false}));
+  },
+  async createQuickIdea(userId:string,token:string,input:CreateQuickIdeaInput):Promise<StoredQuickIdea> {
+    return result(clientFor(token).from('quick_ideas').insert({user_id:userId,context_type:input.context_type||'learning_space',context_id:input.context_id||null,content:input.content.trim(),resolved:false}).select('*').single());
+  },
+  async updateQuickIdea(userId:string,token:string,id:string,input:UpdateQuickIdeaInput):Promise<StoredQuickIdea> {
+    return existing(clientFor(token).from('quick_ideas').update({...input,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',userId).select('*').maybeSingle(),'Idea rápida no encontrada.');
+  },
+  async deleteQuickIdea(userId:string,token:string,id:string):Promise<void> {
+    await existing(clientFor(token).from('quick_ideas').delete().eq('id',id).eq('user_id',userId).select('id').maybeSingle(),'Idea rápida no encontrada.');
+  },
+  async convertQuickIdeaToTask(userId:string,token:string,id:string):Promise<{idea:StoredQuickIdea;task:StoredStudyTask}> {
+    const idea=await existing(clientFor(token).from('quick_ideas').select('*').eq('id',id).eq('user_id',userId).maybeSingle(),'Idea rápida no encontrada.');
+    const task=await remoteLearningSpaceService.createStudyTask(userId,token,{title:idea.content.slice(0,180),subject_name:'General',priority:'media'});
+    const updatedIdea=await existing(clientFor(token).from('quick_ideas').update({resolved:true,converted_task_id:task.id,updated_at:new Date().toISOString()}).eq('id',id).eq('user_id',userId).select('*').maybeSingle(),'No se pudo actualizar la idea.');
+    return {idea:updatedIdea,task};
   },
 };

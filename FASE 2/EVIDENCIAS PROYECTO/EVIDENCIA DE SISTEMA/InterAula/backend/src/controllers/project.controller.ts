@@ -171,4 +171,71 @@ export const projectController = {
       next(err);
     }
   },
+
+  async listDeliverables(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await projectBackendService.listDeliverables(req.user!, req.token!, req.params.id);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async createDeliverable(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await projectBackendService.createDeliverable(
+        req.user!,
+        req.token!,
+        req.params.id,
+        req.body
+      );
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async updateDeliverable(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await projectBackendService.updateDeliverable(
+        req.user!,
+        req.token!,
+        req.params.id,
+        req.params.deliverableId,
+        req.body
+      );
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async addDeliverableComment(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await projectBackendService.addDeliverableComment(
+        req.user!,
+        req.token!,
+        req.params.id,
+        req.params.deliverableId,
+        req.body.content
+      );
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async deleteDeliverable(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await projectBackendService.deleteDeliverable(
+        req.user!,
+        req.token!,
+        req.params.id,
+        req.params.deliverableId
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };

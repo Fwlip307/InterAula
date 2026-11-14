@@ -9,6 +9,7 @@ import type {
   ReviewVerificationRequestDTO,
   SaveCertificateExtractionDTO,
 } from '../types/verification';
+import type { InclusiveTutorAccreditation } from '../types/tutoring';
 import { validatePdfFile } from '../utils/pdfExtractor';
 
 /**
@@ -343,5 +344,21 @@ export const verificationService = {
     }
 
     return data?.signedUrl || null;
+  },
+
+  getMyInclusiveAccreditation(): Promise<InclusiveTutorAccreditation | null> {
+    return apiClient.get(API_ENDPOINTS.VERIFICATION.INCLUSIVE_ME);
+  },
+
+  requestInclusiveAccreditation(params: { training_name: string; evidence_notes?: string }): Promise<InclusiveTutorAccreditation> {
+    return apiClient.post(API_ENDPOINTS.VERIFICATION.INCLUSIVE_CREATE, params);
+  },
+
+  getInclusiveAccreditationsForValidator(): Promise<InclusiveTutorAccreditation[]> {
+    return apiClient.get(API_ENDPOINTS.VERIFICATION.INCLUSIVE_VALIDATOR);
+  },
+
+  reviewInclusiveAccreditation(id: string, status: 'approved' | 'rejected' | 'revoked'): Promise<InclusiveTutorAccreditation> {
+    return apiClient.patch(API_ENDPOINTS.VERIFICATION.INCLUSIVE_REVIEW(id), { status });
   },
 };

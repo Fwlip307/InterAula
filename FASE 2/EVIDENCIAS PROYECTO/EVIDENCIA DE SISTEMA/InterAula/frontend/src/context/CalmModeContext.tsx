@@ -97,8 +97,16 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
       root.setAttribute('data-spacing', preferences.spacing || 'standard');
       root.setAttribute(
         'data-reduce-motion',
-        preferences.reduceMotion || isCalm ? 'true' : 'false'
+        preferences.reduceMotion || preferences.disableFlashing || isCalm ? 'true' : 'false'
       );
+      root.setAttribute('data-warm-filter', preferences.warmFilter ? 'true' : 'false');
+      root.setAttribute('data-easy-font', preferences.easyReadingFont ? 'true' : 'false');
+      root.setAttribute('data-reading-ruler', preferences.readingRuler ? 'true' : 'false');
+      root.setAttribute(
+        'data-disable-flashing',
+        preferences.disableFlashing || isCalm ? 'true' : 'false'
+      );
+      root.setAttribute('data-literal-language', preferences.literalLanguage ? 'true' : 'false');
 
       if (document.body) {
         document.body.classList.toggle('ia-calm-mode', isCalm);

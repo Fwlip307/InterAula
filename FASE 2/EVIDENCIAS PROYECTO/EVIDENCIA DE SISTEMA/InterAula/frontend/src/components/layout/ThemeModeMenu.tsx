@@ -221,6 +221,70 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
             </button>
           </div>
 
+          <div className="ia-theme-popover-subheading" style={{ marginTop: '10px' }}>
+            APOYOS SENSORIALES Y LECTURA
+          </div>
+          <div className="ia-theme-pills-row" style={{ flexWrap: 'wrap', gap: '6px' }}>
+            <button
+              type="button"
+              aria-pressed={Boolean(preferences.easyReadingFont)}
+              onClick={() => updatePreferences({ easyReadingFont: !preferences.easyReadingFont })}
+              className={`ia-theme-pill ${preferences.easyReadingFont ? 'active' : ''}`}
+              title="Activa la tipografía Lexend de alta legibilidad para lectura cómoda"
+            >
+              Fuente lectura fácil
+            </button>
+            <button
+              type="button"
+              aria-pressed={Boolean(preferences.warmFilter)}
+              onClick={() => updatePreferences({ warmFilter: !preferences.warmFilter })}
+              className={`ia-theme-pill ${preferences.warmFilter ? 'active' : ''}`}
+              title="Suaviza blancos intensos con tonalidad cálida sin distorsionar imágenes"
+            >
+              Filtro cálido suave
+            </button>
+            <button
+              type="button"
+              aria-pressed={Boolean(preferences.readingRuler)}
+              onClick={() => updatePreferences({ readingRuler: !preferences.readingRuler })}
+              className={`ia-theme-pill ${preferences.readingRuler ? 'active' : ''}`}
+              title="Resalta la línea actual de lectura y atenúa el resto"
+            >
+              Regla guiada
+            </button>
+            <button
+              type="button"
+              aria-pressed={Boolean(preferences.disableFlashing)}
+              onClick={() =>
+                updatePreferences({
+                  disableFlashing: !preferences.disableFlashing,
+                  reduceMotion: !preferences.disableFlashing || preferences.reduceMotion,
+                })
+              }
+              className={`ia-theme-pill ${preferences.disableFlashing ? 'active' : ''}`}
+              title="Desactiva animaciones y elementos parpadeantes"
+            >
+              Sin destellos
+            </button>
+          </div>
+          {preferences.readingRuler && (
+            <div className="ia-theme-pills-row" style={{ marginTop: '6px', gap: '6px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--ia-text-muted)', alignSelf: 'center' }}>
+                Intensidad regla:
+              </span>
+              {(['soft', 'medium', 'strong'] as const).map((lvl) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  onClick={() => updatePreferences({ readingRulerIntensity: lvl })}
+                  className={`ia-theme-pill ${(preferences.readingRulerIntensity || 'medium') === lvl ? 'active' : ''}`}
+                >
+                  {lvl === 'soft' ? 'Suave' : lvl === 'medium' ? 'Media' : 'Alta'}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="ia-theme-popover-divider" />
 
           <Link

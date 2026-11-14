@@ -1,5 +1,6 @@
 import { Outlet, Link } from 'react-router-dom';
 import Navbar from './Navbar';
+import ReadingRuler from '../common/ReadingRuler';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { SlidersIcon } from '../common/Icons';
 import '../../styles/dashboard.css';
@@ -26,6 +27,7 @@ export default function AppLayout() {
         </div>
       )}
       <Navbar />
+      <ReadingRuler />
       <main className="ia-main">
         <Outlet />
       </main>

@@ -983,6 +983,135 @@ const localProjectService = {
 
     return { success: true, message: 'Integrante removido del equipo correctamente' };
   },
+
+  async listDeliverables(user: AuthenticatedUser, _token: string, projectId: string): Promise<any[]> {
+    const db = persistentStore.read();
+    const project = db.projects.find((p) => p.id === projectId);
+    const isMember =
+      project?.owner_id === user.id ||
+      db.project_members.some((m) => m.project_id === projectId && m.profile_id === user.id);
+    if (!project || !isMember) {
+      throw new HttpError(403, 'Solo los integrantes del proyecto pueden ver sus micro-entregables.');
+    }
+    return db.project_deliverables.filter((d) => d.project_id === projectId);
+  },
+
+  async createDeliverable(user: AuthenticatedUser, _token: string, projectId: string, body: any): Promise<any> {
+    const db = persistentStore.read();
+    const project = db.projects.find((p) => p.id === projectId);
+    const isMember =
+      project?.owner_id === user.id ||
+      db.project_members.some((m) => m.project_id === projectId && m.profile_id === user.id);
+    if (!project || !isMember) {
+      throw new HttpError(403, 'Solo los integrantes del proyecto pueden crear micro-entregables.');
+    }
+    const now = new Date().toISOString();
+    const item = {
+      id: persistentStore.newId(),
+      project_id: projectId,
+      title: body.title,
+      description: body.description || '',
+      expected_format: body.expected_format || 'Documento o avance escrito',
+      assignee_id: body.assignee_id || null,
+      due_date: body.due_date || null,
+      status: 'pending' as const,
+      comments: [],
+      created_by: user.id,
+      created_at: now,
+      updated_at: now,
+    };
+    persistentStore.write((draft) => {
+      draft.project_deliverables.push(item);
+    });
+    return item;
+  },
+
+  async updateDeliverable(
+    user: AuthenticatedUser,
+    _token: string,
+    projectId: string,
+    deliverableId: string,
+    body: any
+  ): Promise<any> {
+    const db = persistentStore.read();
+    const project = db.projects.find((p) => p.id === projectId);
+    const isMember =
+      project?.owner_id === user.id ||
+      db.project_members.some((m) => m.project_id === projectId && m.profile_id === user.id);
+    if (!project || !isMember) {
+      throw new HttpError(403, 'Sin permisos para modificar micro-entregables de este proyecto.');
+    }
+    let updated: any = null;
+    persistentStore.write((draft) => {
+      const target = draft.project_deliverables.find(
+        (d) => d.id === deliverableId && d.project_id === projectId
+      );
+      if (target) {
+        Object.assign(target, body, { updated_at: new Date().toISOString() });
+        updated = { ...target };
+      }
+    });
+    if (!updated) throw new HttpError(404, 'Entregable no encontrado.');
+    return updated;
+  },
+
+  async addDeliverableComment(
+    user: AuthenticatedUser,
+    _token: string,
+    projectId: string,
+    deliverableId: string,
+    content: string
+  ): Promise<any> {
+    const db = persistentStore.read();
+    const project = db.projects.find((p) => p.id === projectId);
+    const isMember =
+      project?.owner_id === user.id ||
+      db.project_members.some((m) => m.project_id === projectId && m.profile_id === user.id);
+    if (!project || !isMember) {
+      throw new HttpError(403, 'Sin permisos para comentar en este proyecto.');
+    }
+    let updated: any = null;
+    persistentStore.write((draft) => {
+      const target = draft.project_deliverables.find(
+        (d) => d.id === deliverableId && d.project_id === projectId
+      );
+      if (target) {
+        target.comments.push({
+          id: persistentStore.newId(),
+          author_id: user.id,
+          author_name: user.email?.split('@')[0] || 'Integrante',
+          content: content.trim(),
+          created_at: new Date().toISOString(),
+        });
+        target.updated_at = new Date().toISOString();
+        updated = { ...target };
+      }
+    });
+    if (!updated) throw new HttpError(404, 'Entregable no encontrado.');
+    return updated;
+  },
+
+  async deleteDeliverable(
+    user: AuthenticatedUser,
+    _token: string,
+    projectId: string,
+    deliverableId: string
+  ): Promise<any> {
+    const db = persistentStore.read();
+    const project = db.projects.find((p) => p.id === projectId);
+    const isMember =
+      project?.owner_id === user.id ||
+      db.project_members.some((m) => m.project_id === projectId && m.profile_id === user.id);
+    if (!project || !isMember) {
+      throw new HttpError(403, 'Sin permisos para eliminar entregables de este proyecto.');
+    }
+    persistentStore.write((draft) => {
+      draft.project_deliverables = draft.project_deliverables.filter(
+        (d) => !(d.id === deliverableId && d.project_id === projectId)
+      );
+    });
+    return { success: true, id: deliverableId };
+  },
 };
 
 export const projectBackendService = env.persistenceMode === 'local' ? localProjectService : remoteProjectService;

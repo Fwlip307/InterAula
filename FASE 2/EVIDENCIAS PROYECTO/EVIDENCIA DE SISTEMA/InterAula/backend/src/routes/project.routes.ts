@@ -8,6 +8,9 @@ import {
   applyToProjectSchema,
   reviewApplicationSchema,
   updatePositionStatusSchema,
+  createDeliverableSchema,
+  updateDeliverableSchema,
+  addDeliverableCommentSchema,
 } from '../schemas/project.schema.js';
 
 const router = Router();
@@ -81,5 +84,27 @@ router.delete('/:id', requireAuth, projectController.deleteProject);
 
 // Remover integrante del equipo (solo el creador)
 router.delete('/:id/members/:memberId', requireAuth, projectController.removeProjectMember);
+
+// Micro-entregables y colaboración asíncrona del proyecto
+router.get('/:id/deliverables', requireAuth, projectController.listDeliverables);
+router.post(
+  '/:id/deliverables',
+  requireAuth,
+  validateRequest({ body: createDeliverableSchema }),
+  projectController.createDeliverable
+);
+router.patch(
+  '/:id/deliverables/:deliverableId',
+  requireAuth,
+  validateRequest({ body: updateDeliverableSchema }),
+  projectController.updateDeliverable
+);
+router.post(
+  '/:id/deliverables/:deliverableId/comments',
+  requireAuth,
+  validateRequest({ body: addDeliverableCommentSchema }),
+  projectController.addDeliverableComment
+);
+router.delete('/:id/deliverables/:deliverableId', requireAuth, projectController.deleteDeliverable);
 
 export default router;

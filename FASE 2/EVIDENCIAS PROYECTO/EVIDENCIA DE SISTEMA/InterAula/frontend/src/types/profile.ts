@@ -16,7 +16,8 @@ export type LearningPreference =
   | 'written_support'
   | 'message_communication'
   | 'individual_sessions'
-  | 'extra_response_time';
+  | 'extra_response_time'
+  | 'literal_language';
 
 export interface LearningPreferenceOption {
   id: LearningPreference;
@@ -90,6 +91,11 @@ export const LEARNING_PREFERENCES: readonly LearningPreferenceOption[] = [
     label: 'Práctica interactiva y micro-retos',
     description: 'Comprobar lo aprendido con cuestionarios breves adaptados a mis intereses.',
   },
+  {
+    id: 'literal_language',
+    label: 'Lenguaje literal y directo',
+    description: 'Explicaciones claras y directas, sin metáforas, sarcasmos ni instrucciones implícitas.',
+  },
 ] as const;
 
 // Preferencias transversales de accesibilidad (Sección 3.1 y 3.2)
@@ -97,6 +103,7 @@ export type FontSizeScale = 'normal' | 'large' | 'xlarge';
 export type ContrastLevel = 'standard' | 'high';
 export type SpacingMode = 'standard' | 'spacious';
 export type VisualThemeMode = 'light' | 'dark' | 'calm';
+export type ReadingRulerIntensity = 'soft' | 'medium' | 'strong';
 
 export interface AccessibilityPreferences {
   themeMode?: VisualThemeMode;
@@ -110,6 +117,12 @@ export interface AccessibilityPreferences {
   quietNotifications: boolean;
   emailTutoring: boolean;
   emailProjects: boolean;
+  warmFilter?: boolean;
+  easyReadingFont?: boolean;
+  readingRuler?: boolean;
+  readingRulerIntensity?: ReadingRulerIntensity;
+  disableFlashing?: boolean;
+  literalLanguage?: boolean;
 }
 
 export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferences = {
@@ -124,6 +137,12 @@ export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferences = {
   quietNotifications: false,
   emailTutoring: true,
   emailProjects: true,
+  warmFilter: false,
+  easyReadingFont: false,
+  readingRuler: false,
+  readingRulerIntensity: 'medium',
+  disableFlashing: false,
+  literalLanguage: false,
 };
 
 export interface Profile {

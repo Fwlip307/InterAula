@@ -19,6 +19,14 @@ export type TopicMasteryLevel =
   | 'necesita_practicar'
   | 'pendiente';
 
+export interface SupportPassport {
+  selectedSupports: string[];
+  customNotes: string;
+  sharedWithTutorIds: string[];
+  sharedWithProjectIds: string[];
+  sharedItemKeys: string[];
+}
+
 export interface LearningSpaceConfig {
   user_id?: string;
   onboardingCompleted: boolean;
@@ -31,8 +39,34 @@ export interface LearningSpaceConfig {
   defaultBreakMinutes: number;
   subjectsToReinforce: string[];
   learningGoalSummary: string;
+  weeklyGoalDays?: number;
+  activeStudyDates?: string[];
+  supportPassport?: SupportPassport;
   updated_at?: string;
 }
+
+export interface QuickIdea {
+  id: string;
+  user_id: string;
+  context_type: 'learning_space' | 'tutoring' | 'workshop' | 'general';
+  context_id?: string | null;
+  content: string;
+  resolved: boolean;
+  converted_task_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const SUPPORT_PASSPORT_OPTIONS = [
+  { key: 'written_instructions', label: 'Prefiero instrucciones escritas y claras antes de empezar' },
+  { key: 'extra_processing_time', label: 'Agradezco unos segundos extra para procesar preguntas' },
+  { key: 'camera_optional', label: 'Me siento más cómodo/a participando con cámara opcional' },
+  { key: 'chat_participation', label: 'Prefiero participar por chat o mensajes antes que por voz' },
+  { key: 'literal_language', label: 'Prefiero lenguaje directo y sin metáforas ambiguas' },
+  { key: 'short_breaks', label: 'Necesito pausas breves en sesiones largas' },
+  { key: 'anticipated_materials', label: 'Me ayuda revisar el material o agenda con anticipación' },
+  { key: 'step_by_step_check', label: 'Me ayuda dividir actividades grandes en pasos pequeños' },
+] as const;
 
 export interface LearningPathStage {
   id: string;
@@ -67,6 +101,7 @@ export interface StudySubtask {
   id: string;
   title: string;
   completed: boolean;
+  estimated_minutes?: number;
 }
 
 export interface StudyTask {

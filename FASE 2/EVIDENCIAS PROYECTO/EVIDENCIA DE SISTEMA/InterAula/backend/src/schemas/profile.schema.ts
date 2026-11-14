@@ -13,6 +13,12 @@ export const accessibilityPreferencesSchema = z
     quietNotifications: z.boolean().optional(),
     emailTutoring: z.boolean().optional(),
     emailProjects: z.boolean().optional(),
+    warmFilter: z.boolean().optional(),
+    easyReadingFont: z.boolean().optional(),
+    readingRuler: z.boolean().optional(),
+    readingRulerIntensity: z.enum(['soft', 'medium', 'strong']).optional(),
+    disableFlashing: z.boolean().optional(),
+    literalLanguage: z.boolean().optional(),
   })
   .strict();
 

@@ -598,3 +598,78 @@ describe('Mi espacio de aprendizaje: Rutas, Explicaciones Adaptables y Dominio p
     );
   });
 });
+
+import {
+  DEFAULT_ACCESSIBILITY_PREFERENCES,
+  LEARNING_PREFERENCES,
+} from '../src/types/profile.ts';
+import { SUPPORT_PASSPORT_OPTIONS } from '../src/types/learningSpace.ts';
+import { INCLUSIVE_SUPPORT_RESOURCES } from '../src/data/inclusiveResources.ts';
+import { generatePersonalProgressPdf } from '../src/utils/noteExporter.ts';
+
+describe('Aprendizaje Inclusivo (TEA, TDAH, Dislexia y Acompañamiento)', () => {
+  it('DEFAULT_ACCESSIBILITY_PREFERENCES y LEARNING_PREFERENCES incluyen controles sensoriales y lenguaje literal sin diagnósticos', () => {
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.warmFilter, false);
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.easyReadingFont, false);
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.readingRuler, false);
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.disableFlashing, false);
+    assert.equal(DEFAULT_ACCESSIBILITY_PREFERENCES.literalLanguage, false);
+    assert.ok(LEARNING_PREFERENCES.some((p) => p.id === 'literal_language'));
+  });
+
+  it('SUPPORT_PASSPORT_OPTIONS ofrece apoyos prácticos voluntarios sin etiquetas clínicas', () => {
+    assert.ok(SUPPORT_PASSPORT_OPTIONS.length >= 6);
+    const joined = SUPPORT_PASSPORT_OPTIONS.map((o) => o.label.toLowerCase()).join(' ');
+    assert.ok(!joined.includes('diagnóstico'));
+    assert.ok(!joined.includes('trastorno'));
+  });
+
+  it('API_ENDPOINTS expone los nuevos endpoints inclusivos de IA, bandeja, señales, acreditación y entregables', () => {
+    assert.equal(API_ENDPOINTS.AI.BREAKDOWN_TASK, '/ai/breakdown-task');
+    assert.equal(API_ENDPOINTS.LEARNING_SPACE.IDEAS, '/learning-space/ideas');
+    assert.equal(
+      API_ENDPOINTS.LEARNING_SPACE.IDEA_CONVERT('idea-1'),
+      '/learning-space/ideas/idea-1/convert-to-task'
+    );
+    assert.equal(
+      API_ENDPOINTS.TUTORING.ROOM_SIGNALS('room-1'),
+      '/tutoring/rooms/room-1/signals'
+    );
+    assert.equal(
+      API_ENDPOINTS.TUTORING.SESSION_PREP('sess-1'),
+      '/tutoring/sessions/sess-1/prep'
+    );
+    assert.equal(API_ENDPOINTS.WORKSHOPS.PREP('w-1'), '/workshops/w-1/prep');
+    assert.equal(
+      API_ENDPOINTS.VERIFICATION.INCLUSIVE_ME,
+      '/verification/inclusive-accreditation/me'
+    );
+    assert.equal(
+      API_ENDPOINTS.PROJECTS.DELIVERABLES('proj-1'),
+      '/projects/proj-1/deliverables'
+    );
+  });
+
+  it('INCLUSIVE_SUPPORT_RESOURCES solo usa rutas internas verificadas sin URLs ni teléfonos inventados', () => {
+    assert.ok(INCLUSIVE_SUPPORT_RESOURCES.length >= 3);
+    for (const item of INCLUSIVE_SUPPORT_RESOURCES) {
+      assert.ok(item.internalPath.startsWith('/'));
+      assert.ok(!item.summary.includes('http://') && !item.summary.includes('https://'));
+    }
+  });
+
+  it('generatePersonalProgressPdf genera un PDF válido (%PDF-1.4) para descarga personal', () => {
+    const bytes = generatePersonalProgressPdf({
+      studentName: 'Estudiante Demo',
+      weeklyActiveDays: 3,
+      weeklyGoalDays: 4,
+      learningGoalSummary: 'Reforzar SQL',
+      paths: [{ title: 'Ruta SQL', subject_name: 'Bases de Datos', progress_percent: 50, status: 'active' }],
+      tasks: [{ title: 'Ejercicios JOIN', subject_name: 'Bases de Datos', status: 'in_progress', completedSubtasks: 1, totalSubtasks: 2 }],
+      assessments: [],
+      includeSupportPassport: false,
+    });
+    const header = new TextDecoder().decode(bytes.slice(0, 8));
+    assert.ok(header.startsWith('%PDF-1.4'));
+  });
+});

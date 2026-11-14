@@ -6,6 +6,7 @@ import {
   createWorkshopSchema,
   updateWorkshopStatusSchema,
 } from '../schemas/workshop.schema.js';
+import { updateSessionPrepSchema } from '../schemas/tutoring.schema.js';
 
 const router = Router();
 
@@ -45,5 +46,13 @@ router.patch(
 
 // Eliminar taller programado
 router.delete('/:id', requireAuth, workshopController.deleteWorkshop);
+
+// Guion anticipado, reglas y material anticipado del taller
+router.patch(
+  '/:id/prep',
+  requireAuth,
+  validateRequest({ body: updateSessionPrepSchema }),
+  workshopController.updatePrep
+);
 
 export default router;

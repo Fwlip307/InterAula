@@ -7,6 +7,8 @@ import {
   updateSessionStatusSchema,
   submitReviewSchema,
   registerAttendanceSchema,
+  updateSessionPrepSchema,
+  classroomSignalSchema,
 } from '../schemas/tutoring.schema.js';
 
 const router = Router();
@@ -49,6 +51,23 @@ router.post(
   requireAuth,
   validateRequest({ body: registerAttendanceSchema }),
   tutoringController.registerAttendance
+);
+
+// Guion anticipado, reglas de participación y material anticipado de sesión 1:1
+router.patch(
+  '/sessions/:id/prep',
+  requireAuth,
+  validateRequest({ body: updateSessionPrepSchema }),
+  tutoringController.updateSessionPrep
+);
+
+// Semáforo de comunicación en Aula Virtual (privado a participantes de la sala)
+router.get('/rooms/:roomId/signals', requireAuth, tutoringController.getRoomSignals);
+router.put(
+  '/rooms/:roomId/signals',
+  requireAuth,
+  validateRequest({ body: classroomSignalSchema }),
+  tutoringController.setRoomSignal
 );
 
 export default router;

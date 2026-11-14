@@ -13,6 +13,7 @@ import {
   EXPLANATION_MODES,
   LEARNING_PROFILE_CATEGORIES,
   MASTERY_LABELS,
+  SUPPORT_PASSPORT_OPTIONS,
   type LearningSpaceConfig,
   type LearningPath,
   type StudyTask,
@@ -21,6 +22,10 @@ import {
   type ExplanationMode,
   type LearningPace,
 } from '../../types/learningSpace';
+import { breakdownTaskWithAi, type AiTaskBreakdownStep } from '../../services/geminiAiService';
+import { ReadAloudControls } from '../../components/common/ReadAloudControls';
+import { QuickIdeasDrawer } from '../../components/common/QuickIdeasDrawer';
+import { generatePersonalProgressPdf } from '../../utils/noteExporter';
 import type { Subject } from '../../types/profile';
 import type { Project } from '../../types/project';
 import {
@@ -40,7 +45,6 @@ import {
   PlayIcon,
   PauseIcon,
   RotateCcwIcon,
-  Volume2Icon,
   ShieldCheckIcon,
   EditIcon,
 } from '../../components/common/Icons';
@@ -132,6 +136,19 @@ export const LearningSpace = () => {
   const [timerPhase, setTimerPhase] = useState<'study' | 'break'>('study');
   const [timerSecondsLeft, setTimerSecondsLeft] = useState(20 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [timerDiscreteAlerts, setTimerDiscreteAlerts] = useState(true);
+  const [timerSoundAlerts, setTimerSoundAlerts] = useState(false);
+  const [timerAlertNotice, setTimerAlertNotice] = useState<string | null>(null);
+
+  // Modo "Un paso a la vez" + División IA de tareas + Lenguaje literal + PDF personal
+  const [oneStepMode, setOneStepMode] = useState(false);
+  const [oneStepTaskId, setOneStepTaskId] = useState<string | null>(null);
+  const [aiBreakdownLoading, setAiBreakdownLoading] = useState(false);
+  const [aiBreakdownSteps, setAiBreakdownSteps] = useState<AiTaskBreakdownStep[] | null>(null);
+  const [aiBreakdownError, setAiBreakdownError] = useState<string | null>(null);
+  const [literalMode, setLiteralMode] = useState<boolean>(Boolean(preferences.literalLanguage));
+  const [includePassportInPdf, setIncludePassportInPdf] = useState(false);
+  const [passportTutorIdInput, setPassportTutorIdInput] = useState('');
 
   // Estado para Evaluación de Conocimientos manual/rápida
   const [evalSubject, setEvalSubject] = useState('');
@@ -203,20 +220,51 @@ export const LearningSpace = () => {
     loadSpaceData();
   }, [loadSpaceData]);
 
-  // Temporizador de acompañamiento de estudio
+  // Temporizador de acompañamiento de estudio con alertas discretas opcionales (50% y 2 min)
+  const timerTotalSeconds =
+    (timerPhase === 'study'
+      ? config.defaultStudyIntervalMinutes || 20
+      : config.defaultBreakMinutes || 5) * 60;
+
   useEffect(() => {
     if (!timerRunning) return;
     const interval = setInterval(() => {
       setTimerSecondsLeft((prev) => {
+        const next = prev - 1;
+        if (timerDiscreteAlerts && timerTotalSeconds >= 240) {
+          const halfPoint = Math.floor(timerTotalSeconds / 2);
+          if (next === halfPoint) {
+            setTimerAlertNotice('Mitad del bloque alcanzada. Vas a buen ritmo.');
+          } else if (next === 120) {
+            setTimerAlertNotice('Quedan 2 minutos para cerrar este bloque.');
+          }
+        }
         if (prev <= 1) {
           setTimerRunning(false);
+          setTimerAlertNotice('Bloque completado. Puedes descansar o continuar cuando quieras.');
+          if (timerSoundAlerts && typeof window !== 'undefined' && 'AudioContext' in window) {
+            try {
+              const ctx = new window.AudioContext();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.value = 528;
+              gain.gain.value = 0.04;
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.25);
+            } catch {
+              // Ignorar si el navegador bloquea AudioContext
+            }
+          }
           return 0;
         }
-        return prev - 1;
+        return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [timerRunning]);
+  }, [timerRunning, timerDiscreteAlerts, timerSoundAlerts, timerTotalSeconds]);
 
   // Cargar explicación adaptable cuando se entra a la pestaña 'explain' o se cambia el modo
   const fetchExplanation = useCallback(
@@ -234,6 +282,7 @@ export const LearningSpace = () => {
           topic: targetTopic,
           mode: modeToUse,
           goal: gl ?? explainGoal,
+          literal_mode: literalMode,
         });
         setExplanationData(res);
       } catch (err: any) {
@@ -242,7 +291,7 @@ export const LearningSpace = () => {
         setLoadingExplanation(false);
       }
     },
-    [explainSubject, explainTopic, explainGoal]
+    [explainSubject, explainTopic, explainGoal, literalMode]
   );
 
   useEffect(() => {
@@ -254,15 +303,6 @@ export const LearningSpace = () => {
   const handleModeSwitch = (newMode: ExplanationMode) => {
     setExplainMode(newMode);
     fetchExplanation(newMode);
-  };
-
-  const handleSpeakExplanation = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'es-CL';
-    utterance.rate = 0.95;
-    window.speechSynthesis.speak(utterance);
   };
 
   // Crear ruta de aprendizaje
@@ -383,6 +423,109 @@ export const LearningSpace = () => {
     setExplainMode(mode);
     handleTabChange('explain');
     fetchExplanation(mode, subjectName, topic, goal);
+  };
+
+  // Dividir tarea con IA (o mostrar respaldo manual claro si la IA no está disponible)
+  const handleBreakdownWithAi = async () => {
+    if (newTaskTitle.trim().length < 3) {
+      setAiBreakdownError('Escribe primero un título de al menos 3 caracteres.');
+      return;
+    }
+    setAiBreakdownLoading(true);
+    setAiBreakdownError(null);
+    try {
+      const steps = await breakdownTaskWithAi({
+        title: newTaskTitle.trim(),
+        subject_name: newTaskSubject.trim() || undefined,
+      });
+      setAiBreakdownSteps(steps);
+    } catch (err: any) {
+      setAiBreakdownSteps(null);
+      setAiBreakdownError(
+        err?.message ||
+          'El asistente IA no está disponible en este momento. Puedes escribir tus subtareas manualmente abajo.'
+      );
+    } finally {
+      setAiBreakdownLoading(false);
+    }
+  };
+
+  const handleApplyAiBreakdownToForm = () => {
+    if (!aiBreakdownSteps || aiBreakdownSteps.length === 0) return;
+    const lines = aiBreakdownSteps.map(
+      (s) => `${s.title} (${s.estimated_minutes} min)`
+    );
+    setNewTaskSubtasksRaw(lines.join('\n'));
+    setAiBreakdownSteps(null);
+    setStatusBanner('Pasos sugeridos cargados. Puedes editarlos antes de guardar.');
+    setTimeout(() => setStatusBanner(''), 3500);
+  };
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const currentWeekDays = (() => {
+    const now = new Date();
+    const day = now.getDay(); // 0=Dom
+    const diffToMon = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMon);
+    monday.setHours(0, 0, 0, 0);
+    const activeSet = new Set(config.activeStudyDates || []);
+    let count = 0;
+    for (let i = 0; i < 7; i += 1) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      if (activeSet.has(d.toISOString().slice(0, 10))) count += 1;
+    }
+    return count;
+  })();
+
+  const handleRecordTodayStudy = async () => {
+    const existing = config.activeStudyDates || [];
+    if (existing.includes(todayIso)) return;
+    const updatedDates = [...existing, todayIso].slice(-90);
+    try {
+      const saved = await learningSpaceService.updateConfig({ activeStudyDates: updatedDates });
+      setConfig(saved);
+      setStatusBanner('Día de estudio registrado en tu avance semanal.');
+      setTimeout(() => setStatusBanner(''), 3000);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'No se pudo registrar tu día de estudio.');
+    }
+  };
+
+  const handleDownloadPersonalPdf = () => {
+    const passport = config.supportPassport;
+    const supportLabels = (passport?.selectedSupports || []).map(
+      (key) => SUPPORT_PASSPORT_OPTIONS.find((opt) => opt.key === key)?.label || key
+    );
+    generatePersonalProgressPdf({
+      studentName: user?.user_metadata?.full_name || user?.email || 'Estudiante',
+      weeklyActiveDays: currentWeekDays,
+      weeklyGoalDays: config.weeklyGoalDays || 3,
+      learningGoalSummary: config.learningGoalSummary,
+      paths: paths.map((p) => ({
+        title: p.title,
+        subject_name: p.subject_name,
+        progress_percent: p.progress_percent,
+        status: p.status,
+      })),
+      tasks: tasks.map((t) => ({
+        title: t.title,
+        subject_name: t.subject_name,
+        status: t.status,
+        completedSubtasks: t.subtasks.filter((s) => s.completed).length,
+        totalSubtasks: t.subtasks.length,
+      })),
+      assessments: assessments.map((a) => ({
+        subject_name: a.subject_name,
+        topic_name: a.topic_name,
+        mastery_level: a.mastery_level,
+        score: a.score,
+      })),
+      includeSupportPassport: includePassportInPdf,
+      supportLabels,
+      supportNotes: passport?.customNotes,
+    });
   };
 
   // Crear tarea de estudio con subtareas y prioridad
@@ -844,6 +987,72 @@ export const LearningSpace = () => {
                       </button>
                     </div>
                   )}
+
+                  {/* Progreso flexible y descarga de reporte personal */}
+                  <div className="panel" style={{ marginBottom: '1rem' }}>
+                    <div className="panel__header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
+                      <div>
+                        <h2 className="panel__title">Progreso flexible esta semana</h2>
+                        <p className="text-muted" style={{ margin: '0.2rem 0 0 0', fontSize: '0.86rem' }}>
+                          Meta semanal configurable, sin rachas punitivas si necesitas pausar un día.
+                        </p>
+                      </div>
+                      <span className="badge badge--primary">
+                        {currentWeekDays} / {config.weeklyGoalDays || 3} días activos
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={handleRecordTodayStudy}
+                          disabled={(config.activeStudyDates || []).includes(todayIso)}
+                        >
+                          {(config.activeStudyDates || []).includes(todayIso)
+                            ? 'Hoy ya está registrado'
+                            : 'Registrar día activo hoy'}
+                        </button>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem' }}>
+                          Meta semanal:
+                          <select
+                            value={config.weeklyGoalDays || 3}
+                            onChange={async (e) => {
+                              const nextGoal = Number(e.target.value);
+                              try {
+                                const saved = await learningSpaceService.updateConfig({ weeklyGoalDays: nextGoal });
+                                setConfig(saved);
+                              } catch {
+                                // ignore
+                              }
+                            }}
+                            style={{ padding: '0.25rem 0.5rem', borderRadius: '6px' }}
+                          >
+                            {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                              <option key={d} value={d}>{d} días</option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={includePassportInPdf}
+                            onChange={(e) => setIncludePassportInPdf(e.target.checked)}
+                          />
+                          Incluir mis apoyos en el PDF
+                        </label>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          onClick={handleDownloadPersonalPdf}
+                        >
+                          Descargar reporte PDF personal
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Recomendación del siguiente paso */}
                   <div className="panel">
@@ -1860,6 +2069,42 @@ export const LearningSpace = () => {
                   </button>
                 </form>
 
+                {/* Controles rápidos de lectura y lenguaje literal */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    alignItems: 'center',
+                    marginBottom: '0.85rem',
+                    padding: '0.6rem 0.85rem',
+                    borderRadius: '10px',
+                    background: 'var(--color-bg-subtle, #f8fafc)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.86rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={literalMode}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setLiteralMode(checked);
+                        updatePreferences({ literalLanguage: checked });
+                      }}
+                    />
+                    Modo lenguaje literal y directo (sin metáforas ni frases ambiguas)
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.86rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(preferences.readingRuler)}
+                      onChange={(e) => updatePreferences({ readingRuler: e.target.checked })}
+                    />
+                    Regla de lectura guiada
+                  </label>
+                </div>
+
                 {/* Selector de los 6 modos de explicación */}
                 <div className="explanation-mode-switcher" role="tablist" aria-label="Modos de explicación">
                   {EXPLANATION_MODES.map((modeItem) => {
@@ -1910,18 +2155,10 @@ export const LearningSpace = () => {
                           {explanationData.topic}
                         </h3>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() =>
-                          handleSpeakExplanation(
-                            `${explanationData.summary}. ${explanationData.key_points.join('. ')}`
-                          )
-                        }
-                        title="Escuchar explicación en voz alta"
-                      >
-                        <Volume2Icon size={15} /> Escuchar en voz alta
-                      </button>
+                      <ReadAloudControls
+                        text={`${explanationData.topic}. ${explanationData.summary}. ${explanationData.key_points.join('. ')}`}
+                        label="Escuchar explicación"
+                      />
                     </div>
 
                     <p className="adaptive-explanation-card__summary">
@@ -2026,6 +2263,108 @@ export const LearningSpace = () => {
             {activeTab === 'tasks' && (
               <div className="learning-space-grid">
                 <div className="learning-space-main-col">
+                  {/* Modo "Un paso a la vez" para reducir carga visual y bloqueo */}
+                  <div className="panel" style={{ borderLeft: '4px solid var(--ia-primary)' }}>
+                    <div className="panel__header" style={{ flexWrap: 'wrap', gap: '0.65rem' }}>
+                      <div>
+                        <h2 className="panel__title">Modo "Un paso a la vez"</h2>
+                        <p className="text-muted" style={{ margin: '0.2rem 0 0 0', fontSize: '0.86rem' }}>
+                          Muestra solo el paso actual para evitar saturación. Puedes salir cuando quieras.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${oneStepMode ? 'btn-outline' : 'btn-primary'}`}
+                        onClick={() => {
+                          if (!oneStepMode) {
+                            const firstOpen = tasks.find((t) => t.status !== 'completed') || tasks[0] || null;
+                            setOneStepTaskId(firstOpen ? firstOpen.id : null);
+                          }
+                          setOneStepMode((prev) => !prev);
+                        }}
+                      >
+                        {oneStepMode ? 'Salir de modo un paso' : 'Activar un paso a la vez'}
+                      </button>
+                    </div>
+
+                    {oneStepMode && (() => {
+                      const focusTask =
+                        tasks.find((t) => t.id === oneStepTaskId) ||
+                        tasks.find((t) => t.status !== 'completed') ||
+                        null;
+                      if (!focusTask) {
+                        return (
+                          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+                            No tienes tareas pendientes en este momento. Crea una a la derecha para enfocarte paso a paso.
+                          </p>
+                        );
+                      }
+                      const nextSubtask = focusTask.subtasks.find((s) => !s.completed) || null;
+                      const doneCount = focusTask.subtasks.filter((s) => s.completed).length;
+                      return (
+                        <div
+                          style={{
+                            padding: '1.15rem',
+                            borderRadius: '12px',
+                            background: 'var(--color-bg-subtle, #f8fafc)',
+                            border: '1px solid var(--color-border)',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                            <span className="subject-chip">{focusTask.subject_name}</span>
+                            <span className="badge badge--primary">
+                              {focusTask.subtasks.length > 0
+                                ? `Paso ${Math.min(doneCount + 1, focusTask.subtasks.length)} de ${focusTask.subtasks.length}`
+                                : 'Tarea única'}
+                            </span>
+                          </div>
+                          <h3 style={{ margin: '0 0 0.45rem 0', fontSize: '1.08rem' }}>
+                            {nextSubtask ? nextSubtask.title : focusTask.title}
+                          </h3>
+                          {nextSubtask && (
+                            <p className="text-muted" style={{ margin: '0 0 0.85rem 0', fontSize: '0.86rem' }}>
+                              Parte de: {focusTask.title}
+                              {nextSubtask.estimated_minutes ? ` · Tiempo sugerido: ${nextSubtask.estimated_minutes} min` : ''}
+                            </p>
+                          )}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+                            {nextSubtask ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleToggleSubtask(focusTask, nextSubtask.id)}
+                              >
+                                Listo, pasar al siguiente paso
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={async () => {
+                                  const updated = await learningSpaceService.updateStudyTask(focusTask.id, {
+                                    status: 'completed',
+                                  });
+                                  setTasks((prev) => prev.map((t) => (t.id === focusTask.id ? updated : t)));
+                                  const another = tasks.find((t) => t.id !== focusTask.id && t.status !== 'completed');
+                                  setOneStepTaskId(another ? another.id : null);
+                                }}
+                              >
+                                Completar tarea
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              onClick={() => setOneStepMode(false)}
+                            >
+                              Ver todas las tareas
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
                   {/* Temporizador de acompañamiento tranquilo y flexible */}
                   <div className="panel study-companion-panel">
                     <div className="panel__header">
@@ -2042,6 +2381,71 @@ export const LearningSpace = () => {
                         {timerPhase === 'study' ? 'Bloque de enfoque' : 'Pausa de descanso'}
                       </span>
                     </div>
+
+                    {/* Barra visual de avance */}
+                    <div style={{ marginBottom: '0.85rem' }}>
+                      <div
+                        style={{
+                          height: '10px',
+                          width: '100%',
+                          borderRadius: '999px',
+                          background: 'var(--color-border)',
+                          overflow: 'hidden',
+                        }}
+                        aria-label="Progreso visual del bloque"
+                      >
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                timerTotalSeconds > 0
+                                  ? Math.round(((timerTotalSeconds - timerSecondsLeft) / timerTotalSeconds) * 100)
+                                  : 0
+                              )
+                            )}%`,
+                            background: 'var(--ia-primary, #2563eb)',
+                            transition: 'width 0.4s ease',
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem', fontSize: '0.82rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={timerDiscreteAlerts}
+                            onChange={(e) => setTimerDiscreteAlerts(e.target.checked)}
+                          />
+                          Avisos discretos al 50% y a 2 min del cierre
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={timerSoundAlerts}
+                            onChange={(e) => setTimerSoundAlerts(e.target.checked)}
+                          />
+                          Tono suave opcional al finalizar
+                        </label>
+                      </div>
+                    </div>
+
+                    {timerAlertNotice && (
+                      <div
+                        className="study-companion-message"
+                        style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      >
+                        <span>{timerAlertNotice}</span>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => setTimerAlertNotice(null)}
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    )}
 
                     <div className="study-companion-timer">
                       <div className="study-companion-timer__clock">
@@ -2494,9 +2898,115 @@ export const LearningSpace = () => {
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="task-subtasks">
-                          Subtareas pequeñas (una por línea, opcional)
-                        </label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
+                          <label htmlFor="task-subtasks" style={{ margin: 0 }}>
+                            Subtareas pequeñas (una por línea, opcional)
+                          </label>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={handleBreakdownWithAi}
+                            disabled={aiBreakdownLoading}
+                          >
+                            {aiBreakdownLoading ? 'Dividiendo...' : 'Dividir tarea con IA'}
+                          </button>
+                        </div>
+
+                        {aiBreakdownError && (
+                          <p
+                            style={{
+                              fontSize: '0.82rem',
+                              padding: '0.5rem 0.65rem',
+                              borderRadius: '8px',
+                              background: 'var(--color-bg-subtle, #f8fafc)',
+                              border: '1px solid var(--color-border)',
+                              marginBottom: '0.5rem',
+                            }}
+                          >
+                            {aiBreakdownError}
+                          </p>
+                        )}
+
+                        {aiBreakdownSteps && aiBreakdownSteps.length > 0 && (
+                          <div
+                            style={{
+                              padding: '0.75rem',
+                              borderRadius: '10px',
+                              background: 'var(--color-bg-subtle, #f8fafc)',
+                              border: '1px solid var(--color-border)',
+                              marginBottom: '0.6rem',
+                            }}
+                          >
+                            <div style={{ fontSize: '0.84rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                              Pasos sugeridos (puedes editarlos antes de aplicar):
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                              {aiBreakdownSteps.map((step, idx) => (
+                                <div key={idx} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                  <input
+                                    type="text"
+                                    value={step.title}
+                                    onChange={(e) =>
+                                      setAiBreakdownSteps((prev) =>
+                                        prev
+                                          ? prev.map((s, i) => (i === idx ? { ...s, title: e.target.value } : s))
+                                          : null
+                                      )
+                                    }
+                                    style={{ flex: 1, fontSize: '0.84rem' }}
+                                  />
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={180}
+                                    value={step.estimated_minutes}
+                                    onChange={(e) =>
+                                      setAiBreakdownSteps((prev) =>
+                                        prev
+                                          ? prev.map((s, i) =>
+                                              i === idx
+                                                ? { ...s, estimated_minutes: Number(e.target.value) || 5 }
+                                                : s
+                                            )
+                                          : null
+                                      )
+                                    }
+                                    style={{ width: '64px', fontSize: '0.84rem' }}
+                                    title="Minutos estimados"
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-sm"
+                                    onClick={() =>
+                                      setAiBreakdownSteps((prev) =>
+                                        prev ? prev.filter((_, i) => i !== idx) : null
+                                      )
+                                    }
+                                  >
+                                    Quitar
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem' }}>
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={handleApplyAiBreakdownToForm}
+                              >
+                                Usar estos pasos
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm"
+                                onClick={() => setAiBreakdownSteps(null)}
+                              >
+                                Descartar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <textarea
                           id="task-subtasks"
                           rows={4}
@@ -2517,6 +3027,14 @@ export const LearningSpace = () => {
                         {creatingTask ? 'Guardando...' : 'Organizar tarea'}
                       </button>
                     </form>
+                  </div>
+
+                  <div style={{ marginTop: '1rem' }}>
+                    <QuickIdeasDrawer
+                      contextType="learning_space"
+                      defaultSubjectName={newTaskSubject || 'General'}
+                      onIdeaConverted={loadSpaceData}
+                    />
                   </div>
                 </aside>
               </div>
@@ -2868,6 +3386,230 @@ export const LearningSpace = () => {
                           públicamente).
                         </span>
                       </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ficha "Mis apoyos para aprender" (privada por defecto, consentimiento granular) */}
+                <div
+                  style={{
+                    marginTop: '1.5rem',
+                    padding: '1.25rem',
+                    borderRadius: '14px',
+                    border: '1px solid var(--color-border)',
+                    background: 'var(--color-bg-subtle, #f8fafc)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.85rem' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)' }}>
+                        Ficha "Mis apoyos para aprender"
+                      </h3>
+                      <p className="text-muted" style={{ margin: '0.2rem 0 0 0', fontSize: '0.84rem' }}>
+                        Información práctica para adaptar tu experiencia. Es privada por defecto: tú decides qué compartir, con quién y puedes revocarlo en cualquier momento.
+                      </p>
+                    </div>
+                    <span className="badge badge--primary">Privada por defecto</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.55rem', marginBottom: '1rem' }}>
+                    {SUPPORT_PASSPORT_OPTIONS.map((opt) => {
+                      const passport = config.supportPassport || {
+                        selectedSupports: [],
+                        customNotes: '',
+                        sharedWithTutorIds: [],
+                        sharedWithProjectIds: [],
+                        sharedItemKeys: [],
+                      };
+                      const checked = passport.selectedSupports.includes(opt.key);
+                      const sharedItem = passport.sharedItemKeys.includes(opt.key);
+                      return (
+                        <div
+                          key={opt.key}
+                          style={{
+                            padding: '0.6rem 0.75rem',
+                            borderRadius: '10px',
+                            border: '1px solid var(--color-border)',
+                            background: 'var(--color-surface, #fff)',
+                          }}
+                        >
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.86rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                const nextSelected = checked
+                                  ? passport.selectedSupports.filter((k) => k !== opt.key)
+                                  : [...passport.selectedSupports, opt.key];
+                                const nextSharedItems = checked
+                                  ? passport.sharedItemKeys.filter((k) => k !== opt.key)
+                                  : passport.sharedItemKeys;
+                                setConfig((prev) => ({
+                                  ...prev,
+                                  supportPassport: {
+                                    ...passport,
+                                    selectedSupports: nextSelected,
+                                    sharedItemKeys: nextSharedItems,
+                                  },
+                                }));
+                              }}
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                          {checked && (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', marginTop: '0.35rem', paddingLeft: '1.4rem', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={sharedItem}
+                                onChange={() => {
+                                  const nextSharedItems = sharedItem
+                                    ? passport.sharedItemKeys.filter((k) => k !== opt.key)
+                                    : [...passport.sharedItemKeys, opt.key];
+                                  setConfig((prev) => ({
+                                    ...prev,
+                                    supportPassport: {
+                                      ...passport,
+                                      sharedItemKeys: nextSharedItems,
+                                    },
+                                  }));
+                                }}
+                              />
+                              Incluir este punto si autorizo compartir mi ficha
+                            </label>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+                    <label htmlFor="support-passport-notes">Notas prácticas adicionales (opcional)</label>
+                    <textarea
+                      id="support-passport-notes"
+                      rows={2}
+                      maxLength={600}
+                      placeholder="Ej: Prefiero recibir los ejercicios en formato lista numerada..."
+                      value={config.supportPassport?.customNotes || ''}
+                      onChange={(e) => {
+                        const passport = config.supportPassport || {
+                          selectedSupports: [],
+                          customNotes: '',
+                          sharedWithTutorIds: [],
+                          sharedWithProjectIds: [],
+                          sharedItemKeys: [],
+                        };
+                        setConfig((prev) => ({
+                          ...prev,
+                          supportPassport: { ...passport, customNotes: e.target.value },
+                        }));
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.85rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                        Proyectos autorizados a ver los puntos marcados
+                      </div>
+                      {relatedProjects.length === 0 ? (
+                        <p className="text-muted" style={{ fontSize: '0.8rem', margin: 0 }}>
+                          No hay proyectos cargados en tu sesión actual.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          {relatedProjects.slice(0, 6).map((proj) => {
+                            const passport = config.supportPassport || {
+                              selectedSupports: [],
+                              customNotes: '',
+                              sharedWithTutorIds: [],
+                              sharedWithProjectIds: [],
+                              sharedItemKeys: [],
+                            };
+                            const isShared = passport.sharedWithProjectIds.includes(proj.id);
+                            return (
+                              <label key={proj.id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isShared}
+                                  onChange={() => {
+                                    const nextIds = isShared
+                                      ? passport.sharedWithProjectIds.filter((id) => id !== proj.id)
+                                      : [...passport.sharedWithProjectIds, proj.id];
+                                    setConfig((prev) => ({
+                                      ...prev,
+                                      supportPassport: { ...passport, sharedWithProjectIds: nextIds },
+                                    }));
+                                  }}
+                                />
+                                <span>{proj.title}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 600, marginBottom: '0.4rem' }}>
+                        Tutores autorizados ({config.supportPassport?.sharedWithTutorIds.length || 0})
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.45rem' }}>
+                        <input
+                          type="text"
+                          placeholder="UUID del tutor a autorizar"
+                          value={passportTutorIdInput}
+                          onChange={(e) => setPassportTutorIdInput(e.target.value)}
+                          style={{ flex: 1, fontSize: '0.82rem' }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => {
+                            const trimmed = passportTutorIdInput.trim();
+                            if (!trimmed) return;
+                            const passport = config.supportPassport || {
+                              selectedSupports: [],
+                              customNotes: '',
+                              sharedWithTutorIds: [],
+                              sharedWithProjectIds: [],
+                              sharedItemKeys: [],
+                            };
+                            if (!passport.sharedWithTutorIds.includes(trimmed)) {
+                              setConfig((prev) => ({
+                                ...prev,
+                                supportPassport: {
+                                  ...passport,
+                                  sharedWithTutorIds: [...passport.sharedWithTutorIds, trimmed],
+                                },
+                              }));
+                            }
+                            setPassportTutorIdInput('');
+                          }}
+                        >
+                          Autorizar
+                        </button>
+                      </div>
+                      {(config.supportPassport?.sharedWithTutorIds || []).map((tid) => (
+                        <div key={tid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', padding: '0.25rem 0' }}>
+                          <span>{tid}</span>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                              const passport = config.supportPassport!;
+                              setConfig((prev) => ({
+                                ...prev,
+                                supportPassport: {
+                                  ...passport,
+                                  sharedWithTutorIds: passport.sharedWithTutorIds.filter((x) => x !== tid),
+                                },
+                              }));
+                            }}
+                          >
+                            Revocar
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

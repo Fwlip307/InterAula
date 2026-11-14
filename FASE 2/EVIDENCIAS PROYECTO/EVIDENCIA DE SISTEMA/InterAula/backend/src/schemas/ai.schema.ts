@@ -29,3 +29,10 @@ export const aiEvaluateAnswerSchema = z
     rubric: z.string().trim().max(3000).optional(),
     level: z.enum(['basic', 'intermediate', 'advanced']).optional(),
   });
+
+export const aiBreakdownTaskSchema = z
+  .object({
+    title: z.string().trim().min(3, 'Describe la actividad que deseas dividir').max(250),
+    subject_name: z.string().trim().max(150).optional().default('General'),
+    context: z.string().trim().max(500).optional(),
+  });

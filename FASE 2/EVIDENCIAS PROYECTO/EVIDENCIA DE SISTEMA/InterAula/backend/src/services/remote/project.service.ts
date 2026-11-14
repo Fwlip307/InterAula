@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import type { AuthenticatedUser } from '../../types/index.js';
 import { HttpError } from '../../lib/httpError.js';
 import { clientFor, result, existing, attachProfiles } from './database.js';
@@ -83,5 +84,119 @@ export const remoteProjectService = {
   async removeProjectMember(_user:AuthenticatedUser,token:string,id:string,memberId:string):Promise<any> {
     await result(clientFor(token).rpc('remove_collaborative_member',{p_project_id:id,p_member_id:memberId}));
     return {success:true,id:memberId};
+  },
+
+  async listDeliverables(user: AuthenticatedUser, token: string, projectId: string): Promise<any[]> {
+    await this.getProjectById(projectId, user.id, token);
+    const { data, error } = await clientFor(token)
+      .from('project_deliverables')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      if (['PGRST205', '42P01'].includes(String(error.code))) return [];
+      throw new HttpError(403, 'Solo los integrantes del proyecto pueden ver sus micro-entregables.');
+    }
+    const rows = Array.isArray(data) ? data : [];
+    return attachProfiles(rows, 'assignee_id', 'assignee', token);
+  },
+
+  async createDeliverable(user: AuthenticatedUser, token: string, projectId: string, body: any): Promise<any> {
+    await this.getProjectById(projectId, user.id, token);
+    const created = await result(
+      clientFor(token)
+        .from('project_deliverables')
+        .insert({
+          project_id: projectId,
+          title: body.title,
+          description: body.description || '',
+          expected_format: body.expected_format || 'Documento o avance escrito',
+          assignee_id: body.assignee_id || null,
+          due_date: body.due_date || null,
+          status: 'pending',
+          comments: [],
+          created_by: user.id,
+        })
+        .select('*')
+        .single(),
+      'Solo el creador o miembros del proyecto pueden agregar micro-entregables.'
+    );
+    return (await attachProfiles([created], 'assignee_id', 'assignee', token))[0];
+  },
+
+  async updateDeliverable(
+    _user: AuthenticatedUser,
+    token: string,
+    projectId: string,
+    deliverableId: string,
+    body: any
+  ): Promise<any> {
+    const updated = await existing(
+      clientFor(token)
+        .from('project_deliverables')
+        .update({ ...body, updated_at: new Date().toISOString() })
+        .eq('id', deliverableId)
+        .eq('project_id', projectId)
+        .select('*')
+        .maybeSingle(),
+      'Entregable no encontrado o sin permisos.'
+    );
+    return (await attachProfiles([updated], 'assignee_id', 'assignee', token))[0];
+  },
+
+  async addDeliverableComment(
+    user: AuthenticatedUser,
+    token: string,
+    projectId: string,
+    deliverableId: string,
+    content: string
+  ): Promise<any> {
+    const current = await existing(
+      clientFor(token)
+        .from('project_deliverables')
+        .select('*')
+        .eq('id', deliverableId)
+        .eq('project_id', projectId)
+        .maybeSingle(),
+      'Entregable no encontrado o sin permisos.'
+    );
+    const comments = Array.isArray(current.comments) ? [...current.comments] : [];
+    comments.push({
+      id: crypto.randomUUID(),
+      author_id: user.id,
+      author_name: user.email?.split('@')[0] || 'Integrante',
+      content: content.trim(),
+      created_at: new Date().toISOString(),
+    });
+    const updated = await existing(
+      clientFor(token)
+        .from('project_deliverables')
+        .update({ comments, updated_at: new Date().toISOString() })
+        .eq('id', deliverableId)
+        .eq('project_id', projectId)
+        .select('*')
+        .maybeSingle(),
+      'No se pudo agregar el comentario.'
+    );
+    return (await attachProfiles([updated], 'assignee_id', 'assignee', token))[0];
+  },
+
+  async deleteDeliverable(
+    _user: AuthenticatedUser,
+    token: string,
+    projectId: string,
+    deliverableId: string
+  ): Promise<any> {
+    await existing(
+      clientFor(token)
+        .from('project_deliverables')
+        .delete()
+        .eq('id', deliverableId)
+        .eq('project_id', projectId)
+        .select('id')
+        .maybeSingle(),
+      'Entregable no encontrado o sin permisos.'
+    );
+    return { success: true, id: deliverableId };
   },
 };

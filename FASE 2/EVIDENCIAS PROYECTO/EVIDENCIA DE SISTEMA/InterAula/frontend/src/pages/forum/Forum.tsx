@@ -20,6 +20,8 @@ import {
   ArrowLeftIcon,
   AlertCircleIcon,
 } from '../../components/common/Icons';
+import ReadAloudControls from '../../components/common/ReadAloudControls';
+import VoiceDictationButton from '../../components/common/VoiceDictationButton';
 
 const CATEGORIES = [
   'Todas',
@@ -668,6 +670,14 @@ export default function Forum() {
               {selectedPost.title}
             </h2>
 
+            <div style={{ marginBottom: '12px' }}>
+              <ReadAloudControls
+                text={`${selectedPost.title}. ${selectedPost.description}`}
+                label="Escuchar consulta"
+                compact
+              />
+            </div>
+
             <p style={{ fontSize: '0.94rem', color: 'var(--ia-text-body)', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: '0 0 16px 0' }}>
               {selectedPost.description}
             </p>
@@ -887,7 +897,13 @@ export default function Forum() {
                 maxLength={BUSINESS_RULES.FORUM.MAX_REPLY_LENGTH}
                 required
               />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                <VoiceDictationButton
+                  buttonLabel="Dictar respuesta"
+                  onInsertText={(text: string) =>
+                    setNewReplyContent((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+                  }
+                />
                 <button type="submit" className="ia-btn-primary" disabled={submittingReply}>
                   {submittingReply ? 'Publicando...' : 'Responder Consulta'}
                 </button>
