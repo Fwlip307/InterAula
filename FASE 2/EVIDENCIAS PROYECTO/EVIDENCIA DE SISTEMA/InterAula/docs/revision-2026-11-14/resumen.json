@@ -1,0 +1,28 @@
+{
+  "review_date": "2026-11-14",
+  "baseline": "bf60ec7",
+  "head": "5229816",
+  "changed_files": 75,
+  "new_commits": 4,
+  "backend": {
+    "tests_passed": 82,
+    "tests_failed": 0,
+    "build_exit": 0,
+    "lint_exit": 0
+  },
+  "frontend": {
+    "tests_passed": 49,
+    "tests_failed": 0,
+    "build_exit": 0,
+    "lint_exit": 1,
+    "lint_errors": [
+      "duplicate DEFAULT_ACCESSIBILITY_PREFERENCES import",
+      "duplicate LEARNING_PREFERENCES import"
+    ]
+  },
+  "migration_019": "Applied only in isolated PostgreSQL, together with migrations 001-018",
+  "docker": "Daemon unavailable; Compose configuration parsed; Desktop cold-start path expression reproduced as failing",
+  "remote_mutations": false,
+  "application_source_changes": false,
+  "browser": "Real VoiceDictationButton in headless Chrome; simulated SpeechRecognition, no real microphone; helper browser and Vite stopped"
+}
