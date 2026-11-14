@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import SharedLearningSupports from '../../components/common/SharedLearningSupports';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
@@ -1930,6 +1931,7 @@ export default function ProjectsHub() {
 
               {/* Micro-entregables y comentarios asíncronos */}
               <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--ia-border)' }}>
+                <SharedLearningSupports projectId={selectedProject.id} />
                 <h4 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 700, color: 'var(--ia-text-main)' }}>
                   Micro-entregables y comentarios asíncronos ({projectDeliverables.length})
                 </h4>
@@ -1947,14 +1949,15 @@ export default function ProjectsHub() {
                       try {
                         const created = await projectService.createDeliverable(selectedProject.id, {
                           title: newDelivTitle.trim(),
-                          assignee_name: newDelivAssigneeName.trim() || null,
-                          due_date: newDelivDueDate || null,
+                          assignee_id: newDelivAssigneeName || null,
+                          due_date: newDelivDueDate ? new Date(newDelivDueDate + 'T12:00:00').toISOString() : null,
                           expected_format: newDelivFormat.trim() || 'Documento o enlace',
                         });
                         setProjectDeliverables((prev) => [created, ...prev]);
                         setNewDelivTitle('');
                         setNewDelivAssigneeName('');
                         setNewDelivDueDate('');
+                      } catch (cause) { showFeedback(cause instanceof Error ? cause.message : 'No se pudo guardar el entregable.', true);
                       } finally {
                         setSavingDeliv(false);
                       }
@@ -1978,13 +1981,10 @@ export default function ProjectsHub() {
                       onChange={(e) => setNewDelivTitle(e.target.value)}
                       required
                     />
-                    <input
-                      type="text"
-                      className="ia-input"
-                      placeholder="Responsable (opcional)"
-                      value={newDelivAssigneeName}
-                      onChange={(e) => setNewDelivAssigneeName(e.target.value)}
-                    />
+                    <select className="ia-input" aria-label="Responsable del entregable" value={newDelivAssigneeName} onChange={e=>setNewDelivAssigneeName(e.target.value)}>
+                      <option value="">Sin asignar</option>
+                      {projectMembers.map(m=><option key={m.profile_id} value={m.profile_id}>{m.profile?.display_name || m.profile_name || m.profile?.first_name || 'Integrante'}</option>)}
+                    </select>
                     <input
                       type="date"
                       className="ia-input"
@@ -2026,7 +2026,7 @@ export default function ProjectsHub() {
                               {deliv.title}
                             </strong>
                             <div style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)', marginTop: '2px' }}>
-                              {deliv.assignee_name ? `Responsable: ${deliv.assignee_name} · ` : ''}
+                              {deliv.assignee ? `Responsable: ${deliv.assignee.display_name || deliv.assignee.first_name || 'Integrante'} · ` : ''}
                               {deliv.due_date ? `Fecha: ${deliv.due_date} · ` : ''}
                               Formato: {deliv.expected_format || 'Por definir'}
                             </div>
@@ -2036,21 +2036,21 @@ export default function ProjectsHub() {
                             value={deliv.status}
                             onChange={async (e) => {
                               const nextStatus = e.target.value as ProjectDeliverable['status'];
-                              const updated = await projectService.updateDeliverable(
+                              try { const updated = await projectService.updateDeliverable(
                                 selectedProject.id,
                                 deliv.id,
                                 { status: nextStatus }
                               );
                               setProjectDeliverables((prev) =>
                                 prev.map((d) => (d.id === deliv.id ? updated : d))
-                              );
+                              ); } catch(cause) { showFeedback(cause instanceof Error?cause.message:'No se pudo actualizar el estado.',true); }
                             }}
                             style={{ fontSize: '0.78rem', padding: '4px 8px' }}
                           >
                             <option value="pending">Pendiente</option>
                             <option value="in_progress">En progreso</option>
-                            <option value="submitted">Entregado</option>
-                            <option value="reviewed">Revisado</option>
+                            <option value="review">Entregado</option>
+                            <option value="completed">Revisado</option>
                           </select>
                         </div>
 
@@ -2086,7 +2086,7 @@ export default function ProjectsHub() {
                                 onClick={async () => {
                                   const text = (delivCommentDrafts[deliv.id] || '').trim();
                                   if (text.length < 2) return;
-                                  const updated = await projectService.addDeliverableComment(
+                                  try { const updated = await projectService.addDeliverableComment(
                                     selectedProject.id,
                                     deliv.id,
                                     text
@@ -2094,7 +2094,7 @@ export default function ProjectsHub() {
                                   setProjectDeliverables((prev) =>
                                     prev.map((d) => (d.id === deliv.id ? updated : d))
                                   );
-                                  setDelivCommentDrafts((prev) => ({ ...prev, [deliv.id]: '' }));
+                                  setDelivCommentDrafts((prev) => ({ ...prev, [deliv.id]: '' })); } catch(cause) { showFeedback(cause instanceof Error?cause.message:'No se pudo guardar el comentario.',true); }
                                 }}
                                 style={{ fontSize: '0.78rem' }}
                               >

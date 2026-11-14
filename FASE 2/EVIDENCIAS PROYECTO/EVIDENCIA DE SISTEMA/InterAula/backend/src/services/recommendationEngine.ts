@@ -1,3 +1,4 @@
+import {matchCommunity,type CommunityPreferences,type AcademicOrigin} from './community.service.js';
 export type RecommendationKind = 'note' | 'post' | 'project' | 'workshop' | 'person';
 export type InterestIntent = 'interest' | 'learn' | 'teach';
 export interface InterestTopic { id: string; name: string; category: string; aliases: string[] }
@@ -8,12 +9,13 @@ export interface RecommendationPreferences {
 export interface RecommendationCandidate {
   id: string; kind: RecommendationKind; title: string; summary: string; href: string; createdAt: string;
   text?: string; subjectId?: string; ownerId?: string;
+  origin?:AcademicOrigin;
   interests?: { topic_id: string; intent: InterestIntent }[];
   offeredSubjects?: { id: string; name: string; verified: boolean }[];
 }
 export interface RecommendationItem {
   id: string; kind: RecommendationKind; title: string; summary: string; href: string;
-  reason: string; topics: string[];
+  reason: string; topics: string[]; communityReason?:string;
 }
 export const defaultRecommendationPreferences = (): RecommendationPreferences => ({
   revision: 0, personalization_enabled: true, discoverable: false, interest: [], learn: [], teach: [],
@@ -32,7 +34,7 @@ export function detectTopics(text: string, topics: InterestTopic[]): string[] {
 export function rankRecommendations(input: {
   userId: string; preferences: RecommendationPreferences; topics: InterestTopic[];
   candidates: RecommendationCandidate[]; neededSubjects?: { id: string; name: string }[];
-  dismissed?: string[]; limit?: number;
+  dismissed?: string[]; limit?: number; community?:CommunityPreferences;
 }): { mode: 'personalized' | 'starter' | 'disabled'; items: RecommendationItem[] } {
   const { userId,preferences,topics } = input;
   const needed = input.neededSubjects || [];
@@ -44,7 +46,7 @@ export function rankRecommendations(input: {
   const names = new Map(topics.map(topic => [topic.id,topic.name]));
   const hidden = new Set(input.dismissed || []);
   const seen = new Set<string>();
-  const ranked: { item: RecommendationItem; score: number; date: number }[] = [];
+  const ranked: { item: RecommendationItem; score: number; locality:number; date: number }[] = [];
   for (const candidate of input.candidates) {
     const key = `${candidate.kind}:${candidate.id}`;
     if (hidden.has(key) || seen.has(key) || candidate.ownerId === userId || (candidate.kind==='person' && candidate.id===userId)) continue;
@@ -74,11 +76,13 @@ export function rankRecommendations(input: {
       } else if (matched.length) reason=`${learn.has(matched[0])?'Quieres aprender':interest.has(matched[0])?'Te interesa':'Puedes aportar sobre'} ${names.get(matched[0])}`;
     }
     if (mode==='personalized' && score===0) continue;
+    const community=input.community?matchCommunity(input.community,candidate.origin||{}):null;
+    if(community&&(!community.scopeMatch||!community.modalityMatch))continue;
     ranked.push({item:{id:candidate.id,kind:candidate.kind,title:candidate.title,summary:candidate.summary,
-      href:candidate.href,reason,topics:matched.map(topic=>names.get(topic)!).filter(Boolean)},score,
+      href:candidate.href,reason,topics:matched.map(topic=>names.get(topic)!).filter(Boolean),...(community?.reason?{communityReason:community.reason}:{})},score,locality:community?.priority||0,
       date:Number.isFinite(Date.parse(candidate.createdAt))?Date.parse(candidate.createdAt):0});
   }
-  ranked.sort((a,b)=>b.score-a.score||b.date-a.date||`${a.item.kind}:${a.item.id}`.localeCompare(`${b.item.kind}:${b.item.id}`));
+  ranked.sort((a,b)=>b.score-a.score||b.locality-a.locality||b.date-a.date||`${a.item.kind}:${a.item.id}`.localeCompare(`${b.item.kind}:${b.item.id}`));
   const limit=Math.max(1,Math.min(input.limit || 9,30));
   const counts = new Map<RecommendationKind,number>();
   const items: RecommendationItem[]=[];

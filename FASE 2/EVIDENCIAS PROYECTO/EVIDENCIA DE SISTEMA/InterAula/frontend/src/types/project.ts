@@ -141,10 +141,10 @@ export interface ProjectDeliverable {
   title: string;
   description?: string | null;
   assignee_id?: string | null;
-  assignee_name?: string | null;
+  assignee?: { id: string; display_name?: string; first_name?: string; last_name?: string } | null;
   due_date?: string | null;
   expected_format?: string | null;
-  status: 'pending' | 'in_progress' | 'submitted' | 'reviewed';
+  status: 'pending' | 'in_progress' | 'review' | 'completed';
   comments: ProjectDeliverableComment[];
   created_by: string;
   created_at: string;

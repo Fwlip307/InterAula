@@ -1,8 +1,9 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { verificationBackendService } from '../services/verification.service.js';
+import { HttpError } from '../lib/httpError.js';
 import { assessmentService } from '../services/assessment.service.js';
-import { clientFor, result } from '../services/remote/database.js';
+import { clientFor, result, attachProfiles } from '../services/remote/database.js';
 
 export const verificationController = {
   async getMyRequests(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -203,7 +204,7 @@ export const verificationController = {
           .select('*')
           .order('updated_at', { ascending: false })
       );
-      res.json({ success: true, data });
+      res.json({ success: true, data: await attachProfiles(data, 'tutor_id', 'profile', req.token!) });
     } catch (error) {
       next(error);
     }
@@ -212,6 +213,8 @@ export const verificationController = {
   async reviewInclusiveAccreditation(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { status } = req.body;
+      const current=await result(clientFor(req.token).from('inclusive_tutor_accreditations').select('tutor_id').eq('id',req.params.id).maybeSingle());
+      if(current?.tutor_id===req.user!.id)throw new HttpError(403,'Otro docente debe revisar tu acreditación.');
       const data = await result(
         clientFor(req.token)
           .from('inclusive_tutor_accreditations')

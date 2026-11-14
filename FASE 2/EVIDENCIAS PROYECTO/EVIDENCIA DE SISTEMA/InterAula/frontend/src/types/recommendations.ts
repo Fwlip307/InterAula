@@ -11,7 +11,7 @@ export interface InterestPreferences {
 }
 export interface RecommendationItem {
   id: string; kind: RecommendationKind; title: string; summary: string; href: string;
-  reason: string; topics: string[];
+  reason: string; topics: string[]; communityReason?:string;
 }
 export interface RecommendationFeed {
   mode: 'personalized' | 'starter' | 'disabled';
@@ -20,7 +20,14 @@ export interface RecommendationFeed {
   algorithmVersion: string;
   generatedAt: string;
   hiddenCount: number;
+  community?:AcademicCommunity;
 }
 export const RECOMMENDATION_KIND_LABELS: Record<RecommendationKind,string> = {
   note:'Apunte',post:'Foro',project:'Proyecto',workshop:'Taller',person:'Persona',
 };
+
+export interface CommunityPreferences {
+ institutionId:string|null;campusId:string|null;
+ scope:'all'|'institution'|'campus'|'nearby';modality:'any'|'online'|'in_person'|'hybrid';
+}
+export interface AcademicCommunity {preferences:CommunityPreferences;activationRequired:boolean}

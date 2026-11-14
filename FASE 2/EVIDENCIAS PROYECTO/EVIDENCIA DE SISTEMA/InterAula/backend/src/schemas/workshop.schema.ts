@@ -16,10 +16,10 @@ export const createWorkshopSchema = z
     modality: z.enum(['online', 'in_person', 'hybrid']).default('online').optional(),
     location_details: z.string().trim().max(300).optional(),
     agenda_preview: agendaPreviewSchema.nullable().optional(),
-    camera_policy: z.enum(['optional', 'recommended', 'required']).optional(),
-    participation_mode: z.enum(['chat_only', 'chat_or_voice', 'voice_preferred']).optional(),
-    participation_rules: z.string().trim().max(600).optional(),
-    anticipated_materials: z.array(anticipatedMaterialItemSchema).max(15).optional(),
+    camera_policy: z.enum(['optional', 'recommended', 'required', 'off']).optional(),
+    participation_mode: z.enum(['mixed', 'chat_first', 'voice_or_chat', 'chat_only', 'chat_or_voice', 'voice_preferred']).transform(value => ({chat_only:'chat_first',chat_or_voice:'mixed',voice_preferred:'voice_or_chat'} as Record<string,string>)[value] || value).optional(),
+    participation_rules: z.string().trim().max(600).nullable().transform(value => value ?? '').optional(),
+    anticipated_materials: z.array(z.union([z.string().trim().min(1).max(500), anticipatedMaterialItemSchema.transform(item => item.file_url || item.title)])).max(15).optional(),
   })
   .strict();
 

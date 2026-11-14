@@ -152,3 +152,14 @@ export type AdaptiveExplanationRequestInput = z.input<typeof adaptiveExplanation
 export type CreateQuickIdeaInput = z.input<typeof createQuickIdeaSchema>;
 export type UpdateQuickIdeaInput = z.input<typeof updateQuickIdeaSchema>;
 
+
+export const quickIdeaQuerySchema = z.object({
+ context_type:z.enum(['learning_space','tutoring','workshop','general']).optional(),
+ context_id:z.string().trim().min(1).max(150).optional(),
+ resolved:z.enum(['true','false']).transform(v=>v==='true').optional(),
+}).strict();
+export const convertIdeaSchema = z.object({
+ subject_name:z.string().trim().min(1).max(120).optional(),
+ title:z.string().trim().min(3).max(180).optional(),
+ priority:z.enum(['baja','media','alta']).optional(),
+}).strict();

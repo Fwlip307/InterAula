@@ -168,6 +168,9 @@ export interface StoredLearningSpaceConfig {
   user_id: string;
   onboardingCompleted: boolean;
   shareWithTutors?: boolean;
+  weeklyGoalDays?:number;
+  activeStudyDates?:string[];
+  supportPassport?: {selectedSupports:string[];customNotes:string;sharedWithTutorIds:string[];sharedWithProjectIds:string[];sharedItemKeys:string[]};
   explanationStyle: string[];
   organizationStyle: string[];
   communicationStyle: string[];

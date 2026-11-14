@@ -1,3 +1,4 @@
+import {normalizeSessionPrep} from '../lib/sessionPrep.js';
 import type { AuthenticatedUser } from '../types/index.js';
 import { HttpError } from '../lib/httpError.js';
 import { clientFor,result,existing,attachProfiles } from './remote/database.js';
@@ -5,7 +6,7 @@ async function decorate(rows:any[],userId?:string,token?:string):Promise<any[]> 
   const joined=await attachProfiles(rows,'tutor_id','tutor',token);
   const enrolled=userId&&rows.length?await result(clientFor(token).from('workshop_enrollments').select('workshop_id').eq('student_id',userId).in('workshop_id',rows.map(row=>row.id))):[];
   const ids=new Set(enrolled.map((row:any)=>row.workshop_id));
-  return joined.map(row=>({...row,is_enrolled:ids.has(row.id),enrollments_count:Number(row.enrollments_count||0)}));
+  return joined.map(row=>({...normalizeSessionPrep(row),is_enrolled:ids.has(row.id),enrollments_count:Number(row.enrollments_count||0)}));
 }
 export const workshopBackendService={
   async getUpcomingWorkshops(subjectId?:string,userId?:string,token?:string):Promise<any[]> {

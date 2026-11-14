@@ -114,6 +114,8 @@ export default function VoiceDictationButton({
   };
 
   const handleConfirmInsert = () => {
+    stopDictation();
+    if (recognitionRef.current) recognitionRef.current.onresult = null;
     const clean = draftTranscript.trim();
     if (clean) {
       onInsertText(clean);

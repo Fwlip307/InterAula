@@ -1236,7 +1236,7 @@ export default function ProfileView() {
                 <textarea
                   className="ia-textarea"
                   rows={2}
-                  placeholder="Respaldo o descripción breve de tu formación (opcional)"
+                  placeholder="Describe tu formación o respaldo (mínimo 5 caracteres)" minLength={5} required
                   value={inclusiveEvidenceNotes}
                   onChange={(e) => setInclusiveEvidenceNotes(e.target.value)}
                 />
@@ -1257,7 +1257,7 @@ export default function ProfileView() {
                   {validatorInclusiveList.map((item) => (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '0.82rem', padding: '8px', borderRadius: '8px', border: '1px solid var(--ia-border, #e2e8f0)' }}>
                       <div>
-                        <strong>{item.profile?.display_name || item.profile?.email || item.profile_id}</strong> — {item.training_name} ({item.status})
+                        <strong>{item.profile?.display_name || item.profile?.email || item.tutor_id}</strong> — {item.training_name} ({item.status})
                       </div>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button

@@ -577,7 +577,7 @@ export const aiBackendService = {
       evaluationConfigured: isConfigured,
       provider: isConfigured ? 'gemini' : 'hybrid_generative_ai',
       models: isConfigured
-        ? ['gemini-1.5-flash', 'gemini-2.0-flash']
+        ? [process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite']
         : ['openai-pollinations-live', 'combinatorial-dua-engine'],
     };
   },
@@ -777,7 +777,7 @@ Responde ÚNICAMENTE con un arreglo JSON válido:
         const timer = setTimeout(() => controller.abort(), 6000);
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${geminiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -898,7 +898,7 @@ REGLAS OBLIGATORIAS:
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${key}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1000,7 +1000,7 @@ Responde ÚNICAMENTE un arreglo JSON con esta estructura:
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${key}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1073,7 +1073,7 @@ Reglas estrictas:
     const timer = setTimeout(() => controller.abort(), 8000);
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${geminiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

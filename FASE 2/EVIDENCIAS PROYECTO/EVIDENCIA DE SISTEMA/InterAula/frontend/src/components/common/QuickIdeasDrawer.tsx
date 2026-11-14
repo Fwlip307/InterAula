@@ -35,7 +35,7 @@ export function QuickIdeasDrawer({
       });
       setIdeas(list);
     } catch {
-      // Silencioso si aún no hay sesión o tabla pendiente
+      setFeedback('No pudimos cargar la bandeja. Reabre esta sección para reintentar.');
     } finally {
       setLoading(false);
     }

@@ -207,7 +207,6 @@ export const projectService = {
       title: string;
       description?: string;
       assignee_id?: string | null;
-      assignee_name?: string | null;
       due_date?: string | null;
       expected_format?: string;
     }
@@ -222,10 +221,9 @@ export const projectService = {
       title?: string;
       description?: string;
       assignee_id?: string | null;
-      assignee_name?: string | null;
       due_date?: string | null;
       expected_format?: string;
-      status?: 'pending' | 'in_progress' | 'submitted' | 'reviewed';
+      status?: 'pending' | 'in_progress' | 'review' | 'completed';
     }
   ): Promise<ProjectDeliverable> {
     return apiClient.patch(API_ENDPOINTS.PROJECTS.DELIVERABLE_BY_ID(projectId, deliverableId), dto);

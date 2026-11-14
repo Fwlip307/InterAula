@@ -9,6 +9,7 @@ import {
   recommendationItemSchema,
 } from '../schemas/recommendation.schema.js';
 
+import {communitySchema} from '../services/community.service.js';
 const router = Router();
 
 // Consulta pública del catálogo de temas de recomendación
@@ -16,6 +17,9 @@ router.get('/topics', recommendationController.getTopics);
 
 // Endpoints autenticados con limitador de tasa
 router.use(requireAuth, createRateLimiter(60));
+
+router.get('/community',recommendationController.getCommunity);
+router.put('/community',validateRequest({body:communitySchema}),recommendationController.saveCommunity);
 
 // Preferencias de personalización
 router.get('/preferences', recommendationController.getPreferences);

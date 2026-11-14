@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   // Estado del servidor
   HEALTH: '/health',
   RECOMMENDATIONS: {
+    COMMUNITY: '/recommendations/community',
     TOPICS: '/recommendations/topics',
     PREFERENCES: '/recommendations/preferences',
     FEED: '/recommendations/feed',

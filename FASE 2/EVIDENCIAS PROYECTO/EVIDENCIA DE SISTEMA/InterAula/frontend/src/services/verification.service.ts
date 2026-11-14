@@ -358,7 +358,7 @@ export const verificationService = {
     return apiClient.get(API_ENDPOINTS.VERIFICATION.INCLUSIVE_VALIDATOR);
   },
 
-  reviewInclusiveAccreditation(id: string, status: 'approved' | 'rejected' | 'revoked'): Promise<InclusiveTutorAccreditation> {
+  reviewInclusiveAccreditation(id: string, status: 'approved' | 'revoked'): Promise<InclusiveTutorAccreditation> {
     return apiClient.patch(API_ENDPOINTS.VERIFICATION.INCLUSIVE_REVIEW(id), { status });
   },
 };

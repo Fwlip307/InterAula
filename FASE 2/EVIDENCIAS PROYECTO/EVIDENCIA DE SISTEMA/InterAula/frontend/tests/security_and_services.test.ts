@@ -599,10 +599,7 @@ describe('Mi espacio de aprendizaje: Rutas, Explicaciones Adaptables y Dominio p
   });
 });
 
-import {
-  DEFAULT_ACCESSIBILITY_PREFERENCES,
-  LEARNING_PREFERENCES,
-} from '../src/types/profile.ts';
+
 import { SUPPORT_PASSPORT_OPTIONS } from '../src/types/learningSpace.ts';
 import { INCLUSIVE_SUPPORT_RESOURCES } from '../src/data/inclusiveResources.ts';
 import { generatePersonalProgressPdf } from '../src/utils/noteExporter.ts';

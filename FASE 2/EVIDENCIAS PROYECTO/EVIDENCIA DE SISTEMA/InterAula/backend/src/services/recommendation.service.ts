@@ -1,3 +1,4 @@
+import {communityService} from './community.service.js';
 import { supabasePublic } from '../lib/supabase.js';
 import { HttpError, requireDatabaseResult } from '../lib/httpError.js';
 import { clientFor } from './remote/database.js';
@@ -13,6 +14,15 @@ async function result(query: PromiseLike<any>, message?: string): Promise<any> {
     throw new HttpError(503,'Las sugerencias aún no están activadas en InterAula. Puedes seguir explorando la comunidad.','RECOMMENDATIONS_NOT_READY');
   }
   return requireDatabaseResult(response,message);
+}
+async function workshopCandidates(client:ReturnType<typeof clientFor>) {
+  const fields=metadataFields+',tutor_id,description,subject_id,status,scheduled_at,max_students,enrollments_count';
+  const query=(projection:string)=>client.from('workshop_summary').select(projection)
+    .in('status',['scheduled','in_progress']).or('status.eq.in_progress,scheduled_at.gte.'+new Date().toISOString())
+    .order('scheduled_at',{ascending:true}).limit(150);
+  let response=await query(fields+',modality');
+  if(response.error&&['42703','PGRST204'].includes(String(response.error.code)))response=await query(fields);
+  return result(Promise.resolve(response));
 }
 const excerpt = (text: string | null | undefined) => (text || '').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,220);
 export const recommendationService = {
@@ -35,22 +45,20 @@ export const recommendationService = {
   },
   async feed(userId: string, token: string, limit=9) {
     const client=clientFor(token);
-    const [topics,preferences] = await Promise.all([this.topics(),this.preferences(token)]);
+    const [topics,preferences,community] = await Promise.all([this.topics(),this.preferences(token),communityService.get(userId,token)]);
     // Every candidate is read under the user's JWT and RLS. Never fetch HTML/files/contact.
     const [notes,posts,projects,workshops,dismissals,needed,people] = await Promise.all([
       result(client.from('academic_notes').select(`${metadataFields},author_id,summary,subject_id,subject_name,tags`)
         .eq('is_draft',false).in('visibility',['public','shared']).order('created_at',{ascending:false}).limit(150)),
       result(client.from('forum_posts').select(`${metadataFields},author_id,description,subject_id,category,tags`)
         .order('created_at',{ascending:false}).limit(150)),
-      result(client.from('projects').select(`${metadataFields},owner_id,description,short_description,category,tags,technologies`)
+      result(client.from('projects').select(`${metadataFields},owner_id,description,short_description,category,tags,technologies,modality`)
         .eq('visibility','public').in('status',['open','recruiting']).order('created_at',{ascending:false}).limit(150)),
-      result(client.from('workshop_summary').select(`${metadataFields},tutor_id,description,subject_id,status,scheduled_at,max_students,enrollments_count`)
-        .in('status',['scheduled','in_progress']).or(`status.eq.in_progress,scheduled_at.gte.${new Date().toISOString()}`)
-        .order('scheduled_at',{ascending:true}).limit(150)),
+      workshopCandidates(client),
       result(client.from('recommendation_dismissals').select('kind,item_id').eq('user_id',userId)),
       preferences.personalization_enabled ? result(client.from('profile_needed_subjects').select('subject_id,subject:subjects(name)').eq('profile_id',userId)) : [],
       preferences.personalization_enabled ? result(client.from('public_profiles')
-        .select('id,display_name,first_name,last_name,institution,career,available_for_tutoring,available_for_projects,updated_at')
+        .select('id,display_name,first_name,last_name,institution,location,career,available_for_tutoring,available_for_projects,updated_at')
         .neq('id',userId).or('available_for_tutoring.eq.true,available_for_projects.eq.true')
         .order('updated_at',{ascending:false}).limit(150)) : [],
     ]);
@@ -82,10 +90,18 @@ export const recommendationService = {
         offeredSubjects:person.available_for_tutoring ? offered.filter((subject:any)=>subject.profile_id===person.id).map((subject:any)=>({id:subject.subject_id,name:subject.subject?.name||'',verified:subject.is_verified===true})) : [],
       })),
     ];
-    const feed=rankRecommendations({userId,preferences,topics,candidates,limit,
+    const ownerIds=[...new Set(candidates.map(c=>c.ownerId||(c.kind==='person'?c.id:undefined)).filter(Boolean))];
+    const origins=ownerIds.length?await result(client.from('public_profiles').select('id,institution,location').in('id',ownerIds)):[];
+    const originMap=new Map(origins.map((p:any)=>[p.id,p]));
+    const activityModes=new Map([...projects,...workshops.map((w:any)=>({...w,modality:w.modality||'online'}))].map((row:any)=>[row.id,row.modality]));
+    for(const c of candidates) {
+      const origin:any=originMap.get(c.ownerId||c.id);
+      c.origin={institution:origin?.institution,location:origin?.location,...(activityModes.get(c.id)?{modality:activityModes.get(c.id)}:{})};
+    }
+    const feed=rankRecommendations({userId,preferences,topics,candidates,limit,community:community.preferences,
       neededSubjects:needed.map((subject:any)=>({id:subject.subject_id,name:subject.subject?.name||''})),
       dismissed:dismissals.map((item:any)=>`${item.kind}:${item.item_id}`)});
-    return {...feed,personalizationEnabled:preferences.personalization_enabled,algorithmVersion:'interests-v1',
+    return {...feed,personalizationEnabled:preferences.personalization_enabled,algorithmVersion:'interests-community-v2',community,
       generatedAt:new Date().toISOString(),hiddenCount:dismissals.length};
   },
   async dismiss(userId: string, token: string, kind: RecommendationKind, id: string) {

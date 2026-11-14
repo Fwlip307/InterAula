@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "checks": [
+    "Institution and campus selection, nearby commune, failed save keeps choices, successful save",
+    "Saved preferences reload",
+    "Global search opens community",
+    "No overflow at 1440, 960, 390 and 320px",
+    "Missing activation has an explicit state",
+    "Another account receives its own preferences",
+    "Confirming dictation stops recognition and inserts text"
+  ],
+  "widths": [
+    {
+      "width": 1440,
+      "scrollWidth": 1425
+    },
+    {
+      "width": 960,
+      "scrollWidth": 945
+    },
+    {
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "width": 320,
+      "scrollWidth": 320
+    }
+  ],
+  "exceptions": [],
+  "scope": "Actual components with synthetic account/service responses and simulated microphone; no Supabase mutations"
+}

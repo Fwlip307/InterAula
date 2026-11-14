@@ -1,3 +1,5 @@
+import {z} from 'zod';
+import {clientFor,result} from '../services/remote/database.js';
 import type { Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { learningSpaceService } from '../services/learningSpace.service.js';
@@ -11,11 +13,19 @@ import {
   updateStudyTaskSchema,
   recordTopicAssessmentSchema,
   adaptiveExplanationRequestSchema,
+  quickIdeaQuerySchema, convertIdeaSchema,
   createQuickIdeaSchema,
   updateQuickIdeaSchema,
 } from '../schemas/learningSpace.schema.js';
 
 export const learningSpaceController = {
+  async sharedSupports(req:AuthenticatedRequest,res:Response,next:NextFunction) {
+    try {
+      const query=z.object({project_id:z.string().uuid().optional()}).strict().parse(req.query);
+      const data=await result(clientFor(req.token!).rpc('get_shared_learning_supports',{p_project_id:query.project_id||null}));
+      res.json({success:true,data});
+    } catch(error){next(error);}
+  },
   /**
    * GET /api/learning-space/overview
    * Obtiene el estado integral de Mi espacio de aprendizaje del usuario autenticado
@@ -281,7 +291,7 @@ export const learningSpaceController = {
 
   async listQuickIdeas(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const data = await learningSpaceService.listQuickIdeas(req.user!.id, req.token!);
+      const data = await learningSpaceService.listQuickIdeas(req.user!.id, req.token!, quickIdeaQuerySchema.parse(req.query));
       res.json({ success: true, data });
     } catch (error) {
       next(error);
@@ -327,7 +337,7 @@ export const learningSpaceController = {
       const data = await learningSpaceService.convertQuickIdeaToTask(
         req.user!.id,
         req.token!,
-        String(req.params.ideaId)
+        String(req.params.ideaId), convertIdeaSchema.parse(req.body)
       );
       res.status(201).json({ success: true, data });
     } catch (error) {

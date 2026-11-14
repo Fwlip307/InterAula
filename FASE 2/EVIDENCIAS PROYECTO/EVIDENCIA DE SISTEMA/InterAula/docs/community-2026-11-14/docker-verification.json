@@ -1,0 +1,9 @@
+{
+  "pages": {
+    "/": 200,
+    "/community": 200,
+    "/api/health": 200
+  },
+  "community_requires_login": true,
+  "community_bundle": true
+}

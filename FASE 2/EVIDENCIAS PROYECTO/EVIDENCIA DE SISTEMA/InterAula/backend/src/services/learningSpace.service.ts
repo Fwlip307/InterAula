@@ -239,6 +239,9 @@ const localLearningSpaceService = {
       user_id: userId,
       onboardingCompleted: input.onboardingCompleted ?? current.onboardingCompleted,
       shareWithTutors: input.shareWithTutors ?? Boolean(current.shareWithTutors),
+      weeklyGoalDays: input.weeklyGoalDays ?? current.weeklyGoalDays,
+      activeStudyDates: input.activeStudyDates ?? current.activeStudyDates,
+      supportPassport: input.supportPassport ? {selectedSupports:[],customNotes:'',sharedWithTutorIds:[],sharedWithProjectIds:[],sharedItemKeys:[],...input.supportPassport} : current.supportPassport,
       explanationStyle: input.explanationStyle ?? current.explanationStyle,
       organizationStyle: input.organizationStyle ?? current.organizationStyle,
       communicationStyle: input.communicationStyle ?? current.communicationStyle,
@@ -1014,7 +1017,7 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
         const timer = setTimeout(() => controller.abort(), 7000);
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${geminiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1491,10 +1494,10 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
     };
   },
 
-  async listQuickIdeas(userId: string, _token: string): Promise<StoredQuickIdea[]> {
+  async listQuickIdeas(userId: string, _token: string, filters:{context_type?:string;context_id?:string;resolved?:boolean}={}): Promise<StoredQuickIdea[]> {
     const db = persistentStore.read();
     return db.quick_ideas
-      .filter((item) => item.user_id === userId)
+      .filter((item) => item.user_id === userId && (!filters.context_type || item.context_type===filters.context_type) && (!filters.context_id || item.context_id===filters.context_id) && (typeof filters.resolved!=='boolean' || item.resolved===filters.resolved))
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
   },
 
@@ -1559,17 +1562,22 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
   async convertQuickIdeaToTask(
     userId: string,
     token: string,
-    ideaId: string
+    ideaId: string,
+    options:{subject_name?:string;title?:string;priority?:'baja'|'media'|'alta'}={}
   ): Promise<{ idea: StoredQuickIdea; task: StoredStudyTask }> {
     const db = persistentStore.read();
     const found = db.quick_ideas.find((item) => item.id === ideaId && item.user_id === userId);
     if (!found) {
       throw new HttpError(404, 'Idea rápida no encontrada.');
     }
+    if(found.converted_task_id) {
+      const existing=db.study_tasks.find(task=>task.id===found.converted_task_id&&task.user_id===userId);
+      if(existing)return {idea:found,task:existing};
+    }
     const task = await localLearningSpaceService.createStudyTask(userId, token, {
-      title: found.content.slice(0, 180),
-      subject_name: 'General',
-      priority: 'media',
+      title: options.title || (found.content.length<3 ? 'Revisar: '+found.content : found.content.slice(0,180)),
+      subject_name: options.subject_name || 'General',
+      priority: options.priority || 'media',
     });
     let updatedIdea!: StoredQuickIdea;
     persistentStore.write((draft) => {

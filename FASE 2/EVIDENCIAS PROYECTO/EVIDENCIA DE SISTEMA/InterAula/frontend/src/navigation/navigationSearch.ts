@@ -9,6 +9,10 @@ export interface NavigationDestination {
 
 // Navigation only: no personal data, remote requests or user-provided URLs.
 export const NAVIGATION_DESTINATIONS: readonly NavigationDestination[] = [
+  {id:'community',title:'Mi comunidad académica',module:'Recomendaciones',description:'Elegir institución, sede, comuna y modalidad para tus sugerencias.',href:'/community',keywords:'comunidad universidad instituto campus sede cerca ubicacion ubicación comuna region presencial online distancia institución'},
+  {id:'supports',title:'Mis apoyos para aprender',module:'Aprendizaje',description:'Mi espacio → Perfil. Elegir apoyos y con quién compartirlos.',href:'/learning-space?tab=profile',keywords:'pasaporte ficha apoyos compartir preferencias tutor'},
+  {id:'one-step',title:'Un paso a la vez',module:'Aprendizaje',description:'Mi espacio → Tareas. Pasos pequeños para estudiar.',href:'/learning-space?tab=tasks',keywords:'pasos tarea organizar estudio foco'},
+  {id:'quick-ideas',title:'Ideas y dudas para después',module:'Aprendizaje',description:'Mi espacio → Tareas. Anotar ideas y convertirlas en tareas.',href:'/learning-space?tab=tasks',keywords:'bandeja ideas notas dudas recordar dictar'},
   {id:'interests',title:'Mis intereses',module:'Perfil',description:'Perfil → Mis intereses. Elegir temas y personalizar sugerencias.',href:'/profile?tab=interests',keywords:'temas gustos preferencias recomendaciones personalizar'},
   {id:'interest-learn',title:'Quiero aprender',module:'Intereses',description:'Perfil → Mis intereses → Quiero aprender.',href:'/profile?tab=interests&intent=learn',keywords:'aprender estudiar seleccionar intereses necesito ayuda'},
   {id:'interest-teach',title:'Puedo compartir',module:'Intereses',description:'Perfil → Mis intereses → Puedo compartir.',href:'/profile?tab=interests&intent=teach',keywords:'ensenar enseñar conocimientos habilidades compartir enseñar tutor'},

@@ -2,7 +2,14 @@ import type { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { recommendationService, type RecommendationKind } from '../services/recommendation.service.js';
 
+import {communityService} from '../services/community.service.js';
 export const recommendationController = {
+  async getCommunity(req:AuthenticatedRequest,res:Response,next:NextFunction) {
+    try {res.json({success:true,data:await communityService.get(req.user!.id,req.token!)});} catch(error){next(error);}
+  },
+  async saveCommunity(req:AuthenticatedRequest,res:Response,next:NextFunction) {
+    try {res.json({success:true,data:await communityService.save(req.user!.id,req.token!,req.body)});} catch(error){next(error);}
+  },
   async getTopics(_req: Request, res: Response, next: NextFunction) {
     try {
       const data = await recommendationService.topics();

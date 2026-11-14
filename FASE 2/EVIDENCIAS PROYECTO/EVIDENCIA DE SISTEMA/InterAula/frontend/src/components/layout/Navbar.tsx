@@ -147,6 +147,7 @@ export default function Navbar() {
                   <ShieldCheckIcon size={15} />
                   <span>Acreditación de Tutor</span>
                 </Link>
+                <Link to="/community" className="ia-dropdown-item" onClick={()=>setMenuOpen(false)}><CompassIcon size={15}/><span>Mi comunidad académica</span></Link>
                 <Link to="/settings" className="ia-dropdown-item" onClick={() => setMenuOpen(false)}>
                   <SlidersIcon size={15} />
                   <span>Accesibilidad y tema visual</span>

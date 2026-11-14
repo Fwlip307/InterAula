@@ -8,6 +8,7 @@ const router = Router();
 // Todas las rutas de Mi espacio de aprendizaje son privadas y requieren autenticación
 router.use(requireAuth);
 
+router.get('/shared-supports',learningSpaceController.sharedSupports);
 router.get('/overview', learningSpaceController.getOverview);
 router.put('/config', learningSpaceController.updateConfig);
 

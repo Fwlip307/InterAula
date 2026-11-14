@@ -1,3 +1,4 @@
+import SharedLearningSupports from '../../components/common/SharedLearningSupports';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useModuleTab } from '../../hooks/useModuleTab';
@@ -380,6 +381,7 @@ export default function MyTutoring() {
 
   return (
     <div>
+      <SharedLearningSupports />
       {/* Cabecera del Panel de Tutor */}
       <div
         style={{
@@ -1063,6 +1065,7 @@ export default function MyTutoring() {
                       borderRadius: '12px',
                     }}
                   >
+
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px', flexWrap: 'wrap' }}>
                         <span

@@ -266,8 +266,8 @@ export default function VirtualClassroom() {
         const others = prev.filter((s) => s.user_id !== saved.user_id);
         return [saved, ...others];
       });
-    } catch {
-      // ignore
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo guardar tu señal.');
     } finally {
       setSavingSignal(false);
     }

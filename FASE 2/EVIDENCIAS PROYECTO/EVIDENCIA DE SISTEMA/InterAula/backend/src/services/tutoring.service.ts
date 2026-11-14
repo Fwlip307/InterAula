@@ -1,3 +1,4 @@
+import {normalizeSessionPrep} from '../lib/sessionPrep.js';
 import type { AuthenticatedUser } from '../types/index.js';
 import { HttpError } from '../lib/httpError.js';
 import { clientFor, result, existing, attachProfiles } from './remote/database.js';
@@ -5,7 +6,7 @@ import { clientFor, result, existing, attachProfiles } from './remote/database.j
 async function sessionsWithProfiles(rows:any[],token:string):Promise<any[]> {
   const tutors=await attachProfiles(rows,'tutor_id','tutor',token);
   const joined=await attachProfiles(tutors,'student_id','student',token);
-  return joined.map(session=>({...session,review:Array.isArray(session.review)?session.review[0]||null:session.review}));
+  return joined.map(session=>({...normalizeSessionPrep(session),review:Array.isArray(session.review)?session.review[0]||null:session.review}));
 }
 export const tutoringBackendService={
   async getAvailableTutors(filters?:{subjectId?:string;search?:string;onlyVerified?:boolean;onlyInclusive?:boolean}):Promise<any[]> {

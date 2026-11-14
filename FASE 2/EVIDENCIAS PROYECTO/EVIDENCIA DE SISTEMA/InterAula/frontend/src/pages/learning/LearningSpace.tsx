@@ -22,6 +22,7 @@ import {
   type ExplanationMode,
   type LearningPace,
 } from '../../types/learningSpace';
+import {tutoringService,type AvailableTutor} from '../../services/tutoring.service';
 import { breakdownTaskWithAi, type AiTaskBreakdownStep } from '../../services/geminiAiService';
 import { ReadAloudControls } from '../../components/common/ReadAloudControls';
 import { QuickIdeasDrawer } from '../../components/common/QuickIdeasDrawer';
@@ -149,6 +150,8 @@ export const LearningSpace = () => {
   const [literalMode, setLiteralMode] = useState<boolean>(Boolean(preferences.literalLanguage));
   const [includePassportInPdf, setIncludePassportInPdf] = useState(false);
   const [passportTutorIdInput, setPassportTutorIdInput] = useState('');
+  const [supportTutors,setSupportTutors]=useState<AvailableTutor[]>([]);
+  useEffect(()=>{let live=true;tutoringService.getAvailableTutors().then(rows=>{if(live)setSupportTutors(rows);}).catch(()=>{});return()=>{live=false;};},[]);
 
   // Estado para Evaluación de Conocimientos manual/rápida
   const [evalSubject, setEvalSubject] = useState('');
@@ -461,7 +464,8 @@ export const LearningSpace = () => {
     setTimeout(() => setStatusBanner(''), 3500);
   };
 
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const localDateKey = (date:Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const todayIso = localDateKey(new Date());
   const currentWeekDays = (() => {
     const now = new Date();
     const day = now.getDay(); // 0=Dom
@@ -474,7 +478,7 @@ export const LearningSpace = () => {
     for (let i = 0; i < 7; i += 1) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      if (activeSet.has(d.toISOString().slice(0, 10))) count += 1;
+      if (activeSet.has(localDateKey(d))) count += 1;
     }
     return count;
   })();
@@ -3483,7 +3487,7 @@ export const LearningSpace = () => {
                   </div>
 
                   <div className="form-group" style={{ marginBottom: '0.85rem' }}>
-                    <label htmlFor="support-passport-notes">Notas prácticas adicionales (opcional)</label>
+                    <label htmlFor="support-passport-notes">Notas prácticas privadas (opcionales; no se comparten)</label>
                     <textarea
                       id="support-passport-notes"
                       rows={2}
@@ -3554,13 +3558,10 @@ export const LearningSpace = () => {
                         Tutores autorizados ({config.supportPassport?.sharedWithTutorIds.length || 0})
                       </div>
                       <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.45rem' }}>
-                        <input
-                          type="text"
-                          placeholder="UUID del tutor a autorizar"
-                          value={passportTutorIdInput}
-                          onChange={(e) => setPassportTutorIdInput(e.target.value)}
-                          style={{ flex: 1, fontSize: '0.82rem' }}
-                        />
+                        <select aria-label="Tutor con quien compartir apoyos" value={passportTutorIdInput} onChange={e=>setPassportTutorIdInput(e.target.value)}>
+                          <option value="">Selecciona un tutor</option>
+                          {supportTutors.map(t=><option key={t.profile.id} value={t.profile.id}>{t.profile.display_name || t.profile.first_name || 'Tutor'}</option>)}
+                        </select>
                         <button
                           type="button"
                           className="btn btn-outline btn-sm"
@@ -3591,7 +3592,7 @@ export const LearningSpace = () => {
                       </div>
                       {(config.supportPassport?.sharedWithTutorIds || []).map((tid) => (
                         <div key={tid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', padding: '0.25rem 0' }}>
-                          <span>{tid}</span>
+                          <span>{supportTutors.find(t=>t.profile.id===tid)?.profile.display_name || supportTutors.find(t=>t.profile.id===tid)?.profile.first_name || 'Tutor autorizado'}</span>
                           <button
                             type="button"
                             className="btn btn-outline btn-sm"

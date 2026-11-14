@@ -9,7 +9,7 @@ export interface SessionAgendaPreview {
   how_it_ends: string;
 }
 
-export type CameraPolicy = 'optional' | 'recommended' | 'off';
+export type CameraPolicy = 'optional' | 'recommended' | 'off' | 'required';
 export type ParticipationMode = 'mixed' | 'chat_first' | 'voice_or_chat';
 export type ClassroomSignalState = 'green' | 'yellow' | 'blue' | 'red';
 
@@ -32,8 +32,8 @@ export interface SessionPrepDTO {
 
 export interface InclusiveTutorAccreditation {
   id: string;
-  profile_id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'revoked';
+  tutor_id: string;
+  status: 'pending' | 'approved' | 'revoked';
   training_name: string;
   evidence_notes?: string | null;
   reviewed_by?: string | null;

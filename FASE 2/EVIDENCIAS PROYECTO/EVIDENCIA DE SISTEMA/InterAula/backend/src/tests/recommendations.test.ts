@@ -91,7 +91,7 @@ test('Servicio del feed: usa metadatos autorizados, filtra borradores y conserva
   t.mock.method(Object.getPrototypeOf(supabasePublic),'from',(table:string)=>{
     const rows=table==='academic_notes'?[{id:'note-id',author_id:'other',title:'Python',summary:'A guide',subject_name:'Python',tags:[],created_at:'2026-01-01'}]:[];
     const query:any=Promise.resolve({data:rows,error:null});
-    for(const method of ['select','eq','in','or','neq','order','limit'])query[method]=(...args:any[])=>{calls.push({table,method,args});return query;};
+    for(const method of ['select','eq','in','or','neq','order','limit','maybeSingle'])query[method]=(...args:any[])=>{calls.push({table,method,args});return query;};
     return query;
   });
   const feed=await recommendationService.feed('me','fixture-token');
@@ -99,7 +99,8 @@ test('Servicio del feed: usa metadatos autorizados, filtra borradores y conserva
   assert.ok(calls.some(call=>call.table==='academic_notes'&&call.method==='eq'&&call.args[0]==='is_draft'&&call.args[1]===false));
   assert.ok(calls.some(call=>call.table==='projects'&&call.method==='eq'&&call.args[0]==='visibility'&&call.args[1]==='public'));
   assert.ok(calls.some(call=>call.table==='workshop_summary'&&call.method==='or'&&call.args[0].includes('scheduled_at.gte.')));
-  assert.equal(calls.some(call=>call.table==='profiles'),false);
+  assert.ok(calls.some(call=>call.table==='profiles'&&call.method==='eq'&&call.args[0]==='id'&&call.args[1]==='me'));
+  assert.ok(calls.filter(call=>call.table==='profiles'&&call.method==='select').every(call=>call.args[0]==='institution,location,community_preferences'));
   assert.ok(calls.filter(call=>call.method==='select').every(call=>!/(?:email|phone|learning_preferences|accessibility_preferences|content_html|file_url)/.test(call.args[0])));
 });
 test('Servicio del feed: un error de persistencia no se convierte en una lista vacía',async(t)=>{
@@ -107,7 +108,7 @@ test('Servicio del feed: un error de persistencia no se convierte en una lista v
   t.mock.method(recommendationService,'preferences',async()=>defaultRecommendationPreferences());
   t.mock.method(Object.getPrototypeOf(supabasePublic),'from',(table:string)=>{
     const query:any=Promise.resolve(table==='academic_notes'?{data:null,error:{code:'PGRST205',message:'internal-table-details'}}:{data:[],error:null});
-    for(const method of ['select','eq','in','or','neq','order','limit'])query[method]=()=>query;
+    for(const method of ['select','eq','in','or','neq','order','limit','maybeSingle'])query[method]=()=>query;
     return query;
   });
   await assert.rejects(recommendationService.feed('me','fixture-token'),(error:any)=>error.status===503&&!error.message.includes('internal-table-details'));

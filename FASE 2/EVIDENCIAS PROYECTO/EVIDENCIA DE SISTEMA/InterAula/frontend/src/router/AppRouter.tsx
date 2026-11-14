@@ -22,6 +22,7 @@ const Resources = lazy(() => import('../pages/resources/Resources'));
 const Settings = lazy(() => import('../pages/settings/Settings'));
 const Forum = lazy(() => import('../pages/forum/Forum'));
 const ProjectsHub = lazy(() => import('../pages/projects/ProjectsHub'));
+const AcademicCommunity = lazy(() => import('../pages/AcademicCommunity'));
 const LearningSpace = lazy(() => import('../pages/learning/LearningSpace'));
 
 function RouteLoadingFallback() {
@@ -99,6 +100,7 @@ export default function AppRouter() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/community" element={<AcademicCommunity />} />
           <Route path="/learning-space" element={<LearningSpace />} />
           <Route path="/learning" element={<LearningSpace />} />
           <Route path="/profile" element={<ProfileView />} />

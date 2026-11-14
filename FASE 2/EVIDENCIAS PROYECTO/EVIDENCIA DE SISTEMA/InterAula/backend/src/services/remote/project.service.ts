@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import type { AuthenticatedUser } from '../../types/index.js';
 import { HttpError } from '../../lib/httpError.js';
 import { clientFor, result, existing, attachProfiles } from './database.js';
@@ -145,40 +144,10 @@ export const remoteProjectService = {
   },
 
   async addDeliverableComment(
-    user: AuthenticatedUser,
-    token: string,
-    projectId: string,
-    deliverableId: string,
-    content: string
-  ): Promise<any> {
-    const current = await existing(
-      clientFor(token)
-        .from('project_deliverables')
-        .select('*')
-        .eq('id', deliverableId)
-        .eq('project_id', projectId)
-        .maybeSingle(),
-      'Entregable no encontrado o sin permisos.'
-    );
-    const comments = Array.isArray(current.comments) ? [...current.comments] : [];
-    comments.push({
-      id: crypto.randomUUID(),
-      author_id: user.id,
-      author_name: user.email?.split('@')[0] || 'Integrante',
-      content: content.trim(),
-      created_at: new Date().toISOString(),
-    });
-    const updated = await existing(
-      clientFor(token)
-        .from('project_deliverables')
-        .update({ comments, updated_at: new Date().toISOString() })
-        .eq('id', deliverableId)
-        .eq('project_id', projectId)
-        .select('*')
-        .maybeSingle(),
-      'No se pudo agregar el comentario.'
-    );
-    return (await attachProfiles([updated], 'assignee_id', 'assignee', token))[0];
+    _user:AuthenticatedUser,token:string,projectId:string,deliverableId:string,content:string
+  ):Promise<any> {
+    const updated=await result(clientFor(token).rpc('append_deliverable_comment',{p_project_id:projectId,p_id:deliverableId,p_content:content}));
+    return (await attachProfiles([updated],'assignee_id','assignee',token))[0];
   },
 
   async deleteDeliverable(

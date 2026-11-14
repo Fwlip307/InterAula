@@ -63,7 +63,7 @@ exit /b 1
 docker info >nul 2>&1
 if errorlevel 1 (
   echo Iniciando Docker Desktop. Espere a que el motor este listo...
-  powershell.exe -NoProfile -Command "$paths = @(Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe', Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'); $desktop = $paths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1; if (-not $desktop) { exit 1 }; Start-Process -FilePath $desktop -WindowStyle Hidden"
+  powershell.exe -NoProfile -Command "$paths = @((Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe'), (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe')); $desktop = $paths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1; if (-not $desktop) { exit 1 }; Start-Process -FilePath $desktop -WindowStyle Hidden"
   if errorlevel 1 (
     echo No se encontro Docker Desktop. Inicie el servicio Docker manualmente y vuelva a intentar.
     pause

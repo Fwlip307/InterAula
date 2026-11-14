@@ -12,6 +12,8 @@ InterAula es una plataforma integral de tutorías universitarias, aprendizaje co
 
 **Buscador global:** la barra superior permite encontrar módulos y opciones con **Ctrl + K**, incluyendo «Quiero aprender», «Borradores» y «Mis postulaciones». [Uso y alcance](docs/BUSCADOR_GLOBAL.md).
 
+**Mi comunidad académica:** recomendaciones por institución, sede, comuna de referencia y modalidad, con apoyos inclusivos compartidos de forma selectiva. Incluye correcciones de talleres, entregables, dictado y acreditación. [Uso y activación de 019–021](docs/MI_COMUNIDAD_ACADEMICA.md). La activación se realiza con `supabase/ACTIVAR_COMUNIDAD.sql` en Supabase; Docker no la ejecuta automáticamente.
+
 ---
 
 ## 🏛️ 1. Arquitectura del Sistema
