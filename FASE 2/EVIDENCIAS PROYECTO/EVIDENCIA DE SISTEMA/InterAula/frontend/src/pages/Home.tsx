@@ -259,10 +259,10 @@ export default function Home() {
                 />
                 <div className="ia-hero-float-badge">
                   <div>
-                    <strong style={{ display: 'block', fontSize: '0.84rem', color: '#0f172a' }}>
+                    <strong style={{ display: 'block', fontSize: '0.84rem', color: 'var(--ia-text-main, #0f172a)' }}>
                       Aprendizaje adaptado a tu ritmo
                     </strong>
-                    <span style={{ fontSize: '0.76rem', color: '#475569' }}>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--ia-text-body, #475569)' }}>
                       Explicaciones sencillas, paso a paso, visuales o con casos reales
                     </span>
                   </div>
@@ -270,7 +270,7 @@ export default function Home() {
                 </div>
                 <div className="ia-photo-caption">
                   <span>Comunidad universitaria colaborativa e interdisciplinaria</span>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Fotografía: Brooke Cagle / Unsplash</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--ia-text-muted, #64748b)' }}>Fotografía: Brooke Cagle / Unsplash</span>
                 </div>
               </div>
             </div>

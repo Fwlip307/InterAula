@@ -333,7 +333,7 @@ export default function RequestTutoringModal({
           </div>
 
           {/* 2. Contenido específico y Tipo de ayuda */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px', marginBottom: '16px' }}>
             <div>
               <label htmlFor="req-topic" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                 Contenido o unidad específica
@@ -462,7 +462,7 @@ export default function RequestTutoringModal({
           </div>
 
           {/* 4. Fecha, Hora y Disponibilidad */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 145px), 1fr))', gap: '10px', marginBottom: '12px' }}>
             <div>
               <label htmlFor="req-date" style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                 Fecha propuesta *

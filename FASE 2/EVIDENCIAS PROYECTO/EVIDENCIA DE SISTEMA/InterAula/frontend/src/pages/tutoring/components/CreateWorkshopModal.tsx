@@ -215,10 +215,10 @@ export default function CreateWorkshopModal({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
             gap: '8px',
             marginBottom: '16px',
-            backgroundColor: '#f1f5f9',
+            backgroundColor: 'var(--ia-bg-subtle, #f1f5f9)',
             padding: '4px',
             borderRadius: '10px',
           }}

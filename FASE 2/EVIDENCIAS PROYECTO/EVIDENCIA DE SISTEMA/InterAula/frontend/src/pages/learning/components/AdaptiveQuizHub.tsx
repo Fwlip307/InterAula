@@ -1428,7 +1428,7 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
               gap: '8px',
               padding: '10px 12px',
               borderRadius: '12px',

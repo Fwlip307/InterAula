@@ -4101,3 +4101,210 @@ html[data-reduce-motion="true"] * {
   }
 }
 
+/* ==========================================================================
+   PULIDO INTEGRAL DE MODO OSCURO EN TODAS LAS VISTAS DEL PORTAL
+   ========================================================================== */
+html.ia-dark-mode .ia-mobile-nav {
+  background-color: #0f172a !important;
+  border-bottom-color: #283548 !important;
+}
+
+html.ia-dark-mode .ia-mobile-nav .ia-nav-item {
+  color: #cbd5e1 !important;
+}
+
+html.ia-dark-mode .ia-mobile-nav .ia-nav-item.active {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+  color: #93c5fd !important;
+}
+
+html.ia-dark-mode .ia-theme-dropdown-popover {
+  background-color: #111827 !important;
+  border-color: #283548 !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+html.ia-dark-mode .ia-theme-mode-option {
+  background-color: #172033 !important;
+  border-color: #283548 !important;
+}
+
+html.ia-dark-mode .ia-theme-mode-option:hover {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+html.ia-dark-mode .ia-card-header,
+html.ia-dark-mode .ia-card-footer,
+html.ia-dark-mode .ia-panel-header {
+  border-color: #283548 !important;
+}
+
+html.ia-dark-mode table {
+  color: #e2e8f0 !important;
+}
+
+html.ia-dark-mode th {
+  background-color: #172033 !important;
+  color: #f8fafc !important;
+  border-color: #283548 !important;
+}
+
+html.ia-dark-mode td {
+  border-color: #283548 !important;
+  color: #cbd5e1 !important;
+}
+
+html.ia-dark-mode .ia-empty-state,
+html.ia-dark-mode .empty-state {
+  background-color: #111827 !important;
+  border-color: #283548 !important;
+  color: #cbd5e1 !important;
+}
+
+html.ia-dark-mode .ia-tab-btn:not(.active),
+html.ia-dark-mode .tab-btn:not(.active) {
+  background-color: #172033 !important;
+  border-color: #283548 !important;
+  color: #cbd5e1 !important;
+}
+
+html.ia-dark-mode .ia-assessment-dialog {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border: 1px solid #283548 !important;
+}
+
+html.ia-dark-mode .ia-assessment-dialog pre {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #283548 !important;
+}
+
+/* ==========================================================================
+   RESPONSIVIDAD INTEGRAL DEL PORTAL (Móvil <= 768px / <= 480px y Tablet <= 1024px)
+   ========================================================================== */
+html,
+body,
+.ia-layout,
+.ia-main {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.ia-theme-dropdown-popover {
+  max-width: calc(100vw - 24px);
+}
+
+@media (max-width: 1024px) {
+  .ia-main {
+    padding: 20px 18px 44px;
+  }
+
+  .ia-dashboard-grid,
+  .ia-two-col-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .ia-navbar-inner {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .ia-calm-active-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+
+  .ia-card,
+  .panel {
+    padding: 16px !important;
+    border-radius: 14px;
+  }
+
+  .adaptive-explain-controls,
+  .adaptive-explanation-columns,
+  .visual-nodes-pipeline,
+  .visual-node-inspector,
+  .visual-dnd-grid,
+  .ia-learning-grid,
+  .ia-split-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .visual-node-connector {
+    display: none !important;
+  }
+
+  .ia-tabs-bar,
+  .ia-filter-bar,
+  .ia-toolbar,
+  .learning-space-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ia-modal,
+  .modal-card,
+  .ia-assessment-dialog {
+    width: calc(100vw - 24px) !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    padding: 18px 16px !important;
+    overflow-y: auto;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ia-theme-dropdown-popover {
+    position: fixed;
+    top: 62px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .ia-main {
+    padding: 14px 10px 36px;
+  }
+
+  .ia-unified-mode-text,
+  .ia-unified-mode-badge {
+    display: none;
+  }
+
+  .ia-unified-mode-btn {
+    padding: 6px 9px;
+  }
+
+  .explanation-mode-switcher {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ia-hero-banner h1,
+  .learning-space-hero h1 {
+    font-size: 1.35rem !important;
+  }
+
+  .btn,
+  .btn-primary,
+  .btn-outline,
+  .ia-btn-primary,
+  .ia-btn-secondary {
+    max-width: 100%;
+  }
+}
+
+

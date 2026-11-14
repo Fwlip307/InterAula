@@ -353,16 +353,14 @@ export default function InclusiveHelpBot() {
         <div
           style={{
             position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            width: '92vw',
-            maxWidth: '430px',
-            height: '600px',
-            maxHeight: '85vh',
-            backgroundColor: '#ffffff',
+            bottom: '16px',
+            right: '16px',
+            width: 'min(430px, calc(100vw - 24px))',
+            height: 'min(600px, calc(100vh - 32px))',
+            backgroundColor: 'var(--ia-bg-card, #ffffff)',
             borderRadius: '16px',
             boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.35)',
-            border: '1.5px solid #cbd5e1',
+            border: '1.5px solid var(--ia-border, #cbd5e1)',
             zIndex: 9901,
             display: 'flex',
             flexDirection: 'column',
@@ -488,13 +486,13 @@ export default function InclusiveHelpBot() {
                   >
                     <div
                       style={{
-                        backgroundColor: '#ffffff',
-                        border: '1.5px solid #e2e8f0',
+                        backgroundColor: 'var(--ia-bg-card, #ffffff)',
+                        border: '1.5px solid var(--ia-border, #e2e8f0)',
                         borderRadius: '14px',
                         borderTopLeftRadius: '4px',
                         padding: '12px 14px',
                         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.03)',
-                        color: '#0f172a',
+                        color: 'var(--ia-text-main, #0f172a)',
                       }}
                     >
                       <div style={{ fontWeight: 600, marginBottom: m.steps ? '6px' : 0 }}>
@@ -611,8 +609,8 @@ export default function InclusiveHelpBot() {
           <div
             style={{
               padding: '8px 12px',
-              backgroundColor: '#f8fafc',
-              borderTop: '1px solid #e2e8f0',
+              backgroundColor: 'var(--ia-bg-subtle, #f8fafc)',
+              borderTop: '1px solid var(--ia-border, #e2e8f0)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -678,8 +676,8 @@ export default function InclusiveHelpBot() {
           <div
             style={{
               padding: '8px 12px',
-              backgroundColor: '#ffffff',
-              borderTop: '1px solid #e2e8f0',
+              backgroundColor: 'var(--ia-bg-card, #ffffff)',
+              borderTop: '1px solid var(--ia-border, #e2e8f0)',
               display: 'flex',
               gap: '6px',
               overflowX: 'auto',
@@ -693,25 +691,25 @@ export default function InclusiveHelpBot() {
                 onClick={() => handleSendMessage(opt.query)}
                 style={{
                   padding: '5px 10px',
-                  backgroundColor: '#f1f5f9',
-                  border: '1px solid #cbd5e1',
+                  backgroundColor: 'var(--ia-bg-subtle, #f1f5f9)',
+                  border: '1px solid var(--ia-border, #cbd5e1)',
                   borderRadius: '20px',
                   fontSize: '0.74rem',
                   fontWeight: 600,
-                  color: '#334155',
+                  color: 'var(--ia-text-body, #334155)',
                   cursor: 'pointer',
                   flexShrink: 0,
                   transition: 'all 0.1s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#2563eb';
-                  e.currentTarget.style.backgroundColor = '#eff6ff';
-                  e.currentTarget.style.color = '#1d4ed8';
+                  e.currentTarget.style.borderColor = 'var(--ia-primary, #2563eb)';
+                  e.currentTarget.style.backgroundColor = 'var(--ia-primary-subtle, #eff6ff)';
+                  e.currentTarget.style.color = 'var(--ia-primary, #1d4ed8)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                  e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  e.currentTarget.style.color = '#334155';
+                  e.currentTarget.style.borderColor = 'var(--ia-border, #cbd5e1)';
+                  e.currentTarget.style.backgroundColor = 'var(--ia-bg-subtle, #f1f5f9)';
+                  e.currentTarget.style.color = 'var(--ia-text-body, #334155)';
                 }}
               >
                 {opt.label}
@@ -727,8 +725,8 @@ export default function InclusiveHelpBot() {
             }}
             style={{
               padding: '12px 14px',
-              backgroundColor: '#ffffff',
-              borderTop: '1px solid #e2e8f0',
+              backgroundColor: 'var(--ia-bg-card, #ffffff)',
+              borderTop: '1px solid var(--ia-border, #e2e8f0)',
               display: 'flex',
               gap: '8px',
             }}
