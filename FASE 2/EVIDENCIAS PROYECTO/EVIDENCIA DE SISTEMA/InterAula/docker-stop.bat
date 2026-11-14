@@ -13,6 +13,14 @@ if exist "backend\.env" (
   set "ENV_ARG=--env-file .env"
 )
 
+REM Detectar e incorporar al PATH las rutas habituales de Docker Desktop si no esta en el PATH actual
+if exist "%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin\docker.exe" (
+  set "PATH=%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin;%PATH%"
+)
+if exist "%ProgramFiles%\Docker\Docker\resources\bin\docker.exe" (
+  set "PATH=%ProgramFiles%\Docker\Docker\resources\bin;%PATH%"
+)
+
 where docker >nul 2>&1
 if not errorlevel 1 (
   docker compose version >nul 2>&1

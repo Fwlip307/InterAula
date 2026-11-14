@@ -8,9 +8,12 @@ if [ -f "backend/.env" ]; then
   ENV_ARG="--env-file backend/.env"
 elif [ -f ".env" ]; then
   ENV_ARG="--env-file .env"
+elif [ -f ".env.example" ]; then
+  cp .env.example .env
+  echo "[InterAula] Archivo .env generado automaticamente desde .env.example."
+  ENV_ARG="--env-file .env"
 else
-  echo "[Error] No se encontro backend/.env ni .env."
-  echo "Copia .env.example a .env (o backend/.env.example a backend/.env) y configura Supabase."
+  echo "[Error] No se encontro backend/.env ni .env ni .env.example."
   exit 1
 fi
 

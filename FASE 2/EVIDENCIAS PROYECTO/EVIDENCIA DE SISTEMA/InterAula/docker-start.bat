@@ -10,12 +10,24 @@ if exist "backend\.env" (
   set "ENV_ARG=--env-file backend\.env"
 ) else if exist ".env" (
   set "ENV_ARG=--env-file .env"
+) else if exist ".env.example" (
+  copy ".env.example" ".env" >nul
+  echo [InterAula] Archivo .env generado automaticamente desde .env.example.
+  set "ENV_ARG=--env-file .env"
 ) else (
   echo [Error] No se encontro backend\.env ni .env.
   echo Copie .env.example a .env ^(o backend\.env.example a backend\.env^) y configure Supabase.
   pause
   popd
   exit /b 1
+)
+
+REM Detectar e incorporar al PATH las rutas habituales de Docker Desktop si no esta en el PATH actual
+if exist "%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin\docker.exe" (
+  set "PATH=%LOCALAPPDATA%\Programs\DockerDesktop\resources\bin;%PATH%"
+)
+if exist "%ProgramFiles%\Docker\Docker\resources\bin\docker.exe" (
+  set "PATH=%ProgramFiles%\Docker\Docker\resources\bin;%PATH%"
 )
 
 REM 1. Verificar si Docker esta disponible nativamente en Windows (Docker Desktop / Docker Engine)
@@ -51,7 +63,7 @@ exit /b 1
 docker info >nul 2>&1
 if errorlevel 1 (
   echo Iniciando Docker Desktop. Espere a que el motor este listo...
-  powershell.exe -NoProfile -Command "$desktop = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'; if (-not (Test-Path -LiteralPath $desktop)) { exit 1 }; Start-Process -FilePath $desktop -WindowStyle Hidden"
+  powershell.exe -NoProfile -Command "$paths = @(Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\Docker Desktop.exe', Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'); $desktop = $paths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1; if (-not $desktop) { exit 1 }; Start-Process -FilePath $desktop -WindowStyle Hidden"
   if errorlevel 1 (
     echo No se encontro Docker Desktop. Inicie el servicio Docker manualmente y vuelva a intentar.
     pause
