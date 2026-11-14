@@ -24,7 +24,7 @@ function loadConfig(): AppConfig {
     throw new Error('Configuración inválida: SUPABASE_ANON_KEY no está definida en las variables de entorno.');
   }
 
-  const corsRaw = process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000';
+  const corsRaw = process.env.CORS_ORIGIN || 'http://localhost,http://localhost:80,http://127.0.0.1,http://localhost:5173,http://localhost:3000';
   const corsOrigins = corsRaw.split(',').map((origin) => origin.trim()).filter(Boolean);
   const persistenceMode = process.env.NODE_ENV === 'test' ? 'local' : 'supabase';
   if (process.env.PERSISTENCE_MODE === 'local' && process.env.NODE_ENV !== 'test') {

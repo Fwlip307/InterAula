@@ -563,7 +563,18 @@ export const aiBackendService = {
   // Only reviewed questions for this exact subject are eligible for accreditation.
   getAccreditationQuestions(subject: string): ChallengeQuestionDTO[] {
     const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-    const candidates = CURATED_QUESTIONS.filter(question => normalize(question.subject) === normalize(subject));
+    const target = normalize(subject);
+    const aliasMap: Record<string, string> = {
+      'programacion': 'programacion de algoritmos',
+      'introduccion a la programacion': 'programacion de algoritmos',
+      'algoritmos y programacion': 'programacion de algoritmos',
+      'algoritmos': 'programacion de algoritmos',
+      'bases de datos': 'modelamiento de base de datos',
+      'base de datos': 'modelamiento de base de datos',
+      'modelamiento de bases de datos': 'modelamiento de base de datos',
+    };
+    const resolvedTarget = aliasMap[target] || target;
+    const candidates = CURATED_QUESTIONS.filter(question => normalize(question.subject) === resolvedTarget);
     return fisherYatesShuffle(candidates).slice(0, 10).map(question => randomizeQuestionOptions({ ...question }));
   },
   /**

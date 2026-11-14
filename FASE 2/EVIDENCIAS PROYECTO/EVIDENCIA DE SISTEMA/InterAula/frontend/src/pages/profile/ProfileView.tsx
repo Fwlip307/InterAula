@@ -149,12 +149,16 @@ export default function ProfileView() {
 
     const resolvedList: { id: string; name: string; category?: string; isBoosted?: boolean }[] = suggested
       .filter((s) => !offeredSubjects.some((o) => o.subject?.name?.toLowerCase() === s.name.toLowerCase() && o.is_verified))
-      .map((s) => ({
-        id: s.id,
-        name: s.name,
-        category: s.areaName,
-        isBoosted: s.isBoosted,
-      }));
+      .map((s) => {
+        const matchedOffered = offeredSubjects.find((o) => o.subject?.name?.toLowerCase() === s.name.toLowerCase());
+        const matchedCatalog = catalogSubjects.find((c) => c.name.toLowerCase() === s.name.toLowerCase());
+        return {
+          id: matchedOffered?.subject_id || matchedCatalog?.id || s.id,
+          name: s.name,
+          category: s.areaName,
+          isBoosted: s.isBoosted,
+        };
+      });
 
     // 2. Agregar materias existentes del piloto en la BD que no se hayan acreditado aún
     for (const catSub of catalogSubjects) {
@@ -1571,8 +1575,21 @@ export default function ProfileView() {
       <TutorValidationBotModal
         isOpen={isBotModalOpen}
         onClose={() => setIsBotModalOpen(false)}
-        availableSubjects={availableForEvaluation.length > 0 ? availableForEvaluation : catalogSubjects.map((s) => ({ id: s.id, name: s.name }))}
-        defaultSubjectId={selectedSubjectForBot?.id || availableForEvaluation[0]?.id || catalogSubjects[0]?.id}
+        availableSubjects={(() => {
+          const unverifiedOffered = offeredSubjects
+            .filter((o) => !o.is_verified && o.subject?.name)
+            .map((o) => ({ id: o.subject_id, name: o.subject!.name }));
+          if (unverifiedOffered.length > 0) return unverifiedOffered;
+          return availableForEvaluation.length > 0
+            ? availableForEvaluation
+            : catalogSubjects.map((s) => ({ id: s.id, name: s.name }));
+        })()}
+        defaultSubjectId={
+          selectedSubjectForBot?.id ||
+          offeredSubjects.find((o) => !o.is_verified)?.subject_id ||
+          availableForEvaluation[0]?.id ||
+          catalogSubjects[0]?.id
+        }
         userInstitution={profile?.institution || ''}
         userCareer={profile?.career || ''}
         onSuccess={handleBotSuccess}
@@ -1581,8 +1598,20 @@ export default function ProfileView() {
       <TeacherEndorsementModal
         isOpen={isTeacherModalOpen}
         onClose={() => setIsTeacherModalOpen(false)}
-        availableSubjects={availableForEvaluation.length > 0 ? availableForEvaluation : catalogSubjects.map((s) => ({ id: s.id, name: s.name }))}
-        defaultSubjectId={availableForEvaluation[0]?.id || catalogSubjects[0]?.id}
+        availableSubjects={(() => {
+          const unverifiedOffered = offeredSubjects
+            .filter((o) => !o.is_verified && o.subject?.name)
+            .map((o) => ({ id: o.subject_id, name: o.subject!.name }));
+          if (unverifiedOffered.length > 0) return unverifiedOffered;
+          return availableForEvaluation.length > 0
+            ? availableForEvaluation
+            : catalogSubjects.map((s) => ({ id: s.id, name: s.name }));
+        })()}
+        defaultSubjectId={
+          offeredSubjects.find((o) => !o.is_verified)?.subject_id ||
+          availableForEvaluation[0]?.id ||
+          catalogSubjects[0]?.id
+        }
         userInstitution={profile?.institution || ''}
         userName={fullName}
         onSuccess={async (data) => {
