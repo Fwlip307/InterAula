@@ -1,4 +1,5 @@
 import AppOverview from '../components/common/AppOverview';
+import StudyWelcome from '../components/common/StudyWelcome';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +44,7 @@ export default function Dashboard() {
   const next = nextStudyStep(overview?.paths || [], overview?.tasks || []);
   const name = getUserDisplayName(profile, user?.user_metadata, user?.email);
   return <div className="ia-guided-page">
-    <header className="ia-guided-heading"><h1>Hola, {name}</h1><p>Organiza tu estudio, aprende a tu ritmo y encuentra apoyo entre universitarios.</p><Link className="ia-guide-action" to="/guide">Cómo usar InterAula</Link></header>
+    <StudyWelcome name={name}/>
     {error && <div className="ia-guided-notice" role="alert">{error} <button type="button" className="ia-btn-secondary" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div>}
     <section className="ia-guided-next" aria-label="Tu siguiente paso" aria-busy={loading}>
       <span className="ia-guided-eyebrow">Tu siguiente paso</span>
