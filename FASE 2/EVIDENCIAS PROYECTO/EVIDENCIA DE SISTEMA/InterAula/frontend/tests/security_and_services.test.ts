@@ -603,6 +603,20 @@ describe('Mi espacio de aprendizaje: Rutas, Explicaciones Adaptables y Dominio p
 import { SUPPORT_PASSPORT_OPTIONS } from '../src/types/learningSpace.ts';
 import { INCLUSIVE_SUPPORT_RESOURCES } from '../src/data/inclusiveResources.ts';
 import { generatePersonalProgressPdf } from '../src/utils/noteExporter.ts';
+import {assessmentSubjectChoices} from '../src/utils/assessmentSubjects.ts';
+
+describe('Catálogo completo de acreditación',()=>{
+  it('incluye áreas distintas y conserva materias registradas y acreditadas',()=>{
+    const id='00000000-0000-0000-0000-000000000777';
+    const choices=assessmentSubjectChoices([{id,name:'Materia propia de mi perfil'}],['Marketing Digital']);
+    assert.ok(choices.length>=1000);
+    assert.equal(choices.find(s=>s.id===id)?.name,'Materia propia de mi perfil');
+    assert.ok(choices.some(s=>s.name.toLowerCase().includes('biología')));
+    assert.ok(choices.some(s=>s.name.toLowerCase().includes('marketing')));
+    assert.ok(choices.filter(s=>s.id!==id).every(s=>s.id.startsWith('catalog:')));
+    assert.equal(choices.find(s=>s.name==='Marketing Digital')?.verified,true);
+  });
+});
 
 describe('Aprendizaje Inclusivo (TEA, TDAH, Dislexia y Acompañamiento)', () => {
   it('DEFAULT_ACCESSIBILITY_PREFERENCES y LEARNING_PREFERENCES incluyen controles sensoriales y lenguaje literal sin diagnósticos', () => {

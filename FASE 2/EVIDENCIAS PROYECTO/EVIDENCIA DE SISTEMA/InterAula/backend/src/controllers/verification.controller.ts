@@ -2,10 +2,36 @@ import type { Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/index.js';
 import { verificationBackendService } from '../services/verification.service.js';
 import { HttpError } from '../lib/httpError.js';
+import {env} from '../config/env.js';
+import {getAdminSupabase} from '../lib/supabase.js';
+import {assessmentCatalog} from '../data/assessmentCatalog.js';
 import { assessmentService } from '../services/assessment.service.js';
 import { clientFor, result, attachProfiles } from '../services/remote/database.js';
 
 export const verificationController = {
+  async inclusiveStatus(req:AuthenticatedRequest,res:Response) {
+    const check=await clientFor(req.token).from('inclusive_tutor_accreditations').select('proof_version,document_path,review_history').limit(0);
+    let hasReviewer=false;
+    try {const reviewers=await getAdminSupabase().from('academic_validators').select('profile_id').neq('profile_id',req.user!.id).limit(1);hasReviewer=!reviewers.error&&!!reviewers.data?.length;}catch {/* readiness only */}
+    res.json({success:true,data:{schemaReady:!check.error,hasReviewer}});
+  },
+  async assessmentStatus(_req:AuthenticatedRequest,res:Response) {
+    let schemaReady=false;
+    if(env.supabaseServiceRoleKey)try {
+      const response=await getAdminSupabase().from('tutor_assessment_attempts').select('id,question_deadline,integrity_count').limit(0);
+      schemaReady=!response.error;
+    } catch {/* availability only; never expose private provider errors */}
+    res.json({success:true,data:{serverConfigured:!!env.supabaseServiceRoleKey,schemaReady,generationConfigured:!!process.env.GEMINI_API_KEY,catalogSubjects:assessmentCatalog.length}});
+  },
+  async getAssessment(req:AuthenticatedRequest,res:Response,next:NextFunction) {
+    try{res.json({success:true,data:await assessmentService.get(req.user!,req.params.id)});}catch(error){next(error);}
+  },
+  async nextAssessmentQuestion(req:AuthenticatedRequest,res:Response,next:NextFunction) {
+    try{res.json({success:true,data:await assessmentService.next(req.user!,req.params.id)});}catch(error){next(error);}
+  },
+  async reportAssessmentEvent(req:AuthenticatedRequest,res:Response,next:NextFunction) {
+    try{res.json({success:true,data:await assessmentService.event(req.user!,req.params.id,req.body)});}catch(error){next(error);}
+  },
   async getMyRequests(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const requests = await verificationBackendService.getMyVerificationRequests(req.user!, req.token!);
@@ -132,7 +158,7 @@ export const verificationController = {
 
   async startAssessmentAttempt(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const data = await assessmentService.start(req.user!, req.token!, req.body.subject_id);
+      const data = await assessmentService.start(req.user!, req.token!, req.body.subject_id,{catalogSubjectId:req.body.catalog_subject_id,timeMode:req.body.time_mode});
       res.status(201).json({ success: true, data });
     } catch (error) {
       next(error);
@@ -166,7 +192,13 @@ export const verificationController = {
 
   async requestInclusiveAccreditation(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { training_name, evidence_notes } = req.body;
+      const evidence=req.body;
+      if(!evidence.document_path.startsWith(req.user!.id+'/')||evidence.document_path.includes('..'))throw new HttpError(400,'El certificado debe pertenecer a tu cuenta.');
+      const storage=clientFor(req.token).storage.from('inclusive-evidence');
+      const downloaded=await storage.download(evidence.document_path);
+      if(downloaded.error||!downloaded.data)throw new HttpError(400,'No se encontró el certificado privado. Vuelve a subir el PDF.');
+      const header=await downloaded.data.slice(0,5).text();
+      if(header!=='%PDF-'||downloaded.data.size!==evidence.document_size_bytes||downloaded.data.size>5242880)throw new HttpError(400,'El respaldo debe ser un PDF válido de hasta 5 MB.');
       const data = await result(
         clientFor(req.token)
           .from('inclusive_tutor_accreditations')
@@ -174,8 +206,8 @@ export const verificationController = {
             {
               tutor_id: req.user!.id,
               status: 'pending',
-              training_name,
-              evidence_notes,
+              ...evidence,
+              proof_version:2,
               verified_by: null,
               verified_at: null,
               updated_at: new Date().toISOString(),
@@ -212,7 +244,8 @@ export const verificationController = {
 
   async reviewInclusiveAccreditation(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { status } = req.body;
+      const { status,reviewer_notes,verification_checks,expected_updated_at } = req.body;
+      if(status==='approved'&&!Object.values(verification_checks).every(Boolean))throw new HttpError(400,'Debes completar las cuatro comprobaciones para aprobar.');
       const current=await result(clientFor(req.token).from('inclusive_tutor_accreditations').select('tutor_id').eq('id',req.params.id).maybeSingle());
       if(current?.tutor_id===req.user!.id)throw new HttpError(403,'Otro docente debe revisar tu acreditación.');
       const data = await result(
@@ -223,12 +256,15 @@ export const verificationController = {
             verified_by: req.user!.id,
             verified_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            reviewer_notes,verification_checks,
           })
           .eq('id', req.params.id)
+          .eq('updated_at',expected_updated_at)
           .select('*')
-          .single(),
+          .maybeSingle(),
         'No se pudo actualizar la acreditación.'
       );
+      if(!data)throw new HttpError(409,'La solicitud cambió. Actualiza y revisa la evidencia nuevamente.');
       res.json({ success: true, data });
     } catch (error) {
       next(error);

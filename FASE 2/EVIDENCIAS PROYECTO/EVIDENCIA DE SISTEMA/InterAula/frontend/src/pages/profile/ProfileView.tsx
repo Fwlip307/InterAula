@@ -15,7 +15,7 @@ import type {
   AcademicLevel,
   LearningPreference,
 } from '../../types/profile';
-import type { TutorStatistics, UserBadge, InclusiveTutorAccreditation } from '../../types/tutoring';
+import type { TutorStatistics, UserBadge } from '../../types/tutoring';
 import type { TutorVerificationRequest } from '../../types/verification';
 import {
   UserIcon,
@@ -41,6 +41,7 @@ import CertificateVerificationModal from './components/CertificateVerificationMo
 import TutorValidationBotModal from './components/TutorValidationBotModal';
 import TeacherEndorsementModal from './components/TeacherEndorsementModal';
 import OfferedSubjectsSection from './components/OfferedSubjectsSection';
+import InclusiveAccreditationSection from './components/InclusiveAccreditationSection';
 import ProfilePersonalInfoTab, { type PersonalInfoFormData } from './components/ProfilePersonalInfoTab';
 import ProfileLearningTab from './components/ProfileLearningTab';
 import InterestPreferences from '../../components/recommendations/InterestPreferences';
@@ -90,12 +91,6 @@ export default function ProfileView() {
   const [preferencesSuccessMsg, setPreferencesSuccessMsg] = useState<string | null>(null);
 
   // Acreditación en acompañamiento inclusivo
-  const [inclusiveAccreditation, setInclusiveAccreditation] = useState<InclusiveTutorAccreditation | null>(null);
-  const [inclusiveTrainingName, setInclusiveTrainingName] = useState('');
-  const [inclusiveEvidenceNotes, setInclusiveEvidenceNotes] = useState('');
-  const [inclusiveSaving, setInclusiveSaving] = useState(false);
-  const [inclusiveMsg, setInclusiveMsg] = useState<string | null>(null);
-  const [validatorInclusiveList, setValidatorInclusiveList] = useState<InclusiveTutorAccreditation[]>([]);
 
   // Modales de Acreditación (Apartado 2)
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
@@ -135,6 +130,8 @@ export default function ProfileView() {
       subLabel: s.region,
     }));
   }, [availableSedes]);
+
+  const accreditedSubjects = offeredSubjects.filter(subject=>subject.is_verified===true);
 
   const isProfileInstitutionComplete = Boolean(
     profile?.institution && profile.institution.trim() !== '' &&
@@ -214,7 +211,7 @@ export default function ProfileView() {
           if (p) {
             setSelectedInstitution(p.institution || 'Duoc UC');
             setSelectedCareer(p.career || 'Ingeniería en Informática');
-            setAvailableForTutoring(offered.length > 0 ? (p.available_for_tutoring ?? true) : false);
+            setAvailableForTutoring(offered.some(subject=>subject.is_verified===true) ? (p.available_for_tutoring ?? true) : false);
             setLearningPreferences(p.learning_preferences || []);
           }
         }
@@ -342,25 +339,6 @@ export default function ProfileView() {
   };
 
   // Gestión de materias habilitadas para impartir (Apartado 2)
-  const handleAddOfferedSubject = async (
-    subjectId: string,
-    level: AcademicLevel,
-    description?: string
-  ) => {
-    const added = await profileService.addOfferedSubject(subjectId, level, description);
-    setOfferedSubjects((prev) => [...prev.filter((i) => i.subject_id !== added.subject_id), added]);
-    if (!availableForTutoring) {
-      setAvailableForTutoring(true);
-      await profileService.updateMyProfile({ available_for_tutoring: true });
-    }
-  };
-
-  const handleRemoveOfferedSubject = async (subjectId: string) => {
-    await profileService.removeOfferedSubject(subjectId);
-    setOfferedSubjects((prev) => prev.filter((i) => i.subject_id !== subjectId));
-  };
-
-  // Gestión de materias que necesito aprender (Apartado 3)
   const handleAddNeededSubject = async (
     subjectId: string,
     level: AcademicLevel,
@@ -397,7 +375,7 @@ export default function ProfileView() {
   };
 
   const handleBotSuccess = async (subId: string, subName: string, level?: AcademicLevel) => {
-    const accreditedLevel = level || 'intermediate';
+    const accreditedLevel = level || 'basic';
     const levelLabelMap: Record<AcademicLevel, string> = {
       basic: 'Tutor Inicial (Básico)',
       intermediate: 'Tutor Comunitario (Intermedio)',
@@ -421,7 +399,7 @@ export default function ProfileView() {
             item.subject_id === subId ? { ...item, level: accreditedLevel, is_verified: true } : item
           );
         }
-        const catalogSub = catalogSubjects.find((s) => s.id === subId);
+        const catalogSub = catalogSubjects.find((s) => s.id === subId) || {id:subId,name:subName,category:null,created_at:new Date().toISOString()};
         return [
           ...prev,
           {
@@ -602,8 +580,8 @@ export default function ProfileView() {
           }}
         >
           <AwardIcon size={18} color={activeTab === 'tutoring' ? '#2563eb' : '#64748b'} />
-          <span>{offeredSubjects.length > 0 ? 'Tutorías y Conocimientos' : 'Habilitarme como Tutor'}</span>
-          {offeredSubjects.length > 0 && (
+          <span>{accreditedSubjects.length > 0 ? 'Tutorías y Conocimientos' : 'Habilitarme como Tutor'}</span>
+          {accreditedSubjects.length > 0 && (
             <span
               style={{
                 backgroundColor: activeTab === 'tutoring' ? '#dbeafe' : '#f1f5f9',
@@ -614,7 +592,7 @@ export default function ProfileView() {
                 fontWeight: 800,
               }}
             >
-              {offeredSubjects.length}
+              {accreditedSubjects.length}
             </span>
           )}
         </button>
@@ -991,7 +969,7 @@ export default function ProfileView() {
             </div>
           </div>
           {/* Tarjeta de Disponibilidad para Tutorías (Solo visible si ya tiene materias acreditadas) */}
-          {offeredSubjects.length > 0 && (
+          {accreditedSubjects.length > 0 && (
             <div
               className="ia-card"
               style={{
@@ -1129,7 +1107,7 @@ export default function ProfileView() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Estudiante Acreditado
+                    Perfil académico completo
                   </div>
                   <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
                     {profile?.institution} · {profile?.career}
@@ -1153,175 +1131,10 @@ export default function ProfileView() {
           )}
 
           {/* Acreditación: Tutor con formación en acompañamiento inclusivo */}
-          <div
-            className="ia-card"
-            style={{
-              backgroundColor: 'var(--ia-surface, #ffffff)',
-              border: '1px solid var(--ia-border, #e2e8f0)',
-              borderRadius: '16px',
-              padding: '20px 24px',
-              marginBottom: '20px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--ia-text, #0f172a)' }}>
-                  Formación en acompañamiento inclusivo
-                </h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--ia-text-muted, #64748b)' }}>
-                  Solicita la acreditación verificable como <strong>Tutor con formación en acompañamiento inclusivo</strong>.
-                </p>
-              </div>
-              {inclusiveAccreditation && (
-                <span className={`ia-badge ${inclusiveAccreditation.status === 'approved' ? 'ia-badge-success' : 'ia-badge-primary'}`}>
-                  Estado: {inclusiveAccreditation.status === 'approved' ? 'Aprobada' : inclusiveAccreditation.status === 'pending' ? 'En revisión' : inclusiveAccreditation.status}
-                </span>
-              )}
-            </div>
-
-            {inclusiveMsg && (
-              <p style={{ fontSize: '0.82rem', marginBottom: '10px', color: 'var(--ia-primary, #2563eb)' }}>{inclusiveMsg}</p>
-            )}
-
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-              <button
-                type="button"
-                className="ia-btn ia-btn-ghost ia-btn-sm"
-                onClick={async () => {
-                  try {
-                    const [mine, forVal] = await Promise.all([
-                      verificationService.getMyInclusiveAccreditation(),
-                      (profile as any)?.is_academic_validator
-                        ? verificationService.getInclusiveAccreditationsForValidator().catch(() => [])
-                        : Promise.resolve([]),
-                    ]);
-                    setInclusiveAccreditation(mine);
-                    setValidatorInclusiveList(forVal);
-                  } catch {
-                    // ignore
-                  }
-                }}
-              >
-                Actualizar estado
-              </button>
-            </div>
-
-            {(!inclusiveAccreditation || inclusiveAccreditation.status !== 'approved') && (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (inclusiveTrainingName.trim().length < 4) return;
-                  setInclusiveSaving(true);
-                  setInclusiveMsg(null);
-                  try {
-                    const created = await verificationService.requestInclusiveAccreditation({
-                      training_name: inclusiveTrainingName.trim(),
-                      evidence_notes: inclusiveEvidenceNotes.trim() || undefined,
-                    });
-                    setInclusiveAccreditation(created);
-                    setInclusiveMsg('Solicitud enviada para revisión de validador académico.');
-                  } catch (err: any) {
-                    setInclusiveMsg(err?.message || 'No se pudo enviar la solicitud.');
-                  } finally {
-                    setInclusiveSaving(false);
-                  }
-                }}
-                style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-              >
-                <input
-                  type="text"
-                  className="ia-input"
-                  placeholder="Nombre del curso, taller o formación en acompañamiento inclusivo"
-                  value={inclusiveTrainingName}
-                  onChange={(e) => setInclusiveTrainingName(e.target.value)}
-                  required
-                  minLength={4}
-                />
-                <textarea
-                  className="ia-textarea"
-                  rows={2}
-                  placeholder="Describe tu formación o respaldo (mínimo 5 caracteres)" minLength={5} required
-                  value={inclusiveEvidenceNotes}
-                  onChange={(e) => setInclusiveEvidenceNotes(e.target.value)}
-                />
-                <div>
-                  <button type="submit" className="ia-btn ia-btn-primary ia-btn-sm" disabled={inclusiveSaving}>
-                    {inclusiveSaving ? 'Enviando...' : 'Solicitar acreditación inclusiva'}
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {(profile as any)?.is_academic_validator && validatorInclusiveList.length > 0 && (
-              <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--ia-border, #e2e8f0)' }}>
-                <div style={{ fontSize: '0.84rem', fontWeight: 700, marginBottom: '8px' }}>
-                  Revisión de validadores ({validatorInclusiveList.length})
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {validatorInclusiveList.map((item) => (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '0.82rem', padding: '8px', borderRadius: '8px', border: '1px solid var(--ia-border, #e2e8f0)' }}>
-                      <div>
-                        <strong>{item.profile?.display_name || item.profile?.email || item.tutor_id}</strong> — {item.training_name} ({item.status})
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="ia-btn ia-btn-primary ia-btn-sm"
-                          onClick={async () => {
-                            const updated = await verificationService.reviewInclusiveAccreditation(item.id, 'approved');
-                            setValidatorInclusiveList((prev) => prev.map((x) => (x.id === item.id ? updated : x)));
-                          }}
-                        >
-                          Aprobar
-                        </button>
-                        <button
-                          type="button"
-                          className="ia-btn ia-btn-ghost ia-btn-sm"
-                          onClick={async () => {
-                            const updated = await verificationService.reviewInclusiveAccreditation(item.id, 'revoked');
-                            setValidatorInclusiveList((prev) => prev.map((x) => (x.id === item.id ? updated : x)));
-                          }}
-                        >
-                          Revocar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {user&&<InclusiveAccreditationSection userId={user.id}/>}
 
           {/* Subcomponente: Materias habilitadas para impartir */}
-          <OfferedSubjectsSection
-            offeredSubjects={offeredSubjects}
-            onRemove={handleRemoveOfferedSubject}
-            onAddSubject={handleAddOfferedSubject}
-            catalogSubjects={availableForEvaluation.map((s) => ({
-              id: s.id,
-              name: s.name,
-              category: s.category || 'General',
-              is_pilot: s.isBoosted || false,
-              created_at: new Date().toISOString(),
-            }))}
-            onStartEvaluation={() => {
-              if (!isProfileInstitutionComplete) {
-                setActiveTab('personal');
-                setIsEditingPersonal(true);
-                return;
-              }
-              setSelectedSubjectForBot(availableForEvaluation[0] || null);
-              setIsBotModalOpen(true);
-            }}
-            onRequestEndorsement={() => {
-              if (!isProfileInstitutionComplete) {
-                setActiveTab('personal');
-                setIsEditingPersonal(true);
-                return;
-              }
-              setIsTeacherModalOpen(true);
-            }}
-          />
+          <OfferedSubjectsSection offeredSubjects={offeredSubjects}/>
 
           {/* Acreditación y Habilitación: Tarjeta 1 (Habilitación Técnica Comunitaria) */}
           <div
@@ -1361,7 +1174,7 @@ export default function ProfileView() {
             </div>
 
             <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 18px', lineHeight: 1.6, maxWidth: '780px' }}>
-              Rinde una evaluación práctica e interactiva de 10 preguntas con el Asistente Evaluador (15 segundos para alternativas y 45 segundos para desarrollo). Al aprobarla, quedas habilitado de inmediato como <strong>Tutor Comunitario</strong> para recibir solicitudes de apoyo.
+              Elige tu materia y responde todas las preguntas correctamente para habilitarte como <strong>Tutor Inicial (Básico)</strong>. El primer error termina el intento; al volver se preparan preguntas nuevas. Tienes 20 segundos por alternativa y 40 por desarrollo breve, con opción de tiempo extendido.
             </p>
 
             <button
@@ -1528,7 +1341,7 @@ export default function ProfileView() {
           </div>
 
           {/* Estadísticas de Tutor y Reconocimientos (Solo para tutores habilitados) */}
-          {offeredSubjects.length > 0 && (
+          {accreditedSubjects.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px' }}>
               <TutorStats stats={tutorStats} />
               <BadgeList badges={badges} />
@@ -1575,15 +1388,9 @@ export default function ProfileView() {
       <TutorValidationBotModal
         isOpen={isBotModalOpen}
         onClose={() => setIsBotModalOpen(false)}
-        availableSubjects={(() => {
-          const unverifiedOffered = offeredSubjects
-            .filter((o) => !o.is_verified && o.subject?.name)
-            .map((o) => ({ id: o.subject_id, name: o.subject!.name }));
-          if (unverifiedOffered.length > 0) return unverifiedOffered;
-          return availableForEvaluation.length > 0
-            ? availableForEvaluation
-            : catalogSubjects.map((s) => ({ id: s.id, name: s.name }));
-        })()}
+        userId={user?.id}
+        verifiedSubjectNames={offeredSubjects.filter(o=>o.is_verified).map(o=>o.subject?.name||'')}
+        availableSubjects={[...catalogSubjects.map(s=>({id:s.id,name:s.name})),...offeredSubjects.filter(o=>o.subject?.name).map(o=>({id:o.subject_id,name:o.subject!.name}))]}
         defaultSubjectId={
           selectedSubjectForBot?.id ||
           offeredSubjects.find((o) => !o.is_verified)?.subject_id ||

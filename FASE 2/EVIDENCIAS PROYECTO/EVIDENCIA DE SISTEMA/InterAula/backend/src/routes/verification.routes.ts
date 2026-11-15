@@ -17,6 +17,7 @@ import {
   reviewInclusiveAccreditationSchema,
 } from '../schemas/verification.schema.js';
 
+import {integrityEventSchema} from '../services/assessment.service.js';
 const router = Router();
 
 // Comprobar si un usuario es validador
@@ -42,6 +43,7 @@ router.post(
 );
 
 const assessmentLimit = createRateLimiter(60, 60_000);
+const assessmentStartLimit = createRateLimiter(3, 60_000);
 
 // Solicitud de aval docente
 router.post(
@@ -52,10 +54,16 @@ router.post(
   verificationController.requestTeacherEndorsement
 );
 
+router.get('/assessment-status',requireAuth,verificationController.assessmentStatus);
+router.get('/attempts/:id',requireAuth,assessmentLimit,verificationController.getAssessment);
+router.post('/attempts/:id/next',requireAuth,assessmentLimit,verificationController.nextAssessmentQuestion);
+router.post('/attempts/:id/events',requireAuth,assessmentLimit,validateRequest({body:integrityEventSchema}),verificationController.reportAssessmentEvent);
+
 // Intentos de evaluación acreditativa con corrección en servidor
 router.post(
   '/attempts',
   requireAuth,
+  assessmentStartLimit,
   assessmentLimit,
   validateRequest({ body: startAssessmentSchema }),
   verificationController.startAssessmentAttempt
@@ -116,9 +124,11 @@ router.delete('/requests/:id', requireAuth, verificationController.cancelRequest
 
 // Acreditación verificable de "Tutor con formación en acompañamiento inclusivo"
 router.get('/inclusive-accreditation/me', requireAuth, verificationController.getMyInclusiveAccreditation);
+router.get('/inclusive-accreditation/status',requireAuth,verificationController.inclusiveStatus);
 router.post(
   '/inclusive-accreditation',
   requireAuth,
+  createRateLimiter(6,60_000),
   validateRequest({ body: inclusiveAccreditationRequestSchema }),
   verificationController.requestInclusiveAccreditation
 );

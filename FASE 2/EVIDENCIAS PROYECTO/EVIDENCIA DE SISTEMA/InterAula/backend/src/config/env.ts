@@ -37,7 +37,7 @@ function loadConfig(): AppConfig {
     corsOrigins,
     supabaseUrl,
     supabaseAnonKey,
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || undefined,
+    supabaseServiceRoleKey: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || undefined,
     geminiApiKey: process.env.GEMINI_API_KEY || undefined,
     persistenceMode,
   };

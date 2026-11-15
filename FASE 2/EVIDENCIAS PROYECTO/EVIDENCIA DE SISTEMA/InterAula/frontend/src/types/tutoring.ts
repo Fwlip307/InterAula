@@ -33,9 +33,22 @@ export interface SessionPrepDTO {
 export interface InclusiveTutorAccreditation {
   id: string;
   tutor_id: string;
-  status: 'pending' | 'approved' | 'revoked';
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
   training_name: string;
   evidence_notes?: string | null;
+  issuer_name?:string|null;
+  completed_on?:string|null;
+  credential_code?:string|null;
+  verification_url?:string|null;
+  document_path?:string|null;
+  document_filename?:string|null;
+  document_size_bytes?:number|null;
+  proof_version?:number;
+  verified_by?:string|null;
+  verified_at?:string|null;
+  reviewer_notes?:string|null;
+  verification_checks?:InclusiveVerificationChecks;
+  review_history?:{status:string;reviewer_id:string;reviewed_at:string;notes:string}[];
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   created_at: string;
@@ -48,6 +61,8 @@ export interface InclusiveTutorAccreditation {
     email?: string | null;
   };
 }
+export interface InclusiveVerificationChecks {identity_matches:boolean;issuer_verified:boolean;training_relevant:boolean;practical_passed:boolean}
+export interface InclusiveEvidenceRequest {training_name:string;issuer_name:string;completed_on:string;credential_code:string;verification_url:string;evidence_notes:string;document_path:string;document_filename:string;document_size_bytes:number}
 
 export interface TutoringSession {
   id: string;

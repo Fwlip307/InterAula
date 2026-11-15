@@ -69,12 +69,22 @@ export const inclusiveAccreditationRequestSchema = z
       .trim()
       .min(3, 'Indica el nombre de la formación o taller inclusivo')
       .max(200),
-    evidence_notes: z.string().trim().min(5, 'Describe brevemente tu formación o respaldo').max(1500),
+    evidence_notes: z.string().trim().min(100, 'Desarrolla el caso práctico con al menos 100 caracteres').max(3000),
+    issuer_name:z.string().trim().min(3).max(200),
+    completed_on:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value=>!Number.isNaN(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value&&value<=new Date().toISOString().slice(0,10),'Fecha de formación inválida o futura'),
+    credential_code:z.string().trim().min(2).max(150),
+    verification_url:z.string().url().max(1000).refine(value=>new URL(value).protocol==='https:'&&!new URL(value).username&&!new URL(value).password,'Usa un enlace HTTPS del emisor'),
+    document_path:z.string().trim().min(10).max(500),
+    document_filename:z.string().trim().min(5).max(200).regex(/\.pdf$/i),
+    document_size_bytes:z.number().int().min(1).max(5242880),
   })
   .strict();
 
 export const reviewInclusiveAccreditationSchema = z
   .object({
-    status: z.enum(['approved', 'revoked']),
+    status: z.enum(['approved', 'rejected','revoked']),
+    reviewer_notes:z.string().trim().min(30).max(2500),
+    expected_updated_at:z.string().datetime({offset:true}),
+    verification_checks:z.object({identity_matches:z.boolean(),issuer_verified:z.boolean(),training_relevant:z.boolean(),practical_passed:z.boolean()}).strict(),
   })
   .strict();

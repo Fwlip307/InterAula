@@ -9,7 +9,7 @@ import type {
   ReviewVerificationRequestDTO,
   SaveCertificateExtractionDTO,
 } from '../types/verification';
-import type { InclusiveTutorAccreditation } from '../types/tutoring';
+import type { InclusiveTutorAccreditation,InclusiveEvidenceRequest,InclusiveVerificationChecks } from '../types/tutoring';
 import { validatePdfFile } from '../utils/pdfExtractor';
 
 /**
@@ -41,6 +41,7 @@ export interface AssessmentQuestion {
   options?: { id: string; text: string }[];
   codeSnippet?: string;
   placeholder?: string;
+  timeLimitSeconds:number;
 }
 export interface ServerAssessment {
   id: string;
@@ -49,7 +50,22 @@ export interface ServerAssessment {
   level: 'basic';
   totalQuestions: number;
   expiresAt: string;
-  question: AssessmentQuestion;
+  question: AssessmentQuestion|null;
+  answered:number;
+  questionExpiresAt:string|null;
+  serverNow:string;
+  timeMode:'standard'|'extended';
+  source:'reviewed'|'generated';
+  state:'pending'|'passed'|'failed'|'granted';
+  needsNext:boolean;
+  pauseEndsAt?:string|null;
+  pauseSeconds?:number;
+  failFast?:boolean;
+  passingScore?:number;
+  terminationReason?:'incorrect_answer'|'time_expired';
+  integrityCount:number;
+  integrityLimit:number;
+  score?:number;
 }
 export interface ServerAssessmentAnswer {
   correct: boolean;
@@ -60,6 +76,10 @@ export interface ServerAssessmentAnswer {
   finished: boolean;
   passed: boolean;
   nextQuestion: AssessmentQuestion | null;
+  serverNow?:string;
+  pauseEndsAt?:string|null;
+  pauseSeconds?:number;
+  terminationReason?:'incorrect_answer'|'time_expired';
 }
 
 export const verificationService = {
@@ -99,14 +119,25 @@ export const verificationService = {
   },
 
   /**
-   * Concede acreditación mediante evaluación del Bot en el backend propio (exige score >= 70%)
+   * Concede acreditación tras completar el intento con la política validada por el servidor.
    */
-  async startAssessment(subjectId: string): Promise<ServerAssessment> {
-    return apiClient.post<ServerAssessment>(API_ENDPOINTS.VERIFICATION.ATTEMPTS, { subject_id: subjectId });
+  assessmentStatus():Promise<{serverConfigured:boolean;schemaReady?:boolean;generationConfigured:boolean;catalogSubjects:number}> {
+    return apiClient.get(API_ENDPOINTS.VERIFICATION.ASSESSMENT_STATUS);
+  },
+  async startAssessment(subjectId:string,timeMode:'standard'|'extended'='standard'):Promise<ServerAssessment> {
+    const subject=subjectId.startsWith('catalog:')?{catalog_subject_id:subjectId.slice(8)}:{subject_id:subjectId};
+    return apiClient.post<ServerAssessment>(API_ENDPOINTS.VERIFICATION.ATTEMPTS,{...subject,time_mode:timeMode});
+  },
+  getAssessment(id:string):Promise<ServerAssessment>{return apiClient.get(API_ENDPOINTS.VERIFICATION.ATTEMPT(id));},
+  nextAssessmentQuestion(id:string):Promise<{question:AssessmentQuestion;questionExpiresAt:string;serverNow:string;answered:number}> {
+    return apiClient.post(API_ENDPOINTS.VERIFICATION.NEXT_QUESTION(id));
+  },
+  reportAssessmentEvent(id:string,type:'fullscreen_exit'|'visibility_hidden'|'window_blur'|'copy_attempt'|'paste_attempt'|'abandon',eventId:string=crypto.randomUUID()):Promise<{state:string;integrityCount:number;integrityLimit:number}> {
+    return apiClient.post(API_ENDPOINTS.VERIFICATION.ASSESSMENT_EVENTS(id),{event_id:eventId,type});
   },
 
-  async answerAssessment(attemptId: string, questionId: string, answer: string): Promise<ServerAssessmentAnswer> {
-    return apiClient.post<ServerAssessmentAnswer>(API_ENDPOINTS.VERIFICATION.ANSWERS(attemptId), { question_id: questionId, answer });
+  async answerAssessment(attemptId: string, questionId: string, answer: string, timedOut=false): Promise<ServerAssessmentAnswer> {
+    return apiClient.post<ServerAssessmentAnswer>(API_ENDPOINTS.VERIFICATION.ANSWERS(attemptId), { question_id: questionId, answer, timed_out:timedOut });
   },
 
   async botGrant(params: { attempt_id: string }): Promise<{ subject_id: string; level: 'basic'; score: number }> {
@@ -350,7 +381,23 @@ export const verificationService = {
     return apiClient.get(API_ENDPOINTS.VERIFICATION.INCLUSIVE_ME);
   },
 
-  requestInclusiveAccreditation(params: { training_name: string; evidence_notes?: string }): Promise<InclusiveTutorAccreditation> {
+  inclusiveStatus():Promise<{schemaReady:boolean;hasReviewer:boolean}>{return apiClient.get('/verification/inclusive-accreditation/status');},
+
+  async uploadInclusiveEvidence(file:File) {
+    const user=await getRequiredAuthUser();
+    if(file.size<5||file.size>5242880||!file.name.toLowerCase().endsWith('.pdf')||await file.slice(0,5).text()!=='%PDF-')throw new Error('Selecciona un PDF válido de hasta 5 MB.');
+    const path=user.id+'/'+crypto.randomUUID()+'.pdf';
+    const uploaded=await supabase.storage.from('inclusive-evidence').upload(path,file,{contentType:'application/pdf',upsert:false});
+    if(uploaded.error)throw new Error('No se pudo subir el certificado privado. Verifica la activación o reintenta.');
+    return {document_path:path,document_filename:file.name,document_size_bytes:file.size};
+  },
+  async inclusiveEvidenceUrl(path:string):Promise<string>{
+    const signed=await supabase.storage.from('inclusive-evidence').createSignedUrl(path,120);
+    if(signed.error||!signed.data?.signedUrl)throw new Error('No se pudo abrir el certificado privado.');
+    return signed.data.signedUrl;
+  },
+
+  requestInclusiveAccreditation(params: InclusiveEvidenceRequest): Promise<InclusiveTutorAccreditation> {
     return apiClient.post(API_ENDPOINTS.VERIFICATION.INCLUSIVE_CREATE, params);
   },
 
@@ -358,7 +405,7 @@ export const verificationService = {
     return apiClient.get(API_ENDPOINTS.VERIFICATION.INCLUSIVE_VALIDATOR);
   },
 
-  reviewInclusiveAccreditation(id: string, status: 'approved' | 'revoked'): Promise<InclusiveTutorAccreditation> {
-    return apiClient.patch(API_ENDPOINTS.VERIFICATION.INCLUSIVE_REVIEW(id), { status });
+  reviewInclusiveAccreditation(id:string,review:{status:'approved'|'rejected'|'revoked';reviewer_notes:string;verification_checks:InclusiveVerificationChecks;expected_updated_at:string}): Promise<InclusiveTutorAccreditation> {
+    return apiClient.patch(API_ENDPOINTS.VERIFICATION.INCLUSIVE_REVIEW(id), review);
   },
 };

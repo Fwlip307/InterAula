@@ -98,7 +98,7 @@ test('PostgreSQL 019–021: sala real, revisión independiente, reenvío, compar
   const ids={owner:'00000000-0000-0000-0000-000000000701',student:'00000000-0000-0000-0000-000000000702',teacher:'00000000-0000-0000-0000-000000000703'};
   const as=async(id:string)=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role','authenticated',false)",[id]);await db.exec('SET ROLE authenticated');};
   try {
-    for(const file of (await fs.readdir(dir)).filter(f=>f.endsWith('.sql')&&Number(f.slice(0,3))<=21).sort())await db.exec(await fs.readFile(path.join(dir,file),'utf8'));
+    for(const file of (await fs.readdir(dir)).filter(f=>f.endsWith('.sql')&&Number(f.slice(0,3))<=22).sort())await db.exec(await fs.readFile(path.join(dir,file),'utf8'));
     for(const [name,id]of Object.entries(ids))await db.query("INSERT INTO auth.users(id,email,raw_user_meta_data) VALUES($1,$2,$3)",[id,name+'@review.example',JSON.stringify({first_name:name})]);
     await db.query("INSERT INTO public.academic_validators(profile_id,role_title) VALUES($1,'Docente')",[ids.teacher]);
     const subject:any=(await db.query('SELECT id FROM public.subjects LIMIT 1')).rows[0];
@@ -150,6 +150,11 @@ test('PostgreSQL 019–021: sala real, revisión independiente, reenvío, compar
     await db.exec('RESET ROLE');
     for(const f of ['020_inclusive_flows_integrity.sql','021_academic_community.sql'])await db.exec(await fs.readFile(path.join(dir,f),'utf8'));
     await db.exec(await fs.readFile(path.join(dir,'../ACTIVAR_COMUNIDAD.sql'),'utf8'));
+    const beforeSubjects=(await db.query<any>('SELECT count(*)::int AS total FROM public.subjects')).rows[0].total;
+    await db.exec(await fs.readFile(path.join(dir,'../ACTIVAR_ACREDITACION.sql'),'utf8'));
+    await db.exec(await fs.readFile(path.join(dir,'../ACTIVAR_ACREDITACION.sql'),'utf8'));
+    assert.equal((await db.query<any>('SELECT count(*)::int AS total FROM public.subjects')).rows[0].total,beforeSubjects);
+    assert.equal((await db.query<any>("SELECT has_table_privilege('authenticated','public.tutor_assessment_attempts','SELECT') AS allowed")).rows[0].allowed,false);
     assert.equal((await db.query<any>('SELECT count(*)::int AS total FROM public.project_deliverables WHERE id=$1',[deliverable.id])).rows[0].total,1);
   } finally {await db.close();}
 });

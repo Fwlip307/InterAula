@@ -6,5 +6,6 @@ process.env.NODE_ENV = 'test';
 process.env.SUPABASE_URL = 'http://127.0.0.1:9';
 process.env.SUPABASE_ANON_KEY = 'isolated-test-public-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = '';
+process.env.SUPABASE_SECRET_KEY = '';
 process.env.GEMINI_API_KEY = '';
 process.env.APP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'interaula-tests-'));

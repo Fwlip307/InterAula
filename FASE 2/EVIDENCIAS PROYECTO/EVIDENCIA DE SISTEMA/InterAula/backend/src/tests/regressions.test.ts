@@ -137,16 +137,17 @@ test('El intento oculta soluciones, vincula propietario, evita reenvíos y calcu
   t.mock.method(Object.getPrototypeOf(supabasePublic),'from',(table:string)=>{
     let operation='select';let payload:any;let recent=false;const filters:Record<string,any>={};
     const builder:any={
-      select:()=>builder,single:()=>builder,maybeSingle:()=>builder,
+      select:()=>builder,order:()=>builder,limit:()=>builder,single:()=>builder,maybeSingle:()=>builder,
       gte:()=>{recent=true;return builder;},
       eq:(key:string,value:any)=>{filters[key]=value;return builder;},
       insert:(value:any)=>{operation='insert';payload=value;return builder;},
       update:(value:any)=>{operation='update';payload=value;return builder;},
       then:(resolve:any)=>{
         let data:any;
-        if(table==='profile_offered_subjects')data={is_verified:false,subject:{name:'Programación de Algoritmos'}};
-        else if(recent)data=[];
-        else if(operation==='insert'){attempt={...payload,id,revision:0,updated_at:new Date().toISOString()};data={id};}
+        if(table==='subjects')data={id:'00000000-0000-0000-0000-000000000001',name:'Programación de Algoritmos'};
+        else if(table==='profile_offered_subjects')data={is_verified:false,subject:{name:'Programación de Algoritmos'}};
+        else if(recent||!attempt&&operation==='select')data=[];
+        else if(operation==='insert'){attempt={...payload,id,revision:0,updated_at:new Date().toISOString()};data=structuredClone(attempt);}
         else if(!attempt||Object.entries(filters).some(([key,value])=>attempt[key]!==value))data=null;
         else if(operation==='update'){attempt={...attempt,...payload};data={id};}
         else data=structuredClone(attempt);
@@ -173,7 +174,7 @@ test('El intento oculta soluciones, vincula propietario, evita reenvíos y calcu
   await assert.rejects(assessmentService.answer({id:'owner'},id,{question_id:attempt.questions[1].id,answer:'a'}),{status:410});
   attempt.expires_at=new Date(Date.now()+100_000).toISOString();
   let last:any;
-  for(const question of attempt.questions.slice(1))last=await assessmentService.answer({id:'owner'},id,{question_id:question.id,answer:question.type==='choice'?question.correctOptionId:question.acceptedAnswers[0]});
+  for(const question of attempt.questions.slice(1)){attempt.answers.at(-1).answered_at=new Date(Date.now()-11_000).toISOString();await assessmentService.next({id:'owner'},id);last=await assessmentService.answer({id:'owner'},id,{question_id:question.id,answer:question.type==='choice'?question.correctOptionId:question.acceptedAnswers[0]});}
   assert.equal(last.score,100);assert.equal(last.passed,true);assert.equal(last.finished,true);
   assert.equal(attempt.state,'passed');
 });

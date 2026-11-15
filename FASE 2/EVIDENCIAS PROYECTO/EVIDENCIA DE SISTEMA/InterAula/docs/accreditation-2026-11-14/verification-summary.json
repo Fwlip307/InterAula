@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-14",
+  "backendTests": {
+    "passed": 100,
+    "failed": 0
+  },
+  "frontendTests": {
+    "passed": 50,
+    "failed": 0
+  },
+  "builds": {
+    "frontend": true,
+    "backend": true
+  },
+  "browser": {
+    "passed": true,
+    "checks": [
+      "Single catalog combobox with keyboard selection, no second dropdown, disabled accredited subjects, no-match state and 20/40 timing cards",
+      "Print layout excludes evaluation; detectable screenshot shortcut temporarily covers question without claiming OS capture prevention",
+      "Real loading screen hides questions; calm view, optional large text and hidden timer; ten-second break reveals no next question and waits for user",
+      "Real native fullscreen, marketing subject, extended mode, stable parent rerender, feedback and next question, server grant callback",
+      "Fullscreen exit disables answer without resetting deadline; paste/copy blocked; persisted attempt resumes; three incidents fail",
+      "Per-question deadline submits timeout exactly once",
+      "First wrong answer ends the attempt, exits fullscreen and removes next question; explicit restart creates a different attempt and question",
+      "Closing requires explicit abandon; cancellation continues, confirmation records server failure",
+      "Other account does not resume previous attempt",
+      "No horizontal overflow at desktop, 390px, 320px",
+      "Missing server configuration disables start with explanation"
+    ],
+    "widths": [
+      {
+        "width": 1440,
+        "scrollWidth": 1440
+      },
+      {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      {
+        "width": 320,
+        "scrollWidth": 320
+      }
+    ],
+    "exceptions": [],
+    "scope": "Actual React component under StrictMode with synthetic service responses; native fullscreen, browser events and clocks. No Supabase user mutations."
+  },
+  "docker": {
+    "backend": "healthy",
+    "frontend": "healthy",
+    "frontendHttpStatus": 200,
+    "backendHealth": "ok"
+  },
+  "supabase": {
+    "serverKeyConfigured": true,
+    "schemaReady": true,
+    "probeRows": 0,
+    "activationConfirmedByUser": true
+  },
+  "google": {
+    "keyReplacedInIgnoredEnvironment": true,
+    "modelAvailable": true,
+    "liveSubjectGeneration": "Marketing Digital",
+    "validQuestionCount": 10
+  },
+  "privacy": {
+    "privateEnvIgnored": true,
+    "sourceAndBrowserBundleSecretMatches": 0
+  },
+  "limitations": [
+    "Browser service responses are synthetic; no real user was accredited during automated validation.",
+    "Browser integrity events deter copying but do not block OS screenshots, second devices or a modified client."
+  ],
+  "assessmentTiming": {
+    "standard": {
+      "choice": 20,
+      "redaction": 40
+    },
+    "extended": {
+      "choice": 40,
+      "redaction": 80
+    },
+    "newPolicyVersion": 5,
+    "legacyPolicyPreserved": true,
+    "minimumPauseSeconds": {
+      "standard": 5,
+      "extended": 10
+    }
+  },
+  "subjectSelection": {
+    "singleCombobox": true,
+    "keyboard": true,
+    "accentInsensitive": true
+  },
+  "focusSupports": {
+    "realLoadingScreens": true,
+    "pauseWaitsForUser": true,
+    "serverEnforcedPause": true,
+    "hideQuestionOnBlur": true,
+    "readAloud": true,
+    "calmByDefault": true,
+    "optionalLargerText": true,
+    "optionalHiddenCountdown": true,
+    "diagnosisRequired": false
+  },
+  "assessmentIntegrity": {
+    "failOnFirstWrongAnswer": true,
+    "failOnQuestionTimeout": true,
+    "passingScore": 100,
+    "freshGenerationWithConfiguredGoogle": true,
+    "recentSubjectAttemptsChecked": 10,
+    "generationTrialsAtMost": 2,
+    "noRepeatedExamFallback": true
+  }
+}

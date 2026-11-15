@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ZodError, type AnyZodObject } from 'zod';
+import { ZodError, type ZodTypeAny } from 'zod';
 
 interface ValidationTargets {
-  body?: AnyZodObject;
-  query?: AnyZodObject;
-  params?: AnyZodObject;
+  body?: ZodTypeAny;
+  query?: ZodTypeAny;
+  params?: ZodTypeAny;
 }
 
 export function validateRequest(schemas: ValidationTargets) {

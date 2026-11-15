@@ -95,11 +95,11 @@ describe('Aprendizaje Inclusivo — Esquemas Zod y Seguridad Fail-Closed', () =>
         training_name: 'Taller de acompañamiento inclusivo',
         evidence_notes: 'Certificado de participación en formación inclusiva.',
       }).success,
-      true
+      false
     );
     assert.equal(
       reviewInclusiveAccreditationSchema.safeParse({ status: 'approved' }).success,
-      true
+      false
     );
     assert.equal(
       createDeliverableSchema.safeParse({

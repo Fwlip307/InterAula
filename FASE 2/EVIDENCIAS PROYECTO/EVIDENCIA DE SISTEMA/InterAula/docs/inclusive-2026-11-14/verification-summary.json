@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-14",
+  "backendTests": {
+    "passed": 103,
+    "failed": 0
+  },
+  "frontendTests": {
+    "passed": 50,
+    "failed": 0
+  },
+  "browser": {
+    "passed": true,
+    "checks": [
+      "Subject list includes verified subjects only; no add, remove or manual accreditation controls",
+      "Private PDF metadata and practical case submit; failed request keeps upload for retry; pending stays pending without a reviewer",
+      "Explicit refresh and private document link remain available to owner",
+      "Independent reviewer needs four checks and a written decision; explicit approval updates review state",
+      "Another account receives an empty form and cannot see previous private request",
+      "No horizontal overflow at 1440, 390 or 320px",
+      "Missing schema prevents evidence submission with explicit activation state"
+    ],
+    "widths": [
+      {
+        "width": 1440,
+        "scrollWidth": 1425
+      },
+      {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      {
+        "width": 320,
+        "scrollWidth": 320
+      }
+    ],
+    "exceptions": [],
+    "scope": "Actual React components under StrictMode; synthetic account, certificate and service responses. No real files uploaded or real requests approved."
+  },
+  "builds": {
+    "backend": true,
+    "frontend": true
+  },
+  "docker": {
+    "backend": "healthy",
+    "frontend": "healthy",
+    "frontendHttp": 200,
+    "api": "ok"
+  },
+  "supabase": {
+    "activationConfirmedByUser": true,
+    "schemaReady": true,
+    "publicSummaryReady": true,
+    "bucketPrivate": true,
+    "maxBytes": 5242880,
+    "allowedMimeTypes": [
+      "application/pdf"
+    ],
+    "rowsRead": 0
+  },
+  "workflow": {
+    "subjectsVerifiedOnly": true,
+    "manualAddControls": false,
+    "manualDeleteControls": false,
+    "inclusiveEvidenceRequired": true,
+    "independentReviewRequired": true,
+    "selfApproval": false,
+    "reviewerAssignedByAgent": false,
+    "realRequestsCreatedOrApprovedByAgent": 0,
+    "userPreference": "Keep pending until an authorized reviewer is designated"
+  },
+  "limitations": [
+    "File format validation does not establish authenticity; the reviewer must verify it with the issuer.",
+    "This is an InterAula academic-support training badge, not an official professional or clinical certification."
+  ]
+}

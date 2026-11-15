@@ -44,7 +44,7 @@ let adminClient: SupabaseClient | null = null;
 
 export function getAdminSupabase(): SupabaseClient {
   if (!env.supabaseServiceRoleKey) {
-    throw new HttpError(503, 'La acreditación automática no está disponible. Puedes solicitar revisión docente.');
+    throw new HttpError(503, 'La evaluación requiere habilitación del servidor. Tus materias siguen guardadas; puedes solicitar revisión docente.', 'ASSESSMENT_NOT_CONFIGURED');
   }
 
   if (!adminClient) {

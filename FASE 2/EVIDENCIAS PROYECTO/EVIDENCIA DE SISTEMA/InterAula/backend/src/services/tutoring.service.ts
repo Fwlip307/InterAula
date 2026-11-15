@@ -14,12 +14,12 @@ export const tutoringBackendService={
     if(!profiles.length)return [];
     let query=clientFor().from('profile_offered_subjects').select('*,subject:subjects(*)').in('profile_id',profiles.map(profile=>profile.id));
     if(filters?.subjectId&&filters.subjectId!=='all')query=query.eq('subject_id',filters.subjectId);
-    if(filters?.onlyVerified)query=query.eq('is_verified',true);
+    query=query.eq('is_verified',true);
     const offered:any[]=await result(query);
     let inclusiveMap = new Map<string, { training_name: string; verified_at: string | null }>();
     try {
       const { data: accData } = await clientFor()
-        .from('inclusive_tutor_accreditations')
+        .from('inclusive_tutor_public_credentials')
         .select('tutor_id, training_name, verified_at')
         .eq('status', 'approved')
         .in('tutor_id', profiles.map((p) => p.id));
