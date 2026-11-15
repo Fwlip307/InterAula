@@ -5,7 +5,7 @@ import { ApiError } from '../../lib/apiClient';
 import { RECOMMENDATION_KIND_LABELS, type RecommendationFeed, type RecommendationItem, type RecommendationKind } from '../../types/recommendations';
 import '../../styles/recommendations.css';
 
-export default function ForYouSection() {
+export default function ForYouSection({compact=false}:{compact?:boolean}) {
   const {hash}=useLocation();
   const [data,setData]=useState<RecommendationFeed|null>(null);
   const [loading,setLoading]=useState(true);
@@ -17,9 +17,10 @@ export default function ForYouSection() {
   const [message,setMessage]=useState('');
   const [kind,setKind]=useState<RecommendationKind|'all'>('all');
   const [reload,setReload]=useState(0);
+  const [showAll,setShowAll]=useState(false);
   useEffect(()=>{
     if(hash==='#para-ti') {
-      const section=document.getElementById('para-ti');
+      const section=document.getElementById('for-you-feed');
       section?.scrollIntoView({block:'start'});section?.focus({preventScroll:true});
     }
   },[hash]);
@@ -54,7 +55,8 @@ export default function ForYouSection() {
     finally {setBusy(false);}
   }
   const items=data?.items.filter(item=>kind==='all'||item.kind===kind)||[];
-  return <section id="para-ti" className="ia-for-you" tabIndex={-1} aria-labelledby="for-you-title" aria-busy={loading}>
+  const visibleItems=compact&&!showAll?items.slice(0,3):items;
+  return <section id="for-you-feed" className="ia-for-you" tabIndex={-1} aria-labelledby="for-you-title" aria-busy={loading}>
     <header className="ia-reco-heading"><div><p className="ia-reco-eyebrow">Descubre tu próxima oportunidad</p><h2 id="for-you-title">Para ti</h2>
       <p>{data?.mode==='personalized'?'Contenidos y personas relacionados con lo que te interesa aprender y compartir.'
         :data?.mode==='disabled'?'La personalización está desactivada. Estas son novedades de la comunidad.'
@@ -71,13 +73,14 @@ export default function ForYouSection() {
       <div className="ia-reco-toolbar"><label>Mostrar <select value={kind} onChange={event=>setKind(event.target.value as RecommendationKind|'all')}>
         <option value="all">Todas las sugerencias</option>{(Object.entries(RECOMMENDATION_KIND_LABELS) as [RecommendationKind,string][]).map(([value,label])=><option key={value} value={value}>{label}</option>)}
       </select></label>{data.hiddenCount>0&&<button type="button" className="ia-reco-text-button" disabled={busy||loading} onClick={()=>restore(true)}>Restaurar sugerencias ocultas ({data.hiddenCount})</button>}</div>
-      <div className="ia-reco-grid">{items.map(item=><article key={`${item.kind}:${item.id}`} className="ia-reco-card">
+      <div className="ia-reco-grid">{visibleItems.map(item=><article key={`${item.kind}:${item.id}`} className="ia-reco-card">
         <span className={`ia-reco-kind ia-reco-kind-${item.kind}`}>{RECOMMENDATION_KIND_LABELS[item.kind]}</span>
         <h3><Link to={item.href}>{item.title}</Link></h3>{item.summary&&<p className="ia-reco-summary">{item.summary}</p>}
         <p className="ia-reco-reason">{item.reason}</p>{item.communityReason&&<p className="ia-reco-community">{item.communityReason}</p>}
         <div className="ia-reco-card-footer"><Link to={item.href}>{item.kind==='person'?'Ver perfil':'Ver detalle'} <span aria-hidden="true">→</span></Link>
           <button type="button" className="ia-reco-text-button" disabled={busy||loading} onClick={()=>dismiss(item)} aria-label={`No me interesa: ${item.title}`}>No me interesa</button></div>
       </article>)}</div>
+      {compact&&items.length>3&&<button type="button" className="ia-btn-secondary ia-reco-more" onClick={()=>setShowAll(value=>!value)} aria-expanded={showAll}>{showAll?'Mostrar tres sugerencias':'Ver todas las sugerencias ('+items.length+')'}</button>}
       {!loading&&items.length===0&&<div className="ia-reco-empty"><h3>{kind==='all'?'Todavía no hay coincidencias disponibles':'No hay sugerencias de este tipo'}</h3>
         <p>Prueba otros temas, amplía tu comunidad o restaura sugerencias ocultas.</p><Link to="/community" className="ia-btn-secondary">Ampliar mi comunidad</Link>
         <Link to="/profile?tab=interests" className="ia-btn-secondary">Revisar mis intereses</Link></div>}

@@ -1,0 +1,54 @@
+.ia-app-overview { display: grid; gap: 18px; color: var(--ia-text-main,#0f172a); }
+.ia-app-overview header h2 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.4; }
+.ia-app-overview header p { margin: 0; max-width: 72ch; color: var(--ia-text-body,#475569); line-height: 1.7; }
+.ia-guide-overview-card { display: flex; flex-direction: column; gap: 14px; padding: 22px; border: 1px solid var(--ia-border,#e2e8f0); border-radius: 12px; background: var(--ia-bg-card,#fff); min-width: 0; }
+.ia-guide-overview-card h3 { font-size: 1.12rem; margin: 0; line-height: 1.5; }
+.ia-guide-overview-card ul { padding-left: 20px; margin: 0; display: grid; gap: 10px; font-size: .93rem; color: var(--ia-text-body,#475569); line-height: 1.6; }
+.ia-guide-action { color: var(--ia-primary,#2563eb); font-weight: 650; line-height: 1.6; text-underline-offset: 3px; }
+.ia-guide-overview-card .ia-guide-action { margin-top: auto; }
+.ia-guide-shortcuts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.ia-guide-shortcuts a { display: grid; gap: 7px; color: var(--ia-text-main,#0f172a); text-decoration: none; padding: 14px 0; border-bottom: 1px solid var(--ia-border,#e2e8f0); line-height: 1.6; }
+.ia-guide-shortcuts a strong { color: var(--ia-primary,#2563eb); }
+.ia-guide-shortcuts span { font-size: .88rem; color: var(--ia-text-body,#475569); }
+.ia-product-guide { color: var(--ia-text-main,#0f172a); }
+.ia-guide-header { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 16px 28px; background: var(--ia-bg-card,#fff); border-bottom: 1px solid var(--ia-border,#e2e8f0); flex-wrap: wrap; }
+.ia-guide-header .ia-brand { font-weight: 750; color: var(--ia-text-main,#0f172a); font-size: 1.2rem; }
+.ia-guide-header nav { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.ia-guide-header nav > a:not(.ia-btn-primary) { color: var(--ia-primary,#2563eb); font-size: .9rem; text-underline-offset: 3px; }
+.ia-product-guide .ia-main { max-width: 1120px; }
+.ia-guide-intro { padding: 12px 0 24px; max-width: 78ch; }
+.ia-guide-intro h1 { font-size: clamp(1.65rem,3vw,2.3rem); margin: 12px 0; line-height: 1.3; }
+.ia-guide-intro > p, .ia-guide-finish p { line-height: 1.75; color: var(--ia-text-body,#475569); }
+.ia-guide-signin-note { font-size: .9rem; }
+.ia-guide-start { padding: 22px; background: var(--ia-bg-card,#fff); border: 1px solid var(--ia-border,#e2e8f0); border-radius: 12px; }
+.ia-guide-start h2, .ia-guide-finish h2 { font-size: 1.25rem; margin: 0 0 18px; }
+.ia-guide-start ol { padding-left: 24px; margin: 0; display: grid; gap: 16px; }
+.ia-guide-start h3 { font-size: 1rem; margin: 0 0 4px; }
+.ia-guide-start p { font-size: .94rem; line-height: 1.7; margin: 0; color: var(--ia-text-body,#475569); }
+.ia-guide-index { display: flex; gap: 12px 22px; flex-wrap: wrap; margin: 24px 0; padding: 18px 0; border-block: 1px solid var(--ia-border,#e2e8f0); }
+.ia-guide-index a { color: var(--ia-primary,#2563eb); line-height: 1.6; text-underline-offset: 3px; }
+.ia-guide-sections { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; align-items: start; }
+.ia-guide-section { padding: 24px; border: 1px solid var(--ia-border,#e2e8f0); background: var(--ia-bg-card,#fff); border-radius: 12px; scroll-margin-top: 24px; min-width: 0; overflow-wrap: anywhere; }
+.ia-guide-section h2 { font-size: 1.2rem; line-height: 1.45; margin: 0 0 12px; }
+.ia-guide-description { line-height: 1.7; color: var(--ia-text-body,#475569); margin: 0 0 20px; }
+.ia-guide-features { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.ia-guide-features a { color: var(--ia-primary,#2563eb); font-weight: 650; line-height: 1.5; text-underline-offset: 3px; }
+.ia-guide-features p { color: var(--ia-text-body,#475569); font-size: .93rem; line-height: 1.7; margin: 5px 0 0; }
+.ia-guide-example { border-left: 3px solid var(--ia-border-strong,#cbd5e1); padding-left: 12px; margin: 22px 0 0; font-size: .92rem; line-height: 1.7; }
+.ia-guide-note { margin: 16px 0 0; font-size: .88rem; color: var(--ia-text-body,#475569); line-height: 1.7; }
+.ia-guide-finish { padding: 24px 0 0; margin-top: 24px; border-top: 1px solid var(--ia-border,#e2e8f0); }
+.ia-app-overview :focus-visible, .ia-product-guide a:focus-visible, .ia-guide-section:focus-visible { outline: 3px solid var(--ia-primary,#2563eb); outline-offset: 4px; }
+.ia-app-overview a:hover, .ia-guide-features a:hover { text-decoration: underline; }
+.ia-home-start { max-width: 1200px; margin: 0 auto 28px; }
+.ia-home-start ol { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; padding-left: 24px; }
+.ia-home-start li { padding-left: 4px; line-height: 1.65; color: var(--ia-text-body,#475569); }
+.ia-home-start strong { display: block; color: var(--ia-text-main,#0f172a); margin-bottom: 6px; }
+.ia-home-start p { margin: 0; font-size: .94rem; }
+@media(max-width:700px) {
+ .ia-guide-shortcuts, .ia-guide-sections, .ia-home-start ol { grid-template-columns: 1fr; }
+ .ia-guide-overview-card, .ia-guide-section, .ia-guide-start { padding: 18px; }
+ .ia-guide-header { padding: 14px; }
+ .ia-guide-header nav { gap: 14px; }
+ .ia-app-overview .ia-guided-options { grid-template-columns: 1fr; }
+ .ia-guide-start ol { padding-left: 20px; }
+}

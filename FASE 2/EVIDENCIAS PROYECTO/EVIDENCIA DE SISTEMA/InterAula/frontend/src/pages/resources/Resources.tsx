@@ -1,3 +1,4 @@
+import ModuleNavigation from '../../components/common/ModuleNavigation';
 import { safeNoteHtml, escapeHtml } from '../../utils/safeHtml';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
@@ -835,30 +836,8 @@ export default function Resources() {
       ) : (
         /* VISTA BIBLIOTECA Y BUSCADOR */
         <>
-          {/* Pestañas de navegación de la Biblioteca */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className={activeTab === 'community' ? 'ia-btn-primary' : 'ia-btn-secondary'}
-              onClick={() => setActiveTab('community')}
-            >
-              Explorar Comunidad ({notes.filter((n) => !n.isDraft).length})
-            </button>
-            <button
-              type="button"
-              className={activeTab === 'mine' ? 'ia-btn-primary' : 'ia-btn-secondary'}
-              onClick={() => setActiveTab('mine')}
-            >
-              Mis Apuntes Publicados ({myNotes.filter((n) => !n.isDraft).length})
-            </button>
-            <button
-              type="button"
-              className={activeTab === 'drafts' ? 'ia-btn-primary' : 'ia-btn-secondary'}
-              onClick={() => setActiveTab('drafts')}
-            >
-              Mis Borradores ({myNotes.filter((n) => n.isDraft).length})
-            </button>
-          </div>
+          <ModuleNavigation label="Secciones de apuntes" active={activeTab} onSelect={setActiveTab}
+            primary={[{id:'community',label:'Explorar apuntes'},{id:'mine',label:'Mis apuntes'},{id:'drafts',label:'Borradores'}]} />
 
           {/* Barra de búsqueda y filtros */}
           <div className="ia-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>

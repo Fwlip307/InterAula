@@ -1,3 +1,5 @@
+import AppOverview from '../components/common/AppOverview';
+import { STARTING_STEPS } from '../content/productGuide';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,51 +25,6 @@ import {
 } from '../components/common/Icons';
 import interaulaLogo from '../assets/branding/interaula-logo.png';
 import '../styles/home.css';
-
-const SEVEN_STEPS = [
-  {
-    step: '01',
-    title: 'Configuras cómo prefieres aprender',
-    description:
-      'Creas tu perfil académico y defines de forma privada si prefieres explicaciones paso a paso, ejemplos prácticos, apoyo visual o sesiones tranquilas.',
-  },
-  {
-    step: '02',
-    title: 'Ingresas a Mi espacio de aprendizaje',
-    description:
-      'Accedes a tu entorno central donde se reúnen tus asignaturas a reforzar, objetivos del semestre, rutas activas y próximas actividades.',
-  },
-  {
-    step: '03',
-    title: 'Avanzas con rutas divididas en pasos manejables',
-    description:
-      'Transformas cualquier asignatura o evaluación compleja en etapas breves, ordenadas y fáciles de retomar sin sobrecarga.',
-  },
-  {
-    step: '04',
-    title: 'Cambias el modo de explicación cuando lo necesites',
-    description:
-      'Alternas entre explicación sencilla, paso a paso, con ejemplos prácticos, esquema visual o profundización técnica sin perder tu progreso.',
-  },
-  {
-    step: '05',
-    title: 'Practicas, evalúas tu avance y refuerzas sin presión',
-    description:
-      'Compruebas lo aprendido sin cronómetros punitivos, identificando qué temas ya están consolidados y cuáles conviene repasar.',
-  },
-  {
-    step: '06',
-    title: 'Solicitas u ofreces tutorías colaborativas entre pares',
-    description:
-      'Pides apoyo en las materias que te cuestan compartiendo tu estilo de estudio, o enseñas aquellas asignaturas que ya dominas.',
-  },
-  {
-    step: '07',
-    title: 'Colaboras en proyectos, apuntes y foro académico',
-    description:
-      'Integras tus conocimientos en el Hub de Proyectos Interdisciplinarios, la Biblioteca de Apuntes y el Foro estudiantil.',
-  },
-];
 
 export default function Home() {
   const { user } = useAuth();
@@ -131,6 +88,7 @@ export default function Home() {
             <a href="#como-funciona" className="ia-landing-nav-link">
               Cómo funciona
             </a>
+            <Link to="/guide" className="ia-landing-nav-link">Guía de uso</Link>
             <a href="#espacio-aprendizaje" className="ia-landing-nav-link">
               Mi espacio de aprendizaje
             </a>
@@ -336,29 +294,12 @@ export default function Home() {
       </section>
 
       {/* =====================================================================
-          3. CÓMO FUNCIONA INTERAULA (7 PASOS)
+          3. CÓMO FUNCIONA INTERAULA
          ===================================================================== */}
       <section id="como-funciona" className="ia-landing-section">
-        <div className="ia-landing-section-header">
-          <span className="ia-landing-section-tag">Recorrido del estudiante</span>
-          <h2 className="ia-landing-section-title">Cómo funciona InterAula</h2>
-          <p className="ia-landing-section-desc">
-            Un flujo continuo que conecta tu organización personal con el apoyo colaborativo de toda
-            la comunidad.
-          </p>
-        </div>
-
-        <div className="ia-seven-steps-list">
-          {SEVEN_STEPS.map((item) => (
-            <div key={item.step} className="ia-seven-step-row">
-              <div className="ia-seven-step-num">{item.step}</div>
-              <div className="ia-seven-step-body">
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="ia-landing-section-header"><span className="ia-landing-section-tag">Empieza por lo que necesitas</span><h2 className="ia-landing-section-title">Cómo funciona InterAula</h2><p className="ia-landing-section-desc">Apoyo académico para universitarios, con herramientas para estudiar, colaborar y elegir cómo prefieres aprender.</p></div>
+        <div className="ia-home-start"><ol>{STARTING_STEPS.map(step=><li key={step.title}><strong>{step.title}</strong><p>{step.description}</p></li>)}</ol></div>
+        <AppOverview />
       </section>
 
       {/* =====================================================================

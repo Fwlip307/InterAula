@@ -1,0 +1,84 @@
+.ia-adaptive {--adaptive-accent:var(--ia-primary,#2859cc);--adaptive-soft:var(--ia-primary-subtle,#eef4ff);color:var(--ia-text-main,#17233b);}
+.ia-adaptive-hero {display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding:28px;border:1px solid var(--ia-border,#dce4ef);border-radius:20px;background:var(--ia-bg-card,#fff);margin-bottom:22px;}
+.ia-adaptive-hero h2 {font-size:1.8rem;line-height:1.3;margin:12px 0;}
+.ia-adaptive-hero p,.ia-adaptive p {line-height:1.7;}
+.ia-adaptive-eyebrow {display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--adaptive-accent);font-weight:700;}
+.ia-adaptive-pilot {font-size:.8rem;padding:9px 12px;border-radius:20px;background:var(--ia-bg-body,#f6f8fc);white-space:nowrap;}
+.ia-adaptive-top {display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,1fr);gap:20px;margin-bottom:22px;}
+.ia-adaptive-next,.ia-adaptive-goal,.ia-adaptive-practice,.ia-adaptive-map-card,.ia-adaptive-demo,.ia-adaptive-bottom {padding:24px;border:1px solid var(--ia-border,#dce4ef);border-radius:16px;background:var(--ia-bg-card,#fff);}
+.ia-adaptive-next {border-top:3px solid var(--adaptive-accent);}
+.ia-adaptive-section-label {display:flex;align-items:center;gap:8px;color:var(--adaptive-accent);font-size:.85rem;font-weight:650;}
+.ia-adaptive-next h3 {font-size:1.55rem;margin:14px 0 8px;}
+.ia-adaptive-next button {display:inline-flex;align-items:center;gap:10px;margin-top:10px;}
+.ia-adaptive-goal label {display:block;font-weight:650;line-height:1.5;margin-bottom:8px;}
+.ia-adaptive-goal select {width:100%;box-sizing:border-box;}
+.ia-adaptive-stat-row {display:flex;align-items:center;gap:14px;margin-top:18px;font-size:.86rem;}
+.ia-adaptive-stat-row strong {font-size:1.7rem;min-width:40px;font-variant-numeric:tabular-nums;}
+.ia-adaptive-stat-row small {font-size:.85rem;font-weight:400;}
+.ia-adaptive-caption,.ia-adaptive-map-help {font-size:.8rem;color:var(--ia-text-secondary,#62718a);line-height:1.7;}
+.ia-adaptive-path {font-size:.82rem;padding:10px 12px;background:var(--ia-bg-body,#f7f9fc);border-radius:8px;}
+.ia-adaptive-practice {margin-bottom:22px;}
+.ia-adaptive-practice-top {display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:.85rem;color:var(--ia-text-secondary,#62718a);}
+.ia-adaptive-practice-top label {display:flex;align-items:center;gap:8px;}
+.ia-adaptive-practice h3 {font-size:1.2rem;margin:20px 0;outline-offset:5px;}
+.ia-adaptive-prompt {font-size:1.35rem;line-height:1.8!important;margin:18px 0;}
+.ia-adaptive-practice fieldset {min-width:0;padding:0;border:0;margin:20px 0;display:flex;flex-direction:column;gap:10px;}
+.ia-adaptive-practice legend {font-size:.85rem;margin-bottom:10px;}
+.ia-adaptive-option {display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;cursor:pointer;min-height:46px;box-sizing:border-box;line-height:1.6;}
+.ia-adaptive-option input {accent-color:var(--adaptive-accent);width:17px;height:17px;flex-shrink:0;}
+.ia-adaptive-option[data-selected=true] {border-color:var(--adaptive-accent);background:var(--adaptive-soft);}
+.ia-adaptive-option:focus-within {outline:2px solid var(--adaptive-accent);outline-offset:2px;}
+.ia-adaptive-actions {display:flex;gap:10px;flex-wrap:wrap;}
+.ia-adaptive button,.ia-adaptive a {max-width:100%;box-sizing:border-box;}
+.ia-adaptive-hint,.ia-adaptive-notice,.ia-adaptive-feedback {background:var(--ia-bg-body,#f5f8fc);padding:16px 18px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;margin:18px 0;}
+.ia-adaptive-hint small {font-size:.8rem;}
+.ia-adaptive-feedback p {margin-top:0;}
+.ia-adaptive-map-card {margin-bottom:22px;}
+.ia-adaptive-map-title {display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;}
+.ia-adaptive-map-title h3,.ia-adaptive-bottom h3 {display:flex;align-items:center;gap:8px;font-size:1rem;margin:0;}
+.ia-adaptive-map-title>span {font-size:.8rem;color:var(--ia-text-secondary,#62718a);}
+.ia-adaptive-map-desktop {overflow-x:auto;overscroll-behavior-x:contain;}
+.ia-adaptive-map-canvas {position:relative;width:1020px;height:405px;margin:0 auto;}
+.ia-adaptive-map-canvas svg {position:absolute;inset:0;width:100%;height:100%;color:var(--ia-text-secondary,#71829b);}
+.ia-adaptive-node {position:absolute;width:164px;min-height:84px;text-align:left;padding:12px;border:1px solid var(--ia-border,#cfd9e7);border-radius:12px;background:var(--ia-bg-card,#fff);color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:6px;}
+.ia-adaptive-node-title {font-size:.84rem;font-weight:650;line-height:1.4;}
+.ia-adaptive-node small,.ia-adaptive-map-mobile small {font-size:.7rem;line-height:1.5;color:var(--ia-text-secondary,#62718a);}
+.ia-adaptive-node-estimate {font-size:.73rem;font-variant-numeric:tabular-nums;}
+.ia-adaptive-node[data-relevant=false] {opacity:.65;}
+.ia-adaptive-node[data-recommended=true],.ia-adaptive-map-mobile button[data-recommended=true] {border:2px solid var(--adaptive-accent);background:var(--adaptive-soft);}
+.ia-adaptive-node[data-state=consolidated],.ia-adaptive-map-mobile button[data-state=consolidated] {border-color:var(--ia-success,#15803d);}
+.ia-adaptive-node[aria-pressed=true],.ia-adaptive-map-mobile button[aria-pressed=true] {outline:2px solid var(--adaptive-accent);outline-offset:3px;}
+.ia-adaptive-map-mobile {display:none;}
+.ia-adaptive-concept {padding:18px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;background:var(--ia-bg-body,#f7f9fc);margin-top:16px;}
+.ia-adaptive-concept>div {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.ia-adaptive-concept h4 {margin:0;}
+.ia-adaptive-concept span {font-size:.8rem;}
+.ia-adaptive-demo {margin-bottom:22px;}
+.ia-adaptive-demo h3 {font-size:1rem;margin-top:0;}
+.ia-adaptive-demo-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px;}
+.ia-adaptive-demo-grid article {padding:18px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;background:var(--ia-bg-body,#f7f9fc);}
+.ia-adaptive-demo-grid small {color:var(--ia-text-secondary,#62718a);}
+.ia-adaptive-demo-grid h4 {font-size:1.1rem;margin:10px 0;}
+.ia-adaptive-bottom {display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
+.ia-adaptive-bottom p {font-size:.87rem;margin-bottom:0;}
+.ia-adaptive-method {font-size:.82rem;margin:20px 0;padding:16px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;}
+.ia-adaptive-method summary {cursor:pointer;}
+.ia-adaptive-error {padding:14px;border:1px solid var(--ia-danger,#b91c1c);border-radius:12px;margin-bottom:18px;}
+.ia-adaptive-loading {display:flex;align-items:center;justify-content:center;gap:14px;min-height:220px;}
+.ia-adaptive[data-large-text=true] .ia-adaptive-prompt {font-size:1.6rem;}
+.ia-adaptive[data-large-text=true] .ia-adaptive-option {font-size:1.15rem;line-height:1.8;}
+@media(max-width:800px){.ia-adaptive-top,.ia-adaptive-demo-grid {grid-template-columns:1fr;}.ia-adaptive-hero {flex-direction:column;}.ia-adaptive-hero h2 {font-size:1.5rem;}}
+@media(max-width:700px){.ia-adaptive-map-desktop {display:none;}.ia-adaptive-map-mobile {display:flex;flex-direction:column;gap:12px;padding-left:22px;}.ia-adaptive-map-mobile button {display:flex;flex-direction:column;gap:6px;width:100%;padding:14px;text-align:left;border:1px solid var(--ia-border,#cfd9e7);border-radius:12px;background:var(--ia-bg-card,#fff);color:inherit;cursor:pointer;}}
+@media(max-width:480px){.ia-adaptive-hero,.ia-adaptive-next,.ia-adaptive-goal,.ia-adaptive-practice,.ia-adaptive-map-card,.ia-adaptive-demo,.ia-adaptive-bottom {padding:18px 14px;}.ia-adaptive-practice-top {align-items:flex-start;flex-direction:column;}.ia-adaptive-actions {flex-direction:column;}.ia-adaptive-actions button {width:100%;}.ia-adaptive-prompt {font-size:1.17rem;}}
+@media(prefers-reduced-motion:reduce){.ia-adaptive * {animation:none!important;transition:none!important;scroll-behavior:auto!important;}}
+
+
+/* Keep the exercise central. Maps, goals and technical explanations are optional. */
+.ia-adaptive [hidden] { display: none !important; }
+.ia-adaptive summary { cursor: pointer; font-weight: 650; line-height: 1.5; padding: 8px 0; }
+.ia-adaptive summary:focus-visible { outline: 3px solid var(--ia-primary, #2563eb); outline-offset: 3px; }
+.ia-adaptive details[open] > summary { margin-bottom: 16px; }
+.ia-adaptive-goal { align-self: start; }
+.ia-adaptive-goal h3 { margin: 0 0 14px; font-size: 1.05rem; }
+.ia-adaptive-practice h3 { scroll-margin-top: 90px; }
+.ia-adaptive-practice h3:focus { outline: none; }

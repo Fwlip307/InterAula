@@ -28,7 +28,7 @@
 .ia-global-search-footer kbd { border:1px solid var(--ia-border,#e2e8f0);border-radius:4px;padding:2px 4px;font:inherit; }
 .ia-global-search-trigger:focus-visible,.ia-global-search-close:focus-visible { outline:3px solid var(--ia-primary,#2563eb);outline-offset:3px; }
 .ia-search-section { scroll-margin-top:90px; }
-@media(max-width:1390px) { .ia-navbar .ia-nav-links { display:none; } .ia-navbar .ia-mobile-toggle { display:inline-flex; } .ia-navbar .ia-mobile-nav { display:block; } }
+@media(max-width:1180px) { .ia-navbar .ia-nav-links { display:none; } .ia-navbar .ia-mobile-toggle { display:inline-flex; } .ia-navbar .ia-mobile-nav { display:block; } }
 @media(max-width:700px) { .ia-global-search-trigger { width:38px;justify-content:center;padding:8px; } .ia-global-search-trigger span,.ia-global-search-trigger kbd { display:none; } .ia-global-search-dialog { margin-top:12px;max-height:calc(100dvh - 24px); } .ia-global-search-heading { padding:16px 16px 12px; } .ia-global-search-input { margin:0 16px; } .ia-global-search-footer { justify-content:center;gap:12px;padding:12px; } }
 @media(max-width:480px) { .ia-navbar .ia-nav-user { gap:6px; } .ia-navbar .ia-navbar-inner { gap:8px; } .ia-navbar .ia-unified-mode-text,.ia-navbar .ia-unified-mode-badge { display:none; } .ia-navbar .ia-unified-mode-btn { padding:8px; } .ia-navbar .ia-user-pill-btn { padding:4px; } .ia-navbar .ia-user-pill-btn>svg { display:none; } .ia-global-search-trigger { min-height:40px;width:40px; } }
 @media(max-width:360px) { .ia-navbar .ia-brand-name { font-size:1rem; } .ia-navbar .ia-brand { gap:5px; } }

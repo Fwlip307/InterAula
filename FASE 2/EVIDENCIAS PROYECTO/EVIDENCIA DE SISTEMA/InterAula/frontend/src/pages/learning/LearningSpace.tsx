@@ -1,5 +1,7 @@
+import ModuleNavigation from '../../components/common/ModuleNavigation';
+import GuidedStudyStart from '../../components/common/GuidedStudyStart';
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { learningSpaceService } from '../../services/learningSpace.service';
@@ -8,6 +10,7 @@ import { notesService, type AcademicNote } from '../../services/notes.service';
 import { forumService, type ForumQuestion as ForumPost } from '../../services/forum.service';
 import { projectService } from '../../services/project.service';
 import AdaptiveQuizHub from './components/AdaptiveQuizHub';
+import AdaptiveLearningPanel from './components/AdaptiveLearningPanel';
 import { InteractiveVisualExplainLab } from '../../components/learning/InteractiveVisualExplainLab';
 import {
   EXPLANATION_MODES,
@@ -36,9 +39,7 @@ import {
   ListChecksIcon,
   TargetIcon,
   SlidersIcon,
-  BookOpenIcon,
   UsersIcon,
-  MessageSquareIcon,
   PlusIcon,
   CheckIcon,
   CheckCircleIcon,
@@ -53,13 +54,15 @@ import '../../styles/dashboard.css';
 
 import { useModuleTab } from '../../hooks/useModuleTab';
 
-type SpaceTab = 'overview' | 'paths' | 'explain' | 'tasks' | 'reinforce' | 'profile';
+type SpaceTab = 'overview' | 'adaptive' | 'paths' | 'explain' | 'tasks' | 'reinforce' | 'profile';
 
 export const LearningSpace = () => {
   const { user } = useAuth();
   const { isCalmMode, themeMode, setThemeMode, preferences, updatePreferences } = useCalmMode();
   const navigate = useNavigate();
-  const [activeTab,setActiveTab]=useModuleTab<SpaceTab>(['overview','paths','explain','tasks','reinforce','profile'],'overview');
+  const [studyParams] = useSearchParams();
+  const requestedPathId = studyParams.get('path');
+  const [activeTab,setActiveTab]=useModuleTab<SpaceTab>(['overview','adaptive','paths','explain','tasks','reinforce','profile'],'overview');
 
   // Estado principal cargado desde el backend
   const [loading, setLoading] = useState(true);
@@ -831,6 +834,11 @@ export const LearningSpace = () => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  const validRequestedPath = paths.some(path => path.id === requestedPathId) ? requestedPathId : null;
+  useEffect(() => {
+    if (validRequestedPath) setSelectedPathId(validRequestedPath);
+  }, [validRequestedPath]);
+
   const selectedPath = paths.find((p) => p.id === selectedPathId) || paths[0] || null;
   const activePathsCount = paths.filter((p) => p.status === 'active').length;
   const completedPathsCount = paths.filter((p) => p.status === 'completed').length;
@@ -839,54 +847,25 @@ export const LearningSpace = () => {
     (a) => a.mastery_level === 'consolidado'
   ).length;
 
-  // Calcular recomendación real del siguiente paso
-  const nextRecommendedStage = (() => {
-    for (const path of paths) {
-      if (path.status === 'active') {
-        const nextStage = path.stages.find((st) => !st.completed);
-        if (nextStage) {
-          return { path, stage: nextStage };
-        }
-      }
-    }
-    return null;
-  })();
-
   return (
     <div className="learning-space-page">
         {/* Encabezado de Mi espacio de aprendizaje */}
-        <section className="learning-space-hero">
+        <section className="learning-space-hero ia-guided-study-heading">
           <div className="learning-space-hero__content">
             <span className="learning-space-hero__eyebrow">
               <CompassIcon size={15} /> Mi espacio de aprendizaje
             </span>
             <h1 className="learning-space-hero__title">
-              Aprender juntos, a nuestra manera
+              Estudiar
             </h1>
-            <p className="learning-space-hero__subtitle">
-              Organiza tus asignaturas en etapas manejables, cambia el modo en que recibes cada
-              explicación sin perder tu avance y conecta con tutores, apuntes y proyectos a tu
-              propio ritmo.
-            </p>
+            <p className="learning-space-hero__subtitle">Retoma un paso, practica o prepara una tarea a tu ritmo.</p>
           </div>
 
-          <div className="learning-space-hero__stats">
-            <div className="learning-space-stat">
-              <span className="learning-space-stat__value">{activePathsCount}</span>
-              <span className="learning-space-stat__label">Rutas activas</span>
-            </div>
-            <div className="learning-space-stat">
-              <span className="learning-space-stat__value">{completedPathsCount}</span>
-              <span className="learning-space-stat__label">Rutas completadas</span>
-            </div>
-            <div className="learning-space-stat">
-              <span className="learning-space-stat__value">{pendingTasksCount}</span>
-              <span className="learning-space-stat__label">Tareas en curso</span>
-            </div>
-            <div className="learning-space-stat">
-              <span className="learning-space-stat__value">{consolidatedTopicsCount}</span>
-              <span className="learning-space-stat__label">Temas consolidados</span>
-            </div>
+          <div className="ia-guided-progress" aria-label="Mi progreso">
+            <span><strong>{activePathsCount}</strong> rutas activas</span>
+            <span><strong>{completedPathsCount}</strong> completadas</span>
+            <span><strong>{pendingTasksCount}</strong> tareas pendientes</span>
+            <span><strong>{consolidatedTopicsCount}</strong> temas consolidados</span>
           </div>
         </section>
 
@@ -903,56 +882,9 @@ export const LearningSpace = () => {
         )}
 
         {/* Navegación interna de Mi espacio de aprendizaje */}
-        <nav className="learning-space-tabs" aria-label="Secciones de Mi espacio de aprendizaje">
-          <button
-            type="button"
-            className={`learning-space-tab ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => handleTabChange('overview')}
-          >
-            <CompassIcon size={16} />
-            <span>Resumen y siguiente paso</span>
-          </button>
-          <button
-            type="button"
-            className={`learning-space-tab ${activeTab === 'paths' ? 'active' : ''}`}
-            onClick={() => handleTabChange('paths')}
-          >
-            <LayersIcon size={16} />
-            <span>Rutas de aprendizaje ({paths.length})</span>
-          </button>
-          <button
-            type="button"
-            className={`learning-space-tab ${activeTab === 'explain' ? 'active' : ''}`}
-            onClick={() => handleTabChange('explain')}
-          >
-            <LightbulbIcon size={16} />
-            <span>Aprende a tu manera</span>
-          </button>
-          <button
-            type="button"
-            className={`learning-space-tab ${activeTab === 'tasks' ? 'active' : ''}`}
-            onClick={() => handleTabChange('tasks')}
-          >
-            <ListChecksIcon size={16} />
-            <span>Tareas y acompañamiento ({tasks.length})</span>
-          </button>
-          <button
-            type="button"
-            className={`learning-space-tab ${activeTab === 'reinforce' ? 'active' : ''}`}
-            onClick={() => handleTabChange('reinforce')}
-          >
-            <TargetIcon size={16} />
-            <span>Evaluación y refuerzo</span>
-          </button>
-          <button
-            type="button"
-            className={`learning-space-tab ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => handleTabChange('profile')}
-          >
-            <SlidersIcon size={16} />
-            <span>Mi perfil de aprendizaje</span>
-          </button>
-        </nav>
+        <ModuleNavigation<SpaceTab> label="Secciones para estudiar" active={activeTab} onSelect={handleTabChange}
+          primary={[{id:'overview',label:'Mi siguiente paso'},{id:'adaptive',label:'Practicar'},{id:'tasks',label:'Organizarme'}]}
+          secondary={[{id:'paths',label:'Mis rutas y materias'},{id:'explain',label:'Entender un tema'},{id:'reinforce',label:'Comprobar comprensión'},{id:'profile',label:'Mis apoyos para aprender'}]} />
 
         {loading ? (
           <div className="panel" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
@@ -960,38 +892,35 @@ export const LearningSpace = () => {
           </div>
         ) : (
           <>
+            {activeTab==='adaptive'&&user&&<AdaptiveLearningPanel userId={user.id}/>}
             {/* =================================================================
                 1. PANEL PRINCIPAL DE APRENDIZAJE (OVERVIEW)
                ================================================================= */}
             {activeTab === 'overview' && (
-              <div className="learning-space-grid">
-                <div className="learning-space-main-col">
-                  {/* Asistente inicial si aún no ha personalizado su perfil */}
-                  {!config.onboardingCompleted && (
-                    <div className="panel learning-onboarding-banner">
-                      <div>
-                        <span className="badge badge--primary" style={{ marginBottom: '0.5rem' }}>
-                          Configuración inicial voluntaria
-                        </span>
-                        <h2 style={{ fontSize: '1.15rem', marginBottom: '0.35rem' }}>
-                          Adapta InterAula a tu forma de estudiar
-                        </h2>
-                        <p className="text-muted" style={{ margin: 0, fontSize: '0.92rem' }}>
-                          Elige cómo prefieres recibir explicaciones, organizar tus tareas y
-                          configurar tu entorno de estudio. Esta información es privada y puedes
-                          cambiarla cuando quieras.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => handleTabChange('profile')}
-                      >
-                        Configurar mi perfil
-                      </button>
+              <div className="ia-guided-stack">
+                <GuidedStudyStart paths={paths} tasks={tasks} />
+                <div className="ia-guided-activity-grid">
+                  <section className="panel" aria-labelledby="study-paths-title">
+                    <h2 id="study-paths-title" className="ia-guided-section-title">Mis rutas</h2>
+                    <div className="ia-guided-mini-list">
+                      {paths.length === 0 && <p>Aún no tienes rutas. Puedes crear una para tu materia.</p>}
+                      {paths.slice(0,3).map(path=><button type="button" key={path.id} onClick={()=>{setSelectedPathId(path.id);handleTabChange('paths');}}>
+                        <strong>{path.title}</strong><span>{path.subject_name} · {path.progress_percent}% completado</span>
+                      </button>)}
                     </div>
-                  )}
-
+                    <button type="button" className="ia-btn-secondary" onClick={()=>handleTabChange('paths')}>Ver rutas y materias ({paths.length})</button>
+                  </section>
+                  <section className="panel" aria-labelledby="study-tasks-title">
+                    <h2 id="study-tasks-title" className="ia-guided-section-title">Mis tareas</h2>
+                    <div className="ia-guided-mini-list">
+                      {pendingTasksCount === 0 && <p>No tienes tareas pendientes.</p>}
+                      {tasks.filter(task=>task.status!=='completed').slice(0,3).map(task=><button type="button" key={task.id} onClick={()=>handleTabChange('tasks')}>
+                        <strong>{task.title}</strong><span>{task.subject_name} · {task.status==='paused'?'En pausa':task.status==='in_progress'?'En curso':'Pendiente'}</span>
+                      </button>)}
+                    </div>
+                    <button type="button" className="ia-btn-secondary" onClick={()=>handleTabChange('tasks')}>Organizar mis tareas</button>
+                  </section>
+                </div>
                   {/* Progreso flexible y descarga de reporte personal */}
                   <div className="panel" style={{ marginBottom: '1rem' }}>
                     <div className="panel__header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -1058,374 +987,15 @@ export const LearningSpace = () => {
                     </div>
                   </div>
 
-                  {/* Recomendación del siguiente paso */}
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <CompassIcon size={18} /> Tu siguiente paso recomendado
-                      </h2>
-                      <button
-                        type="button"
-                        className="panel__link"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                        onClick={() => handleTabChange('paths')}
-                      >
-                        Ver todas mis rutas
-                      </button>
-                    </div>
 
-                    {nextRecommendedStage ? (
-                      <div className="next-step-card">
-                        <div className="next-step-card__meta">
-                          <span className="subject-chip">{nextRecommendedStage.path.subject_name}</span>
-                          <span className="text-muted" style={{ fontSize: '0.84rem' }}>
-                            Ruta: {nextRecommendedStage.path.title} ({nextRecommendedStage.path.progress_percent}% completado)
-                          </span>
-                        </div>
-                        <h3 className="next-step-card__title">
-                          {nextRecommendedStage.stage.title}
-                        </h3>
-                        <p className="next-step-card__desc">
-                          {nextRecommendedStage.stage.description}
-                        </p>
-                        <div className="next-step-card__actions">
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={() =>
-                              handleOpenStageInExplain(
-                                nextRecommendedStage.path.subject_name,
-                                nextRecommendedStage.stage.content_topic ||
-                                  nextRecommendedStage.stage.title,
-                                nextRecommendedStage.path.goal,
-                                nextRecommendedStage.path.preferred_mode
-                              )
-                            }
-                          >
-                            <LightbulbIcon size={15} /> Estudiar a mi manera
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() =>
-                              handleToggleStage(
-                                nextRecommendedStage.path.id,
-                                nextRecommendedStage.stage.id,
-                                false
-                              )
-                            }
-                          >
-                            <CheckIcon size={15} /> Marcar etapa como completada
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() =>
-                              navigate(
-                                `/tutoring?subject=${encodeURIComponent(
-                                  nextRecommendedStage.path.subject_name
-                                )}`
-                              )
-                            }
-                          >
-                            <UsersIcon size={15} /> Solicitar tutoría de este tema
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="empty-state" style={{ padding: '1.75rem 1rem' }}>
-                        <h3 className="empty-state__title">Aún no tienes una ruta activa</h3>
-                        <p className="empty-state__desc">
-                          Crea tu primera ruta de aprendizaje eligiendo una asignatura y un
-                          objetivo concreto. El sistema la dividirá en etapas claras para avanzar
-                          sin sobrecarga.
-                        </p>
-                        <div className="empty-state__actions">
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={() => handleTabChange('paths')}
-                          >
-                            <PlusIcon size={15} /> Crear ruta de aprendizaje
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => handleTabChange('explain')}
-                          >
-                            Explorar explicaciones adaptables
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Progreso por asignatura y rutas activas */}
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <LayersIcon size={18} /> Progreso de mis rutas de aprendizaje
-                      </h2>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        onClick={() => handleTabChange('paths')}
-                      >
-                        <PlusIcon size={14} /> Nueva ruta
-                      </button>
-                    </div>
-
-                    {paths.length === 0 ? (
-                      <p className="text-muted" style={{ margin: 0 }}>
-                        Todavía no has registrado rutas de aprendizaje. Cuando crees una, verás aquí
-                        el avance porcentual real calculado según tus etapas completadas.
-                      </p>
-                    ) : (
-                      <div className="learning-paths-summary-list">
-                        {paths.map((path) => {
-                          const completedStages = path.stages.filter((s) => s.completed).length;
-                          return (
-                            <div key={path.id} className="learning-path-summary-item">
-                              <div className="learning-path-summary-item__top">
-                                <div>
-                                  <span className="subject-chip" style={{ marginRight: '0.5rem' }}>
-                                    {path.subject_name}
-                                  </span>
-                                  <strong>{path.title}</strong>
-                                </div>
-                                <span className="learning-path-summary-item__pct">
-                                  {path.progress_percent}% ({completedStages}/{path.stages.length} etapas)
-                                </span>
-                              </div>
-                              <div className="learning-progress-bar">
-                                <div
-                                  className="learning-progress-bar__fill"
-                                  style={{ width: `${path.progress_percent}%` }}
-                                />
-                              </div>
-                              <div className="learning-path-summary-item__footer">
-                                <span className="text-muted" style={{ fontSize: '0.84rem' }}>
-                                  Objetivo: {path.goal}
-                                </span>
-                                <button
-                                  type="button"
-                                  className="btn btn-outline btn-sm"
-                                  onClick={() => {
-                                    setSelectedPathId(path.id);
-                                    handleTabChange('paths');
-                                  }}
-                                >
-                                  Continuar ruta
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Estado de dominio por temas */}
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <TargetIcon size={18} /> Estado de mis temas estudiados
-                      </h2>
-                      <button
-                        type="button"
-                        className="panel__link"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                        onClick={() => handleTabChange('reinforce')}
-                      >
-                        Ir a evaluación y refuerzo
-                      </button>
-                    </div>
-
-                    {assessments.length === 0 ? (
-                      <p className="text-muted" style={{ margin: 0 }}>
-                        Aún no has realizado comprobaciones de comprensión. Al practicar en
-                        &ldquo;Aprende a tu manera&rdquo; o en &ldquo;Evaluación y refuerzo&rdquo;,
-                        verás aquí qué temas están consolidados y cuáles conviene repasar.
-                      </p>
-                    ) : (
-                      <div className="topic-mastery-grid">
-                        {assessments.slice(0, 6).map((item) => {
-                          const meta = MASTERY_LABELS[item.mastery_level];
-                          return (
-                            <div key={item.id} className="topic-mastery-card">
-                              <div className="topic-mastery-card__header">
-                                <span className="subject-chip">{item.subject_name}</span>
-                                <span className={`status-badge ${meta.badgeClass}`}>
-                                  {meta.label}
-                                </span>
-                              </div>
-                              <h4 className="topic-mastery-card__title">{item.topic_name}</h4>
-                              <p className="text-muted" style={{ fontSize: '0.83rem', margin: 0 }}>
-                                {meta.description}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Columna lateral: Conexión con Tutorías, Apuntes, Foro y Proyectos */}
-                <aside className="learning-space-side-col">
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <SlidersIcon size={18} /> Mi configuración activa
-                      </h2>
-                      <button
-                        type="button"
-                        className="panel__link"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                        onClick={() => handleTabChange('profile')}
-                      >
-                        Editar
-                      </button>
-                    </div>
-                    <p className="text-muted" style={{ fontSize: '0.88rem', marginTop: 0 }}>
-                      {config.learningGoalSummary ||
-                        'Estudiando paso a paso con apoyo adaptable y bloques de estudio configurables.'}
-                    </p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                      <span className="subject-chip">
-                        Bloques de {config.defaultStudyIntervalMinutes} min
-                      </span>
-                      <span className="subject-chip">
-                        Pausas de {config.defaultBreakMinutes} min
-                      </span>
-                      {preferences.untimedQuizzes && (
-                        <span className="subject-chip">Práctica sin límite de tiempo</span>
-                      )}
-                      <span className="badge badge--verified">
-                        <ShieldCheckIcon size={12} />{' '}
-                        {config.shareWithTutors
-                          ? 'Compartido con tutores autorizados'
-                          : 'Privado: solo visible para ti'}
-                      </span>
-                    </div>
-                    {config.subjectsToReinforce.length > 0 && (
-                      <div>
-                        <span
-                          style={{
-                            display: 'block',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            color: 'var(--color-text-muted)',
-                            marginBottom: '0.35rem',
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          Materias que quiero reforzar
-                        </span>
-                        <div className="subject-chips">
-                          {config.subjectsToReinforce.map((subj) => (
-                            <span key={subj} className="subject-chip">
-                              {subj}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Conexión directa con Tutorías */}
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <UsersIcon size={18} /> Apoyo con tutores pares
-                      </h2>
-                    </div>
-                    <div
-                      style={{
-                        borderRadius: '12px',
-                        overflow: 'hidden',
-                        marginBottom: '0.75rem',
-                        border: '1px solid var(--color-border)',
-                        maxHeight: '132px',
-                      }}
-                    >
-                      <img
-                        src="/images/academic/mentoria-paso-a-paso.jpg"
-                        alt="Mentoría académica paso a paso entre compañeros universitarios"
-                        loading="lazy"
-                        style={{
-                          width: '100%',
-                          height: '132px',
-                          objectFit: 'cover',
-                          display: 'block',
-                        }}
-                      />
-                    </div>
-                    <p className="text-muted" style={{ fontSize: '0.88rem', marginTop: 0 }}>
-                      Si un tema sigue resultando complejo, puedes solicitar una sesión individual o
-                      grupal compartiendo voluntariamente tu forma preferida de aprender.
-                    </p>
-                    <Link to="/tutoring" className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-                      Buscar tutores en mis asignaturas
-                    </Link>
-                  </div>
-
-                  {/* Apuntes recomendados */}
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <BookOpenIcon size={18} /> Apuntes de la comunidad
-                      </h2>
-                      <Link to="/resources" className="panel__link">
-                        Ver biblioteca
-                      </Link>
-                    </div>
-                    {relatedNotes.length === 0 ? (
-                      <p className="text-muted" style={{ fontSize: '0.86rem', margin: 0 }}>
-                        No hay apuntes publicados aún. Puedes crear o subir tus propios resúmenes en
-                        la Biblioteca de Apuntes.
-                      </p>
-                    ) : (
-                      <div className="connected-resource-list">
-                        {relatedNotes.map((note) => (
-                          <Link
-                            key={note.id}
-                            to="/resources"
-                            className="connected-resource-item"
-                          >
-                            <strong>{note.title}</strong>
-                            <span>{note.subjectName}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Foro y Proyectos relacionados */}
-                  <div className="panel">
-                    <div className="panel__header">
-                      <h2 className="panel__title">
-                        <MessageSquareIcon size={18} /> Comunidad y Proyectos
-                      </h2>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <Link to="/forum" className="connected-resource-item">
-                        <strong>Foro Académico ({relatedForumPosts.length} temas recientes)</strong>
-                        <span>Pregunta dudas puntuales o revisa soluciones validadas</span>
-                      </Link>
-                      <Link to="/projects" className="connected-resource-item">
-                        <strong>Hub de Proyectos ({relatedProjects.length} abiertos)</strong>
-                        <span>Aplica lo aprendido en equipos interdisciplinarios</span>
-                      </Link>
-                    </div>
-                  </div>
-                </aside>
+                <section className="panel" aria-labelledby="study-resources-title">
+                  <h2 id="study-resources-title" className="ia-guided-section-title">Material y comunidad</h2>
+                  <div className="ia-guided-mini-list">{relatedNotes.slice(0,3).map(note=><Link key={note.id} to={'/resources?note='+encodeURIComponent(note.id)}><strong>{note.title}</strong><span>{note.subjectName}</span></Link>)}</div>
+                  <div className="ia-guided-inline"><Link to="/resources">Explorar apuntes</Link><Link to="/forum">Foro ({relatedForumPosts.length} temas recientes)</Link><Link to="/projects">Proyectos ({relatedProjects.length} abiertos)</Link></div>
+                </section>
               </div>
             )}
 
-            {/* =================================================================
-                2. RUTAS DE APRENDIZAJE PERSONALIZADAS (PATHS)
-               ================================================================= */}
             {activeTab === 'paths' && (
               <div className="learning-space-grid">
                 <div className="learning-space-main-col">

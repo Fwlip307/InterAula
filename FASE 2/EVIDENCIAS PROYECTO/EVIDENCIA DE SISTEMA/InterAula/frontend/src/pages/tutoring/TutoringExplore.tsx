@@ -1,3 +1,4 @@
+import ModuleNavigation from '../../components/common/ModuleNavigation';
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useModuleTab } from '../../hooks/useModuleTab';
@@ -24,8 +25,6 @@ import {
   ShieldCheckIcon,
   ExternalLinkIcon,
   BookOpenIcon,
-  CalendarIcon,
-  SparklesIcon,
 } from '../../components/common/Icons';
 import EmptyState from '../../components/common/EmptyState';
 import RequestTutoringModal from './components/RequestTutoringModal';
@@ -35,7 +34,6 @@ import ReviewModal from './components/ReviewModal';
 import LearningClassesTab from '../learning/components/LearningClassesTab';
 import AdaptiveQuizHub from '../learning/components/AdaptiveQuizHub';
 import ExploreMaterialsTab from './components/ExploreMaterialsTab';
-import { STUDY_RESOURCES } from '../learning/data/studyBank';
 import type { TutoringSession } from '../../types/tutoring';
 
 // 6 Materias Críticas de Inicio en Informática (Foco Vertical)
@@ -60,8 +58,8 @@ export default function TutoringExplore() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [userOfferedSubjects, setUserOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [onlyCertified, setOnlyCertified] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>(()=>(recommendationParams.get('search')||'').slice(0,120));
+  const [onlyCertified, setOnlyCertified] = useState<boolean>(()=>recommendationParams.get('verified')==='1');
   const [onlyInclusive, setOnlyInclusive] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -358,9 +356,9 @@ export default function TutoringExplore() {
       {/* Cabecera Académica - Centro de Aprendizaje */}
       <div className="ia-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '22px' }}>
         <div>
-          <h1 className="ia-page-title">Centro de Aprendizaje</h1>
+          <h1 className="ia-page-title">Pedir apoyo</h1>
           <p className="ia-page-subtitle">
-            Encuentra apoyo académico personalizado 1 a 1, participa en clases grupales en vivo o accede al banco de apuntes.
+            Encuentra un tutor para tu materia o aprende en un taller.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -625,185 +623,10 @@ export default function TutoringExplore() {
         </div>
       )}
 
-      {/* Pestañas de Navegación: Tutores 1 a 1 vs Talleres Grupales */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          marginBottom: '20px',
-          borderBottom: '2px solid #e2e8f0',
-          paddingBottom: '2px',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab('tutors')}
-          style={{
-            padding: '10px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'tutors' ? '#2563eb' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'tutors' ? '3px solid #2563eb' : '3px solid transparent',
-            marginBottom: '-4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <UsersIcon size={18} color={activeTab === 'tutors' ? '#2563eb' : '#64748b'} />
-          <span>Tutores Individuales 1 a 1 ({tutors.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('workshops')}
-          style={{
-            padding: '10px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'workshops' ? '#7c3aed' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'workshops' ? '3px solid #7c3aed' : '3px solid transparent',
-            marginBottom: '-4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <VideoIcon size={18} color={activeTab === 'workshops' ? '#7c3aed' : '#64748b'} />
-          <span>Talleres y Clases en Vivo ({workshops.length})</span>
-          {liveWorkshops.length > 0 ? (
-            <span
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 900,
-                backgroundColor: '#ef4444',
-                color: '#ffffff',
-                padding: '2px 8px',
-                borderRadius: '10px',
-                letterSpacing: '0.04em',
-              }}
-            >
-              {liveWorkshops.length} EN DIRECTO
-            </span>
-          ) : workshops.length > 0 ? (
-            <span
-              style={{
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                backgroundColor: '#f3e8ff',
-                color: '#7c3aed',
-                padding: '2px 8px',
-                borderRadius: '10px',
-              }}
-            >
-              Programados
-            </span>
-          ) : null}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('my_classes')}
-          style={{
-            padding: '10px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'my_classes' ? '#2563eb' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'my_classes' ? '3px solid #2563eb' : '3px solid transparent',
-            marginBottom: '-4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <CalendarIcon size={18} color={activeTab === 'my_classes' ? '#2563eb' : '#64748b'} />
-          <span>Mis Clases e Inscripciones ({studentSessions.length + enrolledWorkshops.length})</span>
-          {studentSessions.length + enrolledWorkshops.length > 0 && (
-            <span
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
-                padding: '2px 8px',
-                borderRadius: '10px',
-              }}
-            >
-              {studentSessions.length + enrolledWorkshops.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('quizzes')}
-          style={{
-            padding: '10px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'quizzes' ? '#7c3aed' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'quizzes' ? '3px solid #7c3aed' : '3px solid transparent',
-            marginBottom: '-4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <SparklesIcon size={18} color={activeTab === 'quizzes' ? '#7c3aed' : '#64748b'} />
-          <span>Quizzes & Retos IA</span>
-          <span
-            style={{
-              fontSize: '0.7rem',
-              fontWeight: 800,
-              backgroundColor: '#f3e8ff',
-              color: '#7c3aed',
-              padding: '2px 8px',
-              borderRadius: '10px',
-            }}
-          >
-            DUA
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('materials')}
-          style={{
-            padding: '10px 18px',
-            fontSize: '0.95rem',
-            fontWeight: 700,
-            color: activeTab === 'materials' ? '#16a34a' : '#64748b',
-            background: 'none',
-            border: 'none',
-            borderBottom: activeTab === 'materials' ? '3px solid #16a34a' : '3px solid transparent',
-            marginBottom: '-4px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <BookOpenIcon size={18} color={activeTab === 'materials' ? '#16a34a' : '#64748b'} />
-          <span>Apuntes y Recursos ({STUDY_RESOURCES.length})</span>
-        </button>
-      </div>
+      <ModuleNavigation label="Secciones para pedir apoyo" active={activeTab} onSelect={setActiveTab}
+        primary={[{id:'tutors',label:'Encontrar un tutor'},{id:'workshops',label:'Talleres'},{id:'my_classes',label:'Mi agenda'}]}
+        secondary={[{id:'quizzes',label:'Quizzes y retos'},{id:'materials',label:'Materiales de estudio'}]} />
+      <section aria-label="Ofrecer apoyo a otros estudiantes"><div className="ia-guided-inline"><Link to="/profile?tab=tutoring">Acreditarme como tutor</Link><Link to="/my-tutoring">Gestionar mis tutorías y talleres</Link></div></section>
 
       {/* Barra de Filtros y Búsqueda */}
       {activeTab !== 'my_classes' && activeTab !== 'quizzes' && (

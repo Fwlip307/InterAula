@@ -684,3 +684,32 @@ describe('Aprendizaje Inclusivo (TEA, TDAH, Dislexia y Acompañamiento)', () => 
     assert.ok(header.startsWith('%PDF-1.4'));
   });
 });
+
+import { isDestinationActive, nextStudyStep } from '../src/navigation/guidedNavigation.ts';
+import type { LearningPath, StudyTask } from '../src/types/learningSpace.ts';
+
+describe('Continuidad del estudio en la navegación guiada', () => {
+  const path = (id: string, status: LearningPath['status'], completed: boolean) => ({
+    id, title: id, status, stages: [{ id: id + '-step', title: 'Resolver ecuaciones', completed }],
+  }) as LearningPath;
+  const task = (status: StudyTask['status']) => ({ id: status, title: 'Repasar álgebra', status }) as StudyTask;
+  it('respeta el trabajo en curso sin recomendar tareas terminadas o pausadas', () => {
+    const tasks = [task('completed'), task('paused'), task('in_progress')];
+    assert.equal(nextStudyStep([path('ruta', 'active', false)], tasks).href, '/learning-space?tab=tasks');
+    assert.equal(nextStudyStep([], [task('completed'), task('paused')]).action, 'Elegir una materia');
+    assert.equal(nextStudyStep([], tasks).title, 'Repasar álgebra');
+  });
+  it('retoma la ruta activa pendiente y conserva su identidad en el enlace', () => {
+    const next = nextStudyStep([path('antigua', 'completed', false), path('pausada', 'paused', false), path('sin pasos pendientes', 'active', true), path('ruta / álgebra', 'active', false)], []);
+    const href = new URL(next.href, 'https://example.test');
+    assert.equal(href.searchParams.get('path'), 'ruta / álgebra');
+    assert.equal(href.searchParams.get('tab'), 'paths');
+    assert.equal(next.title, 'Resolver ecuaciones');
+  });
+  it('mantiene orientación en detalles sin confundir rutas con prefijos parecidos', () => {
+    assert.equal(isDestinationActive('/projects/123', ['/projects']), true);
+    assert.equal(isDestinationActive('/projects-other', ['/projects']), false);
+    assert.equal(isDestinationActive('/my-tutoring', ['/tutoring', '/my-tutoring']), true);
+    assert.equal(searchNavigation('participar en la comunidad')[0].href, '/participate');
+  });
+});

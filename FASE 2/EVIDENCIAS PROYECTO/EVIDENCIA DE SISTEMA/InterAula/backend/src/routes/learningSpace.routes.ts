@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import { learningSpaceController } from '../controllers/learningSpace.controller.js';
 import { createRateLimiter } from '../middlewares/rateLimit.middleware.js';
+import adaptiveRoutes from './adaptiveLearning.routes.js';
 
 const router = Router();
 
 // Todas las rutas de Mi espacio de aprendizaje son privadas y requieren autenticación
 router.use(requireAuth);
+router.use('/adaptive',adaptiveRoutes);
 
 router.get('/shared-supports',learningSpaceController.sharedSupports);
 router.get('/overview', learningSpaceController.getOverview);

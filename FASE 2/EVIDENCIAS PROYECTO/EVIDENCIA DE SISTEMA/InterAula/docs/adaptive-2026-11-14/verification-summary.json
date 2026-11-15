@@ -1,0 +1,84 @@
+{
+  "date": "2026-11-14",
+  "backendTests": {
+    "passed": 109,
+    "failed": 0
+  },
+  "frontendTests": {
+    "passed": 50,
+    "failed": 0
+  },
+  "browser": {
+    "passed": true,
+    "checks": [
+      "Real knowledge map contains ten nodes; simulation uses production engine outputs and never changes personal progress",
+      "Untimed practice accepts uncertainty, stores one response and changes next step to prerequisite",
+      "Hinted response is accompanied practice; failed write preserves selection and retry does not fabricate progress",
+      "Remount resumes the same pending attempt; it does not create a second exercise",
+      "Readable text option, independent evidence and failed goal update preserve server state",
+      "Account separation and recovery after failed load; no silent local fallback",
+      "Desktop graph and accessible mobile concept list; no overflow at 1440, 960, 390 or 320px",
+      "Missing schema leaves read-only graph and simulation, and disables persisted practice"
+    ],
+    "widths": [
+      {
+        "width": 1440,
+        "scrollWidth": 1425
+      },
+      {
+        "width": 960,
+        "scrollWidth": 945
+      },
+      {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      {
+        "width": 320,
+        "scrollWidth": 320
+      }
+    ],
+    "exceptions": [],
+    "scope": "Actual React components and actual backend engine fixture outputs; synthetic service responses and accounts. No real student data written."
+  },
+  "builds": {
+    "backend": true,
+    "frontend": true
+  },
+  "model": {
+    "version": "bkt-calculo-v1",
+    "trainedOnRealStudents": false,
+    "parametersInitial": true,
+    "prior": 0.2,
+    "learn": 0.1,
+    "guess": 0.25,
+    "slip": 0.1,
+    "threshold": 0.85,
+    "minDistinctIndependentCorrect": 3
+  },
+  "curriculum": {
+    "concepts": 10,
+    "exercises": 40,
+    "externallyReviewed": false
+  },
+  "supabase": {
+    "activationConfirmedByUser": true,
+    "goalTableReady": true,
+    "masteryTableReady": true,
+    "practiceTableReady": true,
+    "rowsRead": 0,
+    "anonymousSubmissionDenied": true,
+    "anonymousSubmissionStatus": 401
+  },
+  "limits": [
+    "Pilot content and prerequisite relationships require external teacher review.",
+    "Fixed-parameter inference; model has not been fitted or validated with real student outcomes.",
+    "Browser tests use synthetic service responses computed from the actual engine; no real student practice was submitted."
+  ],
+  "docker": {
+    "backend": "healthy",
+    "frontend": "healthy",
+    "adaptiveRouteHttpStatus": 200,
+    "apiHealth": "ok"
+  }
+}

@@ -1,3 +1,4 @@
+import ModuleNavigation from '../../components/common/ModuleNavigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import SharedLearningSupports from '../../components/common/SharedLearningSupports';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
@@ -2216,30 +2217,8 @@ export default function ProjectsHub() {
       ) : (
         /* VISTA CATÁLOGO Y DESCUBRIMIENTO DE PROYECTOS */
         <>
-          {/* Pestañas Principales */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className={activeTab === 'explore' ? 'ia-btn-primary' : 'ia-btn-secondary'}
-              onClick={() => setActiveTab('explore')}
-            >
-              Explorar Proyectos ({projects.length})
-            </button>
-            <button
-              type="button"
-              className={activeTab === 'my_projects' ? 'ia-btn-primary' : 'ia-btn-secondary'}
-              onClick={() => setActiveTab('my_projects')}
-            >
-              Mis Proyectos ({myProjects.length})
-            </button>
-            <button
-              type="button"
-              className={activeTab === 'my_applications' ? 'ia-btn-primary' : 'ia-btn-secondary'}
-              onClick={() => setActiveTab('my_applications')}
-            >
-              Mis Postulaciones ({myApplications.length})
-            </button>
-          </div>
+          <ModuleNavigation label="Secciones de proyectos" active={activeTab} onSelect={setActiveTab}
+            primary={[{id:'explore',label:'Explorar proyectos'},{id:'my_projects',label:'Mis proyectos'},{id:'my_applications',label:'Mis postulaciones'}]} />
 
           {activeTab === 'explore' && (
             <div className="ia-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>

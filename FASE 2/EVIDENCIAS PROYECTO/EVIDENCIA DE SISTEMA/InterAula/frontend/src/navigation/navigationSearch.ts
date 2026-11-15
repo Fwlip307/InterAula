@@ -9,6 +9,9 @@ export interface NavigationDestination {
 
 // Navigation only: no personal data, remote requests or user-provided URLs.
 export const NAVIGATION_DESTINATIONS: readonly NavigationDestination[] = [
+  {id:'guide',title:'Cómo usar InterAula',module:'Ayuda',description:'Qué puedes hacer, ejemplos y accesos a todas las herramientas.',href:'/guide',keywords:'guia guía ayuda tutorial empezar funciones como funciona qué puedo hacer instrucciones explicacion'},
+  {id:'participate',title:'Participar en la comunidad',module:'Comunidad',description:'Apuntes, foro y proyectos en un solo lugar.',href:'/participate',keywords:'comunidad participar compartir conversar equipo navegar'},
+  {id:'adaptive',title:'Ruta adaptativa',module:'Aprendizaje',description:'Mi espacio → Ruta adaptativa. Mapa de conceptos y práctica personalizada de Cálculo.',href:'/learning-space?tab=adaptive',keywords:'grafo conocimientos calculo cálculo derivadas adaptativo adaptativa BKT bayesiano motor próximo paso refuerzo'},
   {id:'community',title:'Mi comunidad académica',module:'Recomendaciones',description:'Elegir institución, sede, comuna y modalidad para tus sugerencias.',href:'/community',keywords:'comunidad universidad instituto campus sede cerca ubicacion ubicación comuna region presencial online distancia institución'},
   {id:'supports',title:'Mis apoyos para aprender',module:'Aprendizaje',description:'Mi espacio → Perfil. Elegir apoyos y con quién compartirlos.',href:'/learning-space?tab=profile',keywords:'pasaporte ficha apoyos compartir preferencias tutor'},
   {id:'one-step',title:'Un paso a la vez',module:'Aprendizaje',description:'Mi espacio → Tareas. Pasos pequeños para estudiar.',href:'/learning-space?tab=tasks',keywords:'pasos tarea organizar estudio foco'},

@@ -1,3 +1,4 @@
+import ModuleNavigation from '../../components/common/ModuleNavigation';
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -18,7 +19,6 @@ import type {
 import type { TutorStatistics, UserBadge } from '../../types/tutoring';
 import type { TutorVerificationRequest } from '../../types/verification';
 import {
-  UserIcon,
   BookOpenIcon,
   ExternalLinkIcon,
   MapPinIcon,
@@ -524,121 +524,9 @@ export default function ProfileView() {
         </div>
       </section>
 
-      {/* Navegación por Apartados / Pestañas */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          marginBottom: '20px',
-          borderBottom: '1px solid #e2e8f0',
-          paddingBottom: '2px',
-          overflowX: 'auto',
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => handleTabChange('personal')}
-          style={{
-            padding: '12px 18px',
-            fontSize: '0.92rem',
-            fontWeight: 700,
-            borderRadius: '10px 10px 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'personal' ? '3px solid var(--ia-primary, #2563eb)' : '3px solid transparent',
-            backgroundColor: activeTab === 'personal' ? 'var(--ia-bg-card, #ffffff)' : 'transparent',
-            color: activeTab === 'personal' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <UserIcon size={18} color={activeTab === 'personal' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)'} />
-          <span>Información Personal y Académica</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('tutoring')}
-          style={{
-            padding: '12px 18px',
-            fontSize: '0.92rem',
-            fontWeight: 700,
-            borderRadius: '10px 10px 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'tutoring' ? '3px solid var(--ia-primary, #2563eb)' : '3px solid transparent',
-            backgroundColor: activeTab === 'tutoring' ? 'var(--ia-bg-card, #ffffff)' : 'transparent',
-            color: activeTab === 'tutoring' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <AwardIcon size={18} color={activeTab === 'tutoring' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)'} />
-          <span>{accreditedSubjects.length > 0 ? 'Tutorías y Conocimientos' : 'Habilitarme como Tutor'}</span>
-          {accreditedSubjects.length > 0 && (
-            <span
-              style={{
-                backgroundColor: activeTab === 'tutoring' ? 'var(--ia-primary-subtle, #dbeafe)' : 'var(--ia-bg-subtle, #f1f5f9)',
-                color: activeTab === 'tutoring' ? 'var(--ia-primary, #1e40af)' : 'var(--ia-text-muted, #64748b)',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontSize: '0.74rem',
-                fontWeight: 800,
-              }}
-            >
-              {accreditedSubjects.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('learning')}
-          style={{
-            padding: '12px 18px',
-            fontSize: '0.92rem',
-            fontWeight: 700,
-            borderRadius: '10px 10px 0 0',
-            border: 'none',
-            borderBottom: activeTab === 'learning' ? '3px solid var(--ia-primary, #2563eb)' : '3px solid transparent',
-            backgroundColor: activeTab === 'learning' ? 'var(--ia-bg-card, #ffffff)' : 'transparent',
-            color: activeTab === 'learning' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <BookOpenIcon size={18} color={activeTab === 'learning' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)'} />
-          <span>Lo que Quiero Aprender</span>
-          {neededSubjects.length > 0 && (
-            <span
-              style={{
-                backgroundColor: activeTab === 'learning' ? 'var(--ia-primary-subtle, #dbeafe)' : 'var(--ia-bg-subtle, #f1f5f9)',
-                color: activeTab === 'learning' ? '#1e40af' : '#64748b',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontSize: '0.74rem',
-                fontWeight: 800,
-              }}
-            >
-              {neededSubjects.length}
-            </span>
-          )}
-        </button>
-        <button type="button" className="ia-btn-secondary" aria-pressed={activeTab === 'interests'}
-          onClick={() => handleTabChange('interests')} style={{ whiteSpace: 'nowrap', alignSelf: 'center' }}>
-          Mis intereses
-        </button>
-      </div>
+      <ModuleNavigation label="Secciones de mi perfil" active={activeTab} onSelect={handleTabChange}
+        primary={[{id:'personal',label:'Mis datos'},{id:'interests',label:'Mis intereses'},{id:'tutoring',label:'Ofrecer tutorías'}]}
+        secondary={[{id:'learning',label:'Materias que quiero reforzar'}]} />
 
       {activeTab === 'interests' && <InterestPreferences key={user?.id} />}
 

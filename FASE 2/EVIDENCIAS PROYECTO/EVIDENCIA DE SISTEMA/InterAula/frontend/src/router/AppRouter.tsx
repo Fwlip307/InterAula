@@ -7,12 +7,14 @@ import AppLayout from '../components/layout/AppLayout';
 
 // Carga diferida (lazy loading) para reducir el tamaño del bundle inicial
 const Home = lazy(() => import('../pages/Home'));
+const ProductGuide = lazy(() => import('../pages/ProductGuide'));
 const Login = lazy(() => import('../pages/auth/Login'));
 const Register = lazy(() => import('../pages/auth/Register'));
 const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'));
 const UpdatePassword = lazy(() => import('../pages/auth/UpdatePassword'));
 const AuthCallback = lazy(() => import('../pages/auth/AuthCallback'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Participate = lazy(() => import('../pages/Participate'));
 const ProfileView = lazy(() => import('../pages/profile/ProfileView'));
 const PublicProfile = lazy(() => import('../pages/profile/PublicProfile'));
 const TutoringExplore = lazy(() => import('../pages/tutoring/TutoringExplore'));
@@ -60,6 +62,7 @@ export default function AppRouter() {
       <Routes>
         {/* Ruta pública principal */}
         <Route path="/" element={<Home />} />
+        <Route path="/guide" element={<ProductGuide />} />
 
         {/* Rutas de autenticación dentro del AuthLayout */}
         <Route element={<AuthLayout />}>
@@ -100,6 +103,7 @@ export default function AppRouter() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/participate" element={<Participate />} />
           <Route path="/community" element={<AcademicCommunity />} />
           <Route path="/learning-space" element={<LearningSpace />} />
           <Route path="/learning" element={<LearningSpace />} />
