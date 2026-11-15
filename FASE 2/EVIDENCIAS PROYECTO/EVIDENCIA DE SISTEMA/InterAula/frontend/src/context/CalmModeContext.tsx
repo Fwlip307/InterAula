@@ -90,6 +90,7 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
       root.classList.toggle('ia-calm-mode', isCalm);
       root.classList.toggle('ia-dark-mode', isDark);
       root.setAttribute('data-calm-mode', isCalm ? 'true' : 'false');
+      root.setAttribute('data-calm-tone', preferences.calmTone || 'sage');
       root.setAttribute('data-dark-mode', isDark ? 'true' : 'false');
       root.setAttribute('data-theme', isDark ? 'dark' : isCalm ? 'calm' : 'light');
       root.setAttribute('data-font-size', preferences.fontSize || 'normal');

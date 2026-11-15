@@ -58,15 +58,15 @@ export default function ProfileLearningTab({
                 Preferencias de Aprendizaje y Estilo de Estudio
               </h2>
             </div>
-            <p style={{ margin: 0, fontSize: '0.86rem', color: '#475569', lineHeight: 1.5, maxWidth: '780px' }}>
+            <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--ia-text-body, #475569)', lineHeight: 1.5, maxWidth: '780px' }}>
               Selecciona cómo te acomoda aprender mejor. En el <strong>Aula Virtual</strong>, los tutores verán estas pautas para modular el ritmo de la explicación, ofrecer pausas de asimilación o estructurar ejercicios prácticos paso a paso.
             </p>
           </div>
           <span
             style={{
               fontSize: '0.74rem',
-              backgroundColor: '#eff6ff',
-              color: '#1e40af',
+              backgroundColor: 'var(--ia-primary-subtle, #eff6ff)',
+              color: 'var(--ia-primary, #1e40af)',
               fontWeight: 700,
               padding: '4px 10px',
               borderRadius: '6px',
@@ -89,8 +89,8 @@ export default function ProfileLearningTab({
                   gap: '10px',
                   padding: '14px',
                   borderRadius: '10px',
-                  border: `1.5px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
-                  backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                  border: `1.5px solid ${isSelected ? 'var(--ia-primary, #3b82f6)' : 'var(--ia-border, #e2e8f0)'}`,
+                  backgroundColor: isSelected ? 'var(--ia-primary-subtle, #eff6ff)' : 'var(--ia-bg-card, #ffffff)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
@@ -99,13 +99,13 @@ export default function ProfileLearningTab({
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => {}} // gestionado por el label
-                  style={{ width: '18px', height: '18px', accentColor: '#2563eb', marginTop: '2px', cursor: 'pointer' }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--ia-primary, #2563eb)', marginTop: '2px', cursor: 'pointer' }}
                 />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: isSelected ? '#1e40af' : '#0f172a' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: isSelected ? 'var(--ia-primary, #1e40af)' : 'var(--ia-text-main, #0f172a)' }}>
                     {pref.label}
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '4px', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted, #64748b)', marginTop: '4px', lineHeight: 1.4 }}>
                     {pref.description}
                   </div>
                 </div>

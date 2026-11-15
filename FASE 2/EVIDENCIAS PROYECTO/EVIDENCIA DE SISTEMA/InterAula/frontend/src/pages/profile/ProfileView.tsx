@@ -544,9 +544,9 @@ export default function ProfileView() {
             fontWeight: 700,
             borderRadius: '10px 10px 0 0',
             border: 'none',
-            borderBottom: activeTab === 'personal' ? '3px solid #2563eb' : '3px solid transparent',
-            backgroundColor: activeTab === 'personal' ? '#ffffff' : 'transparent',
-            color: activeTab === 'personal' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'personal' ? '3px solid var(--ia-primary, #2563eb)' : '3px solid transparent',
+            backgroundColor: activeTab === 'personal' ? 'var(--ia-bg-card, #ffffff)' : 'transparent',
+            color: activeTab === 'personal' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -555,7 +555,7 @@ export default function ProfileView() {
             whiteSpace: 'nowrap',
           }}
         >
-          <UserIcon size={18} color={activeTab === 'personal' ? '#2563eb' : '#64748b'} />
+          <UserIcon size={18} color={activeTab === 'personal' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)'} />
           <span>Información Personal y Académica</span>
         </button>
 
@@ -568,9 +568,9 @@ export default function ProfileView() {
             fontWeight: 700,
             borderRadius: '10px 10px 0 0',
             border: 'none',
-            borderBottom: activeTab === 'tutoring' ? '3px solid #2563eb' : '3px solid transparent',
-            backgroundColor: activeTab === 'tutoring' ? '#ffffff' : 'transparent',
-            color: activeTab === 'tutoring' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'tutoring' ? '3px solid var(--ia-primary, #2563eb)' : '3px solid transparent',
+            backgroundColor: activeTab === 'tutoring' ? 'var(--ia-bg-card, #ffffff)' : 'transparent',
+            color: activeTab === 'tutoring' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -579,13 +579,13 @@ export default function ProfileView() {
             whiteSpace: 'nowrap',
           }}
         >
-          <AwardIcon size={18} color={activeTab === 'tutoring' ? '#2563eb' : '#64748b'} />
+          <AwardIcon size={18} color={activeTab === 'tutoring' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)'} />
           <span>{accreditedSubjects.length > 0 ? 'Tutorías y Conocimientos' : 'Habilitarme como Tutor'}</span>
           {accreditedSubjects.length > 0 && (
             <span
               style={{
-                backgroundColor: activeTab === 'tutoring' ? '#dbeafe' : '#f1f5f9',
-                color: activeTab === 'tutoring' ? '#1e40af' : '#64748b',
+                backgroundColor: activeTab === 'tutoring' ? 'var(--ia-primary-subtle, #dbeafe)' : 'var(--ia-bg-subtle, #f1f5f9)',
+                color: activeTab === 'tutoring' ? 'var(--ia-primary, #1e40af)' : 'var(--ia-text-muted, #64748b)',
                 padding: '2px 8px',
                 borderRadius: '12px',
                 fontSize: '0.74rem',
@@ -606,9 +606,9 @@ export default function ProfileView() {
             fontWeight: 700,
             borderRadius: '10px 10px 0 0',
             border: 'none',
-            borderBottom: activeTab === 'learning' ? '3px solid #2563eb' : '3px solid transparent',
-            backgroundColor: activeTab === 'learning' ? '#ffffff' : 'transparent',
-            color: activeTab === 'learning' ? '#2563eb' : '#64748b',
+            borderBottom: activeTab === 'learning' ? '3px solid var(--ia-primary, #2563eb)' : '3px solid transparent',
+            backgroundColor: activeTab === 'learning' ? 'var(--ia-bg-card, #ffffff)' : 'transparent',
+            color: activeTab === 'learning' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -617,12 +617,12 @@ export default function ProfileView() {
             whiteSpace: 'nowrap',
           }}
         >
-          <BookOpenIcon size={18} color={activeTab === 'learning' ? '#2563eb' : '#64748b'} />
+          <BookOpenIcon size={18} color={activeTab === 'learning' ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #64748b)'} />
           <span>Lo que Quiero Aprender</span>
           {neededSubjects.length > 0 && (
             <span
               style={{
-                backgroundColor: activeTab === 'learning' ? '#dbeafe' : '#f1f5f9',
+                backgroundColor: activeTab === 'learning' ? 'var(--ia-primary-subtle, #dbeafe)' : 'var(--ia-bg-subtle, #f1f5f9)',
                 color: activeTab === 'learning' ? '#1e40af' : '#64748b',
                 padding: '2px 8px',
                 borderRadius: '12px',
@@ -757,8 +757,8 @@ export default function ProfileView() {
             className="ia-card"
             style={{
               padding: '24px',
-              backgroundColor: '#ffffff',
-              border: '1.5px solid #bbf7d0',
+              backgroundColor: 'var(--ia-bg-card, #ffffff)',
+              border: '1.5px solid var(--ia-success-border, #bbf7d0)',
               borderRadius: '16px',
               boxShadow: '0 2px 8px rgba(22, 163, 74, 0.06)',
             }}
@@ -770,20 +770,20 @@ export default function ProfileView() {
                     width: '38px',
                     height: '38px',
                     borderRadius: '10px',
-                    backgroundColor: '#dcfce7',
+                    backgroundColor: 'var(--ia-success-bg, #dcfce7)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#15803d',
+                    color: 'var(--ia-success, #15803d)',
                   }}
                 >
                   <ShieldCheckIcon size={22} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.22rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  <h2 style={{ fontSize: '1.22rem', fontWeight: 800, color: 'var(--ia-text-main, #0f172a)', margin: 0 }}>
                     ¿Cómo Certificarme como Tutor en InterAula?
                   </h2>
-                  <p style={{ fontSize: '0.86rem', color: '#64748b', margin: '2px 0 0' }}>
+                  <p style={{ fontSize: '0.86rem', color: 'var(--ia-text-muted, #64748b)', margin: '2px 0 0' }}>
                     Guía oficial paso a paso para acreditar tus conocimientos y ser reconocido en la comunidad universitaria.
                   </p>
                 </div>
@@ -793,9 +793,9 @@ export default function ProfileView() {
                 style={{
                   fontSize: '0.76rem',
                   fontWeight: 800,
-                  backgroundColor: '#ecfdf5',
-                  color: '#065f46',
-                  border: '1px solid #a7f3d0',
+                  backgroundColor: 'var(--ia-success-bg, #ecfdf5)',
+                  color: 'var(--ia-success, #065f46)',
+                  border: '1px solid var(--ia-success-border, #a7f3d0)',
                   padding: '4px 12px',
                   borderRadius: '9999px',
                 }}
@@ -816,8 +816,8 @@ export default function ProfileView() {
               {/* Paso 1 */}
               <div
                 style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--ia-bg-subtle, #f8fafc)',
+                  border: '1px solid var(--ia-border, #e2e8f0)',
                   borderRadius: '12px',
                   padding: '16px',
                 }}
@@ -839,9 +839,9 @@ export default function ProfileView() {
                   >
                     1
                   </span>
-                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Identificación Académica</strong>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Identificación Académica</strong>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
                   Configura tu <strong>Institución</strong> (ej: Duoc UC) y tu <strong>Carrera</strong> en tus datos personales para desbloquear la habilitación.
                 </p>
               </div>
@@ -849,8 +849,8 @@ export default function ProfileView() {
               {/* Paso 2 */}
               <div
                 style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--ia-bg-subtle, #f8fafc)',
+                  border: '1px solid var(--ia-border, #e2e8f0)',
                   borderRadius: '12px',
                   padding: '16px',
                 }}
@@ -872,9 +872,9 @@ export default function ProfileView() {
                   >
                     2
                   </span>
-                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Selecciona tu Materia</strong>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Selecciona tu Materia</strong>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
                   Elige una o más materias de tu malla curricular que hayas cursado y aprobado con buen rendimiento para impartir.
                 </p>
               </div>
@@ -882,8 +882,8 @@ export default function ProfileView() {
               {/* Paso 3 */}
               <div
                 style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--ia-bg-subtle, #f8fafc)',
+                  border: '1px solid var(--ia-border, #e2e8f0)',
                   borderRadius: '12px',
                   padding: '16px',
                 }}
@@ -905,9 +905,9 @@ export default function ProfileView() {
                   >
                     3
                   </span>
-                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Certificado de Notas (PDF)</strong>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Certificado de Notas (PDF)</strong>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
                   Sube tu <strong>Certificado Académico oficial en PDF</strong> para que el sistema extraiga y valide curricularmente tu aprobación.
                 </p>
               </div>
@@ -915,8 +915,8 @@ export default function ProfileView() {
               {/* Paso 4 */}
               <div
                 style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--ia-bg-subtle, #f8fafc)',
+                  border: '1px solid var(--ia-border, #e2e8f0)',
                   borderRadius: '12px',
                   padding: '16px',
                 }}
@@ -938,9 +938,9 @@ export default function ProfileView() {
                   >
                     4
                   </span>
-                  <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Evaluación IA o Docente</strong>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Evaluación IA o Docente</strong>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
                   Rinde la prueba técnica interactiva con el <strong>Asistente IA</strong> en tiempo real o solicita el respaldo directo de tu profesor.
                 </p>
               </div>
@@ -949,8 +949,8 @@ export default function ProfileView() {
             {/* Beneficios obtenidos */}
             <div
               style={{
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
+                background: 'var(--ia-success-bg, #f0fdf4)',
+                border: '1px solid var(--ia-success-border, #bbf7d0)',
                 borderRadius: '10px',
                 padding: '12px 16px',
                 display: 'flex',
@@ -979,8 +979,8 @@ export default function ProfileView() {
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: '12px',
-                backgroundColor: availableForTutoring ? '#f0fdf4' : '#f8fafc',
-                border: `1.5px solid ${availableForTutoring ? '#bbf7d0' : '#e2e8f0'}`,
+                backgroundColor: availableForTutoring ? 'var(--ia-success-bg, #f0fdf4)' : 'var(--ia-bg-subtle, #f8fafc)',
+                border: `1.5px solid ${availableForTutoring ? 'var(--ia-success-border, #bbf7d0)' : 'var(--ia-border, #e2e8f0)'}`,
               }}
             >
               <div>
@@ -990,15 +990,15 @@ export default function ProfileView() {
                       width: '10px',
                       height: '10px',
                       borderRadius: '50%',
-                      backgroundColor: availableForTutoring ? '#16a34a' : '#94a3b8',
+                      backgroundColor: availableForTutoring ? 'var(--ia-success, #16a34a)' : 'var(--ia-text-muted, #94a3b8)',
                       display: 'inline-block',
                     }}
                   />
-                  <strong style={{ fontSize: '0.98rem', color: '#0f172a' }}>
+                  <strong style={{ fontSize: '0.98rem', color: 'var(--ia-text-main, #0f172a)' }}>
                     {availableForTutoring ? 'Disponible para realizar tutorías' : 'Tutorías pausadas'}
                   </strong>
                 </div>
-                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--ia-text-muted, #64748b)' }}>
                   {availableForTutoring
                     ? 'Tu perfil aparece en el catálogo de tutores y tus compañeros pueden solicitarte sesiones en tus materias habilitadas.'
                     : 'Tu perfil está oculto del catálogo de tutores; no recibirás nuevas solicitudes.'}
@@ -1140,8 +1140,8 @@ export default function ProfileView() {
           <div
             className="ia-card"
             style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
+              backgroundColor: 'var(--ia-bg-card, #ffffff)',
+              border: '1px solid var(--ia-border, #e2e8f0)',
               borderRadius: '16px',
               padding: '24px',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04)',
@@ -1153,8 +1153,8 @@ export default function ProfileView() {
                   style={{
                     display: 'inline-block',
                     fontSize: '0.72rem',
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
+                    backgroundColor: 'var(--ia-bg-subtle, #f1f5f9)',
+                    color: 'var(--ia-text-body, #475569)',
                     padding: '3px 10px',
                     borderRadius: '6px',
                     fontWeight: 700,
@@ -1165,15 +1165,15 @@ export default function ProfileView() {
                   VÍA RÁPIDA · ACCESO COMUNITARIO
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <ClockIcon size={22} color="#2563eb" />
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  <ClockIcon size={22} color="var(--ia-primary, #2563eb)" />
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--ia-text-main, #0f172a)', margin: 0 }}>
                     Habilitación Técnica de Tutores
                   </h2>
                 </div>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 18px', lineHeight: 1.6, maxWidth: '780px' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--ia-text-body, #475569)', margin: '0 0 18px', lineHeight: 1.6, maxWidth: '780px' }}>
               Elige tu materia y responde todas las preguntas correctamente para habilitarte como <strong>Tutor Inicial (Básico)</strong>. El primer error termina el intento; al volver se preparan preguntas nuevas. Tienes 20 segundos por alternativa y 40 por desarrollo breve, con opción de tiempo extendido.
             </p>
 
@@ -1217,8 +1217,8 @@ export default function ProfileView() {
           <div
             className="ia-card"
             style={{
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
+              backgroundColor: 'var(--ia-bg-card, #ffffff)',
+              border: '1px solid var(--ia-border, #e2e8f0)',
               borderRadius: '16px',
               padding: '24px',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.04)',
@@ -1230,8 +1230,8 @@ export default function ProfileView() {
                   style={{
                     display: 'inline-block',
                     fontSize: '0.72rem',
-                    backgroundColor: '#eff6ff',
-                    color: '#1e40af',
+                    backgroundColor: 'var(--ia-primary-subtle, #eff6ff)',
+                    color: 'var(--ia-primary, #1e40af)',
                     padding: '3px 10px',
                     borderRadius: '6px',
                     fontWeight: 700,
@@ -1242,8 +1242,8 @@ export default function ProfileView() {
                   DISTINCIÓN ACADÉMICA INSTITUCIONAL
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <AwardIcon size={22} color="#2563eb" />
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  <AwardIcon size={22} color="var(--ia-primary, #2563eb)" />
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--ia-text-main, #0f172a)', margin: 0 }}>
                     Certificación con Respaldo Docente o Notas Oficiales
                   </h2>
                 </div>
@@ -1257,23 +1257,23 @@ export default function ProfileView() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #cbd5e1',
+                      backgroundColor: 'var(--ia-bg-subtle, #f8fafc)',
+                      border: '1px solid var(--ia-border, #cbd5e1)',
                       padding: '6px 14px',
                       borderRadius: '20px',
                       fontSize: '0.8rem',
-                      color: '#0f172a',
+                      color: 'var(--ia-text-main, #0f172a)',
                       fontWeight: 700,
                     }}
                   >
-                    <GraduationCapIcon size={15} color="#2563eb" />
+                    <GraduationCapIcon size={15} color="var(--ia-primary, #2563eb)" />
                     <span>{profile.institution}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 18px', lineHeight: 1.6, maxWidth: '780px' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--ia-text-body, #475569)', margin: '0 0 18px', lineHeight: 1.6, maxWidth: '780px' }}>
               Obtén el sello de distinción respaldado por {profile?.institution || 'tu casa de estudios'}. Puedes solicitar la recomendación formal por correo institucional a tu docente titular o adjuntar tu Concentración de Notas oficial (promedio de aprobación 5.5 o superior).
             </p>
 

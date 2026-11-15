@@ -1688,7 +1688,7 @@
 html.ia-calm-mode,
 body.ia-calm-mode,
 .ia-layout.ia-calm-mode {
-  --ia-bg: #ebepe6;
+  --ia-bg: #ebf0e8;
   --ia-bg-body: #ebf0e8;
   --ia-surface: #f6f8f4;
   --ia-bg-card: #f6f8f4;
@@ -1732,9 +1732,104 @@ body.ia-calm-mode,
   --ia-shadow-lg: 0 4px 12px rgba(28, 43, 36, 0.07);
 }
 
+/* Nivel 2 de Modo Calma: Arena (Cálido papel / sepia suave) */
+html.ia-calm-mode[data-calm-tone="sand"],
+html.ia-calm-mode[data-calm-tone="sand"] body,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-layout {
+  --ia-bg: #f2eadc;
+  --ia-bg-body: #f2eadc;
+  --ia-surface: #faf5eb;
+  --ia-bg-card: #faf5eb;
+  --ia-surface-alt: #ebe0ce;
+  --ia-bg-subtle: #ede3d2;
+
+  --ia-text: #2b2418;
+  --ia-text-main: #2b2418;
+  --ia-text-secondary: #4a3f2d;
+  --ia-text-body: #4a3f2d;
+  --ia-text-muted: #6e604b;
+  --ia-text-light: #877860;
+
+  --ia-primary: #6b5335;
+  --ia-primary-hover: #544027;
+  --ia-primary-light: #e6dac4;
+  --ia-primary-subtle: #ebe0ce;
+  --ia-primary-border: #cbb593;
+
+  --ia-accent: #5e6b3c;
+  --ia-accent-light: #e7ebd9;
+
+  --ia-border: #dccbb2;
+  --ia-border-strong: #c8b291;
+
+  --ia-success: #456137;
+  --ia-success-bg: #e7efe2;
+  --ia-success-border: #c1d4b6;
+
+  --ia-amber: #7d5218;
+  --ia-amber-bg: #f3ead4;
+  --ia-amber-border: #dcc69b;
+
+  --ia-danger: #943b36;
+  --ia-danger-bg: #f4e4e2;
+  --ia-danger-border: #dcbab5;
+}
+
+/* Nivel 3 de Modo Calma: Crepúsculo (Baja luminancia y bajo contraste) */
+html.ia-calm-mode[data-calm-tone="dusk"],
+html.ia-calm-mode[data-calm-tone="dusk"] body,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-layout {
+  --ia-bg: #1e262c;
+  --ia-bg-body: #1e262c;
+  --ia-surface: #263038;
+  --ia-bg-card: #263038;
+  --ia-surface-alt: #202a31;
+  --ia-bg-subtle: #202a31;
+
+  --ia-text: #dce3e8;
+  --ia-text-main: #e6ecf0;
+  --ia-text-secondary: #b7c4ce;
+  --ia-text-body: #c5d0d9;
+  --ia-text-muted: #8fa1af;
+  --ia-text-light: #748796;
+
+  --ia-primary: #7aa9b8;
+  --ia-primary-hover: #93becc;
+  --ia-primary-light: #2a3a45;
+  --ia-primary-subtle: #27353f;
+  --ia-primary-border: #3d5160;
+
+  --ia-accent: #74a68e;
+  --ia-accent-light: #243830;
+
+  --ia-border: #36444f;
+  --ia-border-strong: #465765;
+
+  --ia-success: #79b394;
+  --ia-success-bg: rgba(121, 179, 148, 0.14);
+  --ia-success-border: rgba(121, 179, 148, 0.3);
+
+  --ia-amber: #cfb076;
+  --ia-amber-bg: rgba(207, 176, 118, 0.14);
+  --ia-amber-border: rgba(207, 176, 118, 0.3);
+
+  --ia-danger: #d48888;
+  --ia-danger-bg: rgba(212, 136, 136, 0.14);
+  --ia-danger-border: rgba(212, 136, 136, 0.3);
+
+  --color-bg: #1e262c;
+  --color-bg-subtle: #202a31;
+  --color-surface: #263038;
+  --color-border: #36444f;
+  --color-text: #e6ecf0;
+  --color-text-muted: #8fa1af;
+  --color-primary: #7aa9b8;
+  color-scheme: dark;
+}
+
 html.ia-calm-mode body {
-  background-color: #ebf0e8 !important;
-  color: #1c2b24 !important;
+  background-color: var(--ia-bg-body) !important;
+  color: var(--ia-text-main) !important;
   line-height: 1.68;
 }
 
@@ -1760,8 +1855,8 @@ html.ia-calm-mode .adaptive-explanation-card__summary,
 html.ia-calm-mode .adaptive-explanation-box,
 html.ia-calm-mode .adaptive-explanation-example,
 html.ia-calm-mode .adaptive-comprehension-box {
-  background: #f6f8f4 !important;
-  border-color: #c4d1bf !important;
+  background: var(--ia-bg-card) !important;
+  border-color: var(--ia-border) !important;
   box-shadow: none !important;
 }
 
@@ -1770,16 +1865,16 @@ html.ia-calm-mode .ia-main div[style*="background: rgb(255, 255, 255)"],
 html.ia-calm-mode .ia-main div[style*="background:#fff"],
 html.ia-calm-mode .ia-main div[style*="background: #fff"],
 html.ia-calm-mode .ia-main article[style*="background"] {
-  background: #f6f8f4 !important;
-  border-color: #c4d1bf !important;
+  background: var(--ia-bg-card) !important;
+  border-color: var(--ia-border) !important;
   box-shadow: none !important;
 }
 
 html.ia-calm-mode .ia-main div[style*="background: rgb(248, 250, 252)"],
 html.ia-calm-mode .ia-main div[style*="background: #f8fafc"],
 html.ia-calm-mode .ia-main div[style*="background:#f8fafc"] {
-  background: #e4ebe0 !important;
-  border-color: #c4d1bf !important;
+  background: var(--ia-bg-subtle) !important;
+  border-color: var(--ia-border) !important;
 }
 
 html.ia-calm-mode img {
@@ -3650,6 +3745,47 @@ html.ia-dark-mode .ia-footer {
   color: var(--ia-text-muted);
   line-height: 1.25;
   margin-top: 2px;
+}
+
+.ia-theme-calm-tones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px 2px 2px;
+}
+
+.ia-theme-calm-tone-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--ia-border);
+  background: var(--ia-bg-card);
+  color: var(--ia-text-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.ia-theme-calm-tone-pill:hover {
+  background: var(--ia-bg-subtle);
+}
+
+.ia-theme-calm-tone-pill.active {
+  background: var(--ia-primary-subtle);
+  border-color: var(--ia-primary);
+  color: var(--ia-primary);
+}
+
+.ia-theme-calm-tone-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  flex-shrink: 0;
 }
 
 .ia-theme-check {

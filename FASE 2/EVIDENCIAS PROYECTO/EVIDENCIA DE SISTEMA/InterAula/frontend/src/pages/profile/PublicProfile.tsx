@@ -107,7 +107,7 @@ export default function PublicProfile() {
   if (notFound || !profile) {
     return (
       <div className="ia-card" style={{ textAlign: 'center', padding: '50px 20px' }}>
-        <h2 style={{ color: '#0f172a', marginBottom: '8px' }}>Perfil no encontrado</h2>
+        <h2 style={{ color: 'var(--ia-text-main, #0f172a)', marginBottom: '8px' }}>Perfil no encontrado</h2>
         <p style={{ color: '#64748b', marginBottom: '20px' }}>
           El usuario solicitado no existe o no tiene un perfil disponible en InterAula.
         </p>
@@ -202,7 +202,7 @@ export default function PublicProfile() {
               Sobre este estudiante
             </h2>
             {profile.bio ? (
-              <p style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+              <p style={{ color: 'var(--ia-text-body, #334155)', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
                 {profile.bio}
               </p>
             ) : (
@@ -399,7 +399,7 @@ export default function PublicProfile() {
                     <PhoneIcon size={16} color="#16a34a" />
                     <a
                       href={`tel:${profile.phone}`}
-                      style={{ color: '#334155', fontWeight: 600, textDecoration: 'none' }}
+                      style={{ color: 'var(--ia-text-body, #334155)', fontWeight: 600, textDecoration: 'none' }}
                     >
                       {profile.phone}
                     </a>

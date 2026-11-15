@@ -109,9 +109,9 @@ export default function NeededSubjectsSection({
             fontSize: '0.76rem',
             padding: '4px 10px',
             borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'hurdles' ? '#16a34a' : '#e2e8f0'}`,
-            background: filterCategory === 'hurdles' ? '#f0fdf4' : '#ffffff',
-            color: filterCategory === 'hurdles' ? '#15803d' : '#64748b',
+            border: `1px solid ${filterCategory === 'hurdles' ? 'var(--ia-success, #16a34a)' : 'var(--ia-border, #e2e8f0)'}`,
+            background: filterCategory === 'hurdles' ? 'var(--ia-success-bg, #f0fdf4)' : 'var(--ia-bg-card, #ffffff)',
+            color: filterCategory === 'hurdles' ? 'var(--ia-success, #15803d)' : 'var(--ia-text-muted, #64748b)',
             fontWeight: filterCategory === 'hurdles' ? 700 : 500,
             cursor: 'pointer',
             display: 'inline-flex',
@@ -119,7 +119,7 @@ export default function NeededSubjectsSection({
             gap: '4px',
           }}
         >
-          <TargetIcon size={12} color={filterCategory === 'hurdles' ? '#15803d' : '#64748b'} />
+          <TargetIcon size={12} color={filterCategory === 'hurdles' ? 'var(--ia-success, #15803d)' : 'var(--ia-text-muted, #64748b)'} />
           Ramos Clave de Inicio
         </button>
         <button
@@ -129,9 +129,9 @@ export default function NeededSubjectsSection({
             fontSize: '0.76rem',
             padding: '4px 10px',
             borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'programming' ? '#16a34a' : '#e2e8f0'}`,
-            background: filterCategory === 'programming' ? '#f0fdf4' : '#ffffff',
-            color: filterCategory === 'programming' ? '#15803d' : '#64748b',
+            border: `1px solid ${filterCategory === 'programming' ? 'var(--ia-success, #16a34a)' : 'var(--ia-border, #e2e8f0)'}`,
+            background: filterCategory === 'programming' ? 'var(--ia-success-bg, #f0fdf4)' : 'var(--ia-bg-card, #ffffff)',
+            color: filterCategory === 'programming' ? 'var(--ia-success, #15803d)' : 'var(--ia-text-muted, #64748b)',
             fontWeight: filterCategory === 'programming' ? 700 : 500,
             cursor: 'pointer',
           }}
@@ -145,9 +145,9 @@ export default function NeededSubjectsSection({
             fontSize: '0.76rem',
             padding: '4px 10px',
             borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'db' ? '#16a34a' : '#e2e8f0'}`,
-            background: filterCategory === 'db' ? '#f0fdf4' : '#ffffff',
-            color: filterCategory === 'db' ? '#15803d' : '#64748b',
+            border: `1px solid ${filterCategory === 'db' ? 'var(--ia-success, #16a34a)' : 'var(--ia-border, #e2e8f0)'}`,
+            background: filterCategory === 'db' ? 'var(--ia-success-bg, #f0fdf4)' : 'var(--ia-bg-card, #ffffff)',
+            color: filterCategory === 'db' ? 'var(--ia-success, #15803d)' : 'var(--ia-text-muted, #64748b)',
             fontWeight: filterCategory === 'db' ? 700 : 500,
             cursor: 'pointer',
           }}
@@ -161,9 +161,9 @@ export default function NeededSubjectsSection({
             fontSize: '0.76rem',
             padding: '4px 10px',
             borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'math' ? '#16a34a' : '#e2e8f0'}`,
-            background: filterCategory === 'math' ? '#f0fdf4' : '#ffffff',
-            color: filterCategory === 'math' ? '#15803d' : '#64748b',
+            border: `1px solid ${filterCategory === 'math' ? 'var(--ia-success, #16a34a)' : 'var(--ia-border, #e2e8f0)'}`,
+            background: filterCategory === 'math' ? 'var(--ia-success-bg, #f0fdf4)' : 'var(--ia-bg-card, #ffffff)',
+            color: filterCategory === 'math' ? 'var(--ia-success, #15803d)' : 'var(--ia-text-muted, #64748b)',
             fontWeight: filterCategory === 'math' ? 700 : 500,
             cursor: 'pointer',
           }}
@@ -177,9 +177,9 @@ export default function NeededSubjectsSection({
             fontSize: '0.76rem',
             padding: '4px 10px',
             borderRadius: '20px',
-            border: `1px solid ${filterCategory === 'all' ? '#16a34a' : '#e2e8f0'}`,
-            background: filterCategory === 'all' ? '#f0fdf4' : '#ffffff',
-            color: filterCategory === 'all' ? '#15803d' : '#64748b',
+            border: `1px solid ${filterCategory === 'all' ? 'var(--ia-success, #16a34a)' : 'var(--ia-border, #e2e8f0)'}`,
+            background: filterCategory === 'all' ? 'var(--ia-success-bg, #f0fdf4)' : 'var(--ia-bg-card, #ffffff)',
+            color: filterCategory === 'all' ? 'var(--ia-success, #15803d)' : 'var(--ia-text-muted, #64748b)',
             fontWeight: filterCategory === 'all' ? 700 : 500,
             cursor: 'pointer',
           }}
@@ -196,10 +196,10 @@ export default function NeededSubjectsSection({
           gap: '8px',
           alignItems: 'end',
           marginBottom: '14px',
-          background: '#f8fafc',
+          background: 'var(--ia-bg-subtle, #f8fafc)',
           padding: '12px 14px',
           borderRadius: '10px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--ia-border, #e2e8f0)',
         }}
       >
         <div>

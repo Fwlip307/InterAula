@@ -396,10 +396,10 @@ export default function Dashboard() {
                           <BookOpenIcon size={20} color="#2563eb" />
                         </div>
                         <div>
-                          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#0f172a' }}>
+                          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: 'var(--ia-text-main, #0f172a)' }}>
                             {session.subject?.name}
                           </div>
-                          <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted, #64748b)', marginTop: '2px' }}>
                             {isTutorRole ? `Estudiante: ${otherName}` : `Tutor: ${otherName}`} · {formatTutoringDateTime(session.scheduled_at)}
                           </div>
                         </div>
@@ -510,8 +510,8 @@ export default function Dashboard() {
                     style={{
                       padding: '14px 16px',
                       borderRadius: '10px',
-                      border: '1px solid #e2e8f0',
-                      backgroundColor: '#f8fafc',
+                      border: '1px solid var(--ia-border, #e2e8f0)',
+                      backgroundColor: 'var(--ia-bg-subtle, #f8fafc)',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -520,8 +520,8 @@ export default function Dashboard() {
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.94rem' }}>{proj.title}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--ia-text-main, #0f172a)', fontSize: '0.94rem' }}>{proj.title}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted, #64748b)', marginTop: '2px' }}>
                         {proj.category || 'Desarrollo'} · {(proj.positions || []).length} rol(es) publicados
                       </div>
                     </div>
@@ -556,22 +556,22 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            <div style={{ fontSize: '0.88rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--ia-text-body, #475569)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <span style={{ color: '#64748b' }}>Correo institucional:</span>{' '}
-                <strong style={{ color: '#0f172a' }}>{user?.email}</strong>
+                <span style={{ color: 'var(--ia-text-muted, #64748b)' }}>Correo institucional:</span>{' '}
+                <strong style={{ color: 'var(--ia-text-main, #0f172a)' }}>{user?.email}</strong>
               </div>
 
               <div>
-                <span style={{ color: '#64748b' }}>Institución:</span>{' '}
-                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                <span style={{ color: 'var(--ia-text-muted, #64748b)' }}>Institución:</span>{' '}
+                <span style={{ color: 'var(--ia-text-main, #0f172a)', fontWeight: 600 }}>
                   {profile?.institution || 'No especificada'}
                 </span>
               </div>
 
               <div>
-                <span style={{ color: '#64748b' }}>Carrera:</span>{' '}
-                <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                <span style={{ color: 'var(--ia-text-muted, #64748b)' }}>Carrera:</span>{' '}
+                <span style={{ color: 'var(--ia-text-main, #0f172a)', fontWeight: 600 }}>
                   {profile?.career || 'No especificada'}
                 </span>
               </div>
@@ -579,11 +579,11 @@ export default function Dashboard() {
               <div className="ia-dropdown-divider" style={{ margin: '4px 0' }} />
 
               <div>
-                <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>
                   Estado como Tutor
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.84rem', color: '#334155' }}>Disponibilidad:</span>
+                  <span style={{ fontSize: '0.84rem', color: 'var(--ia-text-body, #334155)' }}>Disponibilidad:</span>
                   {profile?.available_for_tutoring && offeredSubjects.length > 0 ? (
                     <span className="ia-badge ia-badge-success">
                       <CheckIcon size={12} /> Habilitado
@@ -607,8 +607,9 @@ export default function Dashboard() {
                         key={ns.subject_id}
                         style={{
                           fontSize: '0.76rem',
-                          background: '#f1f5f9',
-                          color: '#334155',
+                          background: 'var(--ia-bg-subtle, #f1f5f9)',
+                          color: 'var(--ia-text-body, #334155)',
+                          border: '1px solid var(--ia-border, #e2e8f0)',
                           padding: '3px 8px',
                           borderRadius: '6px',
                           fontWeight: 600,
@@ -668,7 +669,7 @@ export default function Dashboard() {
           </div>
 
           {/* Accesos Rápidos a Recursos, Foro y Accesibilidad */}
-          <div className="ia-card" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)' }}>
+          <div className="ia-card" style={{ background: 'var(--ia-bg-card, #ffffff)' }}>
             <h2 className="ia-card-title" style={{ marginBottom: '12px', fontSize: '0.98rem' }}>
               <SparklesIcon size={18} color="#2563eb" /> Herramientas y Accesibilidad
             </h2>

@@ -103,12 +103,14 @@ export type FontSizeScale = 'normal' | 'large' | 'xlarge';
 export type ContrastLevel = 'standard' | 'high';
 export type SpacingMode = 'standard' | 'spacious';
 export type VisualThemeMode = 'light' | 'dark' | 'calm';
+export type CalmTone = 'sage' | 'sand' | 'dusk';
 export type ReadingRulerIntensity = 'soft' | 'medium' | 'strong';
 
 export interface AccessibilityPreferences {
   themeMode?: VisualThemeMode;
   darkMode?: boolean;
   calmMode: boolean;
+  calmTone?: CalmTone;
   fontSize: FontSizeScale;
   contrast: ContrastLevel;
   reduceMotion: boolean;
@@ -129,6 +131,7 @@ export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferences = {
   themeMode: 'light',
   darkMode: false,
   calmMode: false,
+  calmTone: 'sage',
   fontSize: 'normal',
   contrast: 'standard',
   reduceMotion: false,

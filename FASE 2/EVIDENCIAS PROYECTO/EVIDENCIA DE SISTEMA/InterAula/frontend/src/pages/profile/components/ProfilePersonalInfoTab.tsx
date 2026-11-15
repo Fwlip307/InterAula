@@ -368,29 +368,29 @@ export default function ProfilePersonalInfoTab({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Nombre completo</span>
-                <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0f172a' }}>{fullName}</div>
+                <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase' }}>Nombre completo</span>
+                <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--ia-text-main, #0f172a)' }}>{fullName}</div>
               </div>
 
               <div>
-                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Institución Educativa</span>
-                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e40af' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase' }}>Institución Educativa</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--ia-primary, #1e40af)' }}>
                   {profile?.institution || 'No especificada'}
                 </div>
               </div>
 
               <div>
-                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Carrera</span>
-                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase' }}>Carrera</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--ia-text-main, #0f172a)' }}>
                   {profile?.career || 'No especificada'}
                 </div>
               </div>
 
               {profile?.location && (
                 <div>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Sede / Campus</span>
-                  <div style={{ fontSize: '0.92rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPinIcon size={14} color="#64748b" /> {profile.location}
+                  <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase' }}>Sede / Campus</span>
+                  <div style={{ fontSize: '0.92rem', color: 'var(--ia-text-body, #334155)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <MapPinIcon size={14} color="var(--ia-text-muted, #64748b)" /> {profile.location}
                   </div>
                 </div>
               )}
@@ -401,7 +401,7 @@ export default function ProfilePersonalInfoTab({
           <div className="ia-card" style={{ padding: '22px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <PhoneIcon size={20} color="#2563eb" />
+                <PhoneIcon size={20} color="var(--ia-primary, #2563eb)" />
                 <h2 className="ia-card-title" style={{ margin: 0 }}>Contacto y Redes</h2>
               </div>
               <button
@@ -416,13 +416,13 @@ export default function ProfilePersonalInfoTab({
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Correo de cuenta</span>
-                <div style={{ fontSize: '0.92rem', color: '#0f172a' }}>{userEmail}</div>
+                <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase' }}>Correo de cuenta</span>
+                <div style={{ fontSize: '0.92rem', color: 'var(--ia-text-main, #0f172a)' }}>{userEmail}</div>
               </div>
 
               <div>
-                <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Teléfono / WhatsApp</span>
-                <div style={{ fontSize: '0.92rem', color: '#0f172a' }}>
+                <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 700, textTransform: 'uppercase' }}>Teléfono / WhatsApp</span>
+                <div style={{ fontSize: '0.92rem', color: 'var(--ia-text-main, #0f172a)' }}>
                   {profile?.phone || 'No registrado'}
                   {profile?.phone && (
                     <span style={{ fontSize: '0.72rem', color: profile.show_phone ? '#16a34a' : '#64748b', marginLeft: '8px', fontWeight: 600 }}>

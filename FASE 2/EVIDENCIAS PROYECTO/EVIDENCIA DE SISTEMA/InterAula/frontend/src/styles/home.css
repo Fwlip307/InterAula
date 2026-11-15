@@ -1118,6 +1118,138 @@ html.ia-calm-mode .ia-landing-footer {
   border-top-color: #2d4238 !important;
 }
 
+/* Nivel 2 de Modo Calma: Arena (Cálido papel / sepia suave) */
+html.ia-calm-mode[data-calm-tone="sand"] .ia-landing {
+  background-color: #f2eadc !important;
+  color: #2b2418 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="sand"] .ia-landing-header,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-pillar-card,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-seven-step-row,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-space-showcase,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-inclusion-item,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-subject-chip,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-photo-frame,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-section-photo-card,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-hero-float-badge,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-landing-btn-outline,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-landing-btn-portal {
+  background: #faf5eb !important;
+  border-color: #dccbb2 !important;
+  color: #2b2418 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="sand"] .ia-landing-hero,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-featured-space-section,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-subjects-showcase-box,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-contrast-block--before,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-space-showcase__explainer-body,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-showcase-stage,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-empty-projects-showcase {
+  background: #ebe0ce !important;
+  border-color: #d6c3a5 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="sand"] .ia-contrast-block--after,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-showcase-stage.current,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-cta-banner {
+  background: #e6dac4 !important;
+  border-color: #cbb593 !important;
+  color: #2b2418 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="sand"] .ia-landing-btn-primary,
+html.ia-calm-mode[data-calm-tone="sand"] .ia-cta-banner-btn {
+  background: #6b5335 !important;
+  border-color: #6b5335 !important;
+  color: #ffffff !important;
+}
+
+/* Nivel 3 de Modo Calma: Crepúsculo (Baja luminancia y bajo contraste) */
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing {
+  background-color: #1e262c !important;
+  color: #dce3e8 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-header,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-pillar-card,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-seven-step-row,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-inclusion-item,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-subject-chip,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-photo-frame,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-section-photo-card,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-hero-float-badge,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-btn-outline,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-btn-portal {
+  background: #263038 !important;
+  border-color: #36444f !important;
+  color: #dce3e8 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-hero,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-featured-space-section,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-subjects-showcase-box,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-contrast-block--before,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__explainer-body,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-stage,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-empty-projects-showcase {
+  background: #202a31 !important;
+  border-color: #34414c !important;
+  color: #cbd5dc !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-title,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-section-title,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-pillar-title,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-seven-step-body h3,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-inclusion-item h3,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__path-title,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__explainer-title,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-cta-banner h2,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-brand-name {
+  color: #e6ecf0 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-desc,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-section-desc,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-problem-paragraph,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-pillar-desc,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-seven-step-body p,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-inclusion-item p,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__explainer-list li,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-cta-banner p,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-nav-link {
+  color: #b7c4ce !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-contrast-block--after,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-stage.current,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-cta-banner {
+  background: #283640 !important;
+  border-color: #3d5160 !important;
+  color: #dce3e8 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-btn-primary,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-cta-banner-btn {
+  background: #456d7c !important;
+  border-color: #548294 !important;
+  color: #f3f7f9 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-title-highlight {
+  -webkit-text-fill-color: #88b8c7 !important;
+  color: #88b8c7 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-mode-btn:not(.active) {
+  background: #202a31 !important;
+  border-color: #36444f !important;
+  color: #cbd5dc !important;
+}
+
 /* ==========================================================================
    Modo Oscuro en la Portada Institucional (.ia-landing)
    ========================================================================== */
@@ -1242,16 +1374,52 @@ html.ia-dark-mode .ia-showcase-stage.current {
   border-color: rgba(96, 165, 250, 0.45) !important;
 }
 
+html.ia-dark-mode button.ia-showcase-mode-btn,
 html.ia-dark-mode .ia-showcase-mode-btn {
   background: #1e293b !important;
   border-color: #334155 !important;
-  color: #cbd5e1 !important;
+  color: #e2e8f0 !important;
 }
 
+html.ia-dark-mode button.ia-showcase-mode-btn.active,
 html.ia-dark-mode .ia-showcase-mode-btn.active {
   background: #2563eb !important;
   border-color: #3b82f6 !important;
   color: #ffffff !important;
+}
+
+html.ia-dark-mode .ia-space-showcase__explainer {
+  border-left-color: #283548 !important;
+}
+
+html.ia-dark-mode .ia-space-showcase__explainer-label {
+  color: #93c5fd !important;
+}
+
+html.ia-dark-mode .ia-space-showcase__explainer-title {
+  color: #f8fafc !important;
+}
+
+html.ia-dark-mode .ia-space-showcase__explainer-list li,
+html.ia-dark-mode .ia-space-showcase__explainer-body p,
+html.ia-dark-mode .ia-space-showcase__stage-meta {
+  color: #e2e8f0 !important;
+}
+
+html.ia-dark-mode .ia-pillar-tag {
+  background: rgba(30, 58, 138, 0.35) !important;
+  border-color: rgba(96, 165, 250, 0.32) !important;
+  color: #93c5fd !important;
+}
+
+html.ia-dark-mode .ia-cta-banner-btn {
+  background: #2563eb !important;
+  border: 1px solid #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+html.ia-dark-mode .ia-cta-banner-btn:hover {
+  background: #1d4ed8 !important;
 }
 
 html.ia-dark-mode .ia-seven-step-num {

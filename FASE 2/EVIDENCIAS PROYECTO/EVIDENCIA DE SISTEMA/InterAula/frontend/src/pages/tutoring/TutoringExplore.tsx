@@ -375,9 +375,9 @@ export default function TutoringExplore() {
               padding: '8px 14px',
               fontSize: '0.84rem',
               fontWeight: 700,
-              backgroundColor: isCalmMode ? '#ecfdf5' : '#f8fafc',
-              borderColor: isCalmMode ? '#a7f3d0' : '#cbd5e1',
-              color: isCalmMode ? '#065f46' : '#475569',
+              backgroundColor: isCalmMode ? 'var(--ia-success-bg, #ecfdf5)' : 'var(--ia-bg-subtle, #f8fafc)',
+              borderColor: isCalmMode ? 'var(--ia-success-border, #a7f3d0)' : 'var(--ia-border, #cbd5e1)',
+              color: isCalmMode ? 'var(--ia-success, #065f46)' : 'var(--ia-text-body, #475569)',
               borderRadius: '8px',
               border: '1px solid',
               cursor: 'pointer',
@@ -863,7 +863,7 @@ export default function TutoringExplore() {
         </form>
 
         {/* Filtro de Calidad Académica y Asignaturas Críticas de Informática */}
-        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--ia-border, #f1f5f9)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <button
@@ -877,16 +877,16 @@ export default function TutoringExplore() {
                   borderRadius: '20px',
                   fontSize: '0.8rem',
                   fontWeight: 700,
-                  border: `1px solid ${onlyCertified ? '#2563eb' : '#cbd5e1'}`,
-                  backgroundColor: onlyCertified ? '#eff6ff' : '#ffffff',
-                  color: onlyCertified ? '#1d4ed8' : '#64748b',
+                  border: `1px solid ${onlyCertified ? 'var(--ia-primary, #2563eb)' : 'var(--ia-border, #cbd5e1)'}`,
+                  backgroundColor: onlyCertified ? 'var(--ia-primary-subtle, #eff6ff)' : 'var(--ia-bg-card, #ffffff)',
+                  color: onlyCertified ? 'var(--ia-primary, #1d4ed8)' : 'var(--ia-text-muted, #64748b)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
               >
-                <ShieldCheckIcon size={16} color={onlyCertified ? '#2563eb' : '#94a3b8'} />
+                <ShieldCheckIcon size={16} color={onlyCertified ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #94a3b8)'} />
                 <span>Solo Tutores Certificados</span>
-                {onlyCertified && <CheckIcon size={14} color="#2563eb" />}
+                {onlyCertified && <CheckIcon size={14} color="var(--ia-primary, #2563eb)" />}
               </button>
 
               <button
@@ -900,26 +900,26 @@ export default function TutoringExplore() {
                   borderRadius: '20px',
                   fontSize: '0.8rem',
                   fontWeight: 700,
-                  border: `1px solid ${onlyInclusive ? '#0f766e' : '#cbd5e1'}`,
-                  backgroundColor: onlyInclusive ? '#f0fdfa' : '#ffffff',
-                  color: onlyInclusive ? '#0f766e' : '#64748b',
+                  border: `1px solid ${onlyInclusive ? 'var(--ia-success, #0f766e)' : 'var(--ia-border, #cbd5e1)'}`,
+                  backgroundColor: onlyInclusive ? 'var(--ia-success-bg, #f0fdfa)' : 'var(--ia-bg-card, #ffffff)',
+                  color: onlyInclusive ? 'var(--ia-success, #0f766e)' : 'var(--ia-text-muted, #64748b)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
               >
                 <span>Formación en acompañamiento inclusivo</span>
-                {onlyInclusive && <CheckIcon size={14} color="#0f766e" />}
+                {onlyInclusive && <CheckIcon size={14} color="var(--ia-success, #0f766e)" />}
               </button>
             </div>
 
-            <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.76rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 600 }}>
               Foco Piloto: Asignaturas Filtro de Informática
             </span>
           </div>
 
           {/* Pastillas de Selección Rápida */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>Ramos Troncales:</span>
+            <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 600 }}>Ramos Troncales:</span>
             {CRITICAL_INFORMATICS_SUBJECTS.map((subName) => {
               const matchedSub = subjects.find((s) => s.name.toLowerCase().includes(subName.toLowerCase()));
               const isSelected = matchedSub && selectedSubjectId === matchedSub.id;
@@ -943,9 +943,9 @@ export default function TutoringExplore() {
                     fontSize: '0.74rem',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    border: isSelected ? '1px solid #2563eb' : '1px solid #e2e8f0',
-                    backgroundColor: isSelected ? '#2563eb' : '#f8fafc',
-                    color: isSelected ? '#ffffff' : '#334155',
+                    border: isSelected ? '1px solid var(--ia-primary, #2563eb)' : '1px solid var(--ia-border, #e2e8f0)',
+                    backgroundColor: isSelected ? 'var(--ia-primary, #2563eb)' : 'var(--ia-bg-subtle, #f8fafc)',
+                    color: isSelected ? '#ffffff' : 'var(--ia-text-body, #334155)',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -962,7 +962,7 @@ export default function TutoringExplore() {
       {activeTab === 'tutors' && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main, #0f172a)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UsersIcon size={20} color="#2563eb" />
               Tutores Disponibles ({tutors.length})
             </h2>

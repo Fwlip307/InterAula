@@ -155,7 +155,6 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
               className={`ia-theme-mode-option ${themeMode === 'calm' || isCalmMode ? 'selected' : ''}`}
               onClick={() => {
                 setThemeMode('calm');
-                setIsOpen(false);
               }}
             >
               <div className="ia-theme-mode-option__icon calm">
@@ -171,6 +170,40 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
                 </div>
               )}
             </button>
+
+            <div className="ia-theme-calm-tones" role="group" aria-label="Nivel de tono del Modo Calma">
+              {(
+                [
+                  { id: 'sage', label: 'Salvia', swatch: '#d8e3d5' },
+                  { id: 'sand', label: 'Arena', swatch: '#ebe0cc' },
+                  { id: 'dusk', label: 'Crepúsculo', swatch: '#28343d' },
+                ] as const
+              ).map((tone) => {
+                const activeTone = (preferences.calmTone || 'sage') === tone.id && (themeMode === 'calm' || isCalmMode);
+                return (
+                  <button
+                    key={tone.id}
+                    type="button"
+                    className={`ia-theme-calm-tone-pill ${activeTone ? 'active' : ''}`}
+                    onClick={() => {
+                      updatePreferences({
+                        themeMode: 'calm',
+                        calmMode: true,
+                        darkMode: false,
+                        calmTone: tone.id,
+                      });
+                    }}
+                  >
+                    <span
+                      className="ia-theme-calm-tone-swatch"
+                      style={{ background: tone.swatch }}
+                      aria-hidden="true"
+                    />
+                    <span>{tone.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="ia-theme-popover-divider" />

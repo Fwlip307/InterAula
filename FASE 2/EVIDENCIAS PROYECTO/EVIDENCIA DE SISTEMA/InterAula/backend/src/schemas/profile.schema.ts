@@ -5,6 +5,7 @@ export const accessibilityPreferencesSchema = z
     themeMode: z.enum(['light', 'dark', 'calm']).optional(),
     darkMode: z.boolean().optional(),
     calmMode: z.boolean().optional(),
+    calmTone: z.enum(['sage', 'sand', 'dusk']).optional(),
     fontSize: z.enum(['normal', 'large', 'xlarge']).optional(),
     contrast: z.enum(['standard', 'high']).optional(),
     reduceMotion: z.boolean().optional(),
