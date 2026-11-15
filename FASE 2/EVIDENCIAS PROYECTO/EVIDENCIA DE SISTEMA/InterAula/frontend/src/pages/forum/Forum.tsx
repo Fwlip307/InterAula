@@ -1,3 +1,4 @@
+import {useLatestRequest} from '../../hooks/useLatestRequest';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -96,8 +97,11 @@ export default function Forum() {
     }
   };
 
+  const beginPostsRequest=useLatestRequest();
   const loadPosts = useCallback(async () => {
+    const isCurrent=beginPostsRequest();
     setLoading(true);
+    setErrorMsg('');
     try {
       const data = await forumService.getPosts({
         category: selectedCategory,
@@ -106,14 +110,16 @@ export default function Forum() {
         status: selectedStatus,
         sort: sortBy,
       });
+      if(!isCurrent())return;
       setQuestions(data);
     } catch (err) {
+      if(!isCurrent())return;
       console.error('[Forum] Error cargando publicaciones:', err);
       setErrorMsg('No se pudieron cargar las publicaciones. Reintenta en unos instantes.');
     } finally {
-      setLoading(false);
+      if(isCurrent())setLoading(false);
     }
-  }, [selectedCategory, searchTerm, selectedPostType, selectedStatus, sortBy]);
+  }, [selectedCategory, searchTerm, selectedPostType, selectedStatus, sortBy, beginPostsRequest]);
 
   useEffect(() => {
     loadPosts();
@@ -132,6 +138,8 @@ export default function Forum() {
         const fetchedReplies = await forumService.getReplies(post.id);
         setReplies(fetchedReplies);
       }
+    } catch {
+      setErrorMsg('No se pudo abrir esta conversación. Vuelve al foro e inténtalo nuevamente.');
     } finally {
       setLoadingThread(false);
     }
@@ -1099,7 +1107,7 @@ export default function Forum() {
                             </div>
 
                             <h2 style={{ fontSize: '1.02rem', fontWeight: 700, color: 'var(--ia-text-main)', margin: '0 0 6px 0' }}>
-                              {q.title}
+                              <button type="button" onClick={event=>{event.stopPropagation();void openThread(q);}} style={{font:'inherit',color:'inherit',background:'transparent',border:0,padding:0,textAlign:'left',cursor:'pointer'}}>{q.title}</button>
                             </h2>
                             <p style={{ fontSize: '0.86rem', color: 'var(--ia-text-body)', margin: '0 0 10px 0', lineHeight: 1.45 }}>
                               {q.description.length > 240 ? `${q.description.slice(0, 240)}...` : q.description}

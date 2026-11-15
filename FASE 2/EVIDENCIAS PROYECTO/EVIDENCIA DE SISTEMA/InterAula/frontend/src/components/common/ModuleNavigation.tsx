@@ -8,7 +8,7 @@ type Props<T extends string> = {
 
 /** Every destination remains visible; secondary styling provides hierarchy. */
 export default function ModuleNavigation<T extends string>({ label, active, onSelect, primary, secondary = [] }: Props<T>) {
-  const renderItem = (item: Item<T>) => <button key={item.id} type="button" className={'ia-module-choice ' + (active === item.id ? 'active' : '')} aria-current={active === item.id ? 'page' : undefined} onClick={() => onSelect(item.id)}>{item.label}</button>;
+  const renderItem = (item: Item<T>) => <button key={item.id} data-orientation={'module-'+item.id} type="button" className={'ia-module-choice ' + (active === item.id ? 'active' : '')} aria-current={active === item.id ? 'page' : undefined} onClick={() => onSelect(item.id)}>{item.label}</button>;
   return <nav className="ia-module-nav" aria-label={label}>
     <div className="ia-module-primary">{primary.map(renderItem)}</div>
     {secondary.length > 0 && <div className="ia-module-secondary">{secondary.map(renderItem)}</div>}

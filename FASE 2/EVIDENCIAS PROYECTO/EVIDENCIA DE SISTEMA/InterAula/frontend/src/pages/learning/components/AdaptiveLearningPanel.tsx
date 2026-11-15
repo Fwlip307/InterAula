@@ -39,7 +39,7 @@ export default function AdaptiveLearningPanel({userId}:{userId:string}){
     <article className="ia-adaptive-next"><div className="ia-adaptive-section-label"><LightbulbIcon size={18}/>Recomendación para ti</div>
      <h3>{next?.kind==='complete'?'Objetivo consolidado en el piloto':next?.skillName}</h3><p>{next?.reason}</p>
      {next&&next.prerequisitePath.length>1&&<p className="ia-adaptive-path">{next.prerequisitePath.map(id=>data.skills.find(s=>s.id===id)?.name).join(' → ')}</p>}
-     {!exercise&&!feedback&&next?.kind!=='complete'&&<button type="button" className="ia-btn-primary" disabled={busy||!data.ready} onClick={()=>void start()}>{busy?'Preparando…':'Practicar este concepto'}<ArrowRightIcon size={16}/></button>}
+     {!exercise&&!feedback&&next?.kind!=='complete'&&<button type="button" className="ia-btn-primary" disabled={busy||!data.ready} data-orientation="adaptive-start" onClick={()=>void start()}>{busy?'Preparando…':'Practicar este concepto'}<ArrowRightIcon size={16}/></button>}
      {exercise&&<p className="ia-adaptive-caption">Tienes un ejercicio en curso. Puedes continuarlo más abajo.</p>}
      {next?.kind==='complete'&&<p>Elige otro objetivo para seguir practicando. Esto no otorga acreditación como tutor.</p>}
     </article>
@@ -52,7 +52,7 @@ export default function AdaptiveLearningPanel({userId}:{userId:string}){
      <p className="ia-adaptive-caption">Tu progreso es privado. Cambia de objetivo al terminar el ejercicio en curso.</p>
     </aside>
    </div>
-   {(exercise||feedback)&&<article className="ia-adaptive-practice" aria-busy={busy}>
+   {(exercise||feedback)&&<article data-orientation="adaptive-practice" className="ia-adaptive-practice" aria-busy={busy}>
     <div className="ia-adaptive-practice-top"><span>{exerciseSkill?.name||data.skills.find(s=>s.id===feedback?.skillId)?.name}</span><label><input type="checkbox" checked={largeText} onChange={event=>setLargeText(event.target.checked)}/>Texto amplio</label></div>
     <h3 ref={practiceHeading} tabIndex={-1}>{exercise?'Una pregunta a la vez':feedback?.correct?'Buen paso. Sigamos construyendo.':'Vamos a reforzarlo, sin prisa.'}</h3>
     {exercise?<form onSubmit={event=>{event.preventDefault();void submit();}}>
@@ -62,7 +62,7 @@ export default function AdaptiveLearningPanel({userId}:{userId:string}){
      <div className="ia-adaptive-actions"><button type="submit" className="ia-btn-primary" disabled={busy||!answer}>{busy?'Guardando…':'Comprobar respuesta'}</button>
       <button type="button" className="ia-btn-secondary" disabled={busy||exercise.hintUsed} onClick={()=>void hint()}>{exercise.hintUsed?'Pista consultada':'Necesito una pista'}</button>
       <button type="button" className="ia-btn-secondary" disabled={busy} onClick={()=>void submit('skip')}>No lo sé todavía</button></div>
-    </form>:feedback&&<div className="ia-adaptive-feedback" role="status"><p>{feedback.feedback}</p><p className="ia-adaptive-caption">{feedback.hintUsed?'Practicaste con apoyo. Para consolidar también harán falta respuestas sin pista.':'El motor actualizó la estimación con esta respuesta.'}</p><button type="button" className="ia-btn-primary" disabled={busy||next?.kind==='complete'} onClick={()=>void start()}>{next?.kind==='complete'?'Objetivo consolidado':'Continuar con el siguiente paso'}</button></div>}
+    </form>:feedback&&<div className="ia-adaptive-feedback" role="status"><p>{feedback.feedback}</p><p className="ia-adaptive-caption">{feedback.hintUsed?'Practicaste con apoyo. Para consolidar también harán falta respuestas sin pista.':'El motor actualizó la estimación con esta respuesta.'}</p><button type="button" className="ia-btn-primary" disabled={busy||next?.kind==='complete'} data-orientation="adaptive-start" onClick={()=>void start()}>{next?.kind==='complete'?'Objetivo consolidado':'Continuar con el siguiente paso'}</button></div>}
    </article>}
    <section className="ia-adaptive-map-card"><h3><LayersIcon size={19}/> Mi mapa de conceptos</h3>
     <AdaptiveKnowledgeMap skills={data.skills} selected={selected} onSelect={setSelected}/>

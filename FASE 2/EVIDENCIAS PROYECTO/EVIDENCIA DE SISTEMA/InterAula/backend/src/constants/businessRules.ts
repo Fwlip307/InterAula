@@ -41,7 +41,7 @@ export const BUSINESS_RULES = {
     DEFAULT_DURATION_MINUTES: 60,
     RATING: {
       MIN: 1,
-      MAX: 5,
+      MAX: 10,
     },
   },
 

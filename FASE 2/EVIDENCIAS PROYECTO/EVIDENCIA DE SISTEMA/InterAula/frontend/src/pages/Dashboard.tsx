@@ -1,4 +1,5 @@
 import AppOverview from '../components/common/AppOverview';
+import { OrientationEntry } from '../components/orientation/OrientationAssistant';
 import StudyWelcome from '../components/common/StudyWelcome';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -45,6 +46,7 @@ export default function Dashboard() {
   const name = getUserDisplayName(profile, user?.user_metadata, user?.email);
   return <div className="ia-guided-page">
     <StudyWelcome name={name}/>
+    <OrientationEntry />
     {error && <div className="ia-guided-notice" role="alert">{error} <button type="button" className="ia-btn-secondary" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div>}
     <section className="ia-guided-next" aria-label="Tu siguiente paso" aria-busy={loading}>
       <span className="ia-guided-eyebrow">Tu siguiente paso</span>

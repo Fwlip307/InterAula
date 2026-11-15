@@ -1,3 +1,6 @@
+import TutorRecommendationPanel from './components/TutorRecommendationPanel';
+import type {TutorPriority,TutorModelMetadata} from '../../types/tutorRecommendations';
+import {useLatestRequest} from '../../hooks/useLatestRequest';
 import ModuleNavigation from '../../components/common/ModuleNavigation';
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -55,6 +58,8 @@ export default function TutoringExplore() {
 
   // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
+  const [priority,setPriority]=useState<TutorPriority>('balanced');
+  const [matchingModel,setMatchingModel]=useState<TutorModelMetadata|null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [userOfferedSubjects, setUserOfferedSubjects] = useState<OfferedSubject[]>([]);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
@@ -100,7 +105,7 @@ export default function TutoringExplore() {
           user ? profileService.getOfferedSubjects(user.id) : Promise.resolve([]),
         ]);
         setSubjects(subs);
-        setUserOfferedSubjects(offered);
+        setUserOfferedSubjects(offered.filter(subject=>subject.is_verified===true));
       } catch (err) {
         console.error('[TutoringExplore] Error al cargar catálogo de materias:', err);
       }
@@ -108,29 +113,38 @@ export default function TutoringExplore() {
     loadCatalog();
   }, [user]);
 
+  const beginTutorsRequest=useLatestRequest();
   const fetchTutors = React.useCallback(async () => {
+    const isCurrent=beginTutorsRequest();
     setLoading(true);
     setErrorMsg('');
     try {
-      const data = await tutoringService.getAvailableTutors({
+      const data = await tutoringService.getTutorRecommendations({
         subjectId: selectedSubjectId,
         search: searchTerm,
         onlyVerified: onlyCertified,
         onlyInclusive,
+        priority,
       });
-      setTutors(data);
+      if(!isCurrent())return;
+      setTutors(data.tutors);
+      setMatchingModel(data.model);
     } catch (err: any) {
+      if(!isCurrent())return;
       console.error('[TutoringExplore] Error al cargar tutores:', err);
       setErrorMsg('No fue posible cargar la lista de tutores disponibles.');
     } finally {
-      setLoading(false);
+      if(isCurrent())setLoading(false);
     }
-  }, [selectedSubjectId, searchTerm, onlyCertified, onlyInclusive]);
+  }, [selectedSubjectId, searchTerm, onlyCertified, onlyInclusive, priority, beginTutorsRequest]);
 
+  const beginWorkshopRequest=useLatestRequest();
   const fetchWorkshops = React.useCallback(async () => {
+    const isCurrent=beginWorkshopRequest();
     setWorkshopsLoading(true);
     try {
       const data = await tutoringService.getUpcomingWorkshops(selectedSubjectId);
+      if(!isCurrent())return;
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         setWorkshops(
@@ -145,11 +159,13 @@ export default function TutoringExplore() {
         setWorkshops(data);
       }
     } catch (err: any) {
+      if(!isCurrent())return;
       console.error('[TutoringExplore] Error al cargar talleres:', err);
+      setErrorMsg('No se pudieron cargar los talleres. Puedes reintentar desde esta sección.');
     } finally {
-      setWorkshopsLoading(false);
+      if(isCurrent())setWorkshopsLoading(false);
     }
-  }, [selectedSubjectId, searchTerm]);
+  }, [selectedSubjectId, searchTerm, beginWorkshopRequest]);
 
   const liveWorkshops = React.useMemo(() => {
     return workshops.filter((w) => w.status === 'in_progress');
@@ -171,8 +187,12 @@ export default function TutoringExplore() {
     }
   }, [user]);
 
+  useEffect(()=>{
+    const timer=setTimeout(()=>void fetchTutors(),250);
+    return()=>clearTimeout(timer);
+  },[fetchTutors]);
+
   useEffect(() => {
-    fetchTutors();
     fetchWorkshops();
     fetchStudentData();
 
@@ -191,7 +211,7 @@ export default function TutoringExplore() {
       window.removeEventListener('ia_workshops_updated', onWorkshopsUpdated);
       clearInterval(syncTimer);
     };
-  }, [fetchTutors, fetchWorkshops, fetchStudentData]);
+  }, [fetchWorkshops, fetchStudentData]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -639,6 +659,8 @@ export default function TutoringExplore() {
               className="ia-input"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              data-orientation="tutor-search"
+              aria-label="Buscar por tutor o materia"
               placeholder="Buscar por tutor o materia (ej: Programación, Cálculo)..."
               style={{ paddingLeft: '40px', width: '100%' }}
             />
@@ -783,7 +805,8 @@ export default function TutoringExplore() {
 
       {/* Contenido Principal: Grilla de Tutores */}
       {activeTab === 'tutors' && (
-        <div>
+        <div data-orientation="tutor-results">
+          <TutorRecommendationPanel priority={priority} onChange={setPriority} model={matchingModel} loading={loading}/>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main, #0f172a)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UsersIcon size={20} color="#2563eb" />
@@ -884,6 +907,7 @@ export default function TutoringExplore() {
                   }}
                 >
                   <div>
+                    {tutor.recommendation&&<p className="ia-tutor-match-reason">{tutor.recommendation.reason}</p>}
                     {/* Cabecera del tutor */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
                       {p.avatar_url ? (
@@ -952,10 +976,10 @@ export default function TutoringExplore() {
                                 alignItems: 'center',
                                 gap: '3px',
                               }}
-                              title="Tutor con validación docente y concentración de notas aprobada"
+                              title="Materia acreditada mediante evaluación o revisión de respaldo académico"
                             >
                               <ShieldCheckIcon size={12} color="#059669" />
-                              Certificado Duoc UC
+                              Materia acreditada
                             </span>
                           )}
                         </div>

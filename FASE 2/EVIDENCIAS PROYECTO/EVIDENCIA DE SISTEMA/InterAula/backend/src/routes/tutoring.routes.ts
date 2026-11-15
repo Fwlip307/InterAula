@@ -2,6 +2,10 @@ import { Router } from 'express';
 import { tutoringController } from '../controllers/tutoring.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import { validateRequest } from '../middlewares/validate.middleware.js';
+import {createRateLimiter} from '../middlewares/rateLimit.middleware.js';
+import {tutorRecommendationsService,tutorRecommendationQuery,tutorDemoQuery,type TutorRecommendationFilters} from '../services/tutorRecommendations.service.js';
+import type {AuthenticatedRequest} from '../types/index.js';
+import type {TutorPriority} from '../services/tutorClustering.service.js';
 import {
   requestSessionSchema,
   updateSessionStatusSchema,
@@ -12,6 +16,16 @@ import {
 } from '../schemas/tutoring.schema.js';
 
 const router = Router();
+
+const recommendationLimit=createRateLimiter(60);
+router.get('/recommendations',requireAuth,recommendationLimit,validateRequest({query:tutorRecommendationQuery}),async(req,res,next)=>{
+ try{res.json({success:true,data:await tutorRecommendationsService.list((req as AuthenticatedRequest).user!.id,req.query as unknown as TutorRecommendationFilters)});}
+ catch(error){next(error);}
+});
+router.get('/recommendations/demo',requireAuth,recommendationLimit,validateRequest({query:tutorDemoQuery}),async(req,res,next)=>{
+ try{res.json({success:true,data:await tutorRecommendationsService.demo(req.query.priority as TutorPriority)});}
+ catch(error){next(error);}
+});
 
 // Explorar tutores disponibles
 router.get('/tutors', tutoringController.getAvailableTutors);

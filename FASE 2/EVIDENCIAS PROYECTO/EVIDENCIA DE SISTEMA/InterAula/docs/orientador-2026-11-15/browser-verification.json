@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "checks": [
+    "Orientador is closed and silent by default; visible entry opens it, ambiguous messages remain choices, and user text is rendered without HTML execution.",
+    "Tutor tour highlights real search/results/agenda, handles empty results, supports manual voice, speed/pause/stop and opt-in narration; pause removes highlighting and narration.",
+    "Material tour reaches actual search, subject filter and empty library state; explicit focus control works with the keyboard.",
+    "Project orientation separates joining a team from creating an idea, highlights the real builder fields and never publishes or enters content.",
+    "Task and support tours reach existing forms and accessibility settings without creating tasks or changing preferences.",
+    "Learning tour provides subject/topic scaffolding, waits for explicit Generate, and ends with understanding/reflection instead of marking learning as completed.",
+    "Adaptive pilot tour waits for a student to start practice and never answers or records a response on their behalf.",
+    "Orientation persists across routes; closing pauses it and restores launcher focus; unrelated navigation is respected until explicit return.",
+    "Nonmodal panel fits four viewports and dark/calm themes; assessment overlay suspends the guide and speech without automatic reopening.",
+    "Explicit deep-link opens once; chat stays out of storage and network, resets when account changes, and Escape closes the nonmodal assistant.",
+    "Missing targets remain an honest instruction instead of advancing automatically; unsupported voice leaves the full written guide usable."
+  ],
+  "widths": [
+    {
+      "width": 320,
+      "left": 10,
+      "right": 295,
+      "top": 410,
+      "bottom": 840,
+      "body": 320,
+      "viewport": 320
+    },
+    {
+      "width": 390,
+      "left": 10,
+      "right": 365,
+      "top": 410,
+      "bottom": 840,
+      "body": 375,
+      "viewport": 390
+    },
+    {
+      "width": 768,
+      "left": 345,
+      "right": 735,
+      "top": 233.203125,
+      "bottom": 832,
+      "body": 753,
+      "viewport": 768
+    },
+    {
+      "width": 1440,
+      "left": 1017,
+      "right": 1407,
+      "top": 233.203125,
+      "bottom": 832,
+      "body": 1425,
+      "viewport": 1440
+    }
+  ],
+  "exceptions": [],
+  "scope": "Real React pages/AppRouter and guide; synthetic account/services/speech API. No production writes or real audio output."
+}

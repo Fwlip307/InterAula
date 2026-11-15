@@ -4,10 +4,18 @@ import Navbar from './Navbar';
 import ReadingRuler from '../common/ReadingRuler';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { MAIN_DESTINATIONS, isDestinationActive } from '../../navigation/guidedNavigation';
+import { useAuth } from '../../context/AuthContext';
+import { OrientationProvider } from '../../context/OrientationContext';
+import OrientationAssistant from '../orientation/OrientationAssistant';
 import '../../styles/dashboard.css';
 import '../../styles/guidedExperience.css';
 
 export default function AppLayout() {
+  const {user}=useAuth();
+  return <OrientationProvider key={user?.id||'guest'}><AppLayoutContent /></OrientationProvider>;
+}
+
+function AppLayoutContent() {
   const { isCalmMode, toggleCalmMode } = useCalmMode();
   const location = useLocation();
   const main = useRef<HTMLElement>(null);
@@ -29,5 +37,6 @@ export default function AppLayout() {
       <Outlet />
     </main>
     <footer className="ia-footer"><p style={{ margin: 0 }}>InterAula · Aprender juntos, a nuestra manera</p></footer>
+    <OrientationAssistant />
   </div>;
 }

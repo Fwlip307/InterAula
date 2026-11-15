@@ -175,11 +175,13 @@ describe('InterAula Backend API - Suite de Pruebas Automatizadas', () => {
       );
     });
 
-    test('Calificación de tutoría debe estar en rango 1 a 5', async () => {
+    test('Calificación de tutoría debe estar en rango 1 a 10', async () => {
       const { submitReviewSchema } = await import('../schemas/tutoring.schema.js');
 
       const invalidReview = {
-        rating: 6, // Fuera de rango 1-5
+        communication_score: 11, // Fuera de rango 1–10
+        knowledge_score: 8,
+        punctuality_score: 9,
         comment: 'Excelente tutor',
       };
 

@@ -30,7 +30,7 @@ export default function LearningClassesTab({
   actionLoading = false,
 }: LearningClassesTabProps) {
   const pendingSessions = studentSessions.filter((s) => s.status === 'pending');
-  const acceptedSessions = studentSessions.filter((s) => s.status === 'accepted');
+  const acceptedSessions = studentSessions.filter((s) => (s.status === 'accepted'||s.status === 'in_progress'));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -72,7 +72,7 @@ export default function LearningClassesTab({
           </div>
           <div style={{ marginTop: '8px' }}>
             <Link
-              to="/tutoring"
+              to="/tutoring?tab=tutors"
               className="ia-btn-secondary"
               style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
@@ -89,7 +89,7 @@ export default function LearningClassesTab({
           <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <VideoIcon size={20} color="#16a34a" /> Talleres y Clases en Vivo Reservadas ({enrolledWorkshops.length})
           </h2>
-          <Link to="/tutoring" style={{ fontSize: '0.84rem', color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
+          <Link to="/tutoring?tab=workshops" style={{ fontSize: '0.84rem', color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>
             Ver agenda de talleres abierta
           </Link>
         </div>
@@ -99,12 +99,12 @@ export default function LearningClassesTab({
             <p style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '0.9rem' }}>
               No tienes reservas activas en talleres grupales en vivo.
             </p>
-            <Link to="/tutoring" className="ia-btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Link to="/tutoring?tab=workshops" className="ia-btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <UsersIcon size={16} /> Explorar talleres abiertos
             </Link>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 360px), 1fr))', gap: '16px' }}>
             {enrolledWorkshops.map((w) => (
               <WorkshopCard
                 key={w.id}
@@ -135,14 +135,14 @@ export default function LearningClassesTab({
               title="Aun no has solicitado tutorias 1 a 1"
               description="Puedes buscar companeros validados en materias criticas de tu carrera y pedirles apoyo personalizado para preparar tus evaluaciones."
               action={
-                <Link to="/tutoring" className="ia-btn-primary">
+                <Link to="/tutoring?tab=tutors" className="ia-btn-primary">
                   <BookOpenIcon size={16} /> Explorar Tutores por Materia
                 </Link>
               }
             />
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 360px), 1fr))', gap: '16px' }}>
             {studentSessions.map((session) => (
               <SessionCard
                 key={session.id}

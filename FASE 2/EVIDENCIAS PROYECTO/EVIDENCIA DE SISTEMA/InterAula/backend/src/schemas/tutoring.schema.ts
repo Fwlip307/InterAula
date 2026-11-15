@@ -28,15 +28,13 @@ export const updateSessionStatusSchema = z
   })
   .strict();
 
-export const submitReviewSchema = z
-  .object({
-    rating: z.number().int().min(T_RULES.RATING.MIN).max(T_RULES.RATING.MAX, `La calificación debe ser un entero entre ${T_RULES.RATING.MIN} y ${T_RULES.RATING.MAX}`),
-    comment: z.string().trim().min(3, 'El comentario debe tener al menos 3 caracteres').max(1000),
-    punctuality_rating: z.number().int().min(T_RULES.RATING.MIN).max(T_RULES.RATING.MAX).optional(),
-    clarity_rating: z.number().int().min(T_RULES.RATING.MIN).max(T_RULES.RATING.MAX).optional(),
-    empathy_rating: z.number().int().min(T_RULES.RATING.MIN).max(T_RULES.RATING.MAX).optional(),
-  })
-  .strict();
+const reviewScore=z.number().int().min(T_RULES.RATING.MIN).max(T_RULES.RATING.MAX);
+export const submitReviewSchema=z.object({
+ communication_score:reviewScore,
+ knowledge_score:reviewScore,
+ punctuality_score:reviewScore,
+ comment:z.string().trim().max(1000).nullable().optional(),
+}).strict();
 
 export const registerAttendanceSchema = z
   .object({

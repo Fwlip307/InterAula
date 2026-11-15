@@ -50,10 +50,13 @@ export default function SessionCard({
   const statusInfo = formatTutoringStatus(session.status);
 
   // Comprobar si la hora programada ya fue alcanzada para permitir confirmación
-  const [isTimeReached] = React.useState(() => {
-    const scheduledTime = new Date(session.scheduled_at).getTime();
-    return Date.now() >= scheduledTime;
-  });
+  const [now,setNow]=React.useState(Date.now);
+  React.useEffect(()=>{
+    if(!Number.isFinite(Date.parse(session.scheduled_at))||now>=Date.parse(session.scheduled_at))return;
+    const timer=setTimeout(()=>setNow(Date.now()),Math.min(60_000,Math.max(50,Date.parse(session.scheduled_at)-now)));
+    return()=>clearTimeout(timer);
+  },[now,session.scheduled_at]);
+  const isTimeReached=now>=Date.parse(session.scheduled_at);
 
   // Estilos de badge según estado
   const getBadgeStyle = (status: string) => {
@@ -394,7 +397,7 @@ export default function SessionCard({
         )}
 
         {/* Caso 3: Sesión ACEPTADA */}
-        {session.status === 'accepted' && (
+        {(session.status === 'accepted'||session.status === 'in_progress') && (
           <>
             {/* Si es online, botón destacado para entrar al Aula Virtual */}
             {session.modality === 'online' && (
@@ -429,8 +432,8 @@ export default function SessionCard({
               <XIcon size={16} /> Cancelar Sesión
             </button>
 
-            {/* Solo el estudiante puede marcar como completada */}
-            {role === 'student' && (
+            {/* Solo el tutor puede completar la sesión, según los permisos del servidor */}
+            {role === 'tutor' && onComplete && (
               <>
                 {isTimeReached ? (
                   <button
@@ -440,7 +443,7 @@ export default function SessionCard({
                     className="ia-btn-primary"
                     style={{ background: '#16a34a', borderColor: '#15803d' }}
                   >
-                    <CheckIcon size={16} /> Confirmar Tutoría Realizada
+                    <CheckIcon size={16} /> Finalizar tutoría
                   </button>
                 ) : (
                   <span

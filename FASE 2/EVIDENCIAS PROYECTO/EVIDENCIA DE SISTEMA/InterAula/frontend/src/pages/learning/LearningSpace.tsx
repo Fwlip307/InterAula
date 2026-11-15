@@ -300,12 +300,6 @@ export const LearningSpace = () => {
     [explainSubject, explainTopic, explainGoal, literalMode]
   );
 
-  useEffect(() => {
-    if (activeTab === 'explain' && !explanationData && !loadingExplanation) {
-      fetchExplanation(explainMode);
-    }
-  }, [activeTab, explanationData, loadingExplanation, explainMode, fetchExplanation]);
-
   const handleModeSwitch = (newMode: ExplanationMode) => {
     setExplainMode(newMode);
     fetchExplanation(newMode);
@@ -1636,6 +1630,7 @@ export const LearningSpace = () => {
                   <button
                     type="submit"
                     className="btn btn-primary"
+                    data-orientation="explain-generate"
                     disabled={loadingExplanation}
                     style={{ alignSelf: 'flex-end' }}
                   >
@@ -1711,7 +1706,7 @@ export const LearningSpace = () => {
                     </p>
                   </div>
                 ) : explanationData ? (
-                  <div className="adaptive-explanation-card">
+                  <div data-orientation="explain-result" className="adaptive-explanation-card">
                     <div className="adaptive-explanation-card__header">
                       <div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', alignItems: 'center' }}>
@@ -2765,7 +2760,7 @@ export const LearningSpace = () => {
                 6. PERFIL DE APRENDIZAJE PERSONALIZABLE (PROFILE)
                ================================================================= */}
             {activeTab === 'profile' && (
-              <form onSubmit={handleSaveLearningConfig} className="panel">
+              <form data-orientation="learning-supports" onSubmit={handleSaveLearningConfig} className="panel">
                 <div className="panel__header">
                   <div>
                     <h2 className="panel__title" style={{ fontSize: '1.25rem' }}>

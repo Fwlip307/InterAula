@@ -4,6 +4,24 @@
 # ==============================================================================
 
 services:
+  ml:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: interaula-ml
+    restart: unless-stopped
+    environment:
+      - OPENBLAS_NUM_THREADS=1
+      - OMP_NUM_THREADS=1
+    networks:
+      - interaula-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   backend:
     build:
       context: ./backend
@@ -22,6 +40,7 @@ services:
       - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      - ML_SERVICE_URL=http://ml:8000
     volumes:
       - interaula-backend-data:/app/data
     networks:

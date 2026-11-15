@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import {tutoringReviewPayload} from '../utils/tutoringReview';
 import { apiClient } from '../lib/apiClient';
 import { API_ENDPOINTS } from '../constants/apiEndpoints';
 import type { Profile, OfferedSubject } from '../types/profile';
@@ -16,6 +17,7 @@ import type {
   ClassroomSignalState,
 } from '../types/tutoring';
 import { workshopService } from './workshop.service';
+import type {TutorPriority,TutorMatch,TutorModelMetadata,TutorDemo} from '../types/tutorRecommendations';
 
 /**
  * Tutor disponible con materias ofrecidas, estadísticas e insignias.
@@ -26,9 +28,21 @@ export interface AvailableTutor {
   statistics: TutorStatistics | null;
   badges: UserBadge[];
   inclusiveAccredited?: boolean;
+  recommendation?:TutorMatch|null;
 }
 
 export const tutoringService = {
+  async getTutorRecommendations(filters?:{subjectId?:string;search?:string;onlyVerified?:boolean;onlyInclusive?:boolean;priority?:TutorPriority}):Promise<{tutors:AvailableTutor[];model:TutorModelMetadata}>{
+    const data=await apiClient.get<{tutors:any[];model:TutorModelMetadata}>(API_ENDPOINTS.TUTORING.RECOMMENDED_TUTORS,{params:filters});
+    const ids=data.tutors.map(t=>t.id),byId=new Map<string,UserBadge[]>();
+    if(ids.length){
+      const {data:badges}=await supabase.from('user_badges').select('*, badge:badges(*)').in('profile_id',ids);
+      for(const badge of badges||[]){const rows=byId.get(badge.profile_id)||[];rows.push(badge as UserBadge);byId.set(badge.profile_id,rows);}
+    }
+    return {model:data.model,tutors:data.tutors.map(t=>({profile:t as Profile,offeredSubjects:t.profile_offered_subjects||[],
+      statistics:t.statistics||null,badges:byId.get(t.id)||[],inclusiveAccredited:Boolean(t.inclusive_accredited),recommendation:t.recommendation||null}))};
+  },
+  getTutorDemo(priority:TutorPriority):Promise<TutorDemo>{return apiClient.get(API_ENDPOINTS.TUTORING.TUTOR_DEMO,{params:{priority}});},
   /**
    * Obtiene la lista de tutores disponibles (available_for_tutoring = true)
    * que ofrezcan al menos una materia, con filtros opcionales de materia y búsqueda.
@@ -179,22 +193,9 @@ export const tutoringService = {
    * Envía una evaluación académica para una tutoría completada.
    */
   async submitReview(dto: CreateTutoringReviewDTO): Promise<TutoringReview> {
-    // Validar rangos 1-10 en capa de negocio
-    const comm = Math.round(Number(dto.communication_score));
-    const know = Math.round(Number(dto.knowledge_score));
-    const punc = Math.round(Number(dto.punctuality_score));
-
-    if (comm < 1 || comm > 10 || know < 1 || know > 10 || punc < 1 || punc > 10) {
-      throw new Error('Todas las calificaciones deben ser números enteros entre 1 y 10');
-    }
-
-    const review = await apiClient.post<TutoringReview>(API_ENDPOINTS.TUTORING.SESSION_REVIEWS(dto.session_id), {
-      rating: Math.max(1, Math.min(5, Math.round(((comm + know + punc) / 3) / 2))),
-      comment: dto.comment?.trim() || 'Evaluación registrada',
-      punctuality_rating: Math.max(1, Math.min(5, Math.round(punc / 2))),
-      clarity_rating: Math.max(1, Math.min(5, Math.round(comm / 2))),
-      empathy_rating: Math.max(1, Math.min(5, Math.round(know / 2))),
-    });
+    const review = await apiClient.post<TutoringReview>(
+      API_ENDPOINTS.TUTORING.SESSION_REVIEWS(dto.session_id),tutoringReviewPayload(dto)
+    );
     return review;
   },
 

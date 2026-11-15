@@ -239,6 +239,8 @@ export default function ProjectsHub() {
       setProjectMembers(members.length > 0 ? members : detail?.members || []);
       setProjectApplications(apps);
       setProjectDeliverables(deliverables);
+    } catch {
+      setErrorMsg('No se pudo abrir el proyecto. Vuelve al listado e inténtalo nuevamente.');
     } finally {
       setLoadingDetail(false);
     }
@@ -663,7 +665,7 @@ export default function ProjectsHub() {
               <span>Volver al Catálogo</span>
             </button>
           )}
-          <button type="button" className="ia-btn-primary" onClick={openCreateModal}>
+          <button data-orientation="project-create" type="button" className="ia-btn-primary" onClick={openCreateModal}>
             <PlusIcon size={16} color="#ffffff" />
             <span>Publicar Nuevo Proyecto</span>
           </button>
@@ -2231,6 +2233,8 @@ export default function ProjectsHub() {
                     type="text"
                     className="ia-input"
                     style={{ paddingLeft: '36px' }}
+                    data-orientation="projects-search"
+                    aria-label="Buscar proyectos"
                     placeholder="Buscar por proyecto, rol (Frontend, 3D, QA...), tecnología o problema..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -2240,6 +2244,7 @@ export default function ProjectsHub() {
                 <div style={{ flex: '1 1 180px' }}>
                   <input
                     type="text"
+                    data-orientation="projects-skill"
                     aria-label="Filtrar por habilidad o rol"
                     className="ia-input"
                     placeholder="Habilidad o rol (ej: React, Python, UX)..."
@@ -2399,7 +2404,7 @@ export default function ProjectsHub() {
               const list = activeTab === 'my_projects' ? myProjects : filteredProjects;
               if (list.length === 0) {
                 return (
-                  <div className="ia-empty-box">
+                  <div data-orientation="projects-results" className="ia-empty-box">
                     <div className="ia-empty-icon">
                       <UsersIcon size={22} />
                     </div>
@@ -2411,7 +2416,7 @@ export default function ProjectsHub() {
                     <p className="ia-empty-desc">
                       Publica tu iniciativa académica, técnica o interdisciplinaria, define las vacantes que necesitas y recluta compañeros.
                     </p>
-                    <button type="button" className="ia-btn-primary" onClick={openCreateModal}>
+                    <button data-orientation="project-create" type="button" className="ia-btn-primary" onClick={openCreateModal}>
                       <PlusIcon size={15} color="#ffffff" /> Publicar Nuevo Proyecto
                     </button>
                   </div>
@@ -2419,7 +2424,7 @@ export default function ProjectsHub() {
               }
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '18px' }}>
+                <div data-orientation="projects-results" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '18px' }}>
                   {list.map((proj) => {
                     const isOwner = Boolean(user?.id && proj.owner_id === user.id);
                     const compMeta = COMPENSATION_LABELS[proj.compensation_type || 'unpaid_academic'];

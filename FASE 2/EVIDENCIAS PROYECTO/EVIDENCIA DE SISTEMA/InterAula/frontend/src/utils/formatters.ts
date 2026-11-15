@@ -66,6 +66,8 @@ export function formatTutoringStatus(status: string | null | undefined): { label
       return { label: 'Pendiente', className: 'status-pending' };
     case 'accepted':
       return { label: 'Aceptada', className: 'status-accepted' };
+    case 'in_progress':
+      return { label: 'En curso', className: 'status-accepted' };
     case 'rejected':
       return { label: 'Rechazada', className: 'status-rejected' };
     case 'completed':

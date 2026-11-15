@@ -42,6 +42,7 @@ export default function PublicProfile() {
   const [sharedNotes, setSharedNotes] = useState<AcademicNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError,setLoadError]=useState(''),[retry,setRetry]=useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,7 +51,7 @@ export default function PublicProfile() {
       if (!id) return;
       try {
         setLoading(true);
-        setNotFound(false);
+        setNotFound(false);setLoadError('');
 
         const [p, offered, needed, stats, uBadges, allProjects, authorNotes] = await Promise.all([
           profileService.getProfileById(id),
@@ -67,7 +68,7 @@ export default function PublicProfile() {
             setNotFound(true);
           } else {
             setProfile(p);
-            setOfferedSubjects(offered);
+            setOfferedSubjects(offered.filter(subject=>subject.is_verified===true));
             setNeededSubjects(needed);
             setTutorStats(stats);
             setBadges(uBadges);
@@ -83,7 +84,10 @@ export default function PublicProfile() {
         }
       } catch (err) {
         console.error('[PublicProfile] Error al cargar perfil público:', err);
-        if (isMounted) setNotFound(true);
+        if (isMounted) {
+          if((err as {status?:number})?.status===404)setNotFound(true);
+          else setLoadError('No pudimos cargar este perfil. Reintenta en un momento.');
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -94,7 +98,7 @@ export default function PublicProfile() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id,retry]);
 
   if (loading) {
     return (
@@ -103,6 +107,8 @@ export default function PublicProfile() {
       </div>
     );
   }
+
+  if(loadError)return <div className="ia-card" role="alert"><h2>No pudimos cargar el perfil</h2><p>{loadError}</p><button className="ia-btn-secondary" onClick={()=>setRetry(value=>value+1)}>Reintentar perfil</button></div>;
 
   if (notFound || !profile) {
     return (

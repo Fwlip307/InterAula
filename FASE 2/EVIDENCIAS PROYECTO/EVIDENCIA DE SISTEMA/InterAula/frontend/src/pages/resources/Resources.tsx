@@ -1,3 +1,4 @@
+import {useLatestRequest} from '../../hooks/useLatestRequest';
 import ModuleNavigation from '../../components/common/ModuleNavigation';
 import { safeNoteHtml, escapeHtml } from '../../utils/safeHtml';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -122,8 +123,11 @@ export default function Resources() {
       .catch(() => {});
   }, []);
 
+  const beginNotesRequest=useLatestRequest();
   const fetchNotes = useCallback(async () => {
+    const isCurrent=beginNotesRequest();
     setLoading(true);
+    setErrorMsg('');
     try {
       const [publicData, ownData] = await Promise.all([
         notesService.getNotes({
@@ -136,14 +140,17 @@ export default function Resources() {
         }),
         user ? notesService.getMyNotes() : Promise.resolve([]),
       ]);
+      if(!isCurrent())return;
       setNotes(publicData);
       setMyNotes(ownData);
     } catch (err) {
+      if(!isCurrent())return;
       console.error('[Resources] Error al cargar apuntes:', err);
+      setErrorMsg('No se pudieron cargar los apuntes. Reintenta cambiando la búsqueda o recargando la sección.');
     } finally {
-      setLoading(false);
+      if(isCurrent())setLoading(false);
     }
-  }, [searchTerm, selectedSubject, selectedCategory, selectedFolder, selectedFormat, sortBy, user]);
+  }, [searchTerm, selectedSubject, selectedCategory, selectedFolder, selectedFormat, sortBy, user, beginNotesRequest]);
 
   useEffect(() => {
     fetchNotes();
@@ -850,6 +857,8 @@ export default function Resources() {
                   type="text"
                   className="ia-input"
                   style={{ paddingLeft: '36px' }}
+                  data-orientation="notes-search"
+                  aria-label="Buscar apuntes"
                   placeholder="Buscar por título, contenido, asignatura, autor o etiqueta..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -857,6 +866,7 @@ export default function Resources() {
               </div>
 
               <select
+                data-orientation="notes-subject"
                 aria-label="Filtrar por asignatura"
                 className="ia-select"
                 style={{ width: 'auto', minWidth: '180px' }}
@@ -931,11 +941,11 @@ export default function Resources() {
 
           {/* Grilla de Apuntes */}
           {loading ? (
-            <div className="ia-card" style={{ textAlign: 'center', padding: '36px' }}>
+            <div data-orientation="notes-results" className="ia-card" style={{ textAlign: 'center', padding: '36px' }}>
               <p style={{ margin: 0, color: 'var(--ia-text-muted)' }}>Cargando biblioteca de apuntes...</p>
             </div>
           ) : visibleNotes.length === 0 ? (
-            <div className="ia-empty-box">
+            <div data-orientation="notes-results" className="ia-empty-box">
               <div className="ia-empty-icon">
                 <BookOpenIcon size={22} />
               </div>
@@ -960,7 +970,7 @@ export default function Resources() {
             </div>
           ) : (
             <>
-              <div
+              <div data-orientation="notes-results"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',

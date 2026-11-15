@@ -8,4 +8,5 @@ process.env.SUPABASE_ANON_KEY = 'isolated-test-public-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = '';
 process.env.SUPABASE_SECRET_KEY = '';
 process.env.GEMINI_API_KEY = '';
+process.env.ML_SERVICE_URL = '';
 process.env.APP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'interaula-tests-'));

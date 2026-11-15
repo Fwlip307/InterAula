@@ -23,6 +23,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
+  signal?: AbortSignal;
   params?: Record<string, any>;
   headers?: Record<string, string>;
   skipAuth?: boolean;
@@ -75,6 +76,7 @@ async function request<T>(
   const fetchOptions: RequestInit = {
     method,
     headers,
+    signal: options.signal,
   };
 
   if (body !== undefined && method !== 'GET') {

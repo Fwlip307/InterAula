@@ -1,4 +1,5 @@
 import {normalizeSessionPrep} from '../lib/sessionPrep.js';
+import {clearTutorStatisticsCache} from './tutorStatistics.service.js';
 import type { AuthenticatedUser } from '../types/index.js';
 import { HttpError } from '../lib/httpError.js';
 import { clientFor, result, existing, attachProfiles } from './remote/database.js';
@@ -52,7 +53,7 @@ export const tutoringBackendService={
     const client=clientFor(token);
     const tutor=await existing(client.from('public_profiles').select('available_for_tutoring').eq('id',body.tutor_id).maybeSingle(),'Tutor no encontrado.');
     if(!tutor.available_for_tutoring)throw new HttpError(409,'El tutor no está disponible.');
-    const offered=await existing(client.from('profile_offered_subjects').select('subject_id').eq('profile_id',body.tutor_id).eq('subject_id',body.subject_id).maybeSingle(),'El tutor no ofrece esta asignatura.');
+    const offered=await existing(client.from('profile_offered_subjects').select('subject_id').eq('profile_id',body.tutor_id).eq('subject_id',body.subject_id).eq('is_verified',true).maybeSingle(),'El tutor no tiene acreditada esta asignatura.');
     if(!offered)throw new HttpError(400,'El tutor no ofrece esta asignatura.');
     const row=await result(client.from('tutoring_sessions').insert({...body,student_id:user.id,status:'pending'})
       .select('*,subject:subjects(*)').single(),'No se pudo solicitar la tutoría. Comprueba que el horario esté disponible.');
@@ -72,11 +73,15 @@ export const tutoringBackendService={
       .eq('id',id).eq('status',current.status).select('id').maybeSingle(),'La tutoría cambió. Recarga antes de continuar.');
     return this.getSessionById(user,token,id);
   },
-  async submitReview(user:AuthenticatedUser,token:string,id:string,review:{rating:number;comment:string;punctuality_rating?:number;clarity_rating?:number;empathy_rating?:number}):Promise<any> {
+  async submitReview(user:AuthenticatedUser,token:string,id:string,review:{communication_score:number;knowledge_score:number;punctuality_score:number;comment?:string|null}):Promise<any> {
     const session=await this.getSessionById(user,token,id);
     if(session.student_id!==user.id)throw new HttpError(403,'Solo el estudiante que recibió la tutoría puede calificarla.');
     if(session.status!=='completed')throw new HttpError(409,'Solo puedes calificar una tutoría completada.');
-    return result(clientFor(token).from('tutoring_reviews').insert({...review,session_id:id,student_id:user.id,tutor_id:session.tutor_id}).select('*').single());
+    const response=await clientFor(token).from('tutoring_reviews').insert({...review,session_id:id,student_id:user.id,tutor_id:session.tutor_id}).select('*').single();
+    if(response.error?.code==='23505')throw new HttpError(409,'Esta tutoría ya tiene una valoración registrada.');
+    const saved=await result(Promise.resolve(response),'No se pudo guardar tu valoración. Intenta nuevamente.');
+    clearTutorStatisticsCache();
+    return saved;
   },
   async registerAttendance(_user:AuthenticatedUser,token:string,body:{session_id:string;action:string;elapsed_minutes?:number}):Promise<any> {
     return result(clientFor(token).rpc('register_session_attendance',{p_session_id:body.session_id,p_action:body.action,p_duration_minutes:0}));

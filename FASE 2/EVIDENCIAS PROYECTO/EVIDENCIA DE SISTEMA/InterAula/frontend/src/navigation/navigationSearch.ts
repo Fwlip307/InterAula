@@ -9,6 +9,7 @@ export interface NavigationDestination {
 
 // Navigation only: no personal data, remote requests or user-provided URLs.
 export const NAVIGATION_DESTINATIONS: readonly NavigationDestination[] = [
+  {id:'orientation',title:'Orientador paso a paso',module:'Ayuda',description:'Conversación opcional, instrucciones por voz y controles señalados en pantalla.',href:'/dashboard?orientador=1',keywords:'orientador chatbot asistente guiar pasos clicar ayuda guiada acompañamiento audio voz'},
   {id:'guide',title:'Cómo usar InterAula',module:'Ayuda',description:'Qué puedes hacer, ejemplos y accesos a todas las herramientas.',href:'/guide',keywords:'guia guía ayuda tutorial empezar funciones como funciona qué puedo hacer instrucciones explicacion'},
   {id:'participate',title:'Participar en la comunidad',module:'Comunidad',description:'Apuntes, foro y proyectos en un solo lugar.',href:'/participate',keywords:'comunidad participar compartir conversar equipo navegar'},
   {id:'adaptive',title:'Ruta adaptativa',module:'Aprendizaje',description:'Mi espacio → Ruta adaptativa. Mapa de conceptos y práctica personalizada de Cálculo.',href:'/learning-space?tab=adaptive',keywords:'grafo conocimientos calculo cálculo derivadas adaptativo adaptativa BKT bayesiano motor próximo paso refuerzo'},

@@ -1,6 +1,6 @@
 import type { Profile, Subject } from './profile';
 
-export type SessionStatus = 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
+export type SessionStatus = 'pending' | 'accepted' | 'in_progress' | 'rejected' | 'completed' | 'cancelled';
 export type SessionModality = 'online' | 'in_person';
 
 export interface SessionAgendaPreview {

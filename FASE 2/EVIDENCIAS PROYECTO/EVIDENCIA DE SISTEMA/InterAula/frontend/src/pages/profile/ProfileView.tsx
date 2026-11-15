@@ -1025,7 +1025,7 @@ export default function ProfileView() {
           <OfferedSubjectsSection offeredSubjects={offeredSubjects}/>
 
           {/* Acreditación y Habilitación: Tarjeta 1 (Habilitación Técnica Comunitaria) */}
-          <div
+          <div data-orientation="tutor-accreditation"
             className="ia-card"
             style={{
               backgroundColor: 'var(--ia-bg-card, #ffffff)',

@@ -30,6 +30,8 @@ export const API_ENDPOINTS = {
   TUTORING: {
     SESSIONS: '/tutoring/sessions',
     TUTORS: '/tutoring/tutors',
+    RECOMMENDED_TUTORS: '/tutoring/recommendations',
+    TUTOR_DEMO: '/tutoring/recommendations/demo',
     SESSION_BY_ID: (id: string) => `/tutoring/sessions/${id}`,
     MY_SESSIONS: '/tutoring/my-sessions',
     SESSION_STATUS: (sessionId: string) => `/tutoring/sessions/${sessionId}/status`,
