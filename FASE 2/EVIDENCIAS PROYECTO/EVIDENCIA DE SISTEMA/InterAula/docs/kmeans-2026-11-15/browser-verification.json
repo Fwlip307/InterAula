@@ -1,0 +1,53 @@
+{
+  "passed": true,
+  "checks": [
+    "Authenticated real HTTP catalog renders aggregate statistics and honest accreditation labels.",
+    "DEMO is computed by real Python, clearly synthetic, separate from the catalog and contains no profile/reservation links.",
+    "Changing priority changes both actual catalogue order and synthetic model examples.",
+    "Order habitual turns off ML ranking and removes recommendation explanations.",
+    "Subject/search filters remain authoritative after clustering; newcomers stay visible.",
+    "A demo error is explicit, retry recovers, and the real catalogue remains available.",
+    "Loading is visible and late demo responses cannot reopen a closed example.",
+    "The preference and DEMO fit mobile/desktop and light/dark/Calm themes."
+  ],
+  "widths": [
+    {
+      "viewportWidth": 320,
+      "left": 10,
+      "right": 310,
+      "width": 300,
+      "scroll": 298,
+      "body": 320,
+      "viewport": 305
+    },
+    {
+      "viewportWidth": 390,
+      "left": 10,
+      "right": 365,
+      "width": 355,
+      "scroll": 353,
+      "body": 375,
+      "viewport": 375
+    },
+    {
+      "viewportWidth": 768,
+      "left": 18,
+      "right": 735,
+      "width": 717,
+      "scroll": 715,
+      "body": 753,
+      "viewport": 753
+    },
+    {
+      "viewportWidth": 1440,
+      "left": 144.5,
+      "right": 1280.5,
+      "width": 1136,
+      "scroll": 1134,
+      "body": 1425,
+      "viewport": 1425
+    }
+  ],
+  "exceptions": [],
+  "scope": "Real React, HTTP client, Express and Python/scikit-learn. Synthetic identity and catalog aggregates; no real Supabase requests, writes, audio or Google calls."
+}

@@ -4,7 +4,7 @@ InterAula es una plataforma integral de tutorías universitarias, aprendizaje co
 
 **Revisión integral del 15 de noviembre de 2026:** corregidos el ciclo de cierre de tutorías, las valoraciones multicriterio de 1–10, las materias acreditadas en gestión/perfil público, los enlaces de agenda, búsquedas fuera de orden y estados de error. Se verificaron 179 pruebas automáticas, 35 rutas internas y 6 públicas; Docker actualizado y estructura de 19 tablas/vistas remotas comprobada sin leer registros. [Informe, matriz de módulos y pendientes](docs/PULIDO_Y_VALIDACION.md).
 
-**Estado del alcance:** recomendaciones actuales por afinidad e intereses; K-Means continúa pendiente. Hay un piloto de aprendizaje adaptativo de Cálculo y un orientador conectado a Google Gemini. El usuario confirmó la activación de supabase/ACTIVAR_RESERVAS_ACREDITADAS.sql con proteccion_activada=true. Docker no aplica ese SQL. Sigue pendiente el ensayo completo de tutoría entre dos cuentas reales. Las notas históricas siguientes documentan activaciones anteriores.
+**Estado del alcance:** «Para ti» recomienda por afinidad e intereses. El buscador de tutores incorpora un piloto **K-Means con Python/scikit-learn**, prioridades por comunicación/dominio/puntualidad, explicaciones y un DEMO aislado; conserva el catálogo cuando faltan reseñas. Docker incluye el tercer servicio ML. Se verificaron 196 pruebas automáticas y la integración de navegador y contenedores. [Uso, arquitectura y límites del piloto](docs/KMEANS_TUTORES.md). Hay además un piloto adaptativo de Cálculo y un orientador Google Gemini. El usuario confirmó la activación de supabase/ACTIVAR_RESERVAS_ACREDITADAS.sql; K-Means no requiere SQL adicional. Sigue pendiente el ensayo completo de tutoría entre dos cuentas reales. Las notas históricas siguientes documentan activaciones anteriores.
 
 **Estado del 7 de noviembre de 2026:** las correcciones están implementadas y probadas localmente. Su activación remota requiere verificar el historial de la base, aplicar las migraciones 016 y 017 y configurar la clave administrativa exclusivamente en el backend. Las migraciones no se han aplicado al proyecto remoto durante esta revisión. Consulta [correcciones, activación y recomendaciones por intereses](docs/CORRECCIONES_Y_RECOMENDACIONES.md) antes de desplegar.
 
@@ -30,6 +30,7 @@ graph TD
     SupaDB[("🗄️ PostgreSQL Cloud<br/>(Supabase + RLS)")]
     SupaStorage["📦 Supabase Storage<br/>(Private Buckets)"]
     AIModel["🧠 Motor de Evaluación IA<br/>(Banco validado / Gemini opcional)"]
+    ML["K-Means: Python + scikit-learn<br/>Red interna Docker, sin puerto público"]
 
     Client -->|1. Inicia sesión| SupaAuth
     SupaAuth -->|2. Retorna Session Token| Client
@@ -39,6 +40,7 @@ graph TD
     API -->|6. Consultas Autorizadas + RLS| SupaDB
     API -->|7. Evaluación Semántica| AIModel
     Client -->|8. Carga Documentos PDF| SupaStorage
+    API -->|Solo promedios numéricos de valoraciones| ML
 ```
 
 ### Tabla de Responsabilidades por Capa

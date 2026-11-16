@@ -23,7 +23,7 @@ globalThis.fetch=async(url,options)=>{
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0'),actor=id(999);
 supabasePublic.auth.getUser=async()=>({data:{user:{id:actor,user_metadata:{},app_metadata:{}}},error:null});
 const synthetic=await tutorRecommendationsService.demo('none');
-const pool=synthetic.profiles.map((p,i)=>({id:id(i+1),display_name:p.displayName,first_name:'DEMO',career:'Carrera de prueba',available_for_tutoring:true,
+const pool=synthetic.profiles.map((p,i)=>({id:id(i+1),display_name:p.displayName,first_name:p.displayName,career:'Carrera de prueba',available_for_tutoring:true,
  inclusive_accredited:i===0,profile_offered_subjects:[{subject_id:i%2===0?'math':'python',is_verified:true,level:'basic',subject:{name:i%2===0?'Matemáticas DEMO':'Python DEMO'}}]}));
 const stats=synthetic.profiles.map((p,i)=>({profile_id:id(i+1),total_completed_tutorings:20,total_reviews_received:p.reviewCount,
  avg_communication:p.scores[0],avg_knowledge:p.scores[1],avg_punctuality:p.scores[2],overall_rating:Number((p.scores.reduce((a,b)=>a+b,0)/3).toFixed(2))}));
