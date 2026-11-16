@@ -1,0 +1,32 @@
+{
+  "scope": "Actual components, synthetic browser service responses; no remote mutations.",
+  "saved": {
+    "revision": 1,
+    "personalization_enabled": true,
+    "discoverable": true,
+    "interest": [
+      "python"
+    ],
+    "learn": [
+      "databases"
+    ],
+    "teach": [
+      "python"
+    ]
+  },
+  "mobile": {
+    "width": 390,
+    "documentWidth": 390
+  },
+  "accountIsolation": true,
+  "failedSavePreservesSelection": true,
+  "failedDismissPreservesCards": true,
+  "hideAndUndo": true,
+  "disabledPersonalization": true,
+  "cardLinks": [
+    "/resources?note=00000000-0000-0000-0000-000000000201",
+    "/profile/00000000-0000-0000-0000-000000000202",
+    "/projects?project=00000000-0000-0000-0000-000000000203"
+  ],
+  "exceptions": []
+}

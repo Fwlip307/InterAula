@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "tests": {
+    "backend": 142,
+    "frontend": 62,
+    "ml": 15,
+    "total": 219
+  },
+  "checks": {
+    "sqlAtomicActivator": true,
+    "directSqlGuards": true,
+    "privateMeasures": true,
+    "duplicateFacts": true,
+    "minorEscalationAndAppealRecalculation": true,
+    "futureSessionsAndWorkshops": true,
+    "accountHttpGuardAndSupportAccess": true,
+    "independentAppeal": true,
+    "browserFlow": true,
+    "responsiveWidths": [
+      320,
+      390,
+      768,
+      1440
+    ],
+    "builds": true,
+    "lintCompletedWithWarnings": true,
+    "dockerHealthy": [
+      "frontend",
+      "backend",
+      "ml"
+    ],
+    "frontendHttp": 200,
+    "apiHealth": "ok",
+    "moderationUnauthenticated": 401,
+    "remoteSchemaActivated": true,
+    "remoteRecordsRead": 0
+  },
+  "operationalPending": [
+    "Designar responsables reales con permisos explícitos; se requiere independencia para las apelaciones.",
+    "Acordar política y tiempos de revisión con el cliente."
+  ],
+  "safety": "No real sanctions, reviewer assignments, emails or pushes were performed. Browser/API/SQL workflow used synthetic users and ephemeral PostgreSQL."
+}

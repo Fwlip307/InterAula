@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "checks": [
+    "The real panel renders SQL quality aggregates, sample sizes and transparent policy.",
+    "One participant confirmation persists but does not complete an unverified session.",
+    "The second participant confirms through real HTTP and the PostgreSQL RPC, unlocking the review.",
+    "A real low-score review updates PostgreSQL, deactivates recent quality and preserves the completed session.",
+    "A reputation fetch error offers retry without pretending there are no reviews.",
+    "Reputation fits 320/390/768/1440px in light, dark and Calm themes."
+  ],
+  "widths": [
+    {
+      "viewportWidth": 320,
+      "left": 10,
+      "right": 310,
+      "width": 300,
+      "scroll": 298
+    },
+    {
+      "viewportWidth": 390,
+      "left": 10,
+      "right": 365,
+      "width": 355,
+      "scroll": 353
+    },
+    {
+      "viewportWidth": 768,
+      "left": 10,
+      "right": 758,
+      "width": 748,
+      "scroll": 746
+    },
+    {
+      "viewportWidth": 1440,
+      "left": 180,
+      "right": 1260,
+      "width": 1080,
+      "scroll": 1078
+    }
+  ],
+  "scope": "Real React, HTTP client, Express and PostgreSQL-in-memory with synthetic accounts. No real user data, Supabase writes or Gemini calls."
+}

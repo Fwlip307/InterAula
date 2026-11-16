@@ -1,0 +1,12 @@
+.ia-reputation{padding:20px;margin-bottom:20px;color:var(--ia-text-main);}
+.ia-reputation h3{margin:0 0 10px;font-size:1.08rem;}
+.ia-reputation>p{font-size:.86rem;line-height:1.65;color:var(--ia-text-muted);}
+.ia-reputation-totals{display:flex;flex-wrap:wrap;gap:10px 20px;padding:12px 0;font-size:.83rem;line-height:1.6;}
+.ia-reputation-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;margin:12px 0;}
+.ia-reputation-grid article{border:1px solid var(--ia-border);border-radius:10px;padding:14px;display:flex;align-items:flex-start;flex-direction:column;gap:9px;}
+.ia-reputation-grid h4,.ia-reputation-grid p{margin:0;font-size:.9rem;}
+.ia-reputation-grid small{font-size:.75rem;color:var(--ia-text-muted);}
+.ia-reputation-highlight,.ia-reputation-neutral{font-size:.75rem;line-height:1.5;border-radius:7px;padding:5px 8px;background:var(--ia-primary-subtle,#eff6ff);color:var(--ia-text-main);}
+.ia-reputation-highlight{font-weight:700;border:1px solid var(--ia-primary,#2563eb);}
+.ia-reputation-policy{font-size:.78rem!important;}
+.ia-reputation-coach{padding:12px;border-radius:9px;background:var(--ia-bg-subtle);}

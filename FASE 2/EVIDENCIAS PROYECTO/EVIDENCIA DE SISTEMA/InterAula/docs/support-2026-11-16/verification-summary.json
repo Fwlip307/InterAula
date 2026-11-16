@@ -1,0 +1,15 @@
+{
+  "tests": {
+    "frontend": 62,
+    "backend": 139,
+    "python": 15,
+    "total": 216
+  },
+  "browserChecks": 7,
+  "integrationPassed": true,
+  "remoteActivationVerified": true,
+  "realReviewerAppointments": false,
+  "scope": "Synthetic HTTP/SQL/browser tests only. Remote check was SELECT limit(0), no records or writes. No emails or Gemini calls.",
+  "dockerHealthy": true,
+  "activationConfirmedByUser": true
+}

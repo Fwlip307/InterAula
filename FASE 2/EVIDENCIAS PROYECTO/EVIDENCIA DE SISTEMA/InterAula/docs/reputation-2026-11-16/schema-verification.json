@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "table": "tutor_reputation_public",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "tutoring_sessions",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    }
+  ],
+  "scope": "Configured Supabase schema only, SELECT limit(0). No records, writes, RPCs or secret output."
+}

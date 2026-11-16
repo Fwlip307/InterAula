@@ -1,0 +1,5 @@
+.ia-navbar .ia-inbox-link{display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;font-size:.8rem;position:relative;}
+.ia-inbox-count{font-size:.68rem;background:var(--ia-primary-subtle,#eff6ff);border-radius:8px;padding:1px 4px;font-weight:700;}
+@media(max-width:1000px){.ia-navbar .ia-inbox-link{box-sizing:border-box;width:36px;height:36px;padding:7px;}.ia-inbox-label{display:none;}.ia-inbox-count{position:absolute;top:-2px;right:-2px;font-size:.6rem;}.ia-navbar .ia-global-search-trigger{width:40px;min-width:40px;padding:8px;justify-content:center;}.ia-navbar .ia-global-search-trigger span,.ia-navbar .ia-global-search-trigger kbd{display:none;}}
+@media(max-width:360px){.ia-navbar .ia-brand-name{display:none;}}
+@media(max-width:480px){.ia-navbar .ia-nav-user{gap:4px;}.ia-navbar .ia-user-pill-btn{box-sizing:border-box;width:36px;height:36px;min-width:36px;justify-content:center;padding:2px;}}

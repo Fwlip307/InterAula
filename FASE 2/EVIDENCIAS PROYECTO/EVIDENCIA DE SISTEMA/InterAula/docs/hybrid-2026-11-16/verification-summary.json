@@ -1,0 +1,21 @@
+{
+  "restoration": {
+    "source": "88edc44",
+    "deletedCommit": "14227a4",
+    "recoveredFiles": 482,
+    "previousFilesChecked": 487,
+    "missingFiles": [],
+    "historyRewritten": false,
+    "credentialsPrinted": false
+  },
+  "tests": {
+    "frontend": 62,
+    "backend": 133,
+    "python": 15,
+    "total": 210
+  },
+  "integrationScenarios": 9,
+  "dockerScenarios": 9,
+  "browserChecks": 6,
+  "scope": "Synthetic tests, no real Supabase writes or Gemini calls. Existing local configuration restored with explicit authorization."
+}

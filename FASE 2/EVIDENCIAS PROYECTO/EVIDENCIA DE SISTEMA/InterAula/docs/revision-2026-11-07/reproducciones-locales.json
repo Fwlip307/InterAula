@@ -1,0 +1,44 @@
+{
+  "privateProjectWithoutAuth": {
+    "status": 200,
+    "visibility": "private",
+    "statusValue": "draft"
+  },
+  "nonsenseAnswerWithoutAuth": {
+    "status": 200,
+    "score": 8,
+    "passed": true,
+    "feedback": "Respuesta conceptualmente consistente. Demuestra nociones técnicas acordes a los requerimientos de la asignatura."
+  },
+  "inconsistentBotScoreAcceptedBySchema": true,
+  "botGrant": {
+    "forgedScoreWithMockedPersistence": {
+      "success": true,
+      "score": 100,
+      "level": "advanced",
+      "verificationWriteAttempted": true
+    },
+    "allDatabaseCallsFail": {
+      "success": true,
+      "message": "Acreditación concedida exitosamente",
+      "request": null
+    }
+  },
+  "neededSubjectFrontendContract": {
+    "accepted": false,
+    "issues": [
+      {
+        "path": [
+          "level"
+        ],
+        "code": "invalid_type",
+        "message": "Nivel académico inválido. Valores permitidos: basic, intermediate, advanced"
+      },
+      {
+        "path": [],
+        "code": "unrecognized_keys",
+        "message": "Unrecognized key(s) in object: 'current_level'"
+      }
+    ]
+  }
+}

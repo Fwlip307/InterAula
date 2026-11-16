@@ -1,0 +1,52 @@
+{
+  "themes": [
+    {
+      "theme": "dark",
+      "reduceMotion": "false"
+    },
+    {
+      "theme": "calm",
+      "reduceMotion": "true"
+    }
+  ],
+  "themeAfterReload": "calm",
+  "registrationWeakPassword": {
+    "message": "Debe incluir al menos una letra mayúscula.",
+    "checkboxLabels": 1,
+    "signupRequests": 0
+  },
+  "privateRoutes": [
+    {
+      "requested": "/profile",
+      "actual": "/login"
+    },
+    {
+      "requested": "/learning-space",
+      "actual": "/login"
+    },
+    {
+      "requested": "/tutoring",
+      "actual": "/login"
+    },
+    {
+      "requested": "/my-tutoring",
+      "actual": "/login"
+    },
+    {
+      "requested": "/projects",
+      "actual": "/login"
+    },
+    {
+      "requested": "/forum",
+      "actual": "/login"
+    },
+    {
+      "requested": "/resources",
+      "actual": "/login"
+    },
+    {
+      "requested": "/settings",
+      "actual": "/login"
+    }
+  ]
+}

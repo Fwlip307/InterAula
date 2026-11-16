@@ -1,6 +1,10 @@
 # InterAula: revisión integral y siguientes iteraciones
 
+**Última iteración:** cierre verificable y calidad reciente implementados, Supabase activado por el usuario y estructura comprobada. Suite vigente: 62 frontend, 136 backend y 15 Python (213). [Reglas y evidencia](REPUTACION_Y_SESIONES_VALIDAS.md). Las cifras de las revisiones siguientes son históricas.
+
 Revisión del 15 de noviembre de 2026, contrastada con el documento APT compartido y con el enfoque acordado: estudiantes de educación superior, con apoyos opcionales para TEA, TDAH y dislexia. Este informe no reproduce los antecedentes personales del documento.
+
+**Actualización del 16 de noviembre:** restaurada la aplicación tras el borrado accidental. K-Means ya está incorporado al buscador de tutores por valoraciones y a «Para ti» por temas públicos, combinado con afinidad y comunidad. Suite actual: 62 frontend, 133 backend y 15 Python (210 pruebas). [Uso, funcionamiento y límites actuales](RECOMENDADOR_HIBRIDO.md). Las cifras y pendientes de la revisión original que siguen son históricos.
 
 ## Resultado de esta revisión
 
@@ -56,7 +60,7 @@ El formulario de valoración usa diálogo nativo: foco contenido, Escape, etique
 | Tutorías y materiales sin monedas ni transacciones de dinero | Corresponde al flujo académico actual. Los acuerdos declarados del Hub deben explicarse por separado para no sugerir una pasarela de cobros. |
 | Valoración multicriterio 1–10 y reputación automática | La base ya lo soportaba; el contrato frontend/backend quedó corregido y probado. |
 | Insignias por 10, 25 y 50 sesiones | Existen; también hay un primer hito de una sesión. Se verificó su otorgamiento con datos temporales. |
-| Recomendación con K-Means/Python/scikit-learn | Pendiente. El motor actual utiliza afinidad por temas, complementariedad y contexto de comunidad; no hay un servicio K-Means entrenado. No debe describirse como implementado en una defensa. |
+| Recomendación con K-Means/Python/scikit-learn | Implementada posteriormente como piloto: valoraciones en el buscador de tutores y temas públicos en «Para ti», junto con afinidad y comunidad. Se probó la integración real entre servicios; falta validar calidad con estudiantes. Ver RECOMENDADOR_HIBRIDO.md. |
 | Aprendizaje adaptativo | Existe un piloto de Cálculo con grafo y seguimiento bayesiano. Es un componente distinto de la recomendación de tutores por clustering. |
 | Plataforma «descentralizada» | La interacción es entre pares; técnicamente hay backend y base de datos centralizados. Conviene describirla como comunidad colaborativa entre pares con infraestructura en la nube. |
 | Reducir frustración/deserción | Es un objetivo del proyecto. Estas pruebas verifican software; no demuestran ese impacto ni eficacia clínica. |
@@ -73,8 +77,8 @@ La corrección de notas de valoración usa las columnas existentes y no requiere
 ## Orden propuesto para las siguientes iteraciones
 
 1. Cerrar el piloto con dos cuentas: acreditar una materia, solicitar/aceptar una tutoría, entrar al aula, finalizar y valorar. Revisar estadísticas e insignias. Registrar fallos observados, sin usar la cuenta personal para datos desechables.
-2. Alinear el informe APT con el alcance real: apoyos inclusivos, motor de afinidad actual, piloto adaptativo y clustering aún pendiente. Actualizar las constantes antiguas y textos históricos de acreditación que siguen describiendo políticas anteriores; la política activa la determina el servidor.
-3. Preparar K-Means con un conjunto de datos documentado de valoraciones auténticas y un criterio de comparación contra el motor actual. Separar datos DEMO de cualquier evidencia de calidad con usuarios reales. No agrupar por diagnósticos ni inferirlos.
+2. Alinear el informe APT con el alcance real: apoyos inclusivos, recomendador híbrido con K-Means y piloto adaptativo. Actualizar las constantes antiguas y textos históricos de acreditación que siguen describiendo políticas anteriores; la política activa la determina el servidor.
+3. Validar K-Means con valoraciones e intereses auténticos y comparar utilidad con afinidad directa, orden por promedio y catálogo habitual. Separar datos DEMO de cualquier evidencia de calidad con usuarios reales. No agrupar por diagnósticos ni inferirlos.
 4. Completar el piloto de inclusión: estudiantes que voluntariamente prueben instrucciones, ayudas, pausas, lectura y orientación; recoger observaciones sin exigir diagnósticos. Revisar especialmente la diferencia entre práctica sin tiempo y acreditación con tiempo ampliable.
 5. Preparar la demostración y operación: recuperación de cuentas real, aula en dos dispositivos, costes/cuotas de IA, moderación, respaldo/restauración y evidencia de cada requisito. No presentar cuotas de IA ilimitadas ni validación institucional inexistente.
 

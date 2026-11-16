@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "focus": "data",
+      "scope": "all",
+      "count": 9,
+      "clusters": 4
+    },
+    {
+      "focus": "data",
+      "scope": "campus",
+      "count": 4,
+      "clusters": 4
+    },
+    {
+      "focus": "data",
+      "scope": "nearby",
+      "count": 7,
+      "clusters": 4
+    },
+    {
+      "focus": "web",
+      "scope": "all",
+      "count": 9,
+      "clusters": 4
+    },
+    {
+      "focus": "web",
+      "scope": "campus",
+      "count": 4,
+      "clusters": 4
+    },
+    {
+      "focus": "web",
+      "scope": "nearby",
+      "count": 7,
+      "clusters": 4
+    },
+    {
+      "focus": "business",
+      "scope": "all",
+      "count": 9,
+      "clusters": 4
+    },
+    {
+      "focus": "business",
+      "scope": "campus",
+      "count": 4,
+      "clusters": 4
+    },
+    {
+      "focus": "business",
+      "scope": "nearby",
+      "count": 7,
+      "clusters": 4
+    }
+  ],
+  "feed": true,
+  "offline": true,
+  "scope": "Real Express to real Python, synthetic auth and Supabase query responses. No external database, writes or Gemini calls."
+}

@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "checks": [
+    "Authenticated report creation uses the real form/API/SQL and remains pending; injected user metadata does not grant reviewer access.",
+    "Original report, participant replies and team notes stay private; only the reviewed summary is shared with the respondent.",
+    "The first reviewer cannot take the appeal; a distinct authorized reviewer closes it and further appeal is disabled.",
+    "Own inbox contains only generic notices and marking read updates its count without disclosing case text.",
+    "Inbox errors are explicit and retry recovers.",
+    "Failed report submission preserves the user draft.",
+    "The full app layout, visible inbox access and forms fit 320/390/768/1440px and light/dark/Calm themes."
+  ],
+  "widths": [
+    {
+      "viewportWidth": 320,
+      "left": 10,
+      "right": 295,
+      "width": 285,
+      "scroll": 285,
+      "body": 305,
+      "clientWidth": 305,
+      "navRight": 297
+    },
+    {
+      "viewportWidth": 390,
+      "left": 10,
+      "right": 365,
+      "width": 355,
+      "scroll": 355,
+      "body": 375,
+      "clientWidth": 375,
+      "navRight": 363
+    },
+    {
+      "viewportWidth": 768,
+      "left": 18,
+      "right": 735,
+      "width": 717,
+      "scroll": 717,
+      "body": 753,
+      "clientWidth": 753,
+      "navRight": 741
+    },
+    {
+      "viewportWidth": 1440,
+      "left": 162.5,
+      "right": 1262.5,
+      "width": 1100,
+      "scroll": 1100,
+      "body": 1425,
+      "clientWidth": 1425,
+      "navRight": 1405
+    }
+  ],
+  "exceptions": [],
+  "scope": "Real AppRouter, auth context, React UI and HTTP client -> Express -> PostgreSQL/RLS in memory. Synthetic accounts/reviewer appointments only; no real Supabase or email/Google requests."
+}

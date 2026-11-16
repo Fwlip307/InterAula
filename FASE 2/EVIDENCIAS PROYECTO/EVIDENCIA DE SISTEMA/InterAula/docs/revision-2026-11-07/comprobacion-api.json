@@ -1,0 +1,54 @@
+[
+  {
+    "path": "/api/health",
+    "status": 200,
+    "elapsedMs": 75
+  },
+  {
+    "path": "/api/ai/status",
+    "status": 200,
+    "elapsedMs": 25
+  },
+  {
+    "path": "/api/projects",
+    "status": 200,
+    "elapsedMs": 1065,
+    "itemCount": 1
+  },
+  {
+    "path": "/api/forum/posts",
+    "status": 200,
+    "elapsedMs": 1034,
+    "itemCount": 1
+  },
+  {
+    "path": "/api/profiles/catalog/subjects",
+    "status": 200,
+    "elapsedMs": 641,
+    "itemCount": 0
+  },
+  {
+    "path": "/api/tutoring/tutors",
+    "status": 200,
+    "elapsedMs": 1051,
+    "itemCount": 0
+  },
+  {
+    "path": "/api/workshops",
+    "status": 200,
+    "elapsedMs": 1028,
+    "itemCount": 0
+  },
+  {
+    "path": "/api/profiles/me",
+    "status": 401,
+    "elapsedMs": 23,
+    "error": "No autorizado: Se requiere una sesión activa con token Bearer."
+  },
+  {
+    "path": "/api/does-not-exist",
+    "status": 404,
+    "elapsedMs": 23,
+    "error": "Ruta no encontrada en la API de InterAula"
+  }
+]

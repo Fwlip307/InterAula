@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "privateReport": true,
+  "privateTeamNotes": true,
+  "independentAppeal": true,
+  "ownInbox": true,
+  "scope": "Real HTTP Express and real SQL/RLS over in-memory PostgreSQL. Synthetic identities only; no real Supabase, email or Gemini requests."
+}

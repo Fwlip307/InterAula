@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "checks": [
+    "A confirmed minor decision creates a private warning; reporter cannot see private reasons or consume the affected member appeal.",
+    "Second confirmed distinct fact shows tutoring restriction and end date; measures view fits 320/390/768/1440px and supports light, dark and Calm themes.",
+    "Account restriction redirects to private support while preserving appeal; original issuer cannot take it; independent reviewer overturns it and account access is restored."
+  ],
+  "widths": [
+    {
+      "width": 320,
+      "body": 305,
+      "client": 305,
+      "section": 295
+    },
+    {
+      "width": 390,
+      "body": 375,
+      "client": 375,
+      "section": 365
+    },
+    {
+      "width": 768,
+      "body": 753,
+      "client": 753,
+      "section": 735
+    },
+    {
+      "width": 1440,
+      "body": 1425,
+      "client": 1425,
+      "section": 1262.5
+    }
+  ],
+  "exceptions": [],
+  "scope": "Actual React/AppRouter -> Express -> PostgreSQL/RLS, unrelated profile bootstrap catalogs stubbed with empty arrays, all synthetic accounts. No real Supabase, Gemini or reviewer permissions."
+}

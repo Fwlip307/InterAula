@@ -1,0 +1,42 @@
+{
+  "activationReady": true,
+  "checks": [
+    {
+      "table": "community_reviewers",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "moderation_findings",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "moderation_measures",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "moderation_case_links",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "moderation_appeal_reviews",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "tutor_availability_limits",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    }
+  ],
+  "scope": "Remote structure only, limit(0). No role assignments, sanctions or other writes."
+}

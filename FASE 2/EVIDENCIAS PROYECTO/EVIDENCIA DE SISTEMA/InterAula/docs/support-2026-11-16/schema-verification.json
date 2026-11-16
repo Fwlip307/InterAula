@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "table": "community_incidents",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "community_incident_events",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "community_reviewers",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    },
+    {
+      "table": "user_notifications",
+      "available": true,
+      "recordsRead": 0,
+      "errorCode": null
+    }
+  ],
+  "scope": "Configured Supabase structure only, SELECT limit(0); no records, writes, reviewer assignments or RPCs."
+}

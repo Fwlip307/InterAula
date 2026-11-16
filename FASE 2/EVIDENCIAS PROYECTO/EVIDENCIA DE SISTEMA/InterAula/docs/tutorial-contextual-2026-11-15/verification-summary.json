@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-15",
+  "feature": "Tutorial contextual y chat limitado a InterAula",
+  "frontendTests": {
+    "passed": 61,
+    "failed": 0
+  },
+  "browserChecks": {
+    "passed": 13,
+    "widths": [
+      320,
+      390,
+      768,
+      1440
+    ],
+    "realReactAndRoutes": true,
+    "syntheticServicesAndSpeech": true,
+    "productionWrites": 0
+  },
+  "build": "passed",
+  "lint": "zero errors; project warnings remain",
+  "docker": {
+    "frontend": "healthy",
+    "backend": "healthy"
+  },
+  "behaviour": {
+    "conversationDimming": false,
+    "instructionsBesideTarget": true,
+    "transparentInteractiveSpotlight": true,
+    "pauseRestoresConversation": true,
+    "externalTopicsRedirected": true
+  },
+  "chatEngine": "Local application guidance catalogue and scoped intent policy; no new generative endpoint",
+  "databaseMigrationRequired": false
+}

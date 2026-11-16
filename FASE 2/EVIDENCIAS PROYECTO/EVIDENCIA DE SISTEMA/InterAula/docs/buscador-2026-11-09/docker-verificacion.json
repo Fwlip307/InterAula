@@ -1,0 +1,8 @@
+{
+  "pages": {
+    "/": 200,
+    "/dashboard": 200,
+    "/api/health": 200
+  },
+  "search_bundle": true
+}

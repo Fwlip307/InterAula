@@ -1,0 +1,84 @@
+{
+  "passed": true,
+  "scope": "Real Express and Python/scikit-learn over localhost. Synthetic identity and aggregates, no Supabase access or writes.",
+  "checks": [
+    {
+      "priority": "communication",
+      "model": {
+        "method": "kmeans",
+        "status": "ready",
+        "dataset": "community",
+        "description": "Ordenamos perfiles con valoraciones similares según la prioridad que elegiste. Revisa también las materias y la disponibilidad.",
+        "trainingCount": 18,
+        "minReviews": 3,
+        "minTutors": 6,
+        "clusterCount": 3,
+        "silhouette": 0.944431,
+        "modelVersion": "kmeans-ratings-v1"
+      },
+      "first": "[DEMO] Perfil Comunicación 3",
+      "count": 10
+    },
+    {
+      "priority": "knowledge",
+      "model": {
+        "method": "kmeans",
+        "status": "ready",
+        "dataset": "community",
+        "description": "Ordenamos perfiles con valoraciones similares según la prioridad que elegiste. Revisa también las materias y la disponibilidad.",
+        "trainingCount": 18,
+        "minReviews": 3,
+        "minTutors": 6,
+        "clusterCount": 3,
+        "silhouette": 0.944431,
+        "modelVersion": "kmeans-ratings-v1"
+      },
+      "first": "[DEMO] Perfil Dominio 5",
+      "count": 10
+    },
+    {
+      "priority": "punctuality",
+      "model": {
+        "method": "kmeans",
+        "status": "ready",
+        "dataset": "community",
+        "description": "Ordenamos perfiles con valoraciones similares según la prioridad que elegiste. Revisa también las materias y la disponibilidad.",
+        "trainingCount": 18,
+        "minReviews": 3,
+        "minTutors": 6,
+        "clusterCount": 3,
+        "silhouette": 0.944431,
+        "modelVersion": "kmeans-ratings-v1"
+      },
+      "first": "[DEMO] Perfil Puntualidad 1",
+      "count": 10
+    }
+  ],
+  "offlineCatalog": true,
+  "numericRequests": [
+    {
+      "rows": 18,
+      "columns": 3
+    },
+    {
+      "rows": 18,
+      "columns": 3
+    },
+    {
+      "rows": 18,
+      "columns": 3
+    },
+    {
+      "rows": 18,
+      "columns": 3
+    },
+    {
+      "rows": 18,
+      "columns": 3
+    },
+    {
+      "rows": 18,
+      "columns": 3
+    }
+  ]
+}

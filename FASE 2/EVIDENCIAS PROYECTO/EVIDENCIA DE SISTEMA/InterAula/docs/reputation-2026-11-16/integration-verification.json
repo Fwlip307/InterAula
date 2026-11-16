@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "firstConfirmation": "accepted",
+  "secondConfirmation": "completed",
+  "poorReviewRemovesQuality": true,
+  "milestonesPreserved": 2,
+  "scope": "Real HTTP Express to ephemeral PostgreSQL with synthetic accounts only. No Supabase, Gemini, emails or real credentials."
+}

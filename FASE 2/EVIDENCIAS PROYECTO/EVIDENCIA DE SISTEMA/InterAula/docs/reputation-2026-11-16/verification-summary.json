@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "tests": {
+    "frontend": 62,
+    "backend": 136,
+    "python": 15,
+    "total": 213
+  },
+  "browserChecks": 6,
+  "activationConfirmedByUser": true,
+  "remoteSchemaAvailable": true,
+  "remoteRecordsRead": 0,
+  "realUserFlowsTested": false,
+  "scope": "Functional tests use synthetic accounts and PostgreSQL in memory. No real Supabase writes or Gemini calls. User applied the SQL; remote verification was structure-only."
+}

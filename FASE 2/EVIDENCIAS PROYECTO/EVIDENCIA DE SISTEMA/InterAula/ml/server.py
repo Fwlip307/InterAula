@@ -5,6 +5,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from engine import MODEL_VERSION, cluster
+from interests import cluster_interests
 
 _slots = threading.BoundedSemaphore(2)
 
@@ -29,7 +30,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(404, {"error": "Ruta no encontrada"})
 
     def do_POST(self):
-        if self.path != "/cluster":
+        if self.path not in ("/cluster", "/interests"):
             self.send_json(404, {"error": "Ruta no encontrada"})
             return
         if not _slots.acquire(timeout=0.1):
@@ -42,10 +43,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(413, {"error": "Solicitud demasiado grande o incompleta"})
                 return
             value = json.loads(self.rfile.read(length))
-            self.send_json(200, cluster(value))
+            self.send_json(200, cluster_interests(value) if self.path == '/interests' else cluster(value))
         except (ValueError, TypeError, TimeoutError):
             self.send_json(400, {"error": "Solicitud inválida"})
-        except (BrokenPipeError, ConnectionResetError):
+        except ConnectionError:
             pass
         except Exception:
             self.send_json(503, {"error": "No fue posible comparar los perfiles"})

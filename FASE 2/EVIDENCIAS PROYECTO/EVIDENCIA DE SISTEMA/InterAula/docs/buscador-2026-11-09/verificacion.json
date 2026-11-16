@@ -1,0 +1,43 @@
+{
+  "scope": "Actual navbar, router and pages; synthetic identity/service responses; no remote mutations.",
+  "passed": true,
+  "checks": [
+    "Keyboard shortcut, arrows, Enter and direct Quiero aprender destination",
+    "Switching intent on the same page keeps unsaved topic selections",
+    "No results, focus containment, Escape and focus/scroll restoration",
+    "Navigation between tabs within Mi espacio",
+    "Project detail returns to the requested list tab",
+    "Note reader returns to draft library through search",
+    "Settings sections open and receive focus",
+    "Workshop and tutoring management tabs",
+    "Responsive header and dialog at 1440, 1280, 960, 390 and 320px"
+  ],
+  "widths": [
+    {
+      "width": 1440,
+      "documentWidth": 1425,
+      "triggerWidth": 205.078125
+    },
+    {
+      "width": 1280,
+      "documentWidth": 1265,
+      "triggerWidth": 205.078125
+    },
+    {
+      "width": 960,
+      "documentWidth": 945,
+      "triggerWidth": 205.078125
+    },
+    {
+      "width": 390,
+      "documentWidth": 390,
+      "triggerWidth": 40
+    },
+    {
+      "width": 320,
+      "documentWidth": 320,
+      "triggerWidth": 40
+    }
+  ],
+  "exceptions": []
+}

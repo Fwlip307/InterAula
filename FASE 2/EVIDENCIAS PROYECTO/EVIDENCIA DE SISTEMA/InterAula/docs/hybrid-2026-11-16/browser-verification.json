@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "checks": [
+    "The real ForYou component renders the authenticated hybrid feed and explains topic groups and community.",
+    "DEMO runs real K-Means over synthetic public topics, separate from the real feed, without actionable profile links.",
+    "Changing interests changes people and content; campus and nearby selections preserve geographic scope.",
+    "Demo failure preserves the feed and offers a working retry.",
+    "A pending demo cannot reopen itself after the user closes it.",
+    "The feature fits 320/390/768/1440px and light, dark and Calm themes."
+  ],
+  "widths": [
+    {
+      "viewportWidth": 320,
+      "left": 10,
+      "right": 310,
+      "width": 300,
+      "scroll": 298,
+      "body": 320
+    },
+    {
+      "viewportWidth": 390,
+      "left": 10,
+      "right": 365,
+      "width": 355,
+      "scroll": 353,
+      "body": 375
+    },
+    {
+      "viewportWidth": 768,
+      "left": 10,
+      "right": 743,
+      "width": 733,
+      "scroll": 731,
+      "body": 753
+    },
+    {
+      "viewportWidth": 1440,
+      "left": 172.5,
+      "right": 1252.5,
+      "width": 1080,
+      "scroll": 1078,
+      "body": 1425
+    }
+  ],
+  "exceptions": [],
+  "scope": "Real React and HTTP client to real Express/Python; synthetic identity and Supabase responses. No real user records, writes, voice or Gemini calls."
+}

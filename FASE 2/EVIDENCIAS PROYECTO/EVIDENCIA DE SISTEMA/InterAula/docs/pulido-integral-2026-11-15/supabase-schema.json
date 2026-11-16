@@ -1,0 +1,140 @@
+{
+  "checkedAt": "2026-11-15T19:57:23.853Z",
+  "readOnly": true,
+  "scope": "SELECT limit(0), no records, no RPC, no changes.",
+  "checks": [
+    {
+      "table": "profiles",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "subjects",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "tutoring_sessions",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "tutoring_reviews",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "tutor_statistics_view",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "badges",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "user_badges",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "academic_notes",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "forum_posts",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "projects",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "project_positions",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "project_deliverables",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "tutoring_workshops",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "workshop_enrollments",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "recommendation_topics",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "inclusive_tutor_accreditations",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "tutor_assessment_attempts",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "adaptive_skill_mastery",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    },
+    {
+      "table": "adaptive_practice_attempts",
+      "ready": true,
+      "status": 200,
+      "code": null,
+      "rowsRead": 0
+    }
+  ]
+}

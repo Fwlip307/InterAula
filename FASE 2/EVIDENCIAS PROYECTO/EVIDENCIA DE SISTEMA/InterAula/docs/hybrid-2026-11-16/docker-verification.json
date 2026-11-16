@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "focus": "data",
+      "scope": "all",
+      "clusters": 4,
+      "count": 9
+    },
+    {
+      "focus": "data",
+      "scope": "campus",
+      "clusters": 4,
+      "count": 4
+    },
+    {
+      "focus": "data",
+      "scope": "nearby",
+      "clusters": 4,
+      "count": 7
+    },
+    {
+      "focus": "web",
+      "scope": "all",
+      "clusters": 4,
+      "count": 9
+    },
+    {
+      "focus": "web",
+      "scope": "campus",
+      "clusters": 4,
+      "count": 4
+    },
+    {
+      "focus": "web",
+      "scope": "nearby",
+      "clusters": 4,
+      "count": 7
+    },
+    {
+      "focus": "business",
+      "scope": "all",
+      "clusters": 4,
+      "count": 9
+    },
+    {
+      "focus": "business",
+      "scope": "campus",
+      "clusters": 4,
+      "count": 4
+    },
+    {
+      "focus": "business",
+      "scope": "nearby",
+      "clusters": 4,
+      "count": 7
+    }
+  ],
+  "scope": "Docker backend to Docker Python over internal network. Synthetic public topic vectors and synthetic preferences. No Supabase or Gemini requests."
+}

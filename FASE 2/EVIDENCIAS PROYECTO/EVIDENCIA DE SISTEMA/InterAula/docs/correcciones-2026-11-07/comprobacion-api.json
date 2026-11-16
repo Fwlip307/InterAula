@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-11-08T02:52:18.161Z",
+  "remoteMigrationsApplied": false,
+  "results": [
+    {
+      "path": "/api/health",
+      "status": 200
+    },
+    {
+      "path": "/api/projects",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "path": "/api/forum/posts",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "path": "/api/profiles/catalog/subjects",
+      "status": 200,
+      "count": 0
+    },
+    {
+      "path": "/api/workshops",
+      "status": 503,
+      "error": "No fue posible completar la operación. Intenta nuevamente."
+    },
+    {
+      "path": "/api/ai/evaluate-answer",
+      "status": 401,
+      "authenticated": false
+    },
+    {
+      "path": "http://localhost:5173",
+      "status": 200
+    }
+  ]
+}

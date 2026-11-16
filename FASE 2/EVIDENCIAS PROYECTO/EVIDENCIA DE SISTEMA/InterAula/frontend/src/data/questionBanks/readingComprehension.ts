@@ -1,0 +1,238 @@
+/**
+ * readingComprehension.ts
+ * Banco de preguntas técnicas y pedagógicas para asignaturas de
+ * "Comprensión Lectora", "Habilidades de Comunicación" y "Comunicación Oral y Escrita".
+ * Organizado en niveles: Básico, Intermedio y Avanzado.
+ */
+
+import type { ChallengeQuestion } from '../../services/aiQuestionEngine';
+
+export const READING_COMPREHENSION_QUESTIONS: ChallengeQuestion[] = [
+  // ==========================================
+  // NIVEL BÁSICO: Idea principal, conectores y ortografía
+  // ==========================================
+  {
+    id: 'lec_b_01',
+    subject: 'Comprensión Lectora',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: 'Lea el enunciado: "A pesar de la copiosa lluvia que azotó la ciudad, el debate estudiantil se llevó a cabo con gran asistencia". ¿Qué función cumple el conector "A pesar de"?',
+    options: [
+      { id: 'a', text: 'Establece una relación de concesión o contraste' },
+      { id: 'b', text: 'Indica una causa directa del evento' },
+      { id: 'c', text: 'Señala una consecuencia cronológica' },
+    ],
+    correctOptionId: 'a',
+    explanation: '"A pesar de" es un conector concesivo que introduce una dificultad o contraste sin impedir la acción principal.',
+  },
+  {
+    id: 'lec_b_02',
+    subject: 'Comprensión Lectora',
+    level: 'basic',
+    type: 'redaction',
+    category: 'conceptual',
+    timeLimit: 45,
+    prompt: 'Escribe el nombre del nivel de lectura que se limita a identificar únicamente los datos explícitos mencionados de forma directa en el texto (sin inferencias).',
+    acceptedAnswers: ['literal', 'nivel literal', 'lectura literal'],
+    placeholder: 'Ej: inferencial, literal, critico...',
+    explanation: 'El nivel literal recupera la información directamente expresada en el texto.',
+  },
+  {
+    id: 'lec_b_03',
+    subject: 'Comprensión Lectora',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: '¿Cuál es la diferencia entre el tema general de un texto y la idea principal?',
+    options: [
+      { id: 'a', text: 'El tema indica el asunto global (¿de qué trata?), mientras que la idea principal afirma o niega una tesis sobre él' },
+      { id: 'b', text: 'El tema siempre es un párrafo completo y la idea principal es una sola palabra' },
+      { id: 'c', text: 'No existe diferencia; son conceptos intercambiables en análisis textual' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'El tema es el marco temático general (frase nominal), mientras que la idea principal es la proposición central.',
+  },
+  {
+    id: 'lec_b_04',
+    subject: 'Comprensión Lectora',
+    level: 'basic',
+    type: 'redaction',
+    category: 'conceptual',
+    timeLimit: 45,
+    prompt: '¿Cómo se denomina la propiedad textual que garantiza que las ideas de un texto estén lógicamente ordenadas y se relacionen con un mismo tema central?',
+    acceptedAnswers: ['coherencia', 'coherencia global', 'coherencia textual'],
+    placeholder: 'Ej: cohesion, coherencia, adecuacion...',
+    explanation: 'La coherencia asegura la unidad temática y el sentido global del texto.',
+  },
+  {
+    id: 'lec_b_05',
+    subject: 'Comprensión Lectora',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: 'En el fragmento: "Los científicos analizaron el fenómeno. Ellos determinaron que fue un evento aislado", ¿qué recurso de cohesión representa "Ellos"?',
+    options: [
+      { id: 'a', text: 'Anáfora pronominal' },
+      { id: 'b', text: 'Catáfora temporal' },
+      { id: 'c', text: 'Elipsis verbal' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La anáfora hace referencia a un término mencionado previamente en el discurso ("los científicos").',
+  },
+
+  // ==========================================
+  // NIVEL INTERMEDIO: Inferencia, tono del autor y estructura
+  // ==========================================
+  {
+    id: 'lec_i_01',
+    subject: 'Comprensión Lectora',
+    level: 'intermediate',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: '¿Qué proceso cognitivo define a la lectura inferencial?',
+    options: [
+      { id: 'a', text: 'Deducir información implícita a partir de pistas textuales y conocimientos previos' },
+      { id: 'b', text: 'Memorizar los nombres de todos los autores citados en la bibliografía' },
+      { id: 'c', text: 'Evaluar exclusivamente la calidad tipográfica y diseño del documento' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La inferencia permite extraer conclusiones que no están escritas explícitamente pero se desprenden de las premisas del texto.',
+  },
+  {
+    id: 'lec_i_02',
+    subject: 'Comprensión Lectora',
+    level: 'intermediate',
+    type: 'redaction',
+    category: 'conceptual',
+    timeLimit: 45,
+    prompt: 'Escribe el nombre del tipo de texto que busca convencer o persuadir al lector sobre una tesis mediante argumentos fundados.',
+    acceptedAnswers: ['argumentativo', 'texto argumentativo', 'ensayo argumentativo'],
+    placeholder: 'Ej: expositivo, argumentativo, narrativo...',
+    explanation: 'El texto argumentativo tiene como propósito sustentar una postura o persuadir al receptor mediante razonamientos.',
+  },
+  {
+    id: 'lec_i_03',
+    subject: 'Comprensión Lectora',
+    level: 'intermediate',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: 'Si un autor utiliza expresiones como "sorprendentemente", "lamentablemente" o "sin duda alguna", ¿qué aspecto del texto se evidencia?',
+    options: [
+      { id: 'a', text: 'La modalización discursiva o subjetividad del emisor' },
+      { id: 'b', text: 'La total neutralidad científica del texto' },
+      { id: 'c', text: 'Un error gramatical en la conjugación del modo subjuntivo' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'Los modalizadores valorativos explicitan la postura, actitud o juicio del autor ante los hechos relatados.',
+  },
+  {
+    id: 'lec_i_04',
+    subject: 'Comprensión Lectora',
+    level: 'intermediate',
+    type: 'redaction',
+    category: 'conceptual',
+    timeLimit: 45,
+    prompt: '¿Cómo se llama la figura retórica consistente en atribuir cualidades o acciones humanas a objetos inanimados o conceptos abstractos?',
+    acceptedAnswers: ['personificacion', 'prosopopeya', 'personificación'],
+    placeholder: 'Ej: metafora, personificacion, hiperbole...',
+    explanation: 'La personificación o prosopopeya otorga rasgos humanos a seres no humanos o cosas.',
+  },
+  {
+    id: 'lec_i_05',
+    subject: 'Comprensión Lectora',
+    level: 'intermediate',
+    type: 'choice',
+    category: 'pedagogical',
+    timeLimit: 15,
+    prompt: 'Al asesorar como tutor a un estudiante que no comprende textos densos, ¿qué estrategia pedagógica inicial es más efectiva?',
+    options: [
+      { id: 'a', text: 'Enseñarle a identificar palabras clave, formular preguntas previas y parafrasear por párrafos' },
+      { id: 'b', text: 'Obligarlo a leer todo el texto a doble velocidad sin detenerse' },
+      { id: 'c', text: 'Pedirle que copie el texto a mano palabra por palabra' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La lectura activa con autopreguntas, subrayado consciente y paráfrasis fomenta la metacognición.',
+  },
+
+  // ==========================================
+  // NIVEL AVANZADO: Lectura crítica, falacias y síntesis
+  // ==========================================
+  {
+    id: 'lec_a_01',
+    subject: 'Comprensión Lectora',
+    level: 'advanced',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: 'En un texto argumentativo, un emisor desacredita una postura diciendo: "Esa teoría no tiene valor porque su autor fue expulsado de su universidad". ¿Qué falacia lógica comete?',
+    options: [
+      { id: 'a', text: 'Ad hominem' },
+      { id: 'b', text: 'Ad verecundiam' },
+      { id: 'c', text: 'Hombre de paja' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La falacia ad hominem ataca a la persona en lugar de refutar los argumentos sustantivos de la propuesta.',
+  },
+  {
+    id: 'lec_a_02',
+    subject: 'Comprensión Lectora',
+    level: 'advanced',
+    type: 'redaction',
+    category: 'conceptual',
+    timeLimit: 45,
+    prompt: 'Escribe el término que describe el significado contextual, subjetivo o cultural que adquiere una palabra, más allá de su definición literal de diccionario.',
+    acceptedAnswers: ['connotacion', 'connotativo', 'significado connotativo', 'connotación'],
+    placeholder: 'Ej: denotacion, connotacion...',
+    explanation: 'La connotación alude a los valores secundarios, emotivos y contextuales asociados a un término.',
+  },
+  {
+    id: 'lec_a_03',
+    subject: 'Comprensión Lectora',
+    level: 'advanced',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 15,
+    prompt: '¿Qué distingue a una síntesis académica de un simple resumen textual?',
+    options: [
+      { id: 'a', text: 'La síntesis reelabora e integra críticamente los conceptos centrales con palabras propias del analista' },
+      { id: 'b', text: 'La síntesis debe ser obligatoriamente más extensa que el texto original' },
+      { id: 'c', text: 'El resumen omite las ideas principales y la síntesis solo rescata ejemplos secundarios' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La síntesis implica una reestructuración conceptual integradora, no un mero extracto literal.',
+  },
+  {
+    id: 'lec_a_04',
+    subject: 'Comprensión Lectora',
+    level: 'advanced',
+    type: 'redaction',
+    category: 'conceptual',
+    timeLimit: 45,
+    prompt: '¿Cómo se denomina la relación de interdependencia dialógica o citas que un texto establece con otros textos anteriores?',
+    acceptedAnswers: ['intertextualidad', 'intertexto'],
+    placeholder: 'Ej: intertextualidad, hipertexto...',
+    explanation: 'La intertextualidad es la relación explícita o implícita que un texto guarda con otros textos.',
+  },
+  {
+    id: 'lec_a_05',
+    subject: 'Comprensión Lectora',
+    level: 'advanced',
+    type: 'choice',
+    category: 'pedagogical',
+    timeLimit: 15,
+    prompt: 'Un tutor detecta que un alumno confunde un "hecho" con una "opinión" en un artículo de opinión. ¿Cuál es la mejor guía?',
+    options: [
+      { id: 'a', text: 'Mostrarle cómo contrastar si la afirmación es empíricamente verificable o si depende de juicios de valor del autor' },
+      { id: 'b', text: 'Decirle que en textos periodísticos todo enunciado es un hecho absoluto' },
+      { id: 'c', text: 'Instruirle que ignore los adjetivos y solo cuente los sustantivos' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'Los hechos son datos objetivos verificables; las opiniones expresan juicios valorativos y perspectivas individuales.',
+  },
+];
