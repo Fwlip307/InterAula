@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { MODEL, publicMastery, recommendNext } from '../../backend/src/services/adaptiveEngine.ts';
+import { createPracticeExercise, COURSE_ID } from '../../backend/src/data/adaptiveCurriculum.ts';
 const root = process.argv[2], out = path.join(root, 'docs/kmeans-2026-11-15');
 fs.mkdirSync(out, {recursive:true});
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));

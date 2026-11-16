@@ -45,7 +45,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, cluster(value))
         except (ValueError, TypeError, TimeoutError):
             self.send_json(400, {"error": "Solicitud inválida"})
-        except ConnectionError:
+        except (BrokenPipeError, ConnectionResetError):
             pass
         except Exception:
             self.send_json(503, {"error": "No fue posible comparar los perfiles"})
