@@ -1,7 +1,0 @@
-export interface AdaptiveSkillView {id:string;name:string;prerequisites:string[];description:string;lesson:string;attempts:number;correctCount:number;mastery:number|null;distinctIndependentCorrect:number;status:'consolidated'|'unexplored'|'reinforce'|'practicing';relevant:boolean;recommended:boolean}
-export interface AdaptiveExercise {attemptId:string;skillId:string;templateId:string;prompt:string;options:{id:string;text:string}[];hintUsed:boolean;hint?:string}
-export interface AdaptiveRecommendation {kind:'diagnostic'|'practice'|'reinforce'|'complete';skillId:string;goalId:string;reason:string;prerequisitePath:string[];goalName:string;skillName:string;relevantSkillIds:string[];evidence:{attempts:number;distinctIndependentCorrect:number}}
-export interface AdaptiveOverview {ready:boolean;course:{id:string;name:string;pilot:boolean;contentStatus:string};model:{version:string;prior:number;learn:number;guess:number;slip:number;threshold:number;minDistinctCorrect:number};goalId:string;skills:AdaptiveSkillView[];recommendation:AdaptiveRecommendation;activeExercise:AdaptiveExercise|null;metrics:{count:number;brier:number;logLoss:number}|null;answeredCount:number}
-export interface AdaptiveFeedback {attemptId:string;skillId:string;correct:boolean;feedback:string;correctOptionId:string;hintUsed:boolean;skipped:boolean;masteryBefore:number;masteryAfter:number;predictedCorrect:number;distinctIndependentCorrect:number;modelVersion:string}
-export interface AdaptiveDemo {label:string;before:AdaptiveOverview;after:AdaptiveOverview;examplePrerequisite:string}
-

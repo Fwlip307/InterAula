@@ -1,9 +1,0 @@
-{
-  "message": "Hola. Qué gusto que quieras enseñar en InterAula. Para ofrecer tus tutorías, debes ir a tu Perfil y seleccionar la opción de ofrecer clases para iniciar tu acreditación. ¿Te guío hacia esa sección?",
-  "topic": "app",
-  "suggested_guides": [
-    "become-tutor"
-  ],
-  "provider": "google_gemini",
-  "model": "gemini-3.5-flash-lite"
-}
