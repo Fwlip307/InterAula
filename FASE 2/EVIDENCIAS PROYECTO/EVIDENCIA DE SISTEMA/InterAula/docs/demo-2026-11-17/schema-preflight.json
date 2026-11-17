@@ -1,0 +1,89 @@
+{
+  "readOnly": true,
+  "checks": [
+    {
+      "table": "profiles",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "study_tasks",
+      "ready": false,
+      "code": "42703",
+      "message": "column study_tasks.priority does not exist",
+      "recordsRead": 0
+    },
+    {
+      "table": "learning_paths",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "learning_path_stages",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "quick_ideas",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "topic_assessments",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "adaptive_learning_goals",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "adaptive_skill_mastery",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "adaptive_practice_attempts",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "academic_notes",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "project_deliverables",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    },
+    {
+      "table": "community_incidents",
+      "ready": true,
+      "code": null,
+      "message": null,
+      "recordsRead": 0
+    }
+  ]
+}

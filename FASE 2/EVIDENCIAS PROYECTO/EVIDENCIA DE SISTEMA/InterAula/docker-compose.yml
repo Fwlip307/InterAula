@@ -41,6 +41,10 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}
       - ML_SERVICE_URL=http://ml:8000
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - APP_PUBLIC_URL=${APP_PUBLIC_URL:-}
     volumes:
       - interaula-backend-data:/app/data
     networks:

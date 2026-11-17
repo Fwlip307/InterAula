@@ -1,0 +1,102 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "route": "/dashboard",
+      "passed": true,
+      "expected": "Para ti"
+    },
+    {
+      "route": "/learning-space?tab=paths",
+      "passed": true,
+      "expected": "De funciones a derivadas"
+    },
+    {
+      "route": "/learning-space?tab=tasks",
+      "passed": true,
+      "expected": "Preparar mi próxima tutoría"
+    },
+    {
+      "route": "/learning-space?tab=adaptive",
+      "passed": true,
+      "expected": "Regla de la cadena"
+    },
+    {
+      "route": "/learning-space?tab=profile",
+      "passed": true,
+      "expected": "[DEMO 17] Cálculo diferencial"
+    },
+    {
+      "route": "/tutoring?tab=tutors&search=DEMO",
+      "passed": true,
+      "expected": "[DEMO] Diego Tutor"
+    },
+    {
+      "route": "/tutoring?tab=my_classes",
+      "passed": true,
+      "expected": "[DEMO 17]"
+    },
+    {
+      "route": "/tutoring?tab=workshops",
+      "passed": true,
+      "expected": "[DEMO 17] Derivadas paso a paso"
+    },
+    {
+      "route": "/resources?note=2fdf7b40-72fe-2f43-a7fb-106890d6f02e",
+      "passed": true,
+      "expected": "Derivar paso a paso"
+    },
+    {
+      "route": "/resources?tab=mine",
+      "passed": true,
+      "expected": "Mis dudas privadas"
+    },
+    {
+      "route": "/forum?post=7ec3a009-8f80-cfcc-03e6-c1c060c5ae37",
+      "passed": true,
+      "expected": "Cómo reconozco una función compuesta"
+    },
+    {
+      "route": "/projects?project=b1c9f7c9-adc7-b1da-7e17-576d9a790cd1",
+      "passed": true,
+      "expected": "Agenda de estudio accesible"
+    },
+    {
+      "route": "/support",
+      "passed": true,
+      "expected": "Tu bandeja"
+    },
+    {
+      "route": "/profile?tab=interests",
+      "passed": true,
+      "expected": "Me interesa"
+    },
+    {
+      "route": "/settings#notifications",
+      "passed": true,
+      "expected": "Correos de tutorías y talleres"
+    },
+    {
+      "route": "/profile/cdf802cf-315c-4c28-ad4c-e166f5406572",
+      "passed": true,
+      "expected": "[DEMO] Diego Tutor"
+    },
+    {
+      "route": "/my-tutoring?tab=student_sessions",
+      "passed": true,
+      "expected": "Confirmar realización"
+    },
+    {
+      "name": "Ruta adaptativa en móvil",
+      "passed": true,
+      "body": 375,
+      "viewport": 390
+    },
+    {
+      "name": "Guía local y marcas de ensayo",
+      "passed": true
+    }
+  ],
+  "exceptions": [],
+  "scope": "Production React UI in Docker, actual login of the dedicated fictitious Camila identity, configured Express and Supabase. No auth or application API mocks. Screenshots exclude login credentials. No session was completed and no review was submitted."
+}

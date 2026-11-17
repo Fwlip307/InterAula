@@ -1,6 +1,6 @@
 # Centro de incidencias y bandeja interna
 
-Implementado el 16 de noviembre de 2026. Esta etapa añade reportes y seguimiento privado, revisión autorizada, una apelación independiente y avisos internos. No envía correo ni notificaciones push.
+Implementado el 16 de noviembre de 2026. Esta etapa añade reportes y seguimiento privado, revisión autorizada, una apelación independiente y avisos internos. La etapa original no enviaba correo ni notificaciones push. La ampliación [Alertas de clases y correos](ALERTAS_Y_CORREOS.md) incorpora recordatorios automáticos y prepara el envío transaccional de clases; requiere migración 029 y configurar Resend por separado.
 
 ## Abrir y usar
 
@@ -68,7 +68,7 @@ La bandeja y el contador del encabezado son silenciosos, estáticos y sin destel
 
 Los avisos de eventos empiezan con la activación; no se reconstruye todo el historial anterior. Los recordatorios se comprueban al consultar. Se muestran las 100 notificaciones más recientes y el total sin leer; «Marcar todos» incluye también las anteriores. Las listas de expedientes tienen límite de 100, sin paginación todavía.
 
-Los correos de tutorías/proyectos siguen pendientes de habilitar: Ajustes lo indica y conserva las preferencias. Tampoco se implementaron aún avisos de postulaciones del Hub ni de cambios de talleres. No se contactó a personas ni se envió correo durante esta implementación.
+Los correos de clases tienen ahora una integración preparada con Resend y requieren configurar el proveedor y activar la migración 029. Los del Hub continúan pendientes; Ajustes distingue sus preferencias. Tampoco se implementaron aún avisos de postulaciones del Hub ni de cambios de talleres. No se contactó a personas ni se envió correo durante esta implementación.
 
 ## Implementación
 

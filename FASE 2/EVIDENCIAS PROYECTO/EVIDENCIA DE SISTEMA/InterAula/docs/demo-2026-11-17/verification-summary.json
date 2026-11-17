@@ -1,0 +1,349 @@
+{
+  "preparedFor": "2026-11-17",
+  "dataset": "interaula-demo-presentacion-v1",
+  "activated": true,
+  "loginAccounts": 7,
+  "mainRoles": [
+    "Camila: estudiante",
+    "Diego: tutor ficticio",
+    "Valentina: propietaria de proyecto"
+  ],
+  "seed": {
+    "sessions": 12,
+    "historicalSessions": 9,
+    "initialReviews": 9,
+    "distinctStudents": 5,
+    "editorNotes": 6,
+    "uploadedPdf": 1,
+    "projects": 3,
+    "workshops": 2
+  },
+  "liveApi": {
+    "checkedAt": "2026-11-17T01:56:02.680Z",
+    "dataset": "interaula-demo-presentacion-v1",
+    "passed": true,
+    "checks": [
+      {
+        "name": "Perfil y apoyos",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Rutas, etapas y tareas",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Práctica adaptativa privada",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Simulación BKT",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Intereses y contenido relacionado",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Tutor ficticio acreditado",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Catálogo usado por la pantalla de tutores",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Sesiones como estudiante",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Solicitudes para aceptar",
+        "role": "diego",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Sesión preparada para confirmar",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Inscripción a taller",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Taller con cupos para inscribirse",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Trayectoria y reputación",
+        "role": "diego",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Leer material de Cálculo",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Apunte privado y borrador",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Foro con respuesta",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Proyecto colaborativo",
+        "role": "valentina",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Postulación pendiente de Diego",
+        "role": "valentina",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Avisos internos",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Incidencia pendiente sin sanciones",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Canal de alertas",
+        "role": "camila",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "PDF DEMO disponible sin duplicados",
+        "role": "diego",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Acceso autorizado al PDF como estudiante",
+        "role": "camila",
+        "passed": true,
+        "status": 200
+      },
+      {
+        "name": "El tutor no lee el apunte privado de Camila",
+        "role": "diego",
+        "passed": true,
+        "status": 404
+      },
+      {
+        "name": "Sin strikes ni restricciones por reportes pendientes",
+        "role": "diego",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "name": "Ningún correo encolado para cuentas DEMO",
+        "passed": true,
+        "status": 200
+      }
+    ],
+    "scope": "Real login and API requests using only dedicated fictitious accounts; one PDF upload/registration. No production identities or roles changed. The optional AI check sends a generic study question."
+  },
+  "learnerUi": {
+    "passed": true,
+    "checks": [
+      {
+        "route": "/dashboard",
+        "passed": true,
+        "expected": "Para ti"
+      },
+      {
+        "route": "/learning-space?tab=paths",
+        "passed": true,
+        "expected": "De funciones a derivadas"
+      },
+      {
+        "route": "/learning-space?tab=tasks",
+        "passed": true,
+        "expected": "Preparar mi próxima tutoría"
+      },
+      {
+        "route": "/learning-space?tab=adaptive",
+        "passed": true,
+        "expected": "Regla de la cadena"
+      },
+      {
+        "route": "/learning-space?tab=profile",
+        "passed": true,
+        "expected": "[DEMO 17] Cálculo diferencial"
+      },
+      {
+        "route": "/tutoring?tab=tutors&search=DEMO",
+        "passed": true,
+        "expected": "[DEMO] Diego Tutor"
+      },
+      {
+        "route": "/tutoring?tab=my_classes",
+        "passed": true,
+        "expected": "[DEMO 17]"
+      },
+      {
+        "route": "/tutoring?tab=workshops",
+        "passed": true,
+        "expected": "[DEMO 17] Derivadas paso a paso"
+      },
+      {
+        "route": "/resources?note=2fdf7b40-72fe-2f43-a7fb-106890d6f02e",
+        "passed": true,
+        "expected": "Derivar paso a paso"
+      },
+      {
+        "route": "/resources?tab=mine",
+        "passed": true,
+        "expected": "Mis dudas privadas"
+      },
+      {
+        "route": "/forum?post=7ec3a009-8f80-cfcc-03e6-c1c060c5ae37",
+        "passed": true,
+        "expected": "Cómo reconozco una función compuesta"
+      },
+      {
+        "route": "/projects?project=b1c9f7c9-adc7-b1da-7e17-576d9a790cd1",
+        "passed": true,
+        "expected": "Agenda de estudio accesible"
+      },
+      {
+        "route": "/support",
+        "passed": true,
+        "expected": "Tu bandeja"
+      },
+      {
+        "route": "/profile?tab=interests",
+        "passed": true,
+        "expected": "Me interesa"
+      },
+      {
+        "route": "/settings#notifications",
+        "passed": true,
+        "expected": "Correos de tutorías y talleres"
+      },
+      {
+        "route": "/profile/cdf802cf-315c-4c28-ad4c-e166f5406572",
+        "passed": true,
+        "expected": "[DEMO] Diego Tutor"
+      },
+      {
+        "route": "/my-tutoring?tab=student_sessions",
+        "passed": true,
+        "expected": "Confirmar realización"
+      },
+      {
+        "name": "Ruta adaptativa en móvil",
+        "passed": true,
+        "body": 375,
+        "viewport": 390
+      },
+      {
+        "name": "Guía local y marcas de ensayo",
+        "passed": true
+      }
+    ],
+    "exceptions": [],
+    "scope": "Production React UI in Docker, actual login of the dedicated fictitious Camila identity, configured Express and Supabase. No auth or application API mocks. Screenshots exclude login credentials. No session was completed and no review was submitted."
+  },
+  "rolesUi": {
+    "passed": true,
+    "checks": [
+      {
+        "role": "diego",
+        "route": "/my-tutoring?tab=requests",
+        "expected": "Valentina",
+        "passed": true
+      },
+      {
+        "role": "diego",
+        "route": "/my-tutoring?tab=offerings",
+        "expected": "[DEMO 17] Cálculo diferencial",
+        "passed": true
+      },
+      {
+        "role": "diego",
+        "route": "/profile?tab=tutoring",
+        "expected": "[DEMO 17] Cálculo diferencial",
+        "passed": true
+      },
+      {
+        "role": "valentina",
+        "route": "/projects?project=b1c9f7c9-adc7-b1da-7e17-576d9a790cd1",
+        "expected": "Agenda de estudio accesible",
+        "passed": true
+      },
+      {
+        "role": "valentina",
+        "route": "/projects?tab=my_projects",
+        "expected": "Agenda de estudio accesible",
+        "passed": true
+      }
+    ],
+    "exceptions": [],
+    "scope": "Real production UI and fictitious Diego/Valentina accounts. No profile mocks. No request accepted, session completed or application resolved; those scenes are preserved for the team."
+  },
+  "roomPreview": {
+    "passed": true,
+    "scope": "Real Camila DEMO login and authorized room preview; did not enter Jitsi or grant media access."
+  },
+  "ai": {
+    "passed": true,
+    "status": 200,
+    "route": "/api/ai/orientation-chat",
+    "scope": "One generic question about organizing derivadas study in InterAula, sent using Camila DEMO. Response received. No personal information in prompt; no further AI requests needed for verification."
+  },
+  "backendTestsPassed": 149,
+  "manualCases": 26,
+  "realUserAccountsChanged": 0,
+  "outgoingEmailsForDemo": 0,
+  "privilegedDemoRolesAssigned": 0,
+  "scenesPreserved": [
+    "Pending tutoring request",
+    "Live session confirmations/review",
+    "Pending project application"
+  ],
+  "pending": [
+    "Team rehearsal",
+    "Optional external videoconference/media test",
+    "Resend remains unconfigured",
+    "Real reviewers/validators remain to be designated"
+  ]
+}

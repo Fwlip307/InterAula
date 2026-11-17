@@ -20,8 +20,8 @@ function metadata(model:ClusteringResult|{status:'not_requested';trainingCount:n
   modelVersion:'modelVersion' in model?model.modelVersion:null};
 }
 export const tutorRecommendationsService={
- async list(userId:string,filters:TutorRecommendationFilters){
-  const pool=await tutoringBackendService.getAvailableTutors();
+ async list(userId:string,filters:TutorRecommendationFilters,token?:string){
+  const pool=await tutoringBackendService.getAvailableTutors(undefined,token);
   const stats=await readTutorStatistics(pool.map(t=>t.id)),byId=new Map((stats||[]).map(row=>[row.profile_id,row]));
   const vectors:TutorVector[]=(stats||[]).filter(row=>row.total_reviews_received>=MIN_TUTOR_REVIEWS&&[row.avg_communication,row.avg_knowledge,row.avg_punctuality].every(score=>score>=1))
    .sort((a,b)=>b.total_reviews_received-a.total_reviews_received||a.profile_id.localeCompare(b.profile_id)).slice(0,MAX_CLUSTER_TUTORS)

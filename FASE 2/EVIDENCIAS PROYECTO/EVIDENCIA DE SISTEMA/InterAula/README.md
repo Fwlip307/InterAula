@@ -1,5 +1,9 @@
 # 🎓 InterAula — Plataforma de Tutorías Universitarias y Aprendizaje Colaborativo
 
+**Demo del 17 de noviembre:** escenario ficticio conectado con 7 cuentas, 12 sesiones, materiales, talleres, aprendizaje, foro, proyectos y avisos. Incluye guía de ensayo y reinicio de la escena de insignias; no concede roles de revisión ni envía correos DEMO. [Empezar y acceder a los módulos](docs/demo-2026-11-17/EMPEZAR_AQUI.md).
+
+**Alertas de clases — 16 de noviembre:** avisos para estudiantes y tutores, talleres, recordatorios automáticos de 24 horas/1 hora y correo opcional mediante una cola privada con reintentos. El envío por Resend queda desactivado hasta configurar remitente, clave privada y URL pública HTTPS. Activación de supabase/ACTIVAR_ALERTAS_DE_CLASES.sql confirmada y estructura comprobada; recordatorios internos activos. [Uso y configuración paso a paso](docs/ALERTAS_Y_CORREOS.md).
+
 **Medidas de convivencia — 16 de noviembre:** advertencias y strikes por hechos confirmados, restricciones por materia/tutorías/comunidad/cuenta, vencimientos y apelación independiente. Incluye «Mis medidas», guardas SQL/API y cancelación informada de reservas afectadas. **219 pruebas aprobadas**, navegador y Docker verificados. Activación remota confirmada y estructura comprobada sin leer registros; responsables reales pendientes de designar. [Reglas, uso y activación](docs/MEDIDAS_DE_CONVIVENCIA.md).
 
 **Incidencias y avisos — 16 de noviembre:** centro privado de reportes, revisión con permisos propios, apelación independiente y bandeja interna con avisos transaccionales de tutorías/incidencias. **216 pruebas aprobadas** y recorrido visual completo. Activación de supabase/ACTIVAR_INCIDENCIAS_Y_AVISOS.sql confirmada y estructura verificada; responsables de revisión pendientes de designar. [Uso, activación y alcance](docs/INCIDENCIAS_Y_AVISOS.md).

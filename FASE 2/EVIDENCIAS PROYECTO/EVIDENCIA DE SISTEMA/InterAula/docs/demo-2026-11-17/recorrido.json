@@ -1,0 +1,210 @@
+[
+  {
+    "role": "Camila",
+    "module": "Inicio y recomendaciones",
+    "path": "/dashboard#para-ti",
+    "data": "Intereses: Matemáticas y Python",
+    "action": "Ver Para ti y abrir un recurso relacionado",
+    "expected": "Hay contenidos y personas relacionados con los temas elegidos."
+  },
+  {
+    "role": "Camila",
+    "module": "Comunidad cercana",
+    "path": "/community",
+    "data": "IP DUOC UC · Plaza Vespucio",
+    "action": "Alternar toda la comunidad / mi sede",
+    "expected": "Cambia el alcance; sede/comuna es referencia elegida, no GPS."
+  },
+  {
+    "role": "Camila",
+    "module": "Ruta de estudio",
+    "path": "/learning-space?tab=paths",
+    "data": "De funciones a derivadas",
+    "action": "Abrir la ruta y marcar una etapa pendiente",
+    "expected": "El progreso cambia y se conserva al recargar."
+  },
+  {
+    "role": "Camila",
+    "module": "Tareas y pausas",
+    "path": "/learning-space?tab=tasks",
+    "data": "Preparar mi próxima tutoría",
+    "action": "Marcar Anotar dos dudas y probar el temporizador",
+    "expected": "Se ven pasos pequeños y pausas opcionales."
+  },
+  {
+    "role": "Camila",
+    "module": "Ideas rápidas",
+    "path": "/learning-space?tab=tasks",
+    "data": "Pregunta sobre regla de la cadena",
+    "action": "Convertir la idea a tarea",
+    "expected": "Aparece una tarea nueva sin duplicarla al reintentar."
+  },
+  {
+    "role": "Camila",
+    "module": "Motor adaptativo",
+    "path": "/learning-space?tab=adaptive",
+    "data": "Dificultad ficticia en regla de la cadena",
+    "action": "Abrir simulación; practicar un concepto; pedir pista",
+    "expected": "Explica qué prerrequisito reforzar. Una pista no equivale a dominio independiente."
+  },
+  {
+    "role": "Camila",
+    "module": "Explicaciones",
+    "path": "/learning-space?tab=explain",
+    "data": "Derivada de una función compuesta",
+    "action": "Elegir paso a paso y generar explicación",
+    "expected": "Se obtiene explicación; la fuente indica IA o respaldo según corresponda."
+  },
+  {
+    "role": "Camila",
+    "module": "Orientador",
+    "path": "/dashboard?orientador=1",
+    "data": "Necesito organizar mi estudio de derivadas",
+    "action": "Conversar y activar voluntariamente una guía",
+    "expected": "Respuesta breve y recorrido con control destacado; no cambia datos solo por conversar."
+  },
+  {
+    "role": "Camila",
+    "module": "Apoyos opcionales",
+    "path": "/settings#accessibility",
+    "data": "Lenguaje literal y avisos discretos",
+    "action": "Cambiar a Modo Calma o lectura amplia",
+    "expected": "La interfaz responde sin exigir ni publicar diagnósticos."
+  },
+  {
+    "role": "Camila",
+    "module": "Material de Cálculo",
+    "path": "/resources?note=2fdf7b40-72fe-2f43-a7fb-106890d6f02e",
+    "data": "Guía breve de derivadas",
+    "action": "Leer el contenido y regresar al listado",
+    "expected": "El apunte abre con su explicación y autor DEMO."
+  },
+  {
+    "role": "Camila",
+    "module": "Privado y borrador",
+    "path": "/resources?tab=mine",
+    "data": "Mis dudas privadas / borrador",
+    "action": "Comparar Mis apuntes, Borradores y Comunidad",
+    "expected": "Los contenidos privados o borradores no se publican en Comunidad."
+  },
+  {
+    "role": "Diego",
+    "module": "Subir material PDF",
+    "path": "/resources?tab=mine",
+    "data": "GUIA_CALCULO_DEMO.pdf",
+    "action": "Abrir el PDF preparado o subir otra copia de ensayo",
+    "expected": "Vista previa/descarga funciona; el archivo sigue las reglas de acceso."
+  },
+  {
+    "role": "Camila",
+    "module": "Foro",
+    "path": "/forum?post=7ec3a009-8f80-cfcc-03e6-c1c060c5ae37",
+    "data": "¿Cómo reconozco una función compuesta?",
+    "action": "Leer la respuesta y escribir una pregunta ficticia",
+    "expected": "Se registra la interacción dentro del hilo."
+  },
+  {
+    "role": "Camila",
+    "module": "Equipo y entregables",
+    "path": "/projects?project=b1c9f7c9-adc7-b1da-7e17-576d9a790cd1",
+    "data": "Agenda de estudio accesible",
+    "action": "Ver integrantes y actualizar el avance asignado",
+    "expected": "El equipo y el entregable de Camila son visibles."
+  },
+  {
+    "role": "Camila",
+    "module": "Postular a un proyecto",
+    "path": "/projects?project=2e4072a2-3c2d-c350-507c-f78f5dbeadb1",
+    "data": "Datos para estudiar mejor",
+    "action": "Postular a una vacante disponible",
+    "expected": "La postulación aparece como pendiente; no hay aceptación automática."
+  },
+  {
+    "role": "Valentina",
+    "module": "Gestionar postulaciones",
+    "path": "/projects?project=b1c9f7c9-adc7-b1da-7e17-576d9a790cd1",
+    "data": "Postulación pendiente de Diego",
+    "action": "Aceptar la postulación desde la cuenta propietaria",
+    "expected": "Diego pasa al equipo y se actualiza el cupo."
+  },
+  {
+    "role": "Camila",
+    "module": "Buscar tutor",
+    "path": "/tutoring?tab=tutors&search=DEMO",
+    "data": "Diego Tutor · Cálculo / Python",
+    "action": "Abrir perfil y revisar materias acreditadas",
+    "expected": "Diego aparece; la oferta es ficticia y está limitada al escenario DEMO."
+  },
+  {
+    "role": "Diego",
+    "module": "Aceptar solicitud",
+    "path": "/my-tutoring?tab=requests",
+    "data": "Solicitud de Valentina para Python",
+    "action": "Aceptar la solicitud pendiente",
+    "expected": "Se actualiza su estado y aparecen avisos en ambas cuentas."
+  },
+  {
+    "role": "Camila",
+    "module": "Agenda y preparación",
+    "path": "/tutoring?tab=my_classes",
+    "data": "Próxima sesión de Cálculo",
+    "action": "Revisar temario, cámara opcional y modalidad",
+    "expected": "Se sabe qué se verá y cómo termina la clase."
+  },
+  {
+    "role": "Camila y Diego",
+    "module": "Aula virtual: preparación",
+    "path": "/tutoring/room/61a644c2-03ba-5529-a8db-b39c49ffa84c",
+    "data": "Sesión ficticia con cámara opcional",
+    "action": "Abrir la previsualización; entrar a videollamada solo si quieren probar conexión y permisos",
+    "expected": "Se ve el guion y la cámara opcional antes de entrar. La videollamada depende del proveedor externo."
+  },
+  {
+    "role": "Camila",
+    "module": "Talleres",
+    "path": "/tutoring?tab=workshops",
+    "data": "Primer análisis de datos con Python",
+    "action": "Inscribirse en el taller donde aún no tiene cupo",
+    "expected": "Aumenta la inscripción y aparece en Mi agenda."
+  },
+  {
+    "role": "Camila y Diego",
+    "module": "Cerrar una tutoría",
+    "path": "/my-tutoring",
+    "data": "Sesión DEMO que ya puede confirmarse",
+    "action": "Confirmar realización desde ambas cuentas",
+    "expected": "La sesión se valida cuando están ambas confirmaciones."
+  },
+  {
+    "role": "Camila",
+    "module": "Valoración",
+    "path": "/my-tutoring?tab=history",
+    "data": "Sesión recién completada",
+    "action": "Elegir comunicación, dominio y puntualidad; enviar una sola vez",
+    "expected": "Se guarda una reseña; no hay puntuaciones elegidas automáticamente."
+  },
+  {
+    "role": "Diego",
+    "module": "Insignias y reputación",
+    "path": "/profile?tab=tutoring",
+    "data": "9 tutorías previas + sesión recién validada",
+    "action": "Revisar el hito de 10 y calidad reciente",
+    "expected": "Trayectoria, calidad y acreditación se explican por separado."
+  },
+  {
+    "role": "Camila",
+    "module": "Avisos y reportes",
+    "path": "/support",
+    "data": "Caso ficticio pendiente y avisos de clases",
+    "action": "Leer la bandeja y el seguimiento",
+    "expected": "El reporte está pendiente sin sanciones ni revisor asignado."
+  },
+  {
+    "role": "Camila",
+    "module": "Correo y preferencias",
+    "path": "/settings#notifications",
+    "data": "Correo desactivado; alertas internas activas",
+    "action": "Mostrar el estado del canal",
+    "expected": "No se afirma que se envió un correo: Resend sigue sin configurar."
+  }
+]

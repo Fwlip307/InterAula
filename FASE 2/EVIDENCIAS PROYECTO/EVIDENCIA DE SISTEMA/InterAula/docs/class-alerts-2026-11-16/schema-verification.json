@@ -1,0 +1,19 @@
+{
+  "queueActivated": true,
+  "recordsRead": 0,
+  "errorCode": null,
+  "channels": {
+    "activated": true,
+    "emailConfigured": false,
+    "emailEnabled": false,
+    "automaticReminders": true,
+    "provider": "Resend",
+    "emailState": "disabled",
+    "reminderMinutes": [
+      1440,
+      60
+    ],
+    "delivery": "provider_acceptance"
+  },
+  "scope": "SELECT limit(0) and server configuration flags only. No recipient data, keys, sends or writes."
+}

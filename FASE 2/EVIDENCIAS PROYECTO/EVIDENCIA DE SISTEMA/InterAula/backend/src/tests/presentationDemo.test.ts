@@ -1,0 +1,65 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {createTestPostgres} from './helpers/postgres.js';
+import request from 'supertest';
+import {app} from '../app.js';
+import {supabasePublic} from '../lib/supabase.js';
+import {tutoringBackendService} from '../services/tutoring.service.js';
+import {tutorRecommendationsService} from '../services/tutorRecommendations.service.js';
+const roles=['camila','diego','valentina','historia2','historia3','historia4','historia5'];
+const id=(n:number)=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
+test('DEMO: carga repetible, cuentas separadas, historial y sesión que desbloquea el hito real',async()=>{
+ const db=await createTestPostgres(),dir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../supabase');
+ const as=async(who:string|null)=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false),set_config('request.jwt.claim.role',$2,false)",[who||'',who?'authenticated':'service_role']);if(who)await db.exec('SET ROLE authenticated');};
+ const value=async(sql:string,args:any[]=[])=> (await db.query<any>(sql,args)).rows[0].value;
+ try{
+  for(const file of(await fs.readdir(path.join(dir,'migrations'))).filter(f=>f.endsWith('.sql')).sort())await db.exec(await fs.readFile(path.join(dir,'migrations',file),'utf8'));
+  for(let i=0;i<roles.length;i++)await db.query('INSERT INTO auth.users(id,email,email_confirmed_at,raw_app_meta_data) VALUES($1,$2,now(),$3)',[id(1000+i),'presentacion.'+roles[i]+'@interaula.example.invalid',JSON.stringify({interaula_demo_set:'interaula-demo-presentacion-v1',demo_role:roles[i]})]);
+  const real=id(1100);await db.query('INSERT INTO auth.users(id,email) VALUES($1,$2)',[real,'not-demo@example.test']);
+  await db.exec('ALTER TABLE public.study_tasks DROP COLUMN priority'); // existing remote 015 layout
+  const seed=await fs.readFile(path.join(dir,'PREPARAR_DEMO_PRESENTACION.sql'),'utf8');await db.exec(seed);await db.exec(seed);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.tutoring_sessions'),12);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.academic_notes'),6);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.projects'),3);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.email_notification_outbox'),0);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.community_reviewers'),0);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.academic_validators'),0);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.profile_offered_subjects WHERE is_verified'),2);
+  const calc=await value("SELECT to_jsonb(id) AS value FROM public.subjects WHERE name='[DEMO 17] Cálculo diferencial'");
+  await as(real);await assert.rejects(db.query("INSERT INTO public.tutoring_sessions(student_id,tutor_id,subject_id,scheduled_at) VALUES($1,$2,$3,now()+interval '7 days')",[real,id(1001),calc]));
+  await as(id(1000));assert.equal(await value('SELECT count(*)::int AS value FROM public.study_tasks'),2);
+  await assert.rejects(db.query("INSERT INTO public.tutoring_sessions(student_id,tutor_id,subject_id,scheduled_at,status,notes) VALUES($1,$2,$3,now()-interval '1 hour','completed','[DEMO 17] Cliente no autorizado')",[id(1000),id(1001),calc]));
+  const live=await value("SELECT to_jsonb(id) AS value FROM public.tutoring_sessions WHERE notes LIKE '[DEMO 17] Completar%'");
+  await db.query('SELECT public.confirm_tutoring_completion($1)',[live]);
+  await as(id(1001));await db.query('SELECT public.confirm_tutoring_completion($1)',[live]);
+  assert.equal(await value("SELECT count(*)::int AS value FROM public.user_badges u JOIN public.badges b ON b.id=u.badge_id WHERE u.profile_id=$1 AND b.code='tutoring_10'",[id(1001)]),1);
+  await as(id(1000));await db.query('INSERT INTO public.tutoring_reviews(session_id,student_id,tutor_id,communication_score,knowledge_score,punctuality_score,comment) VALUES($1,$2,$3,9,9,9,$4)',[live,id(1000),id(1001),'[DEMO] Reseña de ensayo']);
+  const rep=(await db.query<any>('SELECT * FROM public.tutor_reputation_public WHERE profile_id=$1',[id(1001)])).rows[0];assert.equal(rep.valid_sessions,10);assert.equal(rep.recent_reviewers,5);assert.equal(rep.communication_highlight,true);
+  await as(null);assert.equal(await value('SELECT count(*)::int AS value FROM public.email_notification_outbox'),0);
+  await assert.rejects(db.query('INSERT INTO public.workshop_enrollments(workshop_id,student_id) SELECT id,$1 FROM public.tutoring_workshops LIMIT 1',[real]));
+  await db.exec(await fs.readFile(path.join(dir,'REINICIAR_ESCENA_TUTORIA_DEMO.sql'),'utf8'));
+  assert.equal(await value("SELECT count(*)::int AS value FROM public.tutoring_sessions WHERE status='completed'"),9);
+  assert.equal(await value("SELECT count(*)::int AS value FROM public.user_badges u JOIN public.badges b ON b.id=u.badge_id WHERE b.code='tutoring_10'"),0);
+  const post=await value("SELECT to_jsonb(id) AS value FROM public.forum_posts ORDER BY title LIMIT 1");
+  await db.query("INSERT INTO public.forum_replies(post_id,author_id,content) VALUES($1,$2,'Comentario ajeno: impedir limpieza automática')",[post,real]);
+  const cleanup=await fs.readFile(path.join(dir,'RETIRAR_DEMO_PRESENTACION.sql'),'utf8');await assert.rejects(db.exec(cleanup));await db.exec('ROLLBACK');
+  assert.equal(await value('SELECT count(*)::int AS value FROM auth.users'),8);
+  await db.query('DELETE FROM public.forum_replies WHERE author_id=$1',[real]);await db.exec(cleanup);
+  assert.equal(await value('SELECT count(*)::int AS value FROM auth.users'),1);
+  assert.equal(await value('SELECT count(*)::int AS value FROM public.projects'),0);
+ }catch(error:any){console.error('DEMO SQL context:',error.where||'');throw error;}finally{await db.close();}
+});
+test('Catálogo HTTP: conserva el JWT validado para consultar las materias con RLS',async t=>{
+ const seen:any[]=[];
+ t.mock.method(supabasePublic.auth,'getUser',async(token:string)=>token==='valid-demo-token'?{data:{user:{id:id(1000)}},error:null}:{data:{user:null},error:{message:'invalid'}});
+ t.mock.method(tutoringBackendService,'getAvailableTutors',async(...args:any[])=>{seen.push(args);return [];});
+ assert.equal((await request(app).get('/api/tutoring/tutors').set('Authorization','Bearer valid-demo-token')).status,200);
+ assert.equal(seen[0][1],'valid-demo-token');
+ await request(app).get('/api/tutoring/tutors').set('Authorization','Bearer invalid');assert.equal(seen[1][1],undefined);
+ t.mock.method(tutorRecommendationsService,'list',async(...args:any[])=>{seen.push(args);return {tutors:[],model:{}};});
+ assert.equal((await request(app).get('/api/tutoring/recommendations').set('Authorization','Bearer valid-demo-token')).status,200);
+ assert.equal(seen[2][2],'valid-demo-token');
+});

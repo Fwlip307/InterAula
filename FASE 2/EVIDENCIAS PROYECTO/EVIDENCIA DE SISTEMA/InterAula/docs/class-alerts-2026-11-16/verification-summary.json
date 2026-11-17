@@ -1,0 +1,101 @@
+{
+  "passed": true,
+  "tests": {
+    "backend": 147,
+    "frontend": 62,
+    "totalThisIteration": 209
+  },
+  "databaseScenarios": [
+    "Transactional class notices and private queue",
+    "Preferences and confirmed Auth email only",
+    "Late reminders and enrollment withdrawal suppressed",
+    "Workshop status and schedule changes",
+    "Rollback, repeated activation and DEMO cleanup",
+    "Retry after provider acceptance with stable idempotency key"
+  ],
+  "browser": {
+    "passed": true,
+    "checks": [
+      "Settings clearly distinguishes active in-app reminders from unconfigured email; the user saves an independent reminder opt-out in the profile preferences.",
+      "Notification controls remain visible at 320/390/768/1440px and in light/dark/Calm modes.",
+      "Inbox shows the class alert channel and a visible link to notification settings without claiming emails were sent."
+    ],
+    "widths": [
+      {
+        "width": 320,
+        "body": 305,
+        "client": 305,
+        "right": 295
+      },
+      {
+        "width": 390,
+        "body": 375,
+        "client": 375,
+        "right": 365
+      },
+      {
+        "width": 768,
+        "body": 753,
+        "client": 753,
+        "right": 735
+      },
+      {
+        "width": 1440,
+        "body": 1425,
+        "client": 1425,
+        "right": 1280.5
+      }
+    ],
+    "exceptions": [],
+    "scope": "Actual React/AppRouter and HTTP client -> Express -> PostgreSQL in memory for inbox. Channel deployment status and profile saving are fixture stubs; no real email or Supabase requests."
+  },
+  "deployment": {
+    "services": [
+      {
+        "Service": "backend",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "frontend",
+        "State": "running",
+        "Health": "healthy"
+      },
+      {
+        "Service": "ml",
+        "State": "running",
+        "Health": "healthy"
+      }
+    ],
+    "apiStatus": "ok",
+    "frontendHttp": 200,
+    "channelsWithoutSession": 401,
+    "remote": {
+      "queueActivated": true,
+      "recordsRead": 0,
+      "errorCode": null,
+      "channels": {
+        "activated": true,
+        "emailConfigured": false,
+        "emailEnabled": false,
+        "automaticReminders": true,
+        "provider": "Resend",
+        "emailState": "disabled",
+        "reminderMinutes": [
+          1440,
+          60
+        ],
+        "delivery": "provider_acceptance"
+      },
+      "scope": "SELECT limit(0) and server configuration flags only. No recipient data, keys, sends or writes."
+    }
+  },
+  "emailReadyForConfiguration": true,
+  "realEmailsSentByAgent": 0,
+  "pending": [
+    "Resend verified sender, private sending key and public HTTPS app URL",
+    "First real delivery test using team-controlled accounts"
+  ],
+  "lint": "Completed without errors; repository warnings remain.",
+  "remoteActivationConfirmedByUser": true
+}

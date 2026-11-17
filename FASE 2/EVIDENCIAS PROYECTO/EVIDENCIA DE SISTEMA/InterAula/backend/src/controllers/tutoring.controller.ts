@@ -15,7 +15,7 @@ export const tutoringController = {
         search: search as string,
         onlyVerified: onlyVerified === 'true',
         onlyInclusive: onlyInclusive === 'true',
-      });
+      },req.token);
       res.json({ success: true, data: tutors });
     } catch (err) {
       next(err);

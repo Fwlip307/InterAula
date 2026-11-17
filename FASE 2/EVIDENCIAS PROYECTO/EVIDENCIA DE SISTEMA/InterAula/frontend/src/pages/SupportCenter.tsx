@@ -1,3 +1,4 @@
+import ClassNotificationInfo from '../components/support/ClassNotificationInfo';
 import {MyMeasuresPanel,CaseModerationPanel} from '../components/support/ModerationPanels';
 import {moderationService,type CaseMeasures} from '../services/moderation.service';
 import {useEffect,useState,type FormEvent} from 'react';
@@ -53,7 +54,7 @@ export default function SupportCenter(){
   {loading&&<p role="status">Cargando tu seguimiento…</p>}
   {tab==='inbox'&&!loading&&!error&&inbox&&<section aria-labelledby="inbox-title">
    <div className="ia-support-heading"><h2 id="inbox-title">Tu bandeja · {inbox.unreadCount} sin leer</h2><button type="button" disabled={busy||!inbox.unreadCount} onClick={()=>read()}>Marcar todos como leídos</button><button type="button" disabled={busy} onClick={refresh}>Actualizar avisos</button></div>
-   <p>Los avisos son silenciosos y no usan destellos. Al abrir la bandeja se comprueban las tutorías de las próximas 24 horas.</p>
+   <ClassNotificationInfo />
    {!inbox.items.length?<p className="ia-support-card">No hay avisos por ahora. Las nuevas solicitudes y cambios aparecerán aquí.</p>:<ul className="ia-support-list">{inbox.items.map(item=><li className="ia-support-card" key={item.id}>
     <div className="ia-support-heading"><h3>{item.title}</h3>{!item.read_at&&<span className="ia-support-tag">Sin leer</span>}<time dateTime={item.created_at}>{format(item.created_at)}</time></div><p>{item.body}</p>
     <div className="ia-support-actions"><Link to={item.href.startsWith('/')&&!item.href.startsWith('//')&&!item.href.includes('\\')?item.href:'/support'}>Ver detalle</Link>{!item.read_at&&<button type="button" disabled={busy} onClick={()=>read(item.id)}>Marcar leído</button>}</div>

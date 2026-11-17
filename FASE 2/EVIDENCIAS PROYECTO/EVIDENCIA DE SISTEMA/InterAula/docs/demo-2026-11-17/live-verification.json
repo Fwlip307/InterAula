@@ -1,0 +1,163 @@
+{
+  "checkedAt": "2026-11-17T01:56:02.680Z",
+  "dataset": "interaula-demo-presentacion-v1",
+  "passed": true,
+  "checks": [
+    {
+      "name": "Perfil y apoyos",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Rutas, etapas y tareas",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Práctica adaptativa privada",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Simulación BKT",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Intereses y contenido relacionado",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Tutor ficticio acreditado",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Catálogo usado por la pantalla de tutores",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Sesiones como estudiante",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Solicitudes para aceptar",
+      "role": "diego",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Sesión preparada para confirmar",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Inscripción a taller",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Taller con cupos para inscribirse",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Trayectoria y reputación",
+      "role": "diego",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Leer material de Cálculo",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Apunte privado y borrador",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Foro con respuesta",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Proyecto colaborativo",
+      "role": "valentina",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Postulación pendiente de Diego",
+      "role": "valentina",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Avisos internos",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Incidencia pendiente sin sanciones",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Canal de alertas",
+      "role": "camila",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "PDF DEMO disponible sin duplicados",
+      "role": "diego",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Acceso autorizado al PDF como estudiante",
+      "role": "camila",
+      "passed": true,
+      "status": 200
+    },
+    {
+      "name": "El tutor no lee el apunte privado de Camila",
+      "role": "diego",
+      "passed": true,
+      "status": 404
+    },
+    {
+      "name": "Sin strikes ni restricciones por reportes pendientes",
+      "role": "diego",
+      "status": 200,
+      "passed": true
+    },
+    {
+      "name": "Ningún correo encolado para cuentas DEMO",
+      "passed": true,
+      "status": 200
+    }
+  ],
+  "scope": "Real login and API requests using only dedicated fictitious accounts; one PDF upload/registration. No production identities or roles changed. The optional AI check sends a generic study question."
+}

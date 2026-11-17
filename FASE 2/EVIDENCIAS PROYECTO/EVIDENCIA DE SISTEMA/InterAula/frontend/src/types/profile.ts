@@ -118,6 +118,7 @@ export interface AccessibilityPreferences {
   untimedQuizzes: boolean;
   quietNotifications: boolean;
   emailTutoring: boolean;
+  emailClassReminders: boolean;
   emailProjects: boolean;
   warmFilter?: boolean;
   easyReadingFont?: boolean;
@@ -139,6 +140,7 @@ export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferences = {
   untimedQuizzes: true,
   quietNotifications: false,
   emailTutoring: true,
+  emailClassReminders: true,
   emailProjects: true,
   warmFilter: false,
   easyReadingFont: false,

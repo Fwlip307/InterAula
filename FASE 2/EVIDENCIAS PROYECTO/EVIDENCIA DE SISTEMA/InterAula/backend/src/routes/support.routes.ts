@@ -1,3 +1,4 @@
+import {classEmailService} from '../services/classEmail.service.js';
 import {Router} from 'express';
 import {z} from 'zod';
 import {requireAuth} from '../middlewares/auth.middleware.js';
@@ -8,6 +9,7 @@ import {supportService} from '../services/support.service.js';
 const router=Router(),params=z.object({id:z.string().uuid()});
 router.use(requireAuth,createRateLimiter(90));
 const handle=(fn:(req:AuthenticatedRequest)=>Promise<any>)=>async(req:any,res:any,next:any)=>{try{res.json({success:true,data:await fn(req)});}catch(error){next(error);}};
+router.get('/channels',handle(()=>classEmailService.channelStatus()));
 router.get('/inbox',validateRequest({query:z.object({summary:z.enum(['true','false']).optional()}).strict()}),handle(req=>supportService.inbox(req.token!,req.query.summary==='true')));
 router.post('/inbox/read',validateRequest({body:z.object({id:z.string().uuid().optional()}).strict()}),handle(req=>supportService.readNotice(req.token!,req.body.id)));
 router.get('/cases',validateRequest({query:z.object({queue:z.enum(['mine','review']).default('mine')}).strict()}),handle(req=>supportService.list(req.token!,req.query.queue as string)));

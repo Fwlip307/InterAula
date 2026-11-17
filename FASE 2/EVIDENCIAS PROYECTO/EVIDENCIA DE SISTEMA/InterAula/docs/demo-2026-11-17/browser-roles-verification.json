@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "role": "diego",
+      "route": "/my-tutoring?tab=requests",
+      "expected": "Valentina",
+      "passed": true
+    },
+    {
+      "role": "diego",
+      "route": "/my-tutoring?tab=offerings",
+      "expected": "[DEMO 17] Cálculo diferencial",
+      "passed": true
+    },
+    {
+      "role": "diego",
+      "route": "/profile?tab=tutoring",
+      "expected": "[DEMO 17] Cálculo diferencial",
+      "passed": true
+    },
+    {
+      "role": "valentina",
+      "route": "/projects?project=b1c9f7c9-adc7-b1da-7e17-576d9a790cd1",
+      "expected": "Agenda de estudio accesible",
+      "passed": true
+    },
+    {
+      "role": "valentina",
+      "route": "/projects?tab=my_projects",
+      "expected": "Agenda de estudio accesible",
+      "passed": true
+    }
+  ],
+  "exceptions": [],
+  "scope": "Real production UI and fictitious Diego/Valentina accounts. No profile mocks. No request accepted, session completed or application resolved; those scenes are preserved for the team."
+}

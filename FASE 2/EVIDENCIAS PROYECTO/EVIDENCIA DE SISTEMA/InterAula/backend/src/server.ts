@@ -1,3 +1,4 @@
+import {startClassAlerts} from './services/classEmail.service.js';
 import { app } from './app.js';
 import { env } from './config/env.js';
 
@@ -11,8 +12,11 @@ const server = app.listen(env.port, () => {
   console.log(`=========================================`);
 });
 
+const stopClassAlerts=startClassAlerts();
+
 // Manejo de apagado elegante (graceful shutdown)
 function gracefulShutdown(signal: string) {
+  stopClassAlerts();
   console.log(`\n[Server] Señal recibida: ${signal}. Cerrando servidor limpiamente...`);
   server.close(() => {
     console.log('[Server] Servidor HTTP cerrado correctamente.');

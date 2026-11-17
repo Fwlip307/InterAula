@@ -1,3 +1,4 @@
+import ClassNotificationInfo from '../../components/support/ClassNotificationInfo';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -502,9 +503,10 @@ export default function Settings() {
           <SettingsIcon size={20} color="#2563eb" /> Preferencias de Avisos y Notificaciones
         </h2>
         <p style={{ fontSize: '0.86rem', color: 'var(--ia-text-muted)', margin: '0 0 16px 0' }}>
-          Consulta los avisos internos en la bandeja, sin sonidos ni destellos. Las preferencias de correo se conservan para cuando ese canal esté habilitado.
+          Las confirmaciones y cambios aparecen en tu bandeja sin sonidos ni destellos. Elige también qué quieres recibir por correo y guarda tus preferencias.
         </p>
 
+        <ClassNotificationInfo />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
           <label
             style={{
@@ -554,14 +556,18 @@ export default function Settings() {
             />
             <div>
               <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--ia-text-main)' }}>
-                Correo de tutorías · pendiente de habilitar
+                Correos de tutorías y talleres
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)', marginTop: '2px' }}>
-                Guarda tu preferencia para futuros correos. No cambia los avisos de la bandeja interna.
+                Solicitudes, confirmaciones, inscripciones y cambios de tus clases. Se enviarán cuando el servicio de correo esté configurado. No cambia los avisos internos.
               </div>
             </div>
           </label>
 
+          <label style={{display:'flex',alignItems:'flex-start',gap:10,padding:'12px 14px',borderRadius:10,border:'1px solid var(--ia-border)',background:'var(--ia-bg-body)'}}>
+            <input type="checkbox" checked={preferences.emailClassReminders} onChange={e=>updatePreferences({emailClassReminders:e.target.checked})} style={{width:17,height:17,marginTop:2}} />
+            <div><div style={{fontWeight:700,fontSize:'.86rem'}}>Recordatorios de clases por correo</div><div style={{fontSize:'.78rem',color:'var(--ia-text-muted)',marginTop:2}}>Hasta dos recordatorios por horario: 24 horas y una hora antes. Requiere tener activados los correos de tutorías y talleres.</div></div>
+          </label>
           <label
             style={{
               display: 'flex',

@@ -9,6 +9,10 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = '';
 process.env.SUPABASE_SECRET_KEY = '';
 process.env.GEMINI_API_KEY = '';
 process.env.ML_SERVICE_URL = '';
+process.env.EMAIL_ENABLED='false';
+process.env.RESEND_API_KEY='';
+process.env.EMAIL_FROM='';
+process.env.APP_PUBLIC_URL='';
 process.env.APP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'interaula-tests-'));
 
 // Unit HTTP fixtures do not call a live database. Moderation tests override this gate.

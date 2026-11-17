@@ -1,0 +1,41 @@
+{
+  "services": [
+    {
+      "Service": "backend",
+      "State": "running",
+      "Health": "healthy"
+    },
+    {
+      "Service": "frontend",
+      "State": "running",
+      "Health": "healthy"
+    },
+    {
+      "Service": "ml",
+      "State": "running",
+      "Health": "healthy"
+    }
+  ],
+  "apiStatus": "ok",
+  "frontendHttp": 200,
+  "channelsWithoutSession": 401,
+  "remote": {
+    "queueActivated": true,
+    "recordsRead": 0,
+    "errorCode": null,
+    "channels": {
+      "activated": true,
+      "emailConfigured": false,
+      "emailEnabled": false,
+      "automaticReminders": true,
+      "provider": "Resend",
+      "emailState": "disabled",
+      "reminderMinutes": [
+        1440,
+        60
+      ],
+      "delivery": "provider_acceptance"
+    },
+    "scope": "SELECT limit(0) and server configuration flags only. No recipient data, keys, sends or writes."
+  }
+}

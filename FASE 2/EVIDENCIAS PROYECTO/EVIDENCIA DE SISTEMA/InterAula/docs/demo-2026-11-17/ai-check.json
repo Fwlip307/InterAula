@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "status": 200,
+  "route": "/api/ai/orientation-chat",
+  "scope": "One generic question about organizing derivadas study in InterAula, sent using Camila DEMO. Response received. No personal information in prompt; no further AI requests needed for verification."
+}

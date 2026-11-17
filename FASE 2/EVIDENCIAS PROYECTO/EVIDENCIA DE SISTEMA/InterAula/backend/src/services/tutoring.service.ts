@@ -12,10 +12,10 @@ async function sessionsWithProfiles(rows:any[],token:string):Promise<any[]> {
   return joined.map(session=>({...normalizeSessionPrep(session),review:Array.isArray(session.review)?session.review[0]||null:session.review}));
 }
 export const tutoringBackendService={
-  async getAvailableTutors(filters?:{subjectId?:string;search?:string;onlyVerified?:boolean;onlyInclusive?:boolean}):Promise<any[]> {
-    const profiles:any[]=await result(clientFor().from('public_profiles').select('*').eq('available_for_tutoring',true));
+  async getAvailableTutors(filters?:{subjectId?:string;search?:string;onlyVerified?:boolean;onlyInclusive?:boolean},token?:string):Promise<any[]> {
+    const profiles:any[]=await result(clientFor(token).from('public_profiles').select('*').eq('available_for_tutoring',true));
     if(!profiles.length)return [];
-    let query=clientFor().from('profile_offered_subjects').select('*,subject:subjects(*)').in('profile_id',profiles.map(profile=>profile.id));
+    let query=clientFor(token).from('profile_offered_subjects').select('*,subject:subjects(*)').in('profile_id',profiles.map(profile=>profile.id));
     if(filters?.subjectId&&filters.subjectId!=='all')query=query.eq('subject_id',filters.subjectId);
     query=query.eq('is_verified',true);
     const limits=await moderationService.availability(profiles.map(p=>p.id));
@@ -23,7 +23,7 @@ export const tutoringBackendService={
     const offered:any[]=(await result(query)).filter((o:any)=>{const limit=unavailable.get(o.profile_id);return !limit?.tutoring_unavailable&&!limit?.subject_ids.includes(o.subject_id);});
     let inclusiveMap = new Map<string, { training_name: string; verified_at: string | null }>();
     try {
-      const { data: accData } = await clientFor()
+      const { data: accData } = await clientFor(token)
         .from('inclusive_tutor_public_credentials')
         .select('tutor_id, training_name, verified_at')
         .eq('status', 'approved')
