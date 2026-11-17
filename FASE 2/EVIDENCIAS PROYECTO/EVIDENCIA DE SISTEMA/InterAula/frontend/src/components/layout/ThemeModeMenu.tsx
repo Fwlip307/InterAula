@@ -326,7 +326,6 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
             className="ia-theme-popover-footer-link"
           >
             <span>Configuración y accesibilidad avanzada</span>
-            <span>→</span>
           </Link>
         </div>
       )}

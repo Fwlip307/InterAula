@@ -3,8 +3,8 @@ import type { LearningPath, StudyTask } from '../types/learningSpace';
 export const MAIN_DESTINATIONS = [
   { href: '/dashboard', label: 'Inicio', paths: ['/dashboard'] },
   { href: '/learning-space', label: 'Estudiar', paths: ['/learning-space', '/learning'] },
-  { href: '/tutoring', label: 'Pedir apoyo', paths: ['/tutoring', '/my-tutoring', '/tutor'] },
-  { href: '/participate', label: 'Comunidad', paths: ['/participate', '/resources', '/projects', '/forum', '/community'] },
+  { href: '/tutoring', label: 'Pedir apoyo', paths: ['/tutoring', '/my-tutoring', '/tutor', '/resources'] },
+  { href: '/participate', label: 'Comunidad', paths: ['/participate', '/projects', '/forum', '/community'] },
 ] as const;
 
 export function isDestinationActive(pathname: string, paths: readonly string[]) {

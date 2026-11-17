@@ -1326,7 +1326,7 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                       onClick={handleNextQuestion}
                       className="ia-btn-primary ia-btn-sm"
                     >
-                      {currentIdx + 1 < questions.length ? 'Siguiente Pregunta →' : 'Ver Resultados Finales'}
+                      {currentIdx + 1 < questions.length ? 'Siguiente Pregunta' : 'Ver Resultados Finales'}
                     </button>
                   </div>
                 </div>

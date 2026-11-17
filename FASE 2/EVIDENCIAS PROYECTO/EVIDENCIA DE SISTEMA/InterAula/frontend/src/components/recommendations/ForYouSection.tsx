@@ -80,7 +80,7 @@ export default function ForYouSection({compact=false}:{compact?:boolean}) {
         <span className={`ia-reco-kind ia-reco-kind-${item.kind}`}>{RECOMMENDATION_KIND_LABELS[item.kind]}</span>
         <h3><Link to={item.href}>{item.title}</Link></h3>{item.summary&&<p className="ia-reco-summary">{item.summary}</p>}
         <p className="ia-reco-reason">{item.reason}</p>{item.clusterReason&&<p className="ia-reco-cluster">{item.clusterReason}</p>}{item.communityReason&&<p className="ia-reco-community">{item.communityReason}</p>}
-        <div className="ia-reco-card-footer"><Link to={item.href}>{item.kind==='person'?'Ver perfil':'Ver detalle'} <span aria-hidden="true">→</span></Link>
+        <div className="ia-reco-card-footer"><Link to={item.href}>{item.kind==='person'?'Ver perfil':'Ver detalle'}</Link>
           <button type="button" className="ia-reco-text-button" disabled={busy||loading} onClick={()=>dismiss(item)} aria-label={`No me interesa: ${item.title}`}>No me interesa</button></div>
       </article>)}</div>
       {compact&&items.length>3&&<button type="button" className="ia-btn-secondary ia-reco-more" onClick={()=>setShowAll(value=>!value)} aria-expanded={showAll}>{showAll?'Mostrar tres sugerencias':'Ver todas las sugerencias ('+items.length+')'}</button>}

@@ -10,7 +10,7 @@ export default function GuidedStudyStart({ paths, tasks }: { paths: LearningPath
       <span className="ia-guided-eyebrow">Un paso a la vez</span>
       <h2 id="study-next-title">{next.title}</h2>
       <p>{next.detail}</p>
-      <Link className="ia-btn-primary" to={next.href}>{next.action} →</Link>
+      <Link className="ia-btn-primary" to={next.href}>{next.action}</Link>
     </section>
     <div className="ia-guided-options">
       <Link className="ia-guided-option" to="/learning-space?tab=explain"><strong>Entender un tema</strong><span>Explicaciones con ejemplos y pasos cortos.</span></Link>

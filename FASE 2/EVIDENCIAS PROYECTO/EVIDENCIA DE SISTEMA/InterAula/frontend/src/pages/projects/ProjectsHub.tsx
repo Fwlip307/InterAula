@@ -32,7 +32,6 @@ import {
   SearchIcon,
   TrashIcon,
   EditIcon,
-  ArrowLeftIcon,
   ExternalLinkIcon,
 } from '../../components/common/Icons';
 
@@ -662,7 +661,6 @@ export default function ProjectsHub() {
               className="ia-btn-secondary"
               onClick={() => setSelectedProject(null)}
             >
-              <ArrowLeftIcon size={16} />
               <span>Volver al Catálogo</span>
             </button>
           )}

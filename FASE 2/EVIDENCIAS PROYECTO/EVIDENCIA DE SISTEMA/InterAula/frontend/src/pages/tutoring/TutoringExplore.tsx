@@ -462,15 +462,12 @@ export default function TutoringExplore() {
               onClick={() => setIsCreateWorkshopModalOpen(true)}
               className="ia-btn-primary"
               style={{
-                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-                borderColor: '#7c3aed',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
                 padding: '9px 18px',
                 fontSize: '0.88rem',
-                fontWeight: 700,
-                boxShadow: '0 4px 6px -1px rgba(124, 58, 237, 0.25)',
+                fontWeight: 600,
               }}
             >
               <VideoIcon size={16} color="#ffffff" />
@@ -656,7 +653,7 @@ export default function TutoringExplore() {
       <ModuleNavigation label="Secciones para pedir apoyo" active={activeTab} onSelect={setActiveTab}
         primary={[{id:'tutors',label:'Encontrar un tutor'},{id:'workshops',label:'Talleres'},{id:'my_classes',label:'Mi agenda'}]}
         secondary={[{id:'quizzes',label:'Quizzes y retos'},{id:'materials',label:'Materiales de estudio'}]} />
-      <section aria-label="Ofrecer apoyo a otros estudiantes"><div className="ia-guided-inline"><Link to="/profile?tab=tutoring">Acreditarme como tutor</Link><Link to="/my-tutoring">Gestionar mis tutorías y talleres</Link></div></section>
+      <section aria-label="Ofrecer apoyo y apuntes de estudio"><div className="ia-guided-inline"><Link to="/resources?tab=community">Apuntes y biblioteca de estudio</Link><Link to="/profile?tab=tutoring">Acreditarme como tutor</Link><Link to="/my-tutoring">Gestionar mis tutorías y talleres</Link></div></section>
 
       {/* Barra de Filtros y Búsqueda */}
       {activeTab !== 'my_classes' && activeTab !== 'quizzes' && (

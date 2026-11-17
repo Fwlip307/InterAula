@@ -19,7 +19,6 @@ import {
   AwardIcon,
   EditIcon,
   TrashIcon,
-  ArrowLeftIcon,
   AlertCircleIcon,
 } from '../../components/common/Icons';
 import ReadAloudControls from '../../components/common/ReadAloudControls';
@@ -394,7 +393,6 @@ export default function Forum() {
               className="ia-btn-secondary"
               onClick={() => setSelectedPost(null)}
             >
-              <ArrowLeftIcon size={16} />
               <span>Volver al listado</span>
             </button>
           )}

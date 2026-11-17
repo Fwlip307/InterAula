@@ -158,7 +158,7 @@ export default function ForgotPassword() {
 
             <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
               <Link to="/login" className="auth-link">
-                ← Volver al inicio de sesión
+                Volver al inicio de sesión
               </Link>
             </div>
           </form>

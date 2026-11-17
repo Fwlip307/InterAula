@@ -1279,7 +1279,7 @@ export const LearningSpace = () => {
                                             handleToggleStage(selectedPath.id, stage.id, false)
                                           }
                                         >
-                                          <CheckIcon size={13} /> Completar →
+                                          <CheckIcon size={13} /> Completar
                                         </button>
                                       </div>
                                     </div>

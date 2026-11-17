@@ -1782,7 +1782,7 @@ function ejemplo() {
             style={{ padding: '4px 8px', fontSize: '0.76rem' }}
             onClick={() => handleInsertCallout('concept')}
           >
-            💡 Concepto Clave
+            Concepto Clave
           </button>
           <button
             type="button"
@@ -1790,7 +1790,7 @@ function ejemplo() {
             style={{ padding: '4px 8px', fontSize: '0.76rem' }}
             onClick={() => handleInsertCallout('example')}
           >
-            ✓ Ejemplo
+            Ejemplo
           </button>
           <button
             type="button"
@@ -1798,7 +1798,7 @@ function ejemplo() {
             style={{ padding: '4px 8px', fontSize: '0.76rem' }}
             onClick={() => handleInsertCallout('warning')}
           >
-            ⚠ Caso Borde
+            Caso Borde
           </button>
 
           <button
@@ -1807,7 +1807,7 @@ function ejemplo() {
             style={{ padding: '4px 8px', fontSize: '0.76rem' }}
             onClick={() => setTableBuilderOpen((prev) => !prev)}
           >
-            ⊞ Tabla ({tableRows}×{tableCols})
+            Tabla ({tableRows}×{tableCols})
           </button>
           <button
             type="button"

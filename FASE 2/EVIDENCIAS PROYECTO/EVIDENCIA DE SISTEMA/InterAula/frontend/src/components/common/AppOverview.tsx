@@ -22,7 +22,7 @@ export default function AppOverview() {
     <div className="ia-guided-options">
       {AREAS.map(({Icon,...area})=><article key={area.id} className="ia-guide-overview-card ia-visual-area" data-area={area.id} data-orientation={'overview-'+area.id}>
         <div className="ia-area-photo"><img src={'/images/academic/'+area.image} width="1000" height="667" alt={area.alt} loading="lazy" decoding="async"/><span className="ia-area-icon"><Icon size={23} aria-hidden="true"/></span></div>
-        <div className="ia-area-content"><span className="ia-area-label">{area.tag}</span><h3>{area.title}</h3><ul>{area.items.map(item=><li key={item}>{item}</li>)}</ul><p className="ia-area-example"><strong>Por ejemplo</strong>{area.example}</p><Link className="ia-guide-action" to={area.href}>{area.action} →</Link></div>
+        <div className="ia-area-content"><span className="ia-area-label">{area.tag}</span><h3>{area.title}</h3><ul>{area.items.map(item=><li key={item}>{item}</li>)}</ul><p className="ia-area-example"><strong>Por ejemplo</strong>{area.example}</p><Link className="ia-guide-action" to={area.href}>{area.action}</Link></div>
       </article>)}
     </div>
     <section className="ia-practice-spotlight" aria-labelledby="practice-spotlight-title">

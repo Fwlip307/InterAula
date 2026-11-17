@@ -6,15 +6,27 @@ import {ORIENTATION_CHOICES,ORIENTATION_FLOWS,ORIENTATION_FOLLOW_UPS,isOrientati
 import {useOrientationTarget} from '../../hooks/useOrientationTarget';
 import {isSpeechSynthesisSupported,speakText,stopSpeech,pauseSpeech,resumeSpeech,type SpeechSpeed} from '../../utils/speechReader';
 import OrientationTour from './OrientationTour';
-import {CompassIcon,XIcon,Volume2Icon} from '../common/Icons';
+import {CompassIcon,XIcon,Volume2Icon,SparklesIcon,TargetIcon} from '../common/Icons';
 import '../../styles/orientation.css';
 
 export function OrientationEntry(){
  const {open,state}=useOrientation();
- return <section className="ia-orientation-entry" aria-labelledby="orientation-entry-title">
-  <span className="ia-orientation-entry-icon"><CompassIcon size={26} aria-hidden="true"/></span>
-  <div><span className="ia-guided-eyebrow">Ayuda opcional, a tu ritmo</span><h2 id="orientation-entry-title">¿Te acompaño paso a paso?</h2><p>Cuéntame qué necesitas. Puedo orientarte, señalar dónde hacer clic y leer las instrucciones en voz alta.</p></div>
-  <button type="button" className="ia-btn-primary" onClick={open} aria-controls="ia-orientation-panel" aria-expanded={state.open}>Abrir orientador</button>
+ return <section className="ia-orientation-entry ia-orientation-entry--featured" aria-labelledby="orientation-entry-title">
+  <span className="ia-orientation-entry-icon"><CompassIcon size={28} aria-hidden="true"/></span>
+  <div className="ia-orientation-entry-body">
+    <div className="ia-orientation-entry-kicker">
+      <span className="ia-orientation-entry-badge"><SparklesIcon size={12} aria-hidden="true"/> Funcionalidad destacada</span>
+      <span className="ia-guided-eyebrow">Ayuda opcional, a tu ritmo</span>
+    </div>
+    <h2 id="orientation-entry-title">¿Te acompaño paso a paso?</h2>
+    <p>Cuéntame qué necesitas. Puedo orientarte, señalar dónde hacer clic y leer las instrucciones en voz alta.</p>
+    <div className="ia-orientation-entry-pillars" aria-hidden="true">
+      <span><CompassIcon size={13}/> Guía paso a paso</span>
+      <span><TargetIcon size={13}/> Señala dónde hacer clic</span>
+      <span><Volume2Icon size={13}/> Lectura en voz alta</span>
+    </div>
+  </div>
+  <button type="button" className="ia-btn-primary ia-orientation-entry-cta" onClick={open} aria-controls="ia-orientation-panel" aria-expanded={state.open}>Abrir orientador</button>
  </section>;
 }
 
