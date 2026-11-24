@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { assessmentCatalog } from '../data/assessmentCatalog.js';
 import {
   DEFAULT_GEMINI_MODEL,
+  buildAiStudioUrl,
   buildGeminiGenerateContentUrl,
+  buildVertexExpressUrl,
   extractGeminiResponseText,
-  isVertexExpressKey,
+  isVertexExpressModeEnabled,
   readSafeProviderError,
   resolveGeminiModels,
   sanitizeGeminiApiKey,
@@ -304,8 +306,19 @@ async function requestGeminiAccreditation(
   signal: AbortSignal
 ): Promise<string> {
   const models = resolveGeminiModels();
-  const providerTag = isVertexExpressKey(key) ? 'vertex-express' : 'ai-studio';
+  const useVertexPrimary = isVertexExpressModeEnabled();
+  const providerTag = useVertexPrimary ? 'vertex-express' : 'ai-studio';
   let lastStatus = 0;
+  let allAuthDenied = true;
+
+  const payload = JSON.stringify({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 8192,
+      responseMimeType: 'application/json',
+    },
+  });
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
@@ -314,14 +327,7 @@ async function requestGeminiAccreditation(
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       signal,
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
-        },
-      }),
+      body: payload,
     });
 
     if (response.ok) {
@@ -330,35 +336,41 @@ async function requestGeminiAccreditation(
     }
 
     lastStatus = response.status;
+    if (response.status !== 401 && response.status !== 403) {
+      allAuthDenied = false;
+    }
     const providerDetail = await readSafeProviderError(response, key);
     console.warn(
       `[accreditationQuestions] Modelo Gemini "${model}" (${providerTag}) respondió HTTP ${response.status}${providerDetail ? `: ${providerDetail}` : ''}.`
     );
 
-    // Authentication and API permissions apply to the credential/project, not the subject.
-    // Trying every model repeats the same denial and hides the actionable cause.
-    if (response.status === 401 || response.status === 403) {
-      throw new HttpError(
-        503,
-        response.status === 403
-          ? 'El servicio de IA no está habilitado o no tiene permisos en Google Cloud. La administración debe revisar su configuración; no es un problema de esta materia.'
-          : 'Google rechazó la credencial del servicio de IA. La administración debe revisar su configuración; no es un problema de esta materia.',
-        response.status === 403 ? 'AI_PERMISSION_DENIED' : 'AI_AUTHENTICATION_FAILED'
-      );
-    }
-
-    // Reintentar con el siguiente modelo estable si este modelo no está habilitado, agotó cuota o sufrió un error transitorio.
-    if ([400, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
+    // Reintentar con el siguiente modelo estable si este modelo fue retirado, saturado o sufrió error transitorio.
+    if ([400, 403, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
       continue;
     }
 
-    throw new HttpError(
-      503,
-      response.status === 429
-        ? 'La generación alcanzó su límite temporal. Reintenta en unos minutos.'
-        : 'No se pudo preparar una evaluación nueva de esta materia. Puedes reintentar o solicitar revisión docente.',
-      'AI_UNAVAILABLE'
+    break;
+  }
+
+  // Si una clave AQ. fue rechazada exclusivamente por 401/403 en el endpoint primario, probar el endpoint alterno.
+  if (allAuthDenied && key.startsWith('AQ.')) {
+    const altTag = useVertexPrimary ? 'ai-studio' : 'vertex-express';
+    const altUrl = useVertexPrimary ? buildAiStudioUrl(models[0]) : buildVertexExpressUrl(models[0]);
+    const altRes = await fetch(altUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      signal,
+      body: payload,
+    });
+    if (altRes.ok) {
+      const data: any = await altRes.json();
+      return extractGeminiResponseText(data);
+    }
+    const altDetail = await readSafeProviderError(altRes, key);
+    console.warn(
+      `[accreditationQuestions] Respaldo "${models[0]}" (${altTag}) respondió HTTP ${altRes.status}${altDetail ? `: ${altDetail}` : ''}.`
     );
+    lastStatus = altRes.status;
   }
 
   console.warn(`[accreditationQuestions] Ningún modelo Gemini (${providerTag}) respondió correctamente (último HTTP ${lastStatus}).`);
@@ -366,7 +378,7 @@ async function requestGeminiAccreditation(
     503,
     lastStatus === 429
       ? 'La generación alcanzó su límite temporal. Reintenta en unos minutos.'
-      : 'El servicio de generación de evaluaciones no está disponible temporalmente. Puedes reintentar o solicitar revisión docente.',
+      : 'No se pudo preparar una evaluación nueva de esta materia. Puedes reintentar o solicitar revisión docente.',
     'AI_UNAVAILABLE'
   );
 }
