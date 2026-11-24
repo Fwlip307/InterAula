@@ -1,8 +1,9 @@
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 export const FALLBACK_GEMINI_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
 ] as const;
 
 export function sanitizeGeminiApiKey(raw?: string | null): string {
@@ -17,21 +18,28 @@ export function sanitizeGeminiApiKey(raw?: string | null): string {
   return trimmed;
 }
 
-/**
- * Las claves de Google Cloud Vertex AI Express Mode comienzan con "AQ."
- * y requieren el endpoint global aiplatform.googleapis.com/v1/publishers/google/models/...
- * mientras que las claves de Google AI Studio (AIza...) usan generativelanguage.googleapis.com.
- */
-export function isVertexExpressKey(apiKey: string): boolean {
-  return apiKey.startsWith('AQ.');
+export function isVertexExpressModeEnabled(): boolean {
+  return process.env.GEMINI_USE_VERTEX_EXPRESS === 'true';
 }
 
-export function buildGeminiGenerateContentUrl(model: string, apiKey: string): string {
-  const encodedModel = encodeURIComponent(model);
-  if (isVertexExpressKey(apiKey)) {
-    return `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodedModel}:generateContent`;
+export function buildAiStudioUrl(model: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+}
+
+export function buildVertexExpressUrl(model: string): string {
+  return `https://aiplatform.googleapis.com/v1/publishers/google/models/${encodeURIComponent(model)}:generateContent`;
+}
+
+/**
+ * Tanto las claves clásicas (AIza...) como las nuevas claves de Google AI Studio (AQ....)
+ * utilizan generativelanguage.googleapis.com por defecto.
+ * Solo se enruta a Vertex AI Express (aiplatform.googleapis.com) cuando GEMINI_USE_VERTEX_EXPRESS=true.
+ */
+export function buildGeminiGenerateContentUrl(model: string, _apiKey?: string): string {
+  if (isVertexExpressModeEnabled()) {
+    return buildVertexExpressUrl(model);
   }
-  return `https://generativelanguage.googleapis.com/v1beta/models/${encodedModel}:generateContent`;
+  return buildAiStudioUrl(model);
 }
 
 export function resolveGeminiModels(): string[] {
@@ -51,10 +59,10 @@ export function extractGeminiResponseText(data: any): string {
 
 export async function readSafeProviderError(response: Response, apiKey: string): Promise<string> {
   try {
-    const raw = await response.json() as any;
+    const raw = (await response.json()) as any;
     const status = typeof raw?.error?.status === 'string' ? raw.error.status : '';
     const message = typeof raw?.error?.message === 'string' ? raw.error.message : '';
-    const combined = [status, message].filter(Boolean).join(' - ').slice(0, 200);
+    const combined = [status, message].filter(Boolean).join(' - ').slice(0, 220);
     if (!combined) return '';
     return apiKey ? combined.split(apiKey).join('[REDACTED]') : combined;
   } catch {
