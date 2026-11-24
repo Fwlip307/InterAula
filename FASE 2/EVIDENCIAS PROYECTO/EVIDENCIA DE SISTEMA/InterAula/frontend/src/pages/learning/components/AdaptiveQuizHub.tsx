@@ -404,7 +404,8 @@ interface AdaptiveQuizHubProps {
 
 export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubProps) {
   const { user } = useAuth();
-  const { isDarkMode, preferences } = useCalmMode();
+  const { isDarkSurface, preferences } = useCalmMode();
+  const isDarkMode = isDarkSurface;
   const [subjects, setSubjects] = useState<string[]>(CRITICAL_SUBJECTS);
   const [selectedSubject, setSelectedSubject] = useState<string>(CRITICAL_SUBJECTS[0]);
   const [customTopic, setCustomTopic] = useState<string>('');
@@ -792,22 +793,14 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                           fontWeight: isSelected ? 800 : 600,
                           border: `1.5px solid ${
                             isSelected
-                              ? '#6366f1'
-                              : isDarkMode
-                              ? '#334155'
-                              : '#cbd5e1'
+                              ? 'var(--ia-primary, #6366f1)'
+                              : 'var(--ia-border-strong, #cbd5e1)'
                           }`,
                           background: isSelected
-                            ? isDarkMode
-                              ? 'rgba(99, 102, 241, 0.22)'
-                              : '#eef2ff'
-                            : isDarkMode
-                            ? '#1e293b'
-                            : '#ffffff',
+                            ? 'var(--ia-primary-subtle, #eef2ff)'
+                            : 'var(--ia-bg-card, #ffffff)',
                           color: isSelected
-                            ? isDarkMode
-                              ? '#a5b4fc'
-                              : '#4338ca'
+                            ? 'var(--ia-primary, #4338ca)'
                             : 'var(--ia-text-body)',
                           cursor: 'pointer',
                           display: 'inline-flex',
@@ -841,8 +834,8 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
               {/* Paso 2: Tema específico opcional para dirigir la IA */}
               <div
                 style={{
-                  background: isDarkMode ? '#172033' : '#f8fafc',
-                  border: `1px solid ${isDarkMode ? '#283548' : '#e2e8f0'}`,
+                  background: 'var(--ia-bg-subtle)',
+                  border: '1px solid var(--ia-border)',
                   borderRadius: '12px',
                   padding: '14px 16px',
                 }}
@@ -900,18 +893,12 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                           fontWeight: 600,
                           padding: '3px 10px',
                           borderRadius: '999px',
-                          border: `1px solid ${activeSug ? '#6366f1' : isDarkMode ? '#334155' : '#cbd5e1'}`,
+                          border: `1px solid ${activeSug ? 'var(--ia-primary)' : 'var(--ia-border-strong)'}`,
                           background: activeSug
-                            ? isDarkMode
-                              ? 'rgba(99, 102, 241, 0.25)'
-                              : '#e0e7ff'
-                            : isDarkMode
-                            ? '#0f172a'
-                            : '#ffffff',
+                            ? 'var(--ia-primary-subtle)'
+                            : 'var(--ia-bg-card)',
                           color: activeSug
-                            ? isDarkMode
-                              ? '#c7d2fe'
-                              : '#3730a3'
+                            ? 'var(--ia-primary)'
                             : 'var(--ia-text-body)',
                           cursor: 'pointer',
                         }}
@@ -961,17 +948,13 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                           border: `2px solid ${
                             isSelected
                               ? theme.color
-                              : isDarkMode
-                              ? '#283548'
-                              : '#e2e8f0'
+                              : 'var(--ia-border)'
                           }`,
                           background: isSelected
                             ? isDarkMode
                               ? `${theme.color}22`
-                              : `${theme.color}10`
-                            : isDarkMode
-                            ? '#172033'
-                            : '#ffffff',
+                              : `${theme.color}12`
+                            : 'var(--ia-bg-card)',
                           borderRadius: '12px',
                           padding: '12px 14px',
                           cursor: 'pointer',
@@ -1199,24 +1182,24 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                   const isSelected = selectedOptionId === opt.id;
                   const isCorrect = opt.id === currentQ.correctOptionId;
 
-                  let optBg = isDarkMode ? '#172033' : '#ffffff';
-                  let optBorder = isDarkMode ? '#334155' : '#cbd5e1';
-                  let optColor = isDarkMode ? '#f8fafc' : '#1e293b';
+                  let optBg = 'var(--ia-bg-card)';
+                  let optBorder = 'var(--ia-border-strong)';
+                  let optColor = 'var(--ia-text-main)';
 
                   if (isAnswered) {
                     if (isCorrect) {
-                      optBg = isDarkMode ? 'rgba(16, 185, 129, 0.18)' : '#f0fdf4';
-                      optBorder = '#10b981';
-                      optColor = isDarkMode ? '#6ee7b7' : '#15803d';
+                      optBg = 'var(--ia-success-bg)';
+                      optBorder = 'var(--ia-success)';
+                      optColor = 'var(--ia-success)';
                     } else if (isSelected) {
-                      optBg = isDarkMode ? 'rgba(239, 68, 68, 0.18)' : '#fef2f2';
-                      optBorder = '#ef4444';
-                      optColor = isDarkMode ? '#fca5a5' : '#b91c1c';
+                      optBg = 'var(--ia-danger-bg)';
+                      optBorder = 'var(--ia-danger)';
+                      optColor = 'var(--ia-danger)';
                     }
                   } else if (isSelected) {
-                    optBg = isDarkMode ? 'rgba(124, 58, 237, 0.22)' : '#f5f3ff';
-                    optBorder = '#7c3aed';
-                    optColor = isDarkMode ? '#ddd6fe' : '#6d28d9';
+                    optBg = 'var(--ia-primary-subtle)';
+                    optBorder = 'var(--ia-primary)';
+                    optColor = 'var(--ia-primary)';
                   }
 
                   return (
@@ -1345,12 +1328,8 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',
-            background: isDarkMode
-              ? 'linear-gradient(180deg, #111827 0%, #0f172a 100%)'
-              : isCalmMode
-              ? '#f6f8f4'
-              : 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-            border: `1.5px solid ${isDarkMode ? '#334155' : '#cbd5e1'}`,
+            background: 'var(--ia-bg-card)',
+            border: '1.5px solid var(--ia-border)',
           }}
         >
           {/* Cabecera del Laboratorio de Bloques */}
@@ -1546,19 +1525,11 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                         isCorrectSpot ? '#10b981' : isWrongSpot ? '#f59e0b' : accent.border
                       }`,
                       background: isCorrectSpot
-                        ? isDarkMode
-                          ? 'rgba(16, 185, 129, 0.14)'
-                          : '#f0fdf4'
+                        ? 'var(--ia-success-bg)'
                         : isWrongSpot
-                        ? isDarkMode
-                          ? 'rgba(245, 158, 11, 0.14)'
-                          : '#fffbeb'
-                        : isDarkMode
-                        ? '#172033'
-                        : '#ffffff',
-                      boxShadow: isDarkMode
-                        ? '0 4px 12px rgba(0, 0, 0, 0.25)'
-                        : '0 2px 8px rgba(15, 23, 42, 0.05)',
+                        ? 'var(--ia-amber-bg)'
+                        : 'var(--ia-bg-subtle)',
+                      boxShadow: 'var(--ia-shadow-sm)',
                       transition: 'all 0.16s ease',
                     }}
                   >

@@ -1,0 +1,792 @@
+/* ==========================================================================
+   InterAula — Interfaz de Evaluación de Acreditación (Fullscreen & Accesible)
+   Usa exclusivamente tokens de tema globales (--ia-*) para compatibilidad total
+   con Modo Claro, Modo Oscuro, Crepúsculo, Modo Calma y Filtro Cálido Suave.
+   ========================================================================== */
+
+.ia-assessment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  --assess-accent: var(--ia-primary, #2563eb);
+  --assess-accent-soft: var(--ia-primary-subtle, #eff6ff);
+  --assess-accent-border: var(--ia-primary-border, #bfdbfe);
+  --assess-surface: var(--ia-bg-card, #ffffff);
+  --assess-canvas: var(--ia-bg-body, #f8fafc);
+  --assess-subtle: var(--ia-bg-subtle, #f1f5f9);
+  --assess-border: var(--ia-border, #e2e8f0);
+  --assess-text: var(--ia-text-main, #0f172a);
+  --assess-body: var(--ia-text-body, #334155);
+  --assess-muted: var(--ia-text-muted, #64748b);
+}
+
+.ia-assessment-overlay:fullscreen {
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: var(--assess-canvas);
+  backdrop-filter: none;
+}
+
+.ia-assessment-dialog {
+  width: min(920px, 100%);
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: var(--assess-surface);
+  color: var(--assess-text);
+  border: 1px solid var(--assess-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.24);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.ia-assessment-overlay:fullscreen .ia-assessment-dialog {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--assess-canvas);
+}
+
+/* --- A. Barra superior compacta --- */
+.ia-assess-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px clamp(16px, 3vw, 36px);
+  background: var(--assess-surface);
+  border-bottom: 1px solid var(--assess-border);
+}
+
+.ia-assess-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ia-assess-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.ia-assess-topbar-titles {
+  min-width: 0;
+}
+
+.ia-assess-topbar-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--assess-muted);
+}
+
+.ia-assess-topbar h2 {
+  margin: 2px 0 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--assess-text);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.ia-assess-topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ia-assess-timer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 10px;
+  background: var(--assess-subtle);
+  border: 1px solid var(--assess-border);
+  color: var(--assess-text);
+  font-size: 0.96rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ia-assess-timer-pill[data-urgent='true'] {
+  background: var(--ia-danger-bg, #fef2f2);
+  border-color: var(--ia-danger-border, #fecaca);
+  color: var(--ia-danger, #dc2626);
+}
+
+.ia-assess-progress-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--assess-accent-soft);
+  border: 1px solid var(--assess-accent-border);
+  color: var(--assess-accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ia-assess-close-btn {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--assess-border);
+  background: transparent;
+  color: var(--assess-body);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.ia-assess-close-btn:hover {
+  background: var(--assess-subtle);
+  color: var(--assess-text);
+}
+
+/* --- Contenedor central --- */
+.ia-assess-body {
+  flex: 1;
+  width: 100%;
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: clamp(20px, 3vw, 36px) clamp(16px, 3vw, 36px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- Alertas y confirmación de salida --- */
+.ia-assess-alert {
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ia-assess-alert--error {
+  background: var(--ia-danger-bg, #fef2f2);
+  border: 1px solid var(--ia-danger-border, #fecaca);
+  color: var(--ia-danger, #b91c1c);
+}
+
+.ia-assess-alert--info {
+  background: var(--assess-accent-soft);
+  border: 1px solid var(--assess-accent-border);
+  color: var(--assess-text);
+}
+
+.ia-assess-confirm-box {
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--assess-surface);
+  border: 1px solid var(--ia-danger-border, #fca5a5);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-assess-confirm-box h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--assess-text);
+}
+
+.ia-assess-confirm-box p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--assess-body);
+  line-height: 1.55;
+}
+
+.ia-assess-confirm-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ia-assess-confirm-stats span {
+  padding: 5px 11px;
+  border-radius: 8px;
+  background: var(--assess-subtle);
+  border: 1px solid var(--assess-border);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--assess-text);
+}
+
+.ia-assess-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* --- Pantalla previa (Setup) --- */
+.ia-assess-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.ia-assess-panel {
+  background: var(--assess-surface);
+  border: 1px solid var(--assess-border);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ia-assess-panel h3 {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--assess-text);
+}
+
+.ia-assess-lead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--assess-body);
+  line-height: 1.6;
+}
+
+.ia-assess-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ia-assess-time-box {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--assess-subtle);
+  border: 1px solid var(--assess-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ia-assess-time-box strong {
+  font-size: 0.82rem;
+  color: var(--assess-muted);
+  font-weight: 600;
+}
+
+.ia-assess-time-box span {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--assess-text);
+}
+
+.ia-assess-rules-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--assess-body);
+}
+
+.ia-assess-start-cta {
+  width: 100%;
+  min-height: 48px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  border-radius: 12px;
+  justify-content: center;
+}
+
+/* --- D. Barra de progreso + Navegador de estado de preguntas --- */
+.ia-assess-progress-card {
+  background: var(--assess-surface);
+  border: 1px solid var(--assess-border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-assess-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ia-assess-progress-label {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--assess-text);
+}
+
+.ia-assess-progress-counters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.84rem;
+  color: var(--assess-muted);
+  font-weight: 600;
+}
+
+.ia-assess-progress-counters strong {
+  color: var(--assess-text);
+}
+
+.ia-assess-progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--assess-subtle);
+  overflow: hidden;
+}
+
+.ia-assess-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--assess-accent);
+  transition: width 0.25s ease;
+}
+
+.ia-assess-step-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ia-assess-step-dot {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--assess-border);
+  background: var(--assess-subtle);
+  color: var(--assess-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ia-assess-step-dot[data-status='answered'] {
+  background: var(--ia-success-bg, #ecfdf5);
+  border-color: var(--ia-success-border, #a7f3d0);
+  color: var(--ia-success, #047857);
+}
+
+.ia-assess-step-dot[data-status='current'] {
+  background: var(--assess-accent);
+  border-color: var(--assess-accent);
+  color: #ffffff;
+}
+
+/* --- B. Bloque principal de la pregunta --- */
+.ia-assess-question-card {
+  background: var(--assess-surface);
+  border: 1px solid var(--assess-border);
+  border-radius: 16px;
+  padding: clamp(22px, 3.5vw, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ia-assess-question-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ia-assess-question-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ia-assess-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--assess-subtle);
+  border: 1px solid var(--assess-border);
+  color: var(--assess-body);
+}
+
+.ia-assess-question-title {
+  margin: 0;
+  font-size: clamp(1.38rem, 2.2vw, 1.85rem);
+  line-height: 1.48;
+  font-weight: 700;
+  color: var(--assess-text);
+  letter-spacing: -0.01em;
+  outline: none;
+}
+
+.ia-assess-question-title:focus-visible {
+  outline: 2px solid var(--assess-accent);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+.ia-assess-code {
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--assess-subtle);
+  border: 1px solid var(--assess-border);
+  color: var(--assess-text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+/* --- C. Alternativas de respuesta amplias y claras --- */
+.ia-assess-options {
+  border: 0;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-assess-option-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 68px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1.5px solid var(--assess-border);
+  background: var(--assess-surface);
+  color: var(--assess-text);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.1s ease;
+}
+
+.ia-assess-option-card:hover {
+  border-color: var(--ia-border-strong, #94a3b8);
+  background: var(--assess-subtle);
+}
+
+.ia-assess-option-card[data-selected='true'] {
+  border-color: var(--assess-accent);
+  background: var(--assess-accent-soft);
+}
+
+.ia-assess-option-card:focus-within {
+  outline: 3px solid var(--assess-accent);
+  outline-offset: 2px;
+}
+
+.ia-assess-option-card input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.ia-assess-option-letter {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid var(--assess-border);
+  background: var(--assess-subtle);
+  color: var(--assess-body);
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ia-assess-option-card[data-selected='true'] .ia-assess-option-letter {
+  background: var(--assess-accent);
+  border-color: var(--assess-accent);
+  color: #ffffff;
+}
+
+.ia-assess-option-text {
+  flex: 1;
+  font-size: 1.04rem;
+  line-height: 1.55;
+  font-weight: 500;
+  color: var(--assess-text);
+}
+
+.ia-assess-textarea {
+  width: 100%;
+  min-height: 130px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--assess-border);
+  background: var(--assess-surface);
+  color: var(--assess-text);
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+/* --- E. Navegación inferior --- */
+.ia-assess-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--assess-border);
+}
+
+.ia-assess-footer-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ia-assess-submit-btn {
+  min-width: 220px;
+  min-height: 48px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  border-radius: 12px;
+  justify-content: center;
+}
+
+/* --- Pantallas de estado (Carga, Pausa, Protección, Resultado) --- */
+.ia-assess-stage-card {
+  background: var(--assess-surface);
+  border: 1px solid var(--assess-border);
+  border-radius: 16px;
+  padding: clamp(28px, 4vw, 48px) 24px;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.ia-assess-stage-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--assess-accent-soft);
+  border: 1px solid var(--assess-accent-border);
+  color: var(--assess-accent);
+}
+
+.ia-assess-stage-icon--success {
+  background: var(--ia-success-bg, #ecfdf5);
+  border-color: var(--ia-success-border, #a7f3d0);
+  color: var(--ia-success, #059669);
+}
+
+.ia-assess-stage-icon--danger {
+  background: var(--ia-danger-bg, #fef2f2);
+  border-color: var(--ia-danger-border, #fecaca);
+  color: var(--ia-danger, #dc2626);
+}
+
+.ia-assess-stage-card h3 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--assess-text);
+}
+
+.ia-assess-stage-card p {
+  margin: 0;
+  max-width: 520px;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--assess-body);
+}
+
+.ia-assess-score-big {
+  font-size: 3.2rem;
+  font-weight: 800;
+  color: var(--ia-success, #059669);
+  line-height: 1.1;
+}
+
+.ia-assess-break-countdown {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--assess-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ia-assess-explanation-box {
+  width: 100%;
+  max-width: 640px;
+  text-align: left;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--assess-subtle);
+  border: 1px solid var(--assess-border);
+  font-size: 0.92rem;
+  color: var(--assess-body);
+}
+
+.ia-assess-explanation-box summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--assess-text);
+}
+
+.ia-assess-explanation-box p {
+  margin-top: 10px;
+  max-width: none;
+}
+
+/* --- Controles de apoyo --- */
+.ia-assess-supports-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--assess-surface);
+  border: 1px solid var(--assess-border);
+  font-size: 0.84rem;
+  color: var(--assess-muted);
+}
+
+.ia-assess-support-toggles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.ia-assess-support-toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--assess-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ia-assess-support-toggles input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--assess-accent);
+}
+
+/* --- Preferencias de texto grande y privacidad --- */
+.ia-assessment-overlay[data-large-text='true'] .ia-assess-question-title {
+  font-size: clamp(1.65rem, 2.8vw, 2.25rem);
+  line-height: 1.55;
+}
+
+.ia-assessment-overlay[data-large-text='true'] .ia-assess-option-text {
+  font-size: 1.2rem;
+}
+
+.ia-assessment-overlay[data-obscured='true'] .ia-assessment-sensitive {
+  visibility: hidden;
+}
+
+.ia-assessment-overlay[data-calm='true'] * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 820px) {
+  .ia-assess-setup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ia-assess-topbar {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+
+  .ia-assess-topbar-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .ia-assess-option-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .ia-assess-submit-btn {
+    width: 100%;
+  }
+}
+
+@media print {
+  .ia-assessment-overlay {
+    display: none !important;
+  }
+}

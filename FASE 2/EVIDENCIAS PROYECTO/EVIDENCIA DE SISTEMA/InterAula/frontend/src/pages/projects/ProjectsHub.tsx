@@ -82,8 +82,9 @@ const MODALITY_LABELS: Record<ProjectModality, string> = {
 
 export default function ProjectsHub() {
   const { user } = useAuth();
-  const [recommendationParams] = useSearchParams();
+  const [recommendationParams, setSearchParams] = useSearchParams();
   const recommendedProjectId = recommendationParams.get('project');
+  const shouldOpenCreate = recommendationParams.get('create') === '1';
 
   const [activeTab,setActiveTab]=useModuleTab(['explore','my_projects','my_applications'] as const,'explore');
   const navigationLocation=useLocation();
@@ -311,6 +312,15 @@ export default function ProjectsHub() {
     ]);
     setShowBuilderModal(true);
   };
+
+  useEffect(() => {
+    if (!shouldOpenCreate) return;
+    openCreateModal();
+    const next = new URLSearchParams(recommendationParams);
+    next.delete('create');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldOpenCreate]);
 
   const openEditModal = (proj: Project) => {
     setEditingProject(proj);

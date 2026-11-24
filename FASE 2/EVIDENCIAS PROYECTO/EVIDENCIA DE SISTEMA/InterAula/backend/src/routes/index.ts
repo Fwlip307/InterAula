@@ -10,7 +10,7 @@ import aiRoutes from './ai.routes.js';
 import learningSpaceRoutes from './learningSpace.routes.js';
 import recommendationRoutes from './recommendation.routes.js';
 import supportRoutes from './support.routes.js';
-
+import messagingRoutes from './messaging.routes.js';
 import moderationRoutes from './moderation.routes.js';
 
 const router = Router();
@@ -36,7 +36,8 @@ router.use('/projects', projectRoutes);
 router.use('/ai', aiRoutes);
 router.use('/learning-space', learningSpaceRoutes);
 router.use('/recommendations', recommendationRoutes);
-router.use('/support',supportRoutes);
-router.use('/moderation',moderationRoutes);
+router.use('/support', supportRoutes);
+router.use('/messages', messagingRoutes);
+router.use('/moderation', moderationRoutes);
 
 export default router;

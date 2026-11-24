@@ -807,3 +807,60 @@ it('La valoración de interfaz conserva las notas independientes y coincide con 
 });
 
 });
+
+import { MAIN_DESTINATIONS, ACCOUNT_MENU_ITEMS, isCategoryActive } from '../src/navigation/guidedNavigation.ts';
+
+describe('Reorganización de navegación en 5 categorías y mensajería directa', () => {
+  it('define las 4 categorías principales en barra superior y Mi cuenta con el orden exacto', () => {
+    assert.deepEqual(
+      MAIN_DESTINATIONS.map((c) => c.label),
+      ['Aprender', 'Tutorías', 'Comunidad', 'Proyectos']
+    );
+    assert.deepEqual(
+      ACCOUNT_MENU_ITEMS.map((item) => item.label),
+      [
+        'Mi perfil',
+        'Mis preferencias de aprendizaje',
+        'Apoyos sensoriales y accesibilidad',
+        'Configuración',
+        'Notificaciones',
+      ]
+    );
+    const tutoringItems = MAIN_DESTINATIONS.find((c) => c.id === 'tutoring')!.items;
+    assert.equal(
+      tutoringItems.some((item) => item.href.includes('/projects')),
+      false
+    );
+    const communityItems = MAIN_DESTINATIONS.find((c) => c.id === 'community')!.items;
+    assert.equal(
+      communityItems.some((item) => item.href.includes('/projects')),
+      false
+    );
+    assert.ok(communityItems.some((item) => item.href === '/messages'));
+  });
+
+  it('asigna correctamente la categoría activa según ruta y pestaña', () => {
+    const byId = Object.fromEntries(MAIN_DESTINATIONS.map((c) => [c.id, c]));
+    assert.equal(isCategoryActive(byId.learn, '/tutoring', '?tab=quizzes'), true);
+    assert.equal(isCategoryActive(byId.tutoring, '/tutoring', '?tab=quizzes'), false);
+    assert.equal(isCategoryActive(byId.community, '/tutoring', '?tab=workshops'), true);
+    assert.equal(isCategoryActive(byId.tutoring, '/profile', '?tab=tutoring'), true);
+    assert.equal(isCategoryActive(byId.community, '/messages', ''), true);
+    assert.equal(isCategoryActive(byId.projects, '/projects', '?tab=my_projects'), true);
+  });
+
+  it('expone endpoints centralizados de mensajería y buscador global actualizado', () => {
+    assert.equal(API_ENDPOINTS.MESSAGES.CONVERSATIONS, '/messages/conversations');
+    assert.equal(API_ENDPOINTS.MESSAGES.UNREAD_COUNT, '/messages/unread-count');
+    assert.equal(API_ENDPOINTS.MESSAGES.CONTACTS, '/messages/contacts');
+    assert.equal(
+      API_ENDPOINTS.MESSAGES.CONVERSATION_MESSAGES('conv-1'),
+      '/messages/conversations/conv-1/messages'
+    );
+    assert.equal(
+      API_ENDPOINTS.MESSAGES.MARK_READ('conv-1'),
+      '/messages/conversations/conv-1/read'
+    );
+    assert.equal(searchNavigation('mensajeria')[0].href, '/messages');
+  });
+});

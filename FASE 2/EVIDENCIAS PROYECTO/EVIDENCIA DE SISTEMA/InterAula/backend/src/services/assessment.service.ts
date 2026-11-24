@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import type {ChallengeQuestionDTO} from './ai.service.js';
-import {buildAccreditationQuestions} from './accreditationQuestions.service.js';
+import {buildAccreditationQuestions,resolveSubjectContext} from './accreditationQuestions.service.js';
 import {assessmentCatalog} from '../data/assessmentCatalog.js';
 import {getAdminSupabase,getAuthenticatedSupabase} from '../lib/supabase.js';
 import {HttpError} from '../lib/httpError.js';
@@ -23,7 +23,18 @@ function pauseState(attempt:any) {
 }
 function publicQuestion(question:ChallengeQuestionDTO|undefined,mode='standard',policyVersion=3) {
   if(!question)return null;
-  return {id:question.id,type:question.type,prompt:question.prompt,options:question.options,codeSnippet:question.codeSnippet,placeholder:question.placeholder,timeLimitSeconds:questionSeconds(question,mode,policyVersion)};
+  return {
+    id:question.id,
+    type:question.type,
+    prompt:question.prompt,
+    options:question.options,
+    codeSnippet:question.codeSnippet,
+    placeholder:question.placeholder,
+    topic:question.topic,
+    difficulty:question.level,
+    category:question.category,
+    timeLimitSeconds:questionSeconds(question,mode,policyVersion),
+  };
 }
 export function gradeAssessmentAnswer(question:ChallengeQuestionDTO,answer:string):boolean {
   if(question.type==='choice')return answer===question.correctOptionId;
@@ -41,16 +52,20 @@ async function updateAttempt(attempt:any,patch:Record<string,unknown>) {
     .eq('id',attempt.id).eq('user_id',attempt.user_id).eq('state',attempt.state).eq('revision',attempt.revision).select('id').maybeSingle());
   if(!updated)throw new HttpError(409,'El intento cambió en otra solicitud. Recarga su estado para continuar.');
 }
-function publicState(attempt:any,subjectName:string) {
+function publicState(attempt:any,subjectName:string,subjectArea?:string) {
   const pending=attempt.state==='pending';
   const last=attempt.answers.at(-1);
-  return {id:attempt.id,subjectId:attempt.subject_id,subjectName,level:'basic',totalQuestions:attempt.questions.length,
-    answered:attempt.answers.length,expiresAt:attempt.expires_at,questionExpiresAt:attempt.question_deadline,
+  const totalQuestions=attempt.questions.length;
+  const answered=attempt.answers.length;
+  const resolvedContext=resolveSubjectContext(subjectName,subjectArea);
+  return {id:attempt.id,subjectId:attempt.subject_id,subjectName,subjectArea:resolvedContext.areaLabel,level:'basic',totalQuestions,
+    answered,pendingQuestions:Math.max(0,totalQuestions-answered),progressPercent:totalQuestions?Math.round((answered/totalQuestions)*100):0,
+    expiresAt:attempt.expires_at,questionExpiresAt:attempt.question_deadline,
     serverNow:new Date().toISOString(),timeMode:attempt.time_mode||'standard',source:attempt.question_source||'reviewed',
     state:attempt.state,integrityCount:incidentCount(attempt),integrityLimit:3,score:pending?undefined:attempt.score,
     needsNext:pending&&!attempt.question_deadline,...pauseState(attempt),failFast:attempt.policy_version>=5,passingScore:attempt.policy_version>=5?100:70,
     terminationReason:attempt.state==='failed'&&attempt.policy_version>=5&&last&&!last.correct?(last.timed_out?'time_expired':'incorrect_answer'):undefined,
-    question:pending&&attempt.question_deadline?publicQuestion(attempt.questions[attempt.answers.length],attempt.time_mode,attempt.policy_version||1):null};
+    question:pending&&attempt.question_deadline?publicQuestion(attempt.questions[answered],attempt.time_mode,attempt.policy_version||1):null};
 }
 export const assessmentService={
   async start(user:AuthenticatedUser,token:string,subjectId:string|undefined,options:{catalogSubjectId?:string;timeMode?:'standard'|'extended'}={}):Promise<any> {
@@ -63,7 +78,11 @@ export const assessmentService={
       const catalogSubject=assessmentCatalog.find(s=>s.id===options.catalogSubjectId);
       if(!catalogSubject)throw new HttpError(400,'La asignatura no pertenece al catálogo disponible.');
       subjectArea=catalogSubject.area;
-      let subject=await result(admin.from('subjects').select('id,name').eq('name',catalogSubject.name).maybeSingle());
+      let subject=await result(admin.from('subjects').select('id,name,category').eq('name',catalogSubject.name).maybeSingle());
+      if(!subject) {
+        const allSubjects=await result(admin.from('subjects').select('id,name,category'));
+        subject=(allSubjects||[]).find((s:any)=>normalize(s.name)===normalize(catalogSubject.name))||null;
+      }
       if(!subject) {
         const inserted=await admin.from('subjects').insert({name:catalogSubject.name,category:catalogSubject.area}).select('id,name').single();
         if(inserted.error?.code==='23505')subject=await result(admin.from('subjects').select('id,name').eq('name',catalogSubject.name).maybeSingle());
@@ -71,29 +90,33 @@ export const assessmentService={
       }
       subjectId=subject.id;subjectName=subject.name;
     } else {
-      const subject=await result(client.from('subjects').select('id,name').eq('id',subjectId!).maybeSingle());
+      const subject=await result(client.from('subjects').select('id,name,category').eq('id',subjectId!).maybeSingle());
       if(!subject)throw new HttpError(404,'Asignatura no encontrada.');
       subjectName=subject.name;
+      subjectArea=subject.category||resolveSubjectContext(subject.name).areaSlug;
     }
     const offered=await result(client.from('profile_offered_subjects').select('subject_id,is_verified').eq('profile_id',user.id).eq('subject_id',subjectId!).maybeSingle());
     if(offered?.is_verified)throw new HttpError(409,'Esta asignatura ya está acreditada.');
     const prior=await result(admin.from('tutor_assessment_attempts').select('questions').eq('user_id',user.id).eq('subject_id',subjectId!).order('created_at',{ascending:false}).limit(10));
     const previousQuestions=prior.flatMap((attempt:any)=>attempt.questions||[]);
     const {questions,source}=await buildAccreditationQuestions(subjectName,subjectArea,previousQuestions);
-    if(!offered)await result(client.from('profile_offered_subjects').insert({profile_id:user.id,subject_id:subjectId!,level:'basic',is_verified:false}));
+    if(!offered) {
+      const insertedOffer=await client.from('profile_offered_subjects').insert({profile_id:user.id,subject_id:subjectId!,level:'basic',is_verified:false});
+      if(insertedOffer.error&&insertedOffer.error.code!=='23505')await result(Promise.resolve(insertedOffer));
+    }
     const timeMode=options.timeMode||'standard';const now=Date.now();
     const attempt=await result(admin.from('tutor_assessment_attempts').insert({user_id:user.id,subject_id:subjectId!,
       level:'basic',questions,answers:[],state:'pending',policy_version:5,time_mode:timeMode,question_source:source,integrity_events:[],integrity_count:0,
       expires_at:new Date(now+1000*(questions.reduce((sum,q)=>sum+questionSeconds(q,timeMode),0)+questions.length*60)).toISOString(),
       question_deadline:new Date(now+questionSeconds(questions[0],timeMode)*1000).toISOString(),
     }).select('*').single());
-    return publicState(attempt,subjectName);
+    return publicState(attempt,subjectName,subjectArea);
   },
   async get(user:AuthenticatedUser,id:string):Promise<any> {
     const attempt=await getAttempt(user,id);
-    const subject=await existing(getAdminSupabase().from('subjects').select('name').eq('id',attempt.subject_id).maybeSingle(),'Asignatura no encontrada.');
+    const subject=await existing(getAdminSupabase().from('subjects').select('name,category').eq('id',attempt.subject_id).maybeSingle(),'Asignatura no encontrada.');
     if(attempt.state==='pending'&&Date.parse(attempt.expires_at)<=Date.now())throw new HttpError(410,'El intento expiró.');
-    return publicState(attempt,subject.name);
+    return publicState(attempt,subject.name,subject.category);
   },
   async next(user:AuthenticatedUser,id:string):Promise<any> {
     const attempt=await getAttempt(user,id);assertPending(attempt);
@@ -148,7 +171,20 @@ export const assessmentService={
     if(!['passed','granted'].includes(attempt.state))throw new HttpError(409,'Primero debes aprobar la evaluación completa.');
     if(attempt.policy_version>=5&&(attempt.answers.length!==attempt.questions.length||attempt.answers.some((answer:any)=>!answer.correct)||attempt.score!==100))throw new HttpError(409,'Debes completar todas las preguntas sin errores para acreditar esta evaluación.');
     if(attempt.state!=='granted'&&Date.parse(attempt.expires_at)<=Date.now())throw new HttpError(410,'El intento aprobado expiró. Inicia una nueva evaluación.');
-    return result(getAdminSupabase().rpc('grant_tutor_assessment',{p_attempt_id:attemptId,p_user_id:user.id}),
+    const admin=getAdminSupabase();
+    const granted=await admin.rpc('grant_tutor_assessment',{p_attempt_id:attemptId,p_user_id:user.id});
+    if(granted.error?.code==='23505') {
+      // Si existía una solicitud pendiente sin resolver para la misma materia, cerrarla como superada por la evaluación aprobada y reintentar una sola vez.
+      await admin
+        .from('tutor_verification_requests')
+        .delete()
+        .eq('tutor_id',user.id)
+        .eq('subject_id',attempt.subject_id)
+        .in('status',['pending','practical_evaluation','under_review']);
+      return result(admin.rpc('grant_tutor_assessment',{p_attempt_id:attemptId,p_user_id:user.id}),
+        'No fue posible confirmar la acreditación. Tu evaluación permanece guardada.');
+    }
+    return result(Promise.resolve(granted),
       'No fue posible confirmar la acreditación. Tu evaluación permanece guardada.');
   },
 };

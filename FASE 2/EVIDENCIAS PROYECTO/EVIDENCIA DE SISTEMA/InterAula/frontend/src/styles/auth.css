@@ -423,42 +423,99 @@
 
 /* Modo Calma en Autenticación */
 html.ia-calm-mode .auth-page-wrapper {
-  background-color: #ebf0e8 !important;
+  background-color: var(--ia-bg-body, #ebf0e8) !important;
   background-image: none !important;
 }
 
+html.ia-calm-mode .auth-header,
 html.ia-calm-mode .auth-card {
-  background-color: #f6f8f4 !important;
-  border-color: #c4d1bf !important;
+  background-color: var(--ia-bg-card, #f6f8f4) !important;
+  border-color: var(--ia-border, #c4d1bf) !important;
+  color: var(--ia-text-main, #1c2b24) !important;
   box-shadow: none !important;
 }
 
-html.ia-calm-mode .form-input {
-  background-color: #ffffff !important;
-  border-color: #b0c0ab !important;
+html.ia-calm-mode .auth-title,
+html.ia-calm-mode .form-label,
+html.ia-calm-mode .auth-header-brand,
+html.ia-calm-mode .auth-nav-link {
+  color: var(--ia-text-main, #1c2b24) !important;
+}
+
+html.ia-calm-mode .auth-subtitle,
+html.ia-calm-mode .auth-divider {
+  color: var(--ia-text-muted, #52665c) !important;
+}
+
+html.ia-calm-mode .form-input,
+html.ia-calm-mode .btn-auth-secondary,
+html.ia-calm-mode .btn-auth-google {
+  background-color: var(--ia-bg-subtle, #ffffff) !important;
+  border-color: var(--ia-border-strong, #b0c0ab) !important;
+  color: var(--ia-text-main, #1c2b24) !important;
 }
 
 html.ia-calm-mode .btn-auth-submit {
-  background-color: #2c5b6c !important;
+  background-color: var(--ia-primary, #2c5b6c) !important;
+  color: #ffffff !important;
   box-shadow: none !important;
 }
 
-/* Modo Oscuro en Autenticación */
+/* Superficies oscuras (Modo Oscuro y Crepúsculo) en Autenticación */
+html[data-dark-surface="true"] .auth-page-wrapper,
 html.ia-dark-mode .auth-page-wrapper {
-  background-color: #0b1120 !important;
+  background-color: var(--ia-bg-body, #0b1120) !important;
   background-image: none !important;
 }
 
+html[data-dark-surface="true"] .auth-header,
+html[data-dark-surface="true"] .auth-card,
 html.ia-dark-mode .auth-header,
 html.ia-dark-mode .auth-card {
-  background-color: #111827 !important;
-  border-color: #283548 !important;
-  color: #f8fafc !important;
+  background-color: var(--ia-bg-card, #111827) !important;
+  border-color: var(--ia-border, #283548) !important;
+  color: var(--ia-text-main, #f8fafc) !important;
 }
 
+html[data-dark-surface="true"] .auth-title,
+html[data-dark-surface="true"] .form-label,
+html[data-dark-surface="true"] .auth-header-brand,
+html[data-dark-surface="true"] .auth-nav-link {
+  color: var(--ia-text-main, #f8fafc) !important;
+}
+
+html[data-dark-surface="true"] .auth-subtitle,
+html[data-dark-surface="true"] .auth-divider {
+  color: var(--ia-text-muted, #94a3b8) !important;
+}
+
+html[data-dark-surface="true"] .form-input,
+html[data-dark-surface="true"] .btn-auth-secondary,
+html[data-dark-surface="true"] .btn-auth-google,
 html.ia-dark-mode .form-input {
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-  color: #f8fafc !important;
+  background-color: var(--ia-bg-subtle, #0f172a) !important;
+  border-color: var(--ia-border-strong, #334155) !important;
+  color: var(--ia-text-main, #f8fafc) !important;
+}
+
+/* Filtro cálido suave en Autenticación */
+html[data-warm-filter="true"] .auth-page-wrapper {
+  background-color: var(--ia-bg-body) !important;
+  background-image: none !important;
+}
+
+html[data-warm-filter="true"] .auth-header,
+html[data-warm-filter="true"] .auth-card {
+  background-color: var(--ia-bg-card) !important;
+  border-color: var(--ia-border) !important;
+  color: var(--ia-text-main) !important;
+}
+
+html[data-warm-filter="true"] .form-input,
+html[data-warm-filter="true"] .btn-auth-secondary,
+html[data-warm-filter="true"] .btn-auth-google {
+  background-color: var(--ia-bg-subtle) !important;
+  border-color: var(--ia-border-strong) !important;
+  color: var(--ia-text-main) !important;
 }
 

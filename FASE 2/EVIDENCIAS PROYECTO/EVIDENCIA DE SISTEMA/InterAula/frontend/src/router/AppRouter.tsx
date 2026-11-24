@@ -23,6 +23,7 @@ const VirtualClassroom = lazy(() => import('../pages/tutoring/VirtualClassroom')
 const Resources = lazy(() => import('../pages/resources/Resources'));
 const Settings = lazy(() => import('../pages/settings/Settings'));
 const Forum = lazy(() => import('../pages/forum/Forum'));
+const Messages = lazy(() => import('../pages/community/Messages'));
 const ProjectsHub = lazy(() => import('../pages/projects/ProjectsHub'));
 const AcademicCommunity = lazy(() => import('../pages/AcademicCommunity'));
 const SupportCenter=lazy(()=>import('../pages/SupportCenter'));
@@ -119,6 +120,7 @@ export default function AppRouter() {
           <Route path="/my-tutoring" element={<MyTutoring />} />
           <Route path="/tutor" element={<Navigate to="/my-tutoring" replace />} />
           <Route path="/forum" element={<Forum />} />
+          <Route path="/messages" element={<Messages />} />
           <Route path="/resources" element={<Resources />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

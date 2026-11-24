@@ -31,10 +31,16 @@ export const verificationBackendService = {
     }
 
     if (!offered) {
-      throw new Error('Debes registrar esta asignatura en tu lista de materias ofrecidas antes de solicitar su verificación');
-    }
-
-    if (offered.is_verified) {
+      const { error: insertOfferErr } = await client.from('profile_offered_subjects').insert({
+        profile_id: user.id,
+        subject_id: subjectId,
+        level: 'basic',
+        is_verified: false,
+      });
+      if (insertOfferErr && insertOfferErr.code !== '23505') {
+        throw new Error(`No fue posible registrar la asignatura ofrecida: ${insertOfferErr.message}`);
+      }
+    } else if (offered.is_verified) {
       throw new Error('Esta asignatura ya cuenta con la verificación académica aprobada');
     }
 

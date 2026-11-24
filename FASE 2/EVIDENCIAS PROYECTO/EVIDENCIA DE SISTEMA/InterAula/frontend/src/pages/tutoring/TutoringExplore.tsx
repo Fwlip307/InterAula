@@ -386,9 +386,9 @@ export default function TutoringExplore() {
       {/* Cabecera Académica - Centro de Aprendizaje */}
       <div className="ia-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '22px' }}>
         <div>
-          <h1 className="ia-page-title">Pedir apoyo</h1>
+          <h1 className="ia-page-title">Tutorías</h1>
           <p className="ia-page-subtitle">
-            Encuentra un tutor para tu materia o aprende en un taller.
+            Explora tutorías, busca tutores acreditados por asignatura y solicita sesiones entre pares.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -427,14 +427,14 @@ export default function TutoringExplore() {
                 padding: '9px 16px',
                 fontSize: '0.88rem',
                 fontWeight: 700,
-                backgroundColor: '#ecfdf5',
-                borderColor: '#a7f3d0',
-                color: '#065f46',
+                backgroundColor: 'var(--ia-success-bg, #ecfdf5)',
+                borderColor: 'var(--ia-success-border, #a7f3d0)',
+                color: 'var(--ia-success, #065f46)',
                 textDecoration: 'none',
               }}
             >
-              <ShieldCheckIcon size={16} color="#059669" />
-              <span>¿Cómo Certificarme como Tutor?</span>
+              <ShieldCheckIcon size={16} />
+              <span>Acreditación de tutor</span>
             </Link>
           ) : (
             <div
@@ -445,13 +445,13 @@ export default function TutoringExplore() {
                 padding: '8px 14px',
                 fontSize: '0.84rem',
                 fontWeight: 800,
-                backgroundColor: '#f0fdf4',
-                border: '1px solid #86efac',
-                color: '#166534',
+                backgroundColor: 'var(--ia-success-bg, #f0fdf4)',
+                border: '1px solid var(--ia-success-border, #86efac)',
+                color: 'var(--ia-success, #166534)',
                 borderRadius: '8px',
               }}
             >
-              <CheckIcon size={14} color="#16a34a" />
+              <CheckIcon size={14} />
               <span>Tutor Acreditado</span>
             </div>
           )}
@@ -481,9 +481,9 @@ export default function TutoringExplore() {
       {successMsg && (
         <div
           style={{
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
-            color: '#15803d',
+            background: 'var(--ia-success-bg, #f0fdf4)',
+            border: '1px solid var(--ia-success-border, #bbf7d0)',
+            color: 'var(--ia-success, #15803d)',
             padding: '14px 18px',
             borderRadius: '12px',
             marginBottom: '20px',
@@ -494,13 +494,13 @@ export default function TutoringExplore() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CheckIcon size={20} color="#15803d" />
+            <CheckIcon size={20} />
             <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{successMsg}</span>
           </div>
           <Link
             to="/my-tutoring"
             className="ia-btn-primary"
-            style={{ padding: '6px 14px', fontSize: '0.82rem', background: '#16a34a', borderColor: '#15803d' }}
+            style={{ padding: '6px 14px', fontSize: '0.82rem' }}
           >
             Ir a Mis Tutorías
           </Link>
@@ -650,10 +650,10 @@ export default function TutoringExplore() {
         </div>
       )}
 
-      <ModuleNavigation label="Secciones para pedir apoyo" active={activeTab} onSelect={setActiveTab}
-        primary={[{id:'tutors',label:'Encontrar un tutor'},{id:'workshops',label:'Talleres'},{id:'my_classes',label:'Mi agenda'}]}
-        secondary={[{id:'quizzes',label:'Quizzes y retos'},{id:'materials',label:'Materiales de estudio'}]} />
-      <section aria-label="Ofrecer apoyo y apuntes de estudio"><div className="ia-guided-inline"><Link to="/resources?tab=community">Apuntes y biblioteca de estudio</Link><Link to="/profile?tab=tutoring">Acreditarme como tutor</Link><Link to="/my-tutoring">Gestionar mis tutorías y talleres</Link></div></section>
+      <ModuleNavigation label="Secciones de tutorías" active={activeTab} onSelect={setActiveTab}
+        primary={[{id:'tutors',label:'Buscar tutores'},{id:'my_classes',label:'Mis reservas'},{id:'workshops',label:'Talleres'}]}
+        secondary={[{id:'quizzes',label:'Cuestionarios'},{id:'materials',label:'Materiales de estudio'}]} />
+      <section aria-label="Accesos de tutoría"><div className="ia-guided-inline"><Link to="/my-tutoring?tab=offerings">Ofrecer tutorías</Link><Link to="/my-tutoring">Mis tutorías</Link><Link to="/profile?tab=tutoring">Acreditación de tutor</Link><Link to="/my-tutoring?tab=confirmed">Aula virtual</Link></div></section>
 
       {/* Barra de Filtros y Búsqueda */}
       {activeTab !== 'my_classes' && activeTab !== 'quizzes' && (

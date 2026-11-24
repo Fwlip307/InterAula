@@ -149,4 +149,15 @@ export const API_ENDPOINTS = {
     IDEA_BY_ID: (ideaId: string) => `/learning-space/ideas/${ideaId}`,
     IDEA_CONVERT: (ideaId: string) => `/learning-space/ideas/${ideaId}/convert-to-task`,
   },
+
+  // Mensajería directa entre estudiantes y tutores
+  MESSAGES: {
+    CONVERSATIONS: '/messages/conversations',
+    CONVERSATION_MESSAGES: (conversationId: string) =>
+      `/messages/conversations/${encodeURIComponent(conversationId)}/messages`,
+    MARK_READ: (conversationId: string) =>
+      `/messages/conversations/${encodeURIComponent(conversationId)}/read`,
+    UNREAD_COUNT: '/messages/unread-count',
+    CONTACTS: '/messages/contacts',
+  },
 } as const;

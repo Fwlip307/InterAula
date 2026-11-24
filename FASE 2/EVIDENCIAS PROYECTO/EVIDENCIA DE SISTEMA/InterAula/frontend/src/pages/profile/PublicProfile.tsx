@@ -193,6 +193,16 @@ export default function PublicProfile() {
           </div>
 
           <div className="ia-profile-actions">
+            {user?.id && profile.id !== user.id && (
+              <Link
+                to={`/messages?to=${encodeURIComponent(profile.id)}&context=${offeredSubjects.length > 0 ? 'tutoring' : 'direct'}`}
+                className="ia-btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
+              >
+                <MailIcon size={15} />
+                Enviar mensaje
+              </Link>
+            )}
             {profile.available_for_tutoring && offeredSubjects.length > 0 && (
               <span className="ia-badge ia-badge-success">
                 <CheckIcon size={12} /> Disponible para Apoyo entre Pares

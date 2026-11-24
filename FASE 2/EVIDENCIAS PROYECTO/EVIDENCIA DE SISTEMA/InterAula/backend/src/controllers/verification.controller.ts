@@ -141,8 +141,32 @@ export const verificationController = {
   async requestTeacherEndorsement(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { subject_id, professor_name, professor_email, message } = req.body;
+      const client = clientFor(req.token);
+      // Asegurar idempotentemente que la materia esté registrada como ofrecida (is_verified=false) antes de solicitar el aval docente.
+      const existingOffer = await result(
+        client
+          .from('profile_offered_subjects')
+          .select('subject_id,is_verified')
+          .eq('profile_id', req.user!.id)
+          .eq('subject_id', subject_id)
+          .maybeSingle()
+      );
+      if (existingOffer?.is_verified) {
+        throw new HttpError(409, 'Esta asignatura ya cuenta con acreditación aprobada.');
+      }
+      if (!existingOffer) {
+        const insertedOffer = await client.from('profile_offered_subjects').insert({
+          profile_id: req.user!.id,
+          subject_id,
+          level: 'basic',
+          is_verified: false,
+        });
+        if (insertedOffer.error && insertedOffer.error.code !== '23505') {
+          await result(Promise.resolve(insertedOffer));
+        }
+      }
       const data = await result(
-        clientFor(req.token).rpc('request_teacher_endorsement', {
+        client.rpc('request_teacher_endorsement', {
           p_subject_id: subject_id,
           p_name: professor_name,
           p_email: professor_email,

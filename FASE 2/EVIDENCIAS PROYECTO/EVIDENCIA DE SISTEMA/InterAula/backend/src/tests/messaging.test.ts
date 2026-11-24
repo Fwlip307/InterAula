@@ -1,0 +1,78 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import request from 'supertest';
+import app from '../app.js';
+import {
+  __resetLocalMessagingForTests,
+  __seedLocalMessagingProfileForTests,
+  messagingService,
+} from '../services/messaging.service.js';
+import { createConversationSchema, sendMessageSchema } from '../schemas/messaging.schema.js';
+
+test('Mensajería: esquemas estrictos y protección de rutas privadas sin autenticación (401)', async () => {
+  assert.equal(createConversationSchema.safeParse({ recipient_id: crypto.randomUUID(), extra: true }).success, false);
+  assert.equal(sendMessageSchema.safeParse({ body: '   ' }).success, false);
+  assert.equal(sendMessageSchema.safeParse({ body: 'Hola, coordinemos la tutoría de cálculo.' }).success, true);
+
+  const res = await request(app).get('/api/messages/conversations');
+  assert.equal(res.status, 401);
+});
+
+test('Mensajería: creación única, envío, recepción, estado de lectura, no leídos y aislamiento de terceros', async () => {
+  __resetLocalMessagingForTests();
+  const alice = { id: crypto.randomUUID() };
+  const bob = { id: crypto.randomUUID() };
+  const intruder = { id: crypto.randomUUID() };
+
+  __seedLocalMessagingProfileForTests({ id: alice.id, display_name: 'Alice Estudiante', career: 'Informática' });
+  __seedLocalMessagingProfileForTests({ id: bob.id, display_name: 'Bob Tutor', career: 'Informática' });
+  __seedLocalMessagingProfileForTests({ id: intruder.id, display_name: 'Tercero Ajeno' });
+
+  // No permite chat consigo mismo
+  await assert.rejects(
+    messagingService.createOrOpenConversation(alice, 'tok', { recipient_id: alice.id }),
+    { status: 400 }
+  );
+
+  // Crear conversación con mensaje inicial
+  const conv1 = await messagingService.createOrOpenConversation(alice, 'tok', {
+    recipient_id: bob.id,
+    context_type: 'tutoring',
+    context_label: 'Cálculo Diferencial',
+    initial_message: 'Hola Bob, ¿podemos repasar límites mañana?',
+  });
+  assert.equal(conv1.other_participant.id, bob.id);
+  assert.equal(conv1.unread_count, 0);
+  assert.ok(conv1.last_message_preview.includes('repasar límites'));
+
+  // Reabrir la misma conversación no crea duplicado
+  const convSame = await messagingService.createOrOpenConversation(bob, 'tok', {
+    recipient_id: alice.id,
+    context_type: 'tutoring',
+  });
+  assert.equal(convSame.id, conv1.id);
+
+  // Bob ve 1 mensaje sin leer
+  const bobUnreadBefore = await messagingService.getUnreadCount(bob, 'tok');
+  assert.equal(bobUnreadBefore.unreadCount, 1);
+
+  // Un tercero ajeno NO puede leer ni escribir en esta conversación privada
+  await assert.rejects(messagingService.getMessages(intruder, 'tok', conv1.id), { status: 403 });
+  await assert.rejects(messagingService.sendMessage(intruder, 'tok', conv1.id, 'Intruso'), { status: 403 });
+  await assert.rejects(messagingService.markAsRead(intruder, 'tok', conv1.id), { status: 403 });
+
+  // Bob marca como leído y responde
+  const marked = await messagingService.markAsRead(bob, 'tok', conv1.id);
+  assert.equal(marked.updated, 1);
+  assert.equal((await messagingService.getUnreadCount(bob, 'tok')).unreadCount, 0);
+
+  const reply = await messagingService.sendMessage(bob, 'tok', conv1.id, '¡Claro! Te espero a las 18:00.');
+  assert.equal(reply.sender_id, bob.id);
+
+  const history = await messagingService.getMessages(alice, 'tok', conv1.id);
+  assert.equal(history.length, 2);
+  assert.ok(history[0].read_at, 'El primer mensaje debe figurar como leído');
+  assert.equal(history[1].read_at, null);
+  assert.equal((await messagingService.getUnreadCount(alice, 'tok')).unreadCount, 1);
+});

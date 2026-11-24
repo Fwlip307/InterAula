@@ -296,9 +296,43 @@ export default function Settings() {
                 )}
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted)', lineHeight: 1.4 }}>
-                Paleta serena en tonos piedra y salvia sin gradientes ni estímulos intensos.
+                Paleta serena en tres niveles (Salvia, Arena y Crepúsculo) sin gradientes ni estímulos intensos.
               </span>
             </button>
+          </div>
+
+          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--ia-text-body)' }}>
+              Tono de Modo Calma:
+            </span>
+            {(
+              [
+                { id: 'sage', label: 'Salvia (Claro suave)', swatch: '#d8e3d5' },
+                { id: 'sand', label: 'Arena (Papel cálido)', swatch: '#ebe0cc' },
+                { id: 'dusk', label: 'Crepúsculo (Oscuro sereno)', swatch: '#263038' },
+              ] as const
+            ).map((tone) => {
+              const isSelected = themeMode === 'calm' && (preferences.calmTone || 'sage') === tone.id;
+              return (
+                <button
+                  key={tone.id}
+                  type="button"
+                  onClick={() =>
+                    updatePreferences({
+                      themeMode: 'calm',
+                      calmMode: true,
+                      darkMode: false,
+                      calmTone: tone.id,
+                    })
+                  }
+                  className={`ia-theme-calm-tone-pill ${isSelected ? 'active' : ''}`}
+                  style={{ padding: '7px 12px', fontSize: '0.8rem' }}
+                >
+                  <span className="ia-theme-calm-tone-swatch" style={{ background: tone.swatch }} aria-hidden="true" />
+                  <span>{tone.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -410,6 +444,62 @@ export default function Settings() {
               </div>
               <div style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
                 Desactiva desplazamientos automáticos y efectos de movimiento al navegar o abrir ventanas.
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              padding: '14px',
+              borderRadius: '10px',
+              border: `1.5px solid ${preferences.warmFilter ? 'var(--ia-primary)' : 'var(--ia-border)'}`,
+              background: preferences.warmFilter ? 'var(--ia-primary-subtle)' : 'var(--ia-bg-body)',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(preferences.warmFilter)}
+              onChange={(e) => updatePreferences({ warmFilter: e.target.checked })}
+              style={{ width: '18px', height: '18px', marginTop: '2px' }}
+            />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ia-text-main)' }}>
+                Filtro cálido suave
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
+                Atenúa blancos puros y luz azul con tonos cálidos adaptados automáticamente a temas claros, oscuros y Crepúsculo.
+              </div>
+            </div>
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+              padding: '14px',
+              borderRadius: '10px',
+              border: `1.5px solid ${preferences.easyReadingFont ? 'var(--ia-primary)' : 'var(--ia-border)'}`,
+              background: preferences.easyReadingFont ? 'var(--ia-primary-subtle)' : 'var(--ia-bg-body)',
+              cursor: 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(preferences.easyReadingFont)}
+              onChange={(e) => updatePreferences({ easyReadingFont: e.target.checked })}
+              style={{ width: '18px', height: '18px', marginTop: '2px' }}
+            />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ia-text-main)' }}>
+                Fuente de lectura fácil (Lexend)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
+                Mejora el espaciado entre caracteres y líneas para reducir el cansancio al leer textos extensos.
               </div>
             </div>
           </label>

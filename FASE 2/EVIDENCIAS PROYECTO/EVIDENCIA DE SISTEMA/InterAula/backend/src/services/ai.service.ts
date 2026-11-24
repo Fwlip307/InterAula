@@ -13,6 +13,7 @@ export interface ChallengeQuestionDTO {
   level?: 'basic' | 'intermediate' | 'advanced';
   type: 'choice' | 'redaction';
   category: 'conceptual' | 'debugging' | 'pedagogical';
+  topic?: string;
   prompt: string;
   codeSnippet?: string;
   timeLimit?: number;
@@ -224,9 +225,78 @@ const CURATED_QUESTIONS: ChallengeQuestionDTO[] = [
       { id: 'a', text: 'Foreign Key (FK)' },
       { id: 'b', text: 'Candidate Key' },
       { id: 'c', text: 'Composite Key' },
+      { id: 'd', text: 'Super Key' },
     ],
     correctOptionId: 'a',
     explanation: 'La Clave Foránea (FK) mantiene la integridad referencial conectando tablas.',
+  },
+  {
+    id: 'cur_db_2b',
+    subject: 'Modelamiento de Base de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué requiere la Primera Forma Normal (1FN) en una tabla relacional?',
+    options: [
+      { id: 'a', text: 'Que cada atributo almacene valores atómicos indivisibles sin grupos repetitivos.' },
+      { id: 'b', text: 'Que existan al menos tres claves foráneas.' },
+      { id: 'c', text: 'Que todas las columnas sean numéricas.' },
+      { id: 'd', text: 'Que la tabla no tenga clave primaria.' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La 1FN exige atomicidad en cada celda y elimina grupos repetitivos.',
+  },
+  {
+    id: 'cur_db_2c',
+    subject: 'Modelamiento de Base de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Cómo se implementa normalmente una relación muchos a muchos (N:M) en un modelo relacional físico?',
+    options: [
+      { id: 'a', text: 'Creando una tabla intermedia con claves foráneas hacia ambas entidades.' },
+      { id: 'b', text: 'Duplicando toda la base de datos en dos servidores.' },
+      { id: 'c', text: 'Eliminando las claves primarias de ambas tablas.' },
+      { id: 'd', text: 'Guardando listas separadas por comas en un solo campo.' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'Una relación N:M se resuelve mediante una tabla asociativa intermedia con las FK de ambas tablas.',
+  },
+  {
+    id: 'cur_db_2d',
+    subject: 'Modelamiento de Base de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué garantiza la restricción de integridad referencial entre dos tablas relacionadas?',
+    options: [
+      { id: 'a', text: 'Que toda clave foránea no nula corresponda a una clave primaria existente en la tabla padre.' },
+      { id: 'b', text: 'Que las consultas se ordenen automáticamente alfabéticamente.' },
+      { id: 'c', text: 'Que los archivos de respaldo se compriman en formato ZIP.' },
+      { id: 'd', text: 'Que no se puedan crear índices secundarios.' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La integridad referencial impide referencias huérfanas entre tablas padre e hija.',
+  },
+  {
+    id: 'cur_db_2e',
+    subject: 'Modelamiento de Base de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué elimina la Tercera Forma Normal (3FN) en una tabla que ya cumple 2FN?',
+    options: [
+      { id: 'a', text: 'Dependencias transitivas entre atributos no clave.' },
+      { id: 'b', text: 'Todas las claves foráneas.' },
+      { id: 'c', text: 'Los nombres de columnas en español.' },
+      { id: 'd', text: 'El uso de claves primarias compuestas.' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'La 3FN asegura que los atributos no clave dependan únicamente de la clave primaria y no de otros atributos no clave.',
   },
   {
     id: 'cur_db_3',
@@ -252,9 +322,78 @@ const CURATED_QUESTIONS: ChallengeQuestionDTO[] = [
       { id: 'a', text: 'DELETE' },
       { id: 'b', text: 'DROP' },
       { id: 'c', text: 'REMOVE' },
+      { id: 'd', text: 'ALTER' },
     ],
     correctOptionId: 'a',
     explanation: 'DELETE elimina registros sujetos a condición WHERE preservando la tabla.',
+  },
+  {
+    id: 'cur_db_5',
+    subject: 'Consultas de Bases de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué tipo de JOIN retorna todas las filas de la tabla izquierda y las coincidencias de la tabla derecha (o NULL si no hay coincidencia)?',
+    options: [
+      { id: 'a', text: 'LEFT JOIN' },
+      { id: 'b', text: 'INNER JOIN' },
+      { id: 'c', text: 'CROSS JOIN' },
+      { id: 'd', text: 'UNION ALL' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'LEFT JOIN conserva todas las filas de la tabla izquierda aun sin coincidencia en la derecha.',
+  },
+  {
+    id: 'cur_db_6',
+    subject: 'Consultas de Bases de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué cláusula SQL permite eliminar filas duplicadas del resultado de una consulta SELECT?',
+    options: [
+      { id: 'a', text: 'DISTINCT' },
+      { id: 'b', text: 'UNIQUE BY' },
+      { id: 'c', text: 'LIMIT' },
+      { id: 'd', text: 'OFFSET' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'SELECT DISTINCT devuelve únicamente combinaciones únicas de las columnas proyectadas.',
+  },
+  {
+    id: 'cur_db_7',
+    subject: 'Consultas de Bases de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué función de agregación SQL devuelve la cantidad de filas no nulas de una columna?',
+    options: [
+      { id: 'a', text: 'COUNT()' },
+      { id: 'b', text: 'SUM()' },
+      { id: 'c', text: 'LEN()' },
+      { id: 'd', text: 'TOTAL()' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'COUNT(columna) cuenta los registros donde la columna no es NULL.',
+  },
+  {
+    id: 'cur_db_8',
+    subject: 'Consultas de Bases de Datos',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿En qué orden lógico se ejecuta WHERE respecto a GROUP BY en una consulta SQL?',
+    options: [
+      { id: 'a', text: 'WHERE filtra las filas antes de agrupar con GROUP BY.' },
+      { id: 'b', text: 'WHERE se ejecuta después de ORDER BY.' },
+      { id: 'c', text: 'WHERE solo funciona si existe HAVING.' },
+      { id: 'd', text: 'WHERE agrupa columnas y GROUP BY ordena filas.' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'El motor evalúa FROM y WHERE antes de agrupar los registros en GROUP BY.',
   },
 
   // Matemáticas
@@ -270,6 +409,7 @@ const CURATED_QUESTIONS: ChallengeQuestionDTO[] = [
       { id: 'a', text: '14' },
       { id: 'b', text: '20' },
       { id: 'c', text: '24' },
+      { id: 'd', text: '10' },
     ],
     correctOptionId: 'a',
     explanation: 'La multiplicación tiene precedencia: 3 * 4 = 12, luego 2 + 12 = 14.',
@@ -285,6 +425,74 @@ const CURATED_QUESTIONS: ChallengeQuestionDTO[] = [
     acceptedAnswers: ['5'],
     placeholder: 'Ej: 5',
     explanation: '2x = 16 - 6 -> 2x = 10 -> x = 5.',
+  },
+  {
+    id: 'cur_mat_3',
+    subject: 'Nivelación Matemática',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Cuál es el 25% de 200?',
+    options: [
+      { id: 'a', text: '50' },
+      { id: 'b', text: '25' },
+      { id: 'c', text: '40' },
+      { id: 'd', text: '75' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'El 25% equivale a un cuarto: 200 / 4 = 50.',
+  },
+  {
+    id: 'cur_mat_4',
+    subject: 'Nivelación Matemática',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Qué valor resulta al simplificar la potencia 2^3 * 2^2?',
+    options: [
+      { id: 'a', text: '32 (2^5)' },
+      { id: 'b', text: '64 (2^6)' },
+      { id: 'c', text: '16 (2^4)' },
+      { id: 'd', text: '12' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'Al multiplicar potencias de igual base se suman los exponentes: 2^(3+2) = 2^5 = 32.',
+  },
+  {
+    id: 'cur_mat_5',
+    subject: 'Nivelación Matemática',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: 'Si un producto cuesta $10.000 y recibe un descuento del 10%, ¿cuál es su precio final?',
+    options: [
+      { id: 'a', text: '$9.000' },
+      { id: 'b', text: '$9.900' },
+      { id: 'c', text: '$8.500' },
+      { id: 'd', text: '$1.000' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'El 10% de $10.000 es $1.000; al descontarlo queda $9.000.',
+  },
+  {
+    id: 'cur_mat_6',
+    subject: 'Nivelación Matemática',
+    level: 'basic',
+    type: 'choice',
+    category: 'conceptual',
+    timeLimit: 20,
+    prompt: '¿Cuál es el valor de la fracción 3/4 expresado como número decimal?',
+    options: [
+      { id: 'a', text: '0,75' },
+      { id: 'b', text: '0,34' },
+      { id: 'c', text: '0,25' },
+      { id: 'd', text: '1,33' },
+    ],
+    correctOptionId: 'a',
+    explanation: 'Al dividir 3 entre 4 se obtiene exactamente 0,75.',
   },
 ];
 
@@ -588,7 +796,7 @@ export const aiBackendService = {
       evaluationConfigured: isConfigured,
       provider: isConfigured ? 'gemini' : 'hybrid_generative_ai',
       models: isConfigured
-        ? [process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite']
+        ? [process.env.GEMINI_MODEL || 'gemini-2.5-flash']
         : ['openai-pollinations-live', 'combinatorial-dua-engine'],
     };
   },
@@ -788,10 +996,10 @@ Responde ÚNICAMENTE con un arreglo JSON válido:
         const timer = setTimeout(() => controller.abort(), 6000);
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${geminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
             signal: controller.signal,
             body: JSON.stringify({
               contents: [
@@ -909,10 +1117,10 @@ REGLAS OBLIGATORIAS:
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
@@ -1011,10 +1219,10 @@ Responde ÚNICAMENTE un arreglo JSON con esta estructura:
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
@@ -1084,10 +1292,10 @@ Reglas estrictas:
     const timer = setTimeout(() => controller.abort(), 8000);
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
           signal: controller.signal,
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],

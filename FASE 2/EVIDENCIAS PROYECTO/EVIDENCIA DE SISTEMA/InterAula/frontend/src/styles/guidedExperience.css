@@ -8,6 +8,10 @@
 .ia-guided-eyebrow { font-size: .8rem; font-weight: 650; color: var(--ia-text-body); }
 .ia-guided-section-title { margin: 0 0 14px; font-size: 1.05rem; }
 .ia-guided-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.ia-guided-options.ia-guided-options--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1180px) {
+  .ia-guided-options.ia-guided-options--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .ia-guided-option { text-decoration: none; color: var(--ia-text-main); background: var(--ia-bg-card); border: 1px solid var(--ia-border); border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; transition: border-color 0.14s ease, background-color 0.14s ease; }
 .ia-guided-option strong { font-size: 1.12rem; }
 .ia-guided-option > span { color: var(--ia-text-body); font-size: .93rem; line-height: 1.6; }

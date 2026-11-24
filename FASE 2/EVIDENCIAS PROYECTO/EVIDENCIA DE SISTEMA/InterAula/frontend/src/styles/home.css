@@ -1244,10 +1244,129 @@ html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-title-highlight {
   color: #88b8c7 !important;
 }
 
-html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-mode-btn:not(.active) {
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-mode-btn:not(.active),
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-mode-tabs button:not(.active) {
   background: #202a31 !important;
   border-color: #36444f !important;
-  color: #cbd5dc !important;
+  color: #dce3e8 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-mode-tabs button.active {
+  background: #456d7c !important;
+  border-color: #548294 !important;
+  color: #f3f7f9 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-stage strong,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__explainer-body h4,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-subjects-showcase-box h3,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-contrast-block h3 {
+  color: #e6ecf0 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-stage span,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__explainer-body p,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-space-showcase__explainer-body ol,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-subjects-showcase-box p,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-clean-check-list li,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-contrast-block ul,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-trust-item,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-empty-projects-showcase p {
+  color: #c5d0d9 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-label,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-section-tag {
+  color: #88b8c7 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-badge,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-showcase-chip,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-project-badge,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-project-role-tag {
+  background: #27353f !important;
+  border-color: #3d5160 !important;
+  color: #c5dce4 !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-photo-caption,
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-section-photo-card__caption {
+  background: #1e262c !important;
+  border-top-color: #36444f !important;
+  color: #b7c4ce !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-btn-login {
+  color: #dce3e8 !important;
+  background: transparent !important;
+}
+
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-landing-btn-login:hover {
+  background: #2b3842 !important;
+  border-color: #465765 !important;
+  color: #ffffff !important;
+}
+
+/* Filtro cálido suave armonizado en la Portada Institucional (.ia-landing) */
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-landing,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-landing-hero,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-problem-section {
+  background: var(--ia-bg-body, #f4eee1) !important;
+  color: var(--ia-text-main, #262016) !important;
+}
+
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-landing-header,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-pillar-card,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-seven-step-row,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-space-showcase,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-inclusion-item,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-subject-chip,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-photo-frame,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-section-photo-card,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-hero-float-badge,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-photo-caption,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-landing-btn-outline,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-landing-btn-portal,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-showcase-mode-tabs button:not(.active) {
+  background: var(--ia-bg-card, #fbf7ee) !important;
+  border-color: var(--ia-border, #d8ccb4) !important;
+  color: var(--ia-text-main, #262016) !important;
+}
+
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-featured-space-section,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-subjects-showcase-box,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-contrast-block--before,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-space-showcase__explainer-body,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-showcase-stage,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-empty-projects-showcase,
+html[data-warm-filter="true"][data-dark-surface="false"] .ia-section-photo-card__caption {
+  background: var(--ia-bg-subtle, #ece3d2) !important;
+  border-color: var(--ia-border, #d8ccb4) !important;
+  color: var(--ia-text-body, #3e3526) !important;
+}
+
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-landing,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-landing-hero,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-problem-section {
+  background: var(--ia-bg-body, #181511) !important;
+  color: var(--ia-text-main, #f3ecdf) !important;
+}
+
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-landing-header,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-pillar-card,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-space-showcase,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-inclusion-item,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-subject-chip,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-subjects-showcase-box,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-space-showcase__explainer-body,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-showcase-stage,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-contrast-block,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-hero-float-badge,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-photo-caption,
+html[data-warm-filter="true"][data-dark-surface="true"] .ia-section-photo-card__caption {
+  background: var(--ia-bg-card, #221e18) !important;
+  border-color: var(--ia-border, #3e362b) !important;
+  color: var(--ia-text-main, #f3ecdf) !important;
 }
 
 /* ==========================================================================
@@ -1375,17 +1494,39 @@ html.ia-dark-mode .ia-showcase-stage.current {
 }
 
 html.ia-dark-mode button.ia-showcase-mode-btn,
-html.ia-dark-mode .ia-showcase-mode-btn {
+html.ia-dark-mode .ia-showcase-mode-btn,
+html.ia-dark-mode .ia-showcase-mode-tabs button {
   background: #1e293b !important;
   border-color: #334155 !important;
   color: #e2e8f0 !important;
 }
 
 html.ia-dark-mode button.ia-showcase-mode-btn.active,
-html.ia-dark-mode .ia-showcase-mode-btn.active {
+html.ia-dark-mode .ia-showcase-mode-btn.active,
+html.ia-dark-mode .ia-showcase-mode-tabs button.active {
   background: #2563eb !important;
   border-color: #3b82f6 !important;
   color: #ffffff !important;
+}
+
+html.ia-dark-mode .ia-showcase-stage strong,
+html.ia-dark-mode .ia-space-showcase__explainer-body h4,
+html.ia-dark-mode .ia-subjects-showcase-box h3 {
+  color: #f8fafc !important;
+}
+
+html.ia-dark-mode .ia-showcase-stage span,
+html.ia-dark-mode .ia-space-showcase__explainer-body ol,
+html.ia-dark-mode .ia-subjects-showcase-box p,
+html.ia-dark-mode .ia-clean-check-list li {
+  color: #cbd5e1 !important;
+}
+
+html.ia-dark-mode .ia-project-badge,
+html.ia-dark-mode .ia-project-role-tag {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #cbd5e1 !important;
 }
 
 html.ia-dark-mode .ia-space-showcase__explainer {

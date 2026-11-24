@@ -385,12 +385,16 @@ export default function ProfileView() {
 
     try {
       if (user) {
-        const fresh = await profileService.getOfferedSubjects(user.id);
+        const [fresh, freshProfile] = await Promise.all([
+          profileService.getOfferedSubjects(user.id),
+          profileService.getMyProfile().catch(() => null),
+        ]);
         if (fresh && fresh.length > 0) {
           setOfferedSubjects(fresh);
         } else {
           throw new Error('Fallback to local state');
         }
+        if (freshProfile) setProfile(freshProfile);
       }
     } catch {
       setOfferedSubjects((prev) => {
@@ -434,7 +438,7 @@ export default function ProfileView() {
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
 
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', paddingBottom: '40px' }}>
+    <div style={{ maxWidth: '1380px', margin: '0 auto', paddingBottom: '40px' }}>
       {/* Toast de Acreditación exitosa */}
       {botSuccessToast && (
         <div
@@ -1266,9 +1270,7 @@ export default function ProfileView() {
           if (user) {
             const fresh = await profileService.getOfferedSubjects(user.id);
             setOfferedSubjects(fresh);
-            if (fresh.length > 0) {
-              setAvailableForTutoring(true);
-            }
+            setAvailableForTutoring(fresh.some((item) => item.is_verified));
           }
           setBotSuccessToast('Certificado enviado a revisión exitosamente.');
           setTimeout(() => setBotSuccessToast(null), 5000);
@@ -1316,9 +1318,7 @@ export default function ProfileView() {
           if (user) {
             const fresh = await profileService.getOfferedSubjects(user.id);
             setOfferedSubjects(fresh);
-            if (fresh.length > 0) {
-              setAvailableForTutoring(true);
-            }
+            setAvailableForTutoring(fresh.some((item) => item.is_verified));
           }
           setBotSuccessToast(`Solicitud registrada para revisión de ${data.professorName} en ${data.subjectName}.`);
           setTimeout(() => setBotSuccessToast(null), 5000);

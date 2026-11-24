@@ -87,18 +87,32 @@ export default function WorkshopCard({
                 fontWeight: 800,
                 padding: '2px 8px',
                 borderRadius: '4px',
-                backgroundColor: isCompleted ? '#f1f5f9' : isLive ? '#fef2f2' : isTutor ? '#faf5ff' : '#eff6ff',
-                color: isCompleted ? '#64748b' : isLive ? '#dc2626' : isTutor ? '#7c3aed' : '#1d4ed8',
-                border: `1px solid ${isCompleted ? '#cbd5e1' : isLive ? '#fecaca' : isTutor ? '#e9d5ff' : '#bfdbfe'}`,
+                backgroundColor: isCompleted
+                  ? 'var(--ia-bg-subtle, #f1f5f9)'
+                  : isLive
+                    ? 'var(--ia-danger-bg, #fef2f2)'
+                    : 'var(--ia-primary-subtle, #eff6ff)',
+                color: isCompleted
+                  ? 'var(--ia-text-muted, #64748b)'
+                  : isLive
+                    ? 'var(--ia-danger, #dc2626)'
+                    : 'var(--ia-primary, #1d4ed8)',
+                border: `1px solid ${
+                  isCompleted
+                    ? 'var(--ia-border, #cbd5e1)'
+                    : isLive
+                      ? 'var(--ia-danger-border, #fecaca)'
+                      : 'var(--ia-primary-border, #bfdbfe)'
+                }`,
               }}
             >
               <VideoIcon size={12} /> {isCompleted ? 'Clase Finalizada' : isLive ? 'EN VIVO AHORA' : 'Taller en Vivo'}
             </span>
-            <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 600 }}>
               {workshop.subject?.name}
             </span>
           </div>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main, #0f172a)' }}>
             {workshop.title}
           </h3>
         </div>
@@ -114,9 +128,9 @@ export default function WorkshopCard({
               borderRadius: '20px',
               fontSize: '0.78rem',
               fontWeight: 700,
-              backgroundColor: isFull ? '#fef2f2' : '#f0fdf4',
-              color: isFull ? '#b91c1c' : '#15803d',
-              border: `1px solid ${isFull ? '#fecaca' : '#bbf7d0'}`,
+              backgroundColor: isFull ? 'var(--ia-danger-bg, #fef2f2)' : 'var(--ia-success-bg, #f0fdf4)',
+              color: isFull ? 'var(--ia-danger, #b91c1c)' : 'var(--ia-success, #15803d)',
+              border: `1px solid ${isFull ? 'var(--ia-danger-border, #fecaca)' : 'var(--ia-success-border, #bbf7d0)'}`,
             }}
           >
             <UsersIcon size={14} />
@@ -126,7 +140,7 @@ export default function WorkshopCard({
       </div>
 
       {/* Barra de progreso de cupos */}
-      <div style={{ width: '100%', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--ia-border, #e2e8f0)', borderRadius: '4px', overflow: 'hidden' }}>
         <div
           style={{
             width: `${occupancyPercent}%`,
@@ -138,13 +152,13 @@ export default function WorkshopCard({
       </div>
 
       {/* Datos del Tutor expositor */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.84rem', color: '#475569' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.84rem', color: 'var(--ia-text-body, #475569)' }}>
         <div
           style={{
             width: '26px',
             height: '26px',
             borderRadius: '6px',
-            backgroundColor: '#2563eb',
+            backgroundColor: 'var(--ia-primary, #2563eb)',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
@@ -157,14 +171,14 @@ export default function WorkshopCard({
           {initial}
         </div>
         <span>
-          Impartido por: <strong>{tutorName}</strong> {isTutor && <span style={{ color: '#7c3aed', fontWeight: 700 }}>(Tú)</span>}
+          Impartido por: <strong>{tutorName}</strong> {isTutor && <span style={{ color: 'var(--ia-primary, #7c3aed)', fontWeight: 700 }}>(Tú)</span>}
           {workshop.tutor?.career ? ` • ${workshop.tutor.career}` : ''}
         </span>
       </div>
 
       {/* Descripción o temario */}
       {workshop.description && (
-        <p style={{ margin: 0, fontSize: '0.84rem', color: '#475569', lineHeight: 1.4, background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+        <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--ia-text-body, #475569)', lineHeight: 1.4, background: 'var(--ia-bg-subtle, #f8fafc)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--ia-border, #e2e8f0)' }}>
           <strong>Pauta:</strong> {workshop.description}
         </p>
       )}
@@ -176,25 +190,25 @@ export default function WorkshopCard({
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: '8px',
           fontSize: '0.82rem',
-          color: '#334155',
+          color: 'var(--ia-text-body, #334155)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <CalendarIcon size={14} color="#2563eb" />
+          <CalendarIcon size={14} color="var(--ia-primary, #2563eb)" />
           <span>{formatTutoringDateTime(workshop.scheduled_at)}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <ClockIcon size={14} color="#2563eb" />
+          <ClockIcon size={14} color="var(--ia-primary, #2563eb)" />
           <span>{formatTutoringDuration(workshop.duration_minutes)}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <VideoIcon size={14} color="#16a34a" />
+          <VideoIcon size={14} color="var(--ia-success, #16a34a)" />
           <span>Aula Virtual InterAula</span>
         </div>
       </div>
 
       {/* Botones de Acción */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid var(--ia-border, #f1f5f9)', paddingTop: '12px' }}>
         {/* Botón copiar enlace rápido */}
         <button
           type="button"

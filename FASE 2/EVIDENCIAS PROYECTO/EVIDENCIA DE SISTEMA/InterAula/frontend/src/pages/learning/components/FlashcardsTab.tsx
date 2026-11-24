@@ -125,10 +125,11 @@ export default function FlashcardsTab() {
         style={{
           minHeight: '280px',
           borderRadius: '16px',
-          border: `2px solid ${isMastered ? '#86efac' : isFlipped ? accentColor : '#e2e8f0'}`,
+          border: `2px solid ${isMastered ? 'var(--ia-success-border, #86efac)' : isFlipped ? accentColor : 'var(--ia-border, #e2e8f0)'}`,
           background: isFlipped
-            ? `linear-gradient(135deg, ${accentColor}08 0%, ${accentColor}15 100%)`
-            : '#ffffff',
+            ? 'var(--ia-bg-subtle, #f8fafc)'
+            : 'var(--ia-bg-card, #ffffff)',
+          color: 'var(--ia-text-main, #0f172a)',
           padding: '32px 28px',
           display: 'flex',
           flexDirection: 'column',
@@ -137,9 +138,7 @@ export default function FlashcardsTab() {
           textAlign: 'center',
           cursor: 'pointer',
           transition: 'all 0.25s ease',
-          boxShadow: isFlipped
-            ? `0 8px 24px ${accentColor}20`
-            : '0 2px 8px rgba(0,0,0,0.06)',
+          boxShadow: 'var(--ia-shadow-sm)',
           position: 'relative',
         }}
       >
@@ -161,13 +160,13 @@ export default function FlashcardsTab() {
               fontWeight: 800,
               padding: '2px 8px',
               borderRadius: '4px',
-              background: `${accentColor}15`,
-              color: accentColor,
+              background: 'var(--ia-primary-subtle, #eff6ff)',
+              color: 'var(--ia-primary, #2563eb)',
             }}
           >
             {currentCard.category}
           </span>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--ia-text-muted, #94a3b8)', fontWeight: 600 }}>
             {(currentIndex % (filteredCards.length || 1)) + 1} / {filteredCards.length}
           </span>
         </div>
@@ -183,45 +182,45 @@ export default function FlashcardsTab() {
               gap: '4px',
               fontSize: '0.7rem',
               fontWeight: 700,
-              color: '#15803d',
-              background: '#f0fdf4',
+              color: 'var(--ia-success, #15803d)',
+              background: 'var(--ia-success-bg, #f0fdf4)',
               padding: '2px 8px',
               borderRadius: '4px',
-              border: '1px solid #bbf7d0',
+              border: '1px solid var(--ia-success-border, #bbf7d0)',
             }}
           >
-            <CheckIcon size={10} color="#15803d" /> Dominada
+            <CheckIcon size={10} /> Dominada
           </div>
         )}
 
         {/* Contenido */}
         {!isFlipped ? (
           <>
-            <BookOpenIcon size={28} color={accentColor} style={{ marginBottom: '16px', opacity: 0.6 }} />
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
+            <BookOpenIcon size={28} color={accentColor} style={{ marginBottom: '16px', opacity: 0.75 }} />
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ia-text-main, #0f172a)', margin: '0 0 8px 0' }}>
               {currentCard.term}
             </h2>
-            <p style={{ fontSize: '0.84rem', color: '#94a3b8', margin: 0 }}>
+            <p style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted, #94a3b8)', margin: 0 }}>
               {currentCard.subject}
             </p>
-            <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '20px' }}>
-              Toca para ver la definicion
+            <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-muted, #94a3b8)', marginTop: '20px' }}>
+              Toca para ver la definición
             </p>
           </>
         ) : (
           <>
-            <p style={{ fontSize: '1.05rem', fontWeight: 600, color: '#1e293b', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+            <p style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--ia-text-main, #1e293b)', lineHeight: 1.5, margin: '0 0 16px 0' }}>
               {currentCard.definition}
             </p>
             {currentCard.example && (
               <div
                 style={{
                   fontSize: '0.84rem',
-                  color: '#475569',
-                  background: '#f8fafc',
+                  color: 'var(--ia-text-body, #475569)',
+                  background: 'var(--ia-bg-card, #f8fafc)',
                   padding: '10px 14px',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--ia-border, #e2e8f0)',
                   width: '100%',
                   maxWidth: '500px',
                 }}
@@ -229,8 +228,8 @@ export default function FlashcardsTab() {
                 <strong>Ejemplo:</strong> {currentCard.example}
               </div>
             )}
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '16px' }}>
-              Toca para volver al termino
+            <p style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted, #94a3b8)', marginTop: '16px' }}>
+              Toca para volver al término
             </p>
           </>
         )}

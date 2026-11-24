@@ -12,6 +12,7 @@
 .ia-guide-overview-card.ia-visual-area { --area-accent: #2563eb; padding: 0; gap: 0; overflow: hidden; border-radius: 16px; border-top: 3px solid var(--area-accent); }
 .ia-visual-area[data-area="support"] { --area-accent: #0f766e; }
 .ia-visual-area[data-area="community"] { --area-accent: #6d28d9; }
+.ia-visual-area[data-area="projects"] { --area-accent: #b45309; }
 .ia-area-photo { position: relative; height: 148px; background: var(--ia-bg-subtle,#f1f5f9); }
 .ia-area-photo > img { width: 100%; height: 100%; object-fit: cover; }
 .ia-area-icon { display: grid; place-items: center; position: absolute; bottom: -20px; left: 22px; width: 44px; height: 44px; color: var(--area-accent); background: var(--ia-bg-card,#fff); border: 1px solid var(--ia-border,#e2e8f0); border-radius: 12px; }
@@ -43,11 +44,17 @@
 .ia-guide-section-heading { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
 .ia-guide-section-heading h2 { margin: 2px 0 0; }
 .ia-guide-section-symbol { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 10px; color: var(--ia-primary,#2563eb); background: var(--ia-bg-subtle,#eff6ff); }
+html[data-dark-surface="true"] .ia-visual-area,
 html.ia-dark-mode .ia-visual-area { --area-accent: #93c5fd; }
+html[data-dark-surface="true"] .ia-visual-area[data-area="support"],
 html.ia-dark-mode .ia-visual-area[data-area="support"] { --area-accent: #5eead4; }
+html[data-dark-surface="true"] .ia-visual-area[data-area="community"],
 html.ia-dark-mode .ia-visual-area[data-area="community"] { --area-accent: #c4b5fd; }
+html[data-dark-surface="true"] .ia-visual-area[data-area="projects"],
+html.ia-dark-mode .ia-visual-area[data-area="projects"] { --area-accent: #fbbf24; }
 html.ia-calm-mode .ia-study-welcome, html.ia-calm-mode .ia-practice-spotlight { background: var(--ia-bg-card,#fff); }
-html.ia-calm-mode .ia-visual-area { --area-accent: var(--ia-text-body,#475569); }
+html.ia-calm-mode:not([data-calm-tone="dusk"]) .ia-visual-area { --area-accent: var(--ia-text-body,#475569); }
+html.ia-calm-mode[data-calm-tone="dusk"] .ia-visual-area { --area-accent: var(--ia-primary, #7aa9b8); }
 html.ia-calm-mode .ia-study-welcome-photo img, html.ia-calm-mode .ia-area-photo img { filter: saturate(.65); }
 @media(max-width:800px) {
  .ia-study-welcome { grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); }

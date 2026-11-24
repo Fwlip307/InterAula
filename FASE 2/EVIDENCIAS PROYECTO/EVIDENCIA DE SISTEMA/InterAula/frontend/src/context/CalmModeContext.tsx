@@ -11,6 +11,8 @@ const ACCESSIBILITY_STORAGE_KEY = 'ia_accessibility_prefs';
 export interface CalmModeContextValue {
   isCalmMode: boolean;
   isDarkMode: boolean;
+  /** True whenever the active visual surface is dark (Dark Mode OR Calm Mode - Crepúsculo). */
+  isDarkSurface: boolean;
   themeMode: VisualThemeMode;
   setCalmMode: (enabled: boolean) => void;
   toggleCalmMode: () => void;
@@ -52,8 +54,8 @@ function loadInitialPreferences(): AccessibilityPreferences {
         ...DEFAULT_ACCESSIBILITY_PREFERENCES,
         ...parsed,
         themeMode: resolvedTheme,
-        darkMode: dark,
-        calmMode: calm,
+        darkMode: resolvedTheme === 'dark',
+        calmMode: resolvedTheme === 'calm',
         reduceMotion: typeof parsed.reduceMotion === 'boolean' ? parsed.reduceMotion : calm || prefersReduced,
       };
     }
@@ -74,9 +76,16 @@ function loadInitialPreferences(): AccessibilityPreferences {
 export function CalmModeProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<AccessibilityPreferences>(loadInitialPreferences);
 
+  const isDarkMode = Boolean(preferences.darkMode || preferences.themeMode === 'dark');
+  const isCalmMode = !isDarkMode && Boolean(preferences.calmMode || preferences.themeMode === 'calm');
+  const calmTone = preferences.calmTone || 'sage';
+  const isDuskMode = isCalmMode && calmTone === 'dusk';
+  const isDarkSurface = isDarkMode || isDuskMode;
+  const resolvedThemeMode: VisualThemeMode = isDarkMode ? 'dark' : isCalmMode ? 'calm' : 'light';
+
   useEffect(() => {
     try {
-      window.localStorage.setItem(CALM_MODE_STORAGE_KEY, String(preferences.calmMode));
+      window.localStorage.setItem(CALM_MODE_STORAGE_KEY, String(isCalmMode));
       window.localStorage.setItem(ACCESSIBILITY_STORAGE_KEY, JSON.stringify(preferences));
     } catch {
       // Ignore storage write errors in restricted environments
@@ -84,37 +93,38 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
 
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
-      const isDark = Boolean(preferences.darkMode || preferences.themeMode === 'dark');
-      const isCalm = Boolean(preferences.calmMode || preferences.themeMode === 'calm');
 
-      root.classList.toggle('ia-calm-mode', isCalm);
-      root.classList.toggle('ia-dark-mode', isDark);
-      root.setAttribute('data-calm-mode', isCalm ? 'true' : 'false');
-      root.setAttribute('data-calm-tone', preferences.calmTone || 'sage');
-      root.setAttribute('data-dark-mode', isDark ? 'true' : 'false');
-      root.setAttribute('data-theme', isDark ? 'dark' : isCalm ? 'calm' : 'light');
+      root.classList.toggle('ia-calm-mode', isCalmMode);
+      root.classList.toggle('ia-dark-mode', isDarkMode);
+      root.classList.toggle('ia-dark-surface', isDarkSurface);
+      root.setAttribute('data-calm-mode', isCalmMode ? 'true' : 'false');
+      root.setAttribute('data-calm-tone', calmTone);
+      root.setAttribute('data-dark-mode', isDarkMode ? 'true' : 'false');
+      root.setAttribute('data-dark-surface', isDarkSurface ? 'true' : 'false');
+      root.setAttribute('data-theme', resolvedThemeMode);
       root.setAttribute('data-font-size', preferences.fontSize || 'normal');
       root.setAttribute('data-contrast', preferences.contrast || 'standard');
       root.setAttribute('data-spacing', preferences.spacing || 'standard');
       root.setAttribute(
         'data-reduce-motion',
-        preferences.reduceMotion || preferences.disableFlashing || isCalm ? 'true' : 'false'
+        preferences.reduceMotion || preferences.disableFlashing || isCalmMode ? 'true' : 'false'
       );
       root.setAttribute('data-warm-filter', preferences.warmFilter ? 'true' : 'false');
       root.setAttribute('data-easy-font', preferences.easyReadingFont ? 'true' : 'false');
       root.setAttribute('data-reading-ruler', preferences.readingRuler ? 'true' : 'false');
       root.setAttribute(
         'data-disable-flashing',
-        preferences.disableFlashing || isCalm ? 'true' : 'false'
+        preferences.disableFlashing || isCalmMode ? 'true' : 'false'
       );
       root.setAttribute('data-literal-language', preferences.literalLanguage ? 'true' : 'false');
 
       if (document.body) {
-        document.body.classList.toggle('ia-calm-mode', isCalm);
-        document.body.classList.toggle('ia-dark-mode', isDark);
+        document.body.classList.toggle('ia-calm-mode', isCalmMode);
+        document.body.classList.toggle('ia-dark-mode', isDarkMode);
+        document.body.classList.toggle('ia-dark-surface', isDarkSurface);
       }
     }
-  }, [preferences]);
+  }, [preferences, isCalmMode, isDarkMode, isDarkSurface, calmTone, resolvedThemeMode]);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
@@ -123,6 +133,7 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         setPreferences((prev) => ({
           ...prev,
           calmMode: enabled,
+          darkMode: enabled ? false : prev.darkMode,
           themeMode: enabled ? 'calm' : prev.darkMode ? 'dark' : 'light',
         }));
       } else if (e.key === ACCESSIBILITY_STORAGE_KEY && e.newValue) {
@@ -204,6 +215,10 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
       } else if (typeof partial.calmMode === 'boolean') {
         if (partial.calmMode) merged.darkMode = false;
         merged.themeMode = partial.calmMode ? 'calm' : merged.darkMode ? 'dark' : 'light';
+      } else if (partial.calmTone) {
+        merged.calmMode = true;
+        merged.darkMode = false;
+        merged.themeMode = 'calm';
       }
       return merged;
     });
@@ -213,15 +228,12 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
     setPreferences({ ...DEFAULT_ACCESSIBILITY_PREFERENCES });
   }, []);
 
-  const isDarkMode = Boolean(preferences.darkMode || preferences.themeMode === 'dark');
-  const resolvedThemeMode: VisualThemeMode =
-    preferences.themeMode || (isDarkMode ? 'dark' : preferences.calmMode ? 'calm' : 'light');
-
   return (
     <CalmModeContext.Provider
       value={{
-        isCalmMode: preferences.calmMode,
+        isCalmMode,
         isDarkMode,
+        isDarkSurface,
         themeMode: resolvedThemeMode,
         setCalmMode,
         toggleCalmMode,
@@ -244,6 +256,7 @@ export function useCalmMode(): CalmModeContextValue {
     return {
       isCalmMode: false,
       isDarkMode: false,
+      isDarkSurface: false,
       themeMode: 'light',
       setCalmMode: () => {},
       toggleCalmMode: () => {},

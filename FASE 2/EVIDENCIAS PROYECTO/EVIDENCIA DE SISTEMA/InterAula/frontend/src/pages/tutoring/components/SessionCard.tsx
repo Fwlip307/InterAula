@@ -61,21 +61,45 @@ export default function SessionCard({
   const isTimeReached=now>=confirmationTime;
   const alreadyConfirmed=Boolean(role==='tutor'?session.tutor_completion_confirmed_at:session.student_completion_confirmed_at);
 
-  // Estilos de badge según estado
+  // Estilos de badge según estado (tokenizados para Modo Claro, Oscuro, Crepúsculo y Filtro cálido)
   const getBadgeStyle = (status: string) => {
     switch (status) {
       case 'pending':
-        return { background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' };
+        return {
+          background: 'var(--ia-amber-bg, #fef3c7)',
+          color: 'var(--ia-amber, #b45309)',
+          border: '1px solid var(--ia-amber-border, #fde68a)',
+        };
       case 'accepted':
-        return { background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' };
+        return {
+          background: 'var(--ia-primary-subtle, #eff6ff)',
+          color: 'var(--ia-primary, #1d4ed8)',
+          border: '1px solid var(--ia-primary-border, #bfdbfe)',
+        };
       case 'completed':
-        return { background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' };
+        return {
+          background: 'var(--ia-success-bg, #f0fdf4)',
+          color: 'var(--ia-success, #15803d)',
+          border: '1px solid var(--ia-success-border, #bbf7d0)',
+        };
       case 'rejected':
-        return { background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' };
+        return {
+          background: 'var(--ia-danger-bg, #fef2f2)',
+          color: 'var(--ia-danger, #b91c1c)',
+          border: '1px solid var(--ia-danger-border, #fecaca)',
+        };
       case 'cancelled':
-        return { background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' };
+        return {
+          background: 'var(--ia-bg-subtle, #f1f5f9)',
+          color: 'var(--ia-text-muted, #64748b)',
+          border: '1px solid var(--ia-border, #e2e8f0)',
+        };
       default:
-        return { background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' };
+        return {
+          background: 'var(--ia-bg-subtle, #f1f5f9)',
+          color: 'var(--ia-text-body, #334155)',
+          border: '1px solid var(--ia-border, #e2e8f0)',
+        };
     }
   };
 
@@ -103,22 +127,22 @@ export default function SessionCard({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <BookOpenIcon size={16} color="#2563eb" />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main, #0f172a)' }}>
               {session.subject?.name || 'Materia no especificada'}
             </h3>
             {session.subject?.category && (
-              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.75rem', background: 'var(--ia-bg-subtle, #f1f5f9)', color: 'var(--ia-text-body, #475569)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
                 {session.subject.category}
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#64748b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--ia-text-muted, #64748b)' }}>
             <div
               style={{
                 width: '22px',
                 height: '22px',
                 borderRadius: '6px',
-                background: '#2563eb',
+                background: 'var(--ia-primary, #2563eb)',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
@@ -135,7 +159,7 @@ export default function SessionCard({
               {otherPerson?.id ? (
                 <Link
                   to={`/profile/${otherPerson.id}`}
-                  style={{ color: '#0f172a', fontWeight: 700, textDecoration: 'none' }}
+                  style={{ color: 'var(--ia-text-main, #0f172a)', fontWeight: 700, textDecoration: 'none' }}
                 >
                   {displayName}
                 </Link>
@@ -156,15 +180,15 @@ export default function SessionCard({
                 alignItems: 'center',
                 gap: '4px',
                 fontSize: '0.75rem',
-                background: '#f0fdf4',
-                color: '#15803d',
+                background: 'var(--ia-success-bg, #f0fdf4)',
+                color: 'var(--ia-success, #15803d)',
                 padding: '4px 10px',
                 borderRadius: '9999px',
-                border: '1px solid #bbf7d0',
+                border: '1px solid var(--ia-success-border, #bbf7d0)',
                 fontWeight: 700,
               }}
             >
-              <ShieldCheckIcon size={14} color="#16a34a" /> Asistencia registrada
+              <ShieldCheckIcon size={14} /> Asistencia registrada
             </span>
           )}
 
@@ -188,27 +212,27 @@ export default function SessionCard({
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: '10px',
-          background: '#f8fafc',
+          background: 'var(--ia-bg-subtle, #f8fafc)',
           padding: '12px 16px',
           borderRadius: '10px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--ia-border, #e2e8f0)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#334155' }}>
-          <CalendarIcon size={16} color="#2563eb" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--ia-text-body, #334155)' }}>
+          <CalendarIcon size={16} color="var(--ia-primary, #2563eb)" />
           <span>{formatTutoringDateTime(session.scheduled_at)}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#334155' }}>
-          <ClockIcon size={16} color="#2563eb" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--ia-text-body, #334155)' }}>
+          <ClockIcon size={16} color="var(--ia-primary, #2563eb)" />
           <span>{formatTutoringDuration(session.duration_minutes)}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--ia-text-body, #334155)' }}>
           {session.modality === 'online' ? (
-            <VideoIcon size={16} color="#16a34a" />
+            <VideoIcon size={16} color="var(--ia-success, #16a34a)" />
           ) : (
-            <MapPinIcon size={16} color="#0891b2" />
+            <MapPinIcon size={16} color="var(--ia-primary, #0891b2)" />
           )}
           <span>{formatTutoringModality(session.modality)}</span>
         </div>
@@ -219,21 +243,21 @@ export default function SessionCard({
         <div
           style={{
             fontSize: '0.84rem',
-            color: '#1e40af',
+            color: 'var(--ia-text-main, #1e40af)',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            background: '#eff6ff',
+            background: 'var(--ia-primary-subtle, #eff6ff)',
             padding: '10px 14px',
             borderRadius: '8px',
-            border: '1px solid #bfdbfe',
+            border: '1px solid var(--ia-primary-border, #bfdbfe)',
           }}
         >
-          <VideoIcon size={18} color="#2563eb" />
+          <VideoIcon size={18} color="var(--ia-primary, #2563eb)" />
           <div style={{ flex: 1 }}>
             <strong>Aula de InterAula:</strong> videollamada, pizarra y registro de conexión. La participación puede ser por voz o chat, sin exigir cámara.
             {session.location_or_link && (
-              <div style={{ marginTop: '4px', fontSize: '0.78rem', color: '#64748b' }}>
+              <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--ia-text-muted, #64748b)' }}>
                 Enlace alternativo del solicitante: {session.location_or_link}
               </div>
             )}
@@ -241,8 +265,8 @@ export default function SessionCard({
         </div>
       ) : (
         session.location_or_link && (
-          <div style={{ fontSize: '0.84rem', color: '#475569', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-            <MapPinIcon size={16} color="#64748b" />
+          <div style={{ fontSize: '0.84rem', color: 'var(--ia-text-body, #475569)', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+            <MapPinIcon size={16} color="var(--ia-text-muted, #64748b)" />
             <div>
               <strong>Lugar de encuentro:</strong> <span>{session.location_or_link}</span>
             </div>

@@ -50,11 +50,11 @@ export default function Dashboard() {
     {error && <div className="ia-guided-notice" role="alert">{error} <button type="button" className="ia-btn-secondary" onClick={() => setRetry(value => value + 1)}>Reintentar</button></div>}
     <section className="ia-guided-next" aria-label="Tu siguiente paso" aria-busy={loading}>
       <span className="ia-guided-eyebrow">Tu siguiente paso</span>
-      {loading ? <p role="status">Preparando tu inicio…</p> : <><h2 id="home-next-title">{next.title}</h2><p>{next.detail}</p><Link className="ia-btn-primary" to={next.href}>{next.action} →</Link></>}
+      {loading ? <p role="status">Preparando tu inicio…</p> : <><h2 id="home-next-title">{next.title}</h2><p>{next.detail}</p><Link className="ia-btn-primary" to={next.href}>{next.action}</Link></>}
     </section>
     <AppOverview />
-    {sessions[0] && <section className="ia-guided-session" aria-label="Próxima tutoría"><div><span className="ia-guided-eyebrow">Próxima tutoría confirmada</span><p>{formatTutoringDateTime(sessions[0].scheduled_at)}</p></div><Link className="ia-btn-secondary" to="/tutoring?tab=my_classes">Ver mi agenda</Link></section>}
+    {sessions[0] && <section className="ia-guided-session" aria-label="Próxima tutoría"><div><span className="ia-guided-eyebrow">Próxima tutoría confirmada</span><p>{formatTutoringDateTime(sessions[0].scheduled_at)}</p></div><Link className="ia-btn-secondary" to="/my-tutoring?tab=confirmed">Ir al aula virtual</Link></section>}
     <div id="para-ti" className="ia-guided-feed"><ForYouSection compact /></div>
-    <section className="ia-guided-account" aria-labelledby="home-account-title"><h2 id="home-account-title" className="ia-guided-section-title">Mi cuenta y mis apoyos</h2><div className="ia-guided-inline"><Link to="/profile">Mi perfil</Link><Link to="/learning-space?tab=profile">Mis apoyos para aprender</Link><Link to="/settings">Lectura y apariencia</Link><Link to="/profile?tab=tutoring">Ofrecer tutorías y acreditarme</Link></div></section>
+    <section className="ia-guided-account" aria-labelledby="home-account-title"><h2 id="home-account-title" className="ia-guided-section-title">Mi cuenta</h2><div className="ia-guided-inline"><Link to="/profile">Mi perfil</Link><Link to="/learning-space?tab=profile">Mis preferencias de aprendizaje</Link><Link to="/settings#accessibility">Apoyos sensoriales y accesibilidad</Link><Link to="/settings">Configuración</Link><Link to="/support">Notificaciones</Link></div></section>
   </div>;
 }

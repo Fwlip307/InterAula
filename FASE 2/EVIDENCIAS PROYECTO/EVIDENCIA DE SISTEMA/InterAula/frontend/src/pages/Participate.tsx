@@ -1,16 +1,16 @@
 import { lazy, Suspense } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BriefcaseIcon, MessageSquareIcon } from '../components/common/Icons';
+import { MailIcon, MessageSquareIcon, VideoIcon } from '../components/common/Icons';
 import '../styles/guidedExperience.css';
 
 const Forum = lazy(() => import('./forum/Forum'));
-const ProjectsHub = lazy(() => import('./projects/ProjectsHub'));
+const Messages = lazy(() => import('./community/Messages'));
 
-type CommunityTab = 'forum' | 'projects';
+type CommunityTab = 'forum' | 'messages';
 
 export default function Participate() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab: CommunityTab = searchParams.get('tab') === 'projects' ? 'projects' : 'forum';
+  const activeTab: CommunityTab = searchParams.get('tab') === 'messages' ? 'messages' : 'forum';
 
   const handleSelectTab = (tab: CommunityTab) => {
     setSearchParams({ tab }, { replace: true });
@@ -22,7 +22,7 @@ export default function Participate() {
         <div>
           <h1 className="ia-page-title">Comunidad</h1>
           <p className="ia-page-subtitle">
-            Participa en el Foro Académico o colabora en equipos dentro del Hub de Proyectos.
+            Participa en el Foro Académico, conversa por mensajería directa o únete a talleres y actividades en vivo.
           </p>
         </div>
 
@@ -35,18 +35,22 @@ export default function Participate() {
             onClick={() => handleSelectTab('forum')}
           >
             <MessageSquareIcon size={16} />
-            <span>Foro Académico</span>
+            <span>Foro académico</span>
           </button>
           <button
             type="button"
             role="tab"
-            aria-selected={activeTab === 'projects'}
-            className={`ia-community-tab ${activeTab === 'projects' ? 'active' : ''}`}
-            onClick={() => handleSelectTab('projects')}
+            aria-selected={activeTab === 'messages'}
+            className={`ia-community-tab ${activeTab === 'messages' ? 'active' : ''}`}
+            onClick={() => handleSelectTab('messages')}
           >
-            <BriefcaseIcon size={16} />
-            <span>Hub de Proyectos</span>
+            <MailIcon size={16} />
+            <span>Mensajería</span>
           </button>
+          <Link to="/tutoring?tab=workshops" className="ia-community-tab" style={{ textDecoration: 'none' }}>
+            <VideoIcon size={16} />
+            <span>Talleres y actividades</span>
+          </Link>
         </div>
       </header>
 
@@ -58,7 +62,7 @@ export default function Participate() {
             </div>
           }
         >
-          {activeTab === 'forum' ? <Forum /> : <ProjectsHub />}
+          {activeTab === 'forum' ? <Forum /> : <Messages />}
         </Suspense>
       </div>
 

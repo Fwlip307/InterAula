@@ -215,10 +215,10 @@ export default function SearchableCombobox({
             paddingLeft: '36px',
             paddingRight: '64px',
             width: '100%',
-            backgroundColor: disabled ? '#f1f5f9' : '#ffffff',
+            backgroundColor: disabled ? 'var(--ia-bg-subtle)' : 'var(--ia-bg-card)',
             cursor: disabled ? 'not-allowed' : 'text',
             fontWeight: selectedOption ? 600 : 400,
-            color: '#0f172a',
+            color: 'var(--ia-text-main)',
           }}
         />
 
@@ -285,10 +285,10 @@ export default function SearchableCombobox({
             right: 0,
             maxHeight: '270px',
             overflowY: 'auto',
-            backgroundColor: '#ffffff',
-            border: '1px solid #cbd5e1',
+            backgroundColor: 'var(--ia-bg-card)',
+            border: '1px solid var(--ia-border-strong)',
             borderRadius: '10px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+            boxShadow: 'var(--ia-shadow-md)',
             zIndex: 999,
             padding: '6px 0',
           }}
@@ -309,8 +309,12 @@ export default function SearchableCombobox({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    backgroundColor: isHighlighted ? '#eff6ff' : isSelected ? '#f8fafc' : 'transparent',
-                    color: isHighlighted ? '#1e40af' : '#0f172a',
+                    backgroundColor: isHighlighted
+                      ? 'var(--ia-primary-subtle)'
+                      : isSelected
+                        ? 'var(--ia-bg-subtle)'
+                        : 'transparent',
+                    color: isHighlighted ? 'var(--ia-primary)' : 'var(--ia-text-main)',
                     fontSize: '0.86rem',
                     transition: 'background-color 0.12s ease',
                   }}
@@ -320,13 +324,13 @@ export default function SearchableCombobox({
                       {opt.label}
                     </div>
                     {(opt.subLabel || opt.group) && (
-                      <div style={{ fontSize: '0.74rem', color: isHighlighted ? '#3b82f6' : '#64748b', marginTop: '2px' }}>
+                      <div style={{ fontSize: '0.74rem', color: isHighlighted ? 'var(--ia-primary)' : 'var(--ia-text-muted)', marginTop: '2px' }}>
                         {opt.subLabel || opt.group}
                       </div>
                     )}
                   </div>
                   {isSelected && (
-                    <div style={{ color: '#2563eb', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ color: 'var(--ia-primary)', display: 'flex', alignItems: 'center' }}>
                       <CheckIcon size={16} />
                     </div>
                   )}
@@ -334,7 +338,7 @@ export default function SearchableCombobox({
               );
             })
           ) : (
-            <div style={{ padding: '14px 16px', textAlign: 'center', color: '#64748b', fontSize: '0.84rem' }}>
+            <div style={{ padding: '14px 16px', textAlign: 'center', color: 'var(--ia-text-muted)', fontSize: '0.84rem' }}>
               {emptyMessage}
             </div>
           )}
@@ -344,20 +348,18 @@ export default function SearchableCombobox({
             <div
               onClick={handleSelectCustom}
               style={{
-                borderTop: '1px solid #f1f5f9',
+                borderTop: '1px solid var(--ia-border)',
                 marginTop: '4px',
                 padding: '10px 14px',
                 fontSize: '0.84rem',
-                color: '#2563eb',
+                color: 'var(--ia-primary)',
                 cursor: 'pointer',
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'var(--ia-bg-subtle)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 fontWeight: 600,
               }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#eff6ff')}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#f8fafc')}
             >
               <span>Usar texto: <strong>&ldquo;{searchTerm.trim()}&rdquo;</strong></span>
             </div>

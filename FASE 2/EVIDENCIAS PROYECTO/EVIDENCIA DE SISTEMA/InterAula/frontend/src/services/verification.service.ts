@@ -41,31 +41,37 @@ export interface AssessmentQuestion {
   options?: { id: string; text: string }[];
   codeSnippet?: string;
   placeholder?: string;
-  timeLimitSeconds:number;
+  topic?: string;
+  difficulty?: 'basic' | 'intermediate' | 'advanced';
+  category?: 'conceptual' | 'debugging' | 'pedagogical';
+  timeLimitSeconds: number;
 }
 export interface ServerAssessment {
   id: string;
   subjectId: string;
   subjectName: string;
+  subjectArea?: string;
   level: 'basic';
   totalQuestions: number;
   expiresAt: string;
-  question: AssessmentQuestion|null;
-  answered:number;
-  questionExpiresAt:string|null;
-  serverNow:string;
-  timeMode:'standard'|'extended';
-  source:'reviewed'|'generated';
-  state:'pending'|'passed'|'failed'|'granted';
-  needsNext:boolean;
-  pauseEndsAt?:string|null;
-  pauseSeconds?:number;
-  failFast?:boolean;
-  passingScore?:number;
-  terminationReason?:'incorrect_answer'|'time_expired';
-  integrityCount:number;
-  integrityLimit:number;
-  score?:number;
+  question: AssessmentQuestion | null;
+  answered: number;
+  pendingQuestions?: number;
+  progressPercent?: number;
+  questionExpiresAt: string | null;
+  serverNow: string;
+  timeMode: 'standard' | 'extended';
+  source: 'reviewed' | 'generated';
+  state: 'pending' | 'passed' | 'failed' | 'granted';
+  needsNext: boolean;
+  pauseEndsAt?: string | null;
+  pauseSeconds?: number;
+  failFast?: boolean;
+  passingScore?: number;
+  terminationReason?: 'incorrect_answer' | 'time_expired';
+  integrityCount: number;
+  integrityLimit: number;
+  score?: number;
 }
 export interface ServerAssessmentAnswer {
   correct: boolean;

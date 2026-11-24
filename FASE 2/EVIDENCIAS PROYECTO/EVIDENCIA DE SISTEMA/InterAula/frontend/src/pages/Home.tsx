@@ -90,7 +90,7 @@ export default function Home() {
             </a>
             <Link to="/guide" className="ia-landing-nav-link">Guía de uso</Link>
             <a href="#espacio-aprendizaje" className="ia-landing-nav-link">
-              Mi espacio de aprendizaje
+              Aprendizaje
             </a>
             <a href="#tutorias" className="ia-landing-nav-link">
               Tutorías
@@ -107,16 +107,10 @@ export default function Home() {
             <ThemeModeMenu variant="landing" />
 
             {user ? (
-              <>
-                <Link to="/dashboard" className="ia-landing-btn-portal">
-                  <span>Ir al portal</span>
-                  <ArrowRightIcon size={15} />
-                </Link>
-                <Link to="/learning-space" className="ia-landing-btn-primary">
-                  <CompassIcon size={16} />
-                  <span>Mi espacio de aprendizaje</span>
-                </Link>
-              </>
+              <Link to="/dashboard" className="ia-landing-btn-primary">
+                <span>Ir al portal</span>
+                <ArrowRightIcon size={15} />
+              </Link>
             ) : (
               <>
                 <Link to="/login" className="ia-landing-btn-login" aria-label="Iniciar sesión">
@@ -134,7 +128,7 @@ export default function Home() {
               <option value="" disabled>Explorar InterAula</option>
               <option value="proposito">Propósito</option>
               <option value="como-funciona">Cómo funciona</option>
-              <option value="espacio-aprendizaje">Mi espacio de aprendizaje</option>
+              <option value="espacio-aprendizaje">Aprendizaje adaptable</option>
               <option value="tutorias">Tutorías</option>
               <option value="inclusion">Inclusión</option>
               <option value="proyectos">Proyectos</option>
@@ -171,19 +165,19 @@ export default function Home() {
               <div className="ia-landing-hero-actions">
                 {user ? (
                   <>
-                    <Link to="/learning-space" className="ia-landing-btn-primary ia-landing-btn-lg">
-                      <CompassIcon size={18} />
-                      <span>Ingresar a Mi espacio de aprendizaje</span>
-                    </Link>
-                    <Link to="/dashboard" className="ia-landing-btn-outline ia-landing-btn-lg">
+                    <Link to="/dashboard" className="ia-landing-btn-primary ia-landing-btn-lg">
                       <span>Ir al portal académico</span>
-                      <ArrowRightIcon size={16} />
+                      <ArrowRightIcon size={17} />
+                    </Link>
+                    <Link to="/tutoring" className="ia-landing-btn-outline ia-landing-btn-lg">
+                      <UsersIcon size={17} />
+                      <span>Explorar tutorías</span>
                     </Link>
                   </>
                 ) : (
                   <>
                     <Link to="/register" className="ia-landing-btn-primary ia-landing-btn-lg">
-                      <span>Crear mi espacio de aprendizaje</span>
+                      <span>Crear cuenta gratuita</span>
                       <ArrowRightIcon size={17} />
                     </Link>
                     <Link to="/login" className="ia-landing-btn-outline ia-landing-btn-lg">
@@ -306,25 +300,18 @@ export default function Home() {
           4. MI ESPACIO DE APRENDIZAJE (SECCIÓN DESTACADA)
          ===================================================================== */}
       <section id="espacio-aprendizaje" className="ia-landing-section ia-featured-space-section">
-        <div className="ia-featured-space-header">
+        <div className="ia-featured-space-header ia-featured-space-header--balanced">
           <div>
-            <span className="ia-landing-section-tag">El corazón de InterAula</span>
+            <span className="ia-landing-section-tag">Aprendizaje adaptable</span>
             <h2 className="ia-landing-section-title" style={{ textAlign: 'left', marginTop: '0.6rem' }}>
-              Mi espacio de aprendizaje: de una materia compleja a un camino claro
+              De una materia compleja a un camino claro paso a paso
             </h2>
-            <p className="ia-landing-section-desc" style={{ textAlign: 'left', margin: 0 }}>
+            <p className="ia-landing-section-desc" style={{ textAlign: 'left', margin: 0, maxWidth: '72ch' }}>
               Cada asignatura o meta académica se transforma en una secuencia estructurada de etapas
               pequeñas. En cada etapa puedes cambiar el modo en que recibes la explicación,
               practicar sin límite de tiempo y pedir apoyo directo a un tutor par.
             </p>
           </div>
-          <Link
-            to={user ? '/learning-space' : '/register'}
-            className="ia-landing-btn-primary"
-          >
-            <CompassIcon size={16} />
-            <span>{user ? 'Abrir Mi espacio de aprendizaje' : 'Probar Mi espacio de aprendizaje'}</span>
-          </Link>
         </div>
 
         {/* Demostración interactiva real de cómo se transforma una asignatura */}
@@ -676,9 +663,9 @@ export default function Home() {
           </p>
           <div style={{ display: 'flex', gap: '0.85rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             {user ? (
-              <Link to="/learning-space" className="ia-cta-banner-btn">
-                <CompassIcon size={18} />
-                <span>Ir a Mi espacio de aprendizaje</span>
+              <Link to="/dashboard" className="ia-cta-banner-btn">
+                <span>Ir al portal académico</span>
+                <ArrowRightIcon size={17} />
               </Link>
             ) : (
               <>
@@ -713,16 +700,16 @@ export default function Home() {
 
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             <Link
-              to={user ? '/learning-space' : '/login'}
-              style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}
-            >
-              Mi espacio de aprendizaje
-            </Link>
-            <Link
               to="/tutoring"
               style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}
             >
               Tutorías colaborativas
+            </Link>
+            <Link
+              to="/forum"
+              style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}
+            >
+              Foro académico
             </Link>
             <Link
               to="/projects"
@@ -734,7 +721,7 @@ export default function Home() {
               to="/resources"
               style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.86rem' }}
             >
-              Biblioteca de Apuntes
+              Biblioteca de recursos
             </Link>
           </div>
         </div>
