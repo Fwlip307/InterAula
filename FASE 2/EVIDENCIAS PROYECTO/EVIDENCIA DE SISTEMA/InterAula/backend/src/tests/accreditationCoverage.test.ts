@@ -137,6 +137,42 @@ test('Respaldo automático de modelo Gemini cuando el modelo configurado respond
   assert.ok(calledUrls[1].includes('gemini-2.5-flash'));
 });
 
+test('Un bloqueo de credenciales o permisos informa configuración y no reintenta otros modelos ni devuelve preguntas', async (t) => {
+  const previousKey = process.env.GEMINI_API_KEY;
+  const previousModel = process.env.GEMINI_MODEL;
+  process.env.GEMINI_API_KEY = 'mock-permission-key';
+  process.env.GEMINI_MODEL = 'gemini-2.5-flash';
+  t.after(() => {
+    if (previousKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = previousKey;
+    if (previousModel === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = previousModel;
+  });
+
+  let status = 403;
+  const request = t.mock.method(globalThis, 'fetch', async () => new Response(
+    JSON.stringify({ error: { status: 'PERMISSION_DENIED', message: 'API has not been used or is disabled.' } }),
+    { status, headers: { 'Content-Type': 'application/json' } }
+  ));
+
+  for (const [httpStatus, code] of [[403, 'AI_PERMISSION_DENIED'], [401, 'AI_AUTHENTICATION_FAILED']] as const) {
+    status = httpStatus;
+    const before = request.mock.callCount();
+    await assert.rejects(
+      buildAccreditationQuestions('[DEMO] Bases de datos y SQL'),
+      (error: any) => {
+        assert.equal(error.status, 503);
+        assert.equal(error.code, code);
+        assert.match(error.message, /configuración/);
+        assert.match(error.message, /no es un problema de esta materia/);
+        assert.equal(error.message.includes('mock-permission-key'), false);
+        return true;
+      }
+    );
+    assert.equal(request.mock.callCount() - before, 1);
+  }
+});
+
 test('Normalización controlada de JSON de IA y estrategia segura para asignaturas fuera de catálogo', () => {
   const ctx = resolveSubjectContext('Bioinformática Aplicada Avanzada');
   assert.equal(ctx.inCatalog, false);

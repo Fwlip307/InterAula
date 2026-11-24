@@ -335,8 +335,20 @@ async function requestGeminiAccreditation(
       `[accreditationQuestions] Modelo Gemini "${model}" (${providerTag}) respondió HTTP ${response.status}${providerDetail ? `: ${providerDetail}` : ''}.`
     );
 
+    // Authentication and API permissions apply to the credential/project, not the subject.
+    // Trying every model repeats the same denial and hides the actionable cause.
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(
+        503,
+        response.status === 403
+          ? 'El servicio de IA no está habilitado o no tiene permisos en Google Cloud. La administración debe revisar su configuración; no es un problema de esta materia.'
+          : 'Google rechazó la credencial del servicio de IA. La administración debe revisar su configuración; no es un problema de esta materia.',
+        response.status === 403 ? 'AI_PERMISSION_DENIED' : 'AI_AUTHENTICATION_FAILED'
+      );
+    }
+
     // Reintentar con el siguiente modelo estable si este modelo no está habilitado, agotó cuota o sufrió un error transitorio.
-    if ([400, 403, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
+    if ([400, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
       continue;
     }
 
