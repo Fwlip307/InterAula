@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 import { HttpError } from '../lib/httpError.js';
+import { getAdminSupabase } from '../lib/supabase.js';
 import { attachProfiles, clientFor } from './remote/database.js';
 import type { AuthenticatedUser } from '../types/index.js';
 
@@ -39,18 +41,46 @@ function buildParticipantKey(userA: string, userB: string, contextType = 'genera
   return contextId ? `${first}:${second}:${contextType}:${contextId}` : `${first}:${second}:${contextType}`;
 }
 
+function isPermissionError(error: any): boolean {
+  return String(error?.code || '') === '42501';
+}
+
+function isMissingRpcError(error: any): boolean {
+  const code = String(error?.code || '');
+  return code === 'PGRST202' || code === '42883';
+}
+
+function canUseAdminFallback(): boolean {
+  return Boolean(env.supabaseServiceRoleKey);
+}
+
 function mapSchemaError(error: any, fallback: string): never {
-  if (['PGRST205', 'PGRST202', '42P01'].includes(String(error?.code))) {
+  const code = String(error?.code || '');
+  if (code) {
+    console.warn(`[messagingService] Error Supabase (${code}): ${String(error?.message || fallback).slice(0, 180)}`);
+  }
+  if (['PGRST205', 'PGRST202', '42P01'].includes(code)) {
     throw new HttpError(
       503,
-      'La mensajería directa aún no está activada en la base de datos. Aplica la migración 031 para habilitarla.',
+      'La mensajería directa aún no está activada en la base de datos. Aplica la migración 031 y 032 para habilitarla.',
       'MESSAGING_NOT_READY'
     );
   }
-  if (error?.code === '42501') {
+  if (code === '42501') {
     throw new HttpError(403, 'No tienes permisos para acceder a esta conversación.');
   }
   throw new HttpError(500, fallback);
+}
+
+async function runWithPermissionFallback<T extends { error?: any }>(
+  token: string,
+  operation: (db: SupabaseClient) => PromiseLike<T>
+): Promise<T> {
+  const primary = await operation(clientFor(token));
+  if (primary.error && isPermissionError(primary.error) && canUseAdminFallback()) {
+    return await operation(getAdminSupabase());
+  }
+  return primary;
 }
 
 // Almacén en memoria aislado estrictamente para pruebas automatizadas (NODE_ENV=test)
@@ -127,32 +157,39 @@ export const messagingService = {
       return items.sort((a, b) => Date.parse(b.last_message_at) - Date.parse(a.last_message_at));
     }
 
-    const client = clientFor(token);
-    const { data: myRows, error: myErr } = await client
-      .from('direct_conversation_participants')
-      .select('conversation_id, last_read_at')
-      .eq('user_id', user.id);
+    const myRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_conversation_participants')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id)
+    );
 
-    if (myErr) mapSchemaError(myErr, 'No pudimos cargar tus conversaciones.');
-    const ids = (myRows || []).map((row: any) => row.conversation_id);
+    if (myRes.error) mapSchemaError(myRes.error, 'No pudimos cargar tus conversaciones.');
+    const ids = (myRes.data || []).map((row: any) => row.conversation_id);
     if (!ids.length) return [];
 
     const [convRes, partRes, unreadRes] = await Promise.all([
-      client
-        .from('direct_conversations')
-        .select('*')
-        .in('id', ids)
-        .order('last_message_at', { ascending: false }),
-      client
-        .from('direct_conversation_participants')
-        .select('conversation_id, user_id')
-        .in('conversation_id', ids),
-      client
-        .from('direct_messages')
-        .select('id, conversation_id, sender_id, read_at')
-        .in('conversation_id', ids)
-        .neq('sender_id', user.id)
-        .is('read_at', null),
+      runWithPermissionFallback(token, async (db) =>
+        db
+          .from('direct_conversations')
+          .select('*')
+          .in('id', ids)
+          .order('last_message_at', { ascending: false })
+      ),
+      runWithPermissionFallback(token, async (db) =>
+        db
+          .from('direct_conversation_participants')
+          .select('conversation_id, user_id')
+          .in('conversation_id', ids)
+      ),
+      runWithPermissionFallback(token, async (db) =>
+        db
+          .from('direct_messages')
+          .select('id, conversation_id, sender_id, read_at')
+          .in('conversation_id', ids)
+          .neq('sender_id', user.id)
+          .is('read_at', null)
+      ),
     ]);
 
     if (convRes.error) mapSchemaError(convRes.error, 'No pudimos cargar tus conversaciones.');
@@ -235,11 +272,23 @@ export const messagingService = {
     }
 
     const client = clientFor(token);
-    const { data: targetProfile, error: profileErr } = await client
+    let { data: targetProfile, error: profileErr } = await client
       .from('public_profiles')
       .select('id, display_name, first_name, last_name, avatar_url, career, institution')
       .eq('id', dto.recipient_id)
       .maybeSingle();
+
+    if ((!targetProfile || profileErr) && canUseAdminFallback()) {
+      const fallbackProfile = await getAdminSupabase()
+        .from('profiles')
+        .select('id, display_name, first_name, last_name, avatar_url, career, institution')
+        .eq('id', dto.recipient_id)
+        .maybeSingle();
+      if (!fallbackProfile.error && fallbackProfile.data) {
+        targetProfile = fallbackProfile.data;
+        profileErr = null;
+      }
+    }
 
     if (profileErr && !['PGRST205', '42P01'].includes(String(profileErr.code))) {
       throw new HttpError(500, 'No pudimos verificar el perfil del destinatario.');
@@ -248,54 +297,82 @@ export const messagingService = {
       throw new HttpError(404, 'No encontramos a la persona seleccionada en la comunidad.');
     }
 
-    const { data: found, error: findErr } = await client
-      .from('direct_conversations')
-      .select('*')
-      .eq('participant_key', key)
-      .maybeSingle();
+    let conversationId: string | undefined;
 
-    if (findErr) mapSchemaError(findErr, 'No pudimos buscar la conversación.');
+    // 1. Ruta principal: RPC atómica con SECURITY DEFINER que valida auth.uid() y agrega a ambos participantes
+    const { data: rpcId, error: rpcErr } = await client.rpc('create_or_open_direct_conversation', {
+      p_recipient_id: dto.recipient_id,
+      p_context_type: contextType,
+      p_context_id: contextId,
+      p_context_label: dto.context_label || null,
+    });
 
-    let conversationId = found?.id as string | undefined;
-
-    if (!conversationId) {
-      const { data: created, error: createErr } = await client
+    if (!rpcErr && typeof rpcId === 'string' && rpcId) {
+      conversationId = rpcId;
+    } else if (rpcErr?.code === 'P0002') {
+      throw new HttpError(404, 'No encontramos a la persona seleccionada en la comunidad.');
+    } else if (rpcErr?.code === '22023') {
+      throw new HttpError(400, 'Los datos de la conversación no son válidos.');
+    } else if (rpcErr && (isMissingRpcError(rpcErr) || isPermissionError(rpcErr)) && canUseAdminFallback()) {
+      // 2. Respaldo seguro en servidor (cuando 032 aún no se aplicó): valida user.id del JWT y crea atómicamente con service_role
+      const admin = getAdminSupabase();
+      const { data: existingConv, error: findErr } = await admin
         .from('direct_conversations')
-        .insert({
-          participant_key: key,
-          context_type: contextType,
-          context_id: contextId,
-          context_label: dto.context_label || null,
-        })
         .select('id')
-        .single();
+        .eq('participant_key', key)
+        .maybeSingle();
 
-      if (createErr) {
-        if (createErr.code === '23505') {
-          const { data: retryFound } = await client
-            .from('direct_conversations')
-            .select('id')
-            .eq('participant_key', key)
-            .maybeSingle();
-          conversationId = retryFound?.id;
+      if (findErr) mapSchemaError(findErr, 'No pudimos buscar la conversación.');
+      conversationId = existingConv?.id;
+
+      if (!conversationId) {
+        const { data: created, error: createErr } = await admin
+          .from('direct_conversations')
+          .insert({
+            participant_key: key,
+            context_type: contextType,
+            context_id: contextId,
+            context_label: dto.context_label || null,
+          })
+          .select('id')
+          .single();
+
+        if (createErr) {
+          if (createErr.code === '23505') {
+            const { data: retryFound } = await admin
+              .from('direct_conversations')
+              .select('id')
+              .eq('participant_key', key)
+              .maybeSingle();
+            conversationId = retryFound?.id;
+          } else {
+            mapSchemaError(createErr, 'No pudimos iniciar la conversación.');
+          }
         } else {
-          mapSchemaError(createErr, 'No pudimos iniciar la conversación.');
+          conversationId = created.id;
         }
-      } else {
-        conversationId = created.id;
       }
 
       if (!conversationId) {
         throw new HttpError(500, 'No pudimos confirmar el identificador de la conversación.');
       }
 
-      const { error: partErr } = await client.from('direct_conversation_participants').insert([
-        { conversation_id: conversationId, user_id: user.id },
-        { conversation_id: conversationId, user_id: dto.recipient_id },
-      ]);
-      if (partErr && partErr.code !== '23505') {
+      const { error: partErr } = await admin.from('direct_conversation_participants').upsert(
+        [
+          { conversation_id: conversationId, user_id: user.id },
+          { conversation_id: conversationId, user_id: dto.recipient_id },
+        ],
+        { onConflict: 'conversation_id,user_id', ignoreDuplicates: true }
+      );
+      if (partErr) {
         mapSchemaError(partErr, 'No pudimos registrar a los participantes de la conversación.');
       }
+    } else if (rpcErr) {
+      mapSchemaError(rpcErr, 'No pudimos iniciar la conversación.');
+    }
+
+    if (!conversationId) {
+      throw new HttpError(500, 'No pudimos confirmar el identificador de la conversación.');
     }
 
     if (dto.initial_message) {
@@ -331,26 +408,29 @@ export const messagingService = {
       return [...(localState.messages.get(conversationId) || [])];
     }
 
-    const client = clientFor(token);
-    const { data: participant, error: partErr } = await client
-      .from('direct_conversation_participants')
-      .select('conversation_id')
-      .eq('conversation_id', conversationId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+    const partRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_conversation_participants')
+        .select('conversation_id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    );
 
-    if (partErr) mapSchemaError(partErr, 'No pudimos validar tu acceso a la conversación.');
-    if (!participant) throw new HttpError(403, 'No tienes acceso a esta conversación privada.');
+    if (partRes.error) mapSchemaError(partRes.error, 'No pudimos validar tu acceso a la conversación.');
+    if (!partRes.data) throw new HttpError(403, 'No tienes acceso a esta conversación privada.');
 
-    const { data, error } = await client
-      .from('direct_messages')
-      .select('id, conversation_id, sender_id, body, read_at, created_at')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(200);
+    const msgRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_messages')
+        .select('id, conversation_id, sender_id, body, read_at, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true })
+        .limit(200)
+    );
 
-    if (error) mapSchemaError(error, 'No pudimos cargar el historial de mensajes.');
-    return (data || []) as DirectMessageDTO[];
+    if (msgRes.error) mapSchemaError(msgRes.error, 'No pudimos cargar el historial de mensajes.');
+    return (msgRes.data || []) as DirectMessageDTO[];
   },
 
   async sendMessage(
@@ -385,29 +465,32 @@ export const messagingService = {
       return msg;
     }
 
-    const client = clientFor(token);
-    const { data: participant, error: partErr } = await client
-      .from('direct_conversation_participants')
-      .select('conversation_id')
-      .eq('conversation_id', conversationId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+    const partRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_conversation_participants')
+        .select('conversation_id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    );
 
-    if (partErr) mapSchemaError(partErr, 'No pudimos validar tu participación en la conversación.');
-    if (!participant) throw new HttpError(403, 'No puedes enviar mensajes en esta conversación.');
+    if (partRes.error) mapSchemaError(partRes.error, 'No pudimos validar tu participación en la conversación.');
+    if (!partRes.data) throw new HttpError(403, 'No puedes enviar mensajes en esta conversación.');
 
-    const { data, error } = await client
-      .from('direct_messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        body: trimmed,
-      })
-      .select('id, conversation_id, sender_id, body, read_at, created_at')
-      .single();
+    const insertRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          body: trimmed,
+        })
+        .select('id, conversation_id, sender_id, body, read_at, created_at')
+        .single()
+    );
 
-    if (error) mapSchemaError(error, 'No pudimos enviar el mensaje. Reintenta.');
-    return data as DirectMessageDTO;
+    if (insertRes.error) mapSchemaError(insertRes.error, 'No pudimos enviar el mensaje. Reintenta.');
+    return insertRes.data as DirectMessageDTO;
   },
 
   async markAsRead(user: AuthenticatedUser, token: string, conversationId: string): Promise<{ updated: number }> {
@@ -428,34 +511,39 @@ export const messagingService = {
       return { updated };
     }
 
-    const client = clientFor(token);
-    const { data: participant, error: partErr } = await client
-      .from('direct_conversation_participants')
-      .select('conversation_id')
-      .eq('conversation_id', conversationId)
-      .eq('user_id', user.id)
-      .maybeSingle();
+    const partRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_conversation_participants')
+        .select('conversation_id')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    );
 
-    if (partErr) mapSchemaError(partErr, 'No pudimos validar tu participación.');
-    if (!participant) throw new HttpError(403, 'No tienes acceso a esta conversación.');
+    if (partRes.error) mapSchemaError(partRes.error, 'No pudimos validar tu participación.');
+    if (!partRes.data) throw new HttpError(403, 'No tienes acceso a esta conversación.');
 
-    const { data: updatedRows, error: msgErr } = await client
-      .from('direct_messages')
-      .update({ read_at: now })
-      .eq('conversation_id', conversationId)
-      .neq('sender_id', user.id)
-      .is('read_at', null)
-      .select('id');
+    const msgRes = await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_messages')
+        .update({ read_at: now })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', user.id)
+        .is('read_at', null)
+        .select('id')
+    );
 
-    if (msgErr) mapSchemaError(msgErr, 'No pudimos actualizar el estado de lectura.');
+    if (msgRes.error) mapSchemaError(msgRes.error, 'No pudimos actualizar el estado de lectura.');
 
-    await client
-      .from('direct_conversation_participants')
-      .update({ last_read_at: now })
-      .eq('conversation_id', conversationId)
-      .eq('user_id', user.id);
+    await runWithPermissionFallback(token, async (db) =>
+      db
+        .from('direct_conversation_participants')
+        .update({ last_read_at: now })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+    );
 
-    return { updated: (updatedRows || []).length };
+    return { updated: (msgRes.data || []).length };
   },
 
   async getUnreadCount(user: AuthenticatedUser, token: string): Promise<{ unreadCount: number }> {

@@ -1,4 +1,10 @@
 import { env } from '../config/env.js';
+import {
+  DEFAULT_GEMINI_MODEL,
+  buildGeminiGenerateContentUrl,
+  extractGeminiResponseText,
+  sanitizeGeminiApiKey,
+} from '../lib/geminiClient.js';
 import { HttpError } from '../lib/httpError.js';
 import { remoteLearningSpaceService } from './remote/learningSpace.service.js';
 import { getAuthenticatedSupabase as createSupabaseUserClient } from '../lib/supabase.js';
@@ -961,7 +967,7 @@ const localLearningSpaceService = {
     input: AdaptiveExplanationRequestInput
   ): Promise<AdaptiveExplanationResponse> {
     const modeLabel = MODE_LABELS[input.mode];
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = sanitizeGeminiApiKey(process.env.GEMINI_API_KEY);
     const randomSeed = Math.floor(Math.random() * 999999);
     const literalInstructions = input.literal_mode
       ? `\nREGLAS OBLIGATORIAS DE LENGUAJE LITERAL Y DIRECTO:
@@ -1011,19 +1017,20 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
   }
 }`;
 
-    if (geminiKey && geminiKey.trim().length > 5) {
+    if (geminiKey.length > 5) {
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 7000);
+        const timer = setTimeout(() => controller.abort(), 9000);
+        const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'}:generateContent?key=${geminiKey}`,
+          buildGeminiGenerateContentUrl(model, geminiKey),
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
             signal: controller.signal,
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
               generationConfig: {
                 temperature: 0.85,
                 responseMimeType: 'application/json',
@@ -1036,7 +1043,7 @@ Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura (gen
 
         if (response.ok) {
           const resJson: any = await response.json();
-          const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+          const rawText = extractGeminiResponseText(resJson);
           if (rawText) {
             const clean = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(clean);

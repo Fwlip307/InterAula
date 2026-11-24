@@ -56,9 +56,13 @@ export default function Messages() {
   const [contactQuery, setContactQuery] = useState('');
   const [contacts, setContacts] = useState<DirectParticipant[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [creatingChatId, setCreatingChatId] = useState<string | null>(null);
+  const [modalError, setModalError] = useState('');
   const [newContext, setNewContext] = useState<'general' | 'tutoring' | 'project'>('general');
 
   const feedEndRef = useRef<HTMLDivElement>(null);
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
 
   const loadConversations = useCallback(async () => {
     setLoadingList(true);
@@ -70,7 +74,7 @@ export default function Messages() {
       if (requestedConv && data.some((c) => c.id === requestedConv)) {
         setActiveId(requestedConv);
         setMobileView('thread');
-      } else if (!activeId && data.length > 0) {
+      } else if (!activeIdRef.current && data.length > 0) {
         setActiveId(data[0].id);
       }
     } catch (err: any) {
@@ -78,7 +82,7 @@ export default function Messages() {
     } finally {
       setLoadingList(false);
     }
-  }, [activeId, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     void loadConversations();
@@ -242,6 +246,9 @@ export default function Messages() {
   }
 
   async function handleStartWithContact(contact: DirectParticipant) {
+    if (creatingChatId) return;
+    setCreatingChatId(contact.id);
+    setModalError('');
     setError('');
     try {
       const conv = await messagingService.createOrOpenConversation({
@@ -253,8 +260,13 @@ export default function Messages() {
       setMobileView('thread');
       setNewChatOpen(false);
       setContactQuery('');
+      window.dispatchEvent(new Event('interaula:inbox-change'));
     } catch (err: any) {
-      setError(err?.message || 'No pudimos iniciar la conversación.');
+      const msg = err?.message || 'No pudimos iniciar la conversación.';
+      setModalError(msg);
+      setError(msg);
+    } finally {
+      setCreatingChatId(null);
     }
   }
 
@@ -273,7 +285,14 @@ export default function Messages() {
           <Link to="/support" className="ia-btn-secondary">
             Avisos y notificaciones
           </Link>
-          <button type="button" className="ia-btn-primary" onClick={() => setNewChatOpen(true)}>
+          <button
+            type="button"
+            className="ia-btn-primary"
+            onClick={() => {
+              setModalError('');
+              setNewChatOpen(true);
+            }}
+          >
             <PlusIcon size={16} />
             <span>Nueva conversación</span>
           </button>
@@ -375,7 +394,14 @@ export default function Messages() {
                 Elige un chat de la columna izquierda o crea uno nuevo para coordinar tus tutorías y actividades
                 académicas.
               </p>
-              <button type="button" className="ia-btn-primary" onClick={() => setNewChatOpen(true)}>
+              <button
+                type="button"
+                className="ia-btn-primary"
+                onClick={() => {
+                  setModalError('');
+                  setNewChatOpen(true);
+                }}
+              >
                 Iniciar conversación
               </button>
             </div>
@@ -486,11 +512,24 @@ export default function Messages() {
                 type="button"
                 className="ia-assess-close-btn"
                 aria-label="Cerrar"
-                onClick={() => setNewChatOpen(false)}
+                disabled={creatingChatId !== null}
+                onClick={() => {
+                  setModalError('');
+                  setNewChatOpen(false);
+                }}
               >
                 <XIcon size={16} />
               </button>
             </div>
+
+            {modalError && (
+              <div role="alert" className="ia-assess-alert ia-assess-alert--error">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <AlertCircleIcon size={18} />
+                  <span>{modalError}</span>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="ia-label" htmlFor="msg-context">
@@ -500,6 +539,7 @@ export default function Messages() {
                 id="msg-context"
                 className="ia-input"
                 value={newContext}
+                disabled={creatingChatId !== null}
                 onChange={(e) => setNewContext(e.target.value as 'general' | 'tutoring' | 'project')}
               >
                 <option value="general">Coordinación académica</option>
@@ -517,7 +557,11 @@ export default function Messages() {
                 type="search"
                 className="ia-input"
                 value={contactQuery}
-                onChange={(e) => setContactQuery(e.target.value)}
+                disabled={creatingChatId !== null}
+                onChange={(e) => {
+                  setModalError('');
+                  setContactQuery(e.target.value);
+                }}
                 placeholder="Nombre, carrera o institución..."
               />
             </div>
@@ -537,6 +581,7 @@ export default function Messages() {
                     key={person.id}
                     type="button"
                     className="ia-messages-contact-item"
+                    disabled={creatingChatId !== null}
                     onClick={() => void handleStartWithContact(person)}
                   >
                     <div>
@@ -545,7 +590,9 @@ export default function Messages() {
                         {[person.career, person.institution].filter(Boolean).join(' · ') || 'Comunidad InterAula'}
                       </div>
                     </div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ia-primary)' }}>Abrir chat</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ia-primary)' }}>
+                      {creatingChatId === person.id ? 'Abriendo...' : 'Abrir chat'}
+                    </span>
                   </button>
                 ))
               )}

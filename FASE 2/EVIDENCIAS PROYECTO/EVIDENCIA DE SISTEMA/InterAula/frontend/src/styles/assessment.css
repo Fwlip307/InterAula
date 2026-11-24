@@ -291,6 +291,187 @@
   line-height: 1.6;
 }
 
+/* --- Selector buscable de asignaturas (AssessmentSubjectPicker) --- */
+.ia-assessment-subject-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ia-assessment-subject-picker > label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--assess-text);
+}
+
+.ia-assessment-subject-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ia-assessment-subject-input > svg {
+  position: absolute;
+  left: 13px;
+  color: var(--assess-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.ia-assessment-subject-input > input.ia-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 40px 10px 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--assess-border);
+  background: var(--assess-surface);
+  color: var(--assess-text);
+  font: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ia-assessment-subject-input > input.ia-input:focus {
+  outline: none;
+  border-color: var(--assess-accent);
+  box-shadow: 0 0 0 3px var(--assess-accent-soft);
+}
+
+.ia-assessment-subject-input > button {
+  position: absolute;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--assess-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.ia-assessment-subject-input > button:hover {
+  background: var(--assess-subtle);
+  color: var(--assess-text);
+}
+
+.ia-assessment-subject-menu {
+  position: absolute;
+  top: calc(100% - 22px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: var(--assess-surface);
+  border: 1px solid var(--assess-border);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.ia-assessment-subject-menu > [role='listbox'] {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ia-assessment-subject-menu [role='option'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--assess-text);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.ia-assessment-subject-menu [role='option']:hover,
+.ia-assessment-subject-menu [role='option'][data-active='true'] {
+  background: var(--assess-subtle);
+}
+
+.ia-assessment-subject-menu [role='option'][aria-selected='true'] {
+  background: var(--assess-accent-soft);
+  color: var(--assess-accent);
+  font-weight: 700;
+}
+
+.ia-assessment-subject-menu [role='option'][aria-disabled='true'] {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.ia-assessment-subject-menu [role='option'] small {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--ia-success-bg, #ecfdf5);
+  color: var(--ia-success, #047857);
+  flex-shrink: 0;
+}
+
+.ia-assessment-subject-menu > [role='status'] {
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--assess-border);
+  background: var(--assess-subtle);
+  font-size: 0.78rem;
+  color: var(--assess-muted);
+}
+
+.ia-assessment-subject-picker > #assessment-subject-help {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--assess-muted);
+}
+
+.ia-assessment-dialog select.ia-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--assess-border);
+  background: var(--assess-surface);
+  color: var(--assess-text);
+  font: inherit;
+  font-size: 0.92rem;
+  box-sizing: border-box;
+}
+
+/* Garantizar coherencia total en Modo Oscuro, Crepúsculo y Modo Calma */
+html[data-dark-surface='true'] .ia-assessment-overlay {
+  background: rgba(2, 6, 23, 0.78);
+}
+
+html[data-dark-surface='true'] .ia-assessment-dialog {
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+html.ia-calm-mode[data-calm-tone='dusk'] .ia-assessment-overlay {
+  --assess-surface: var(--ia-bg-card, #242e36);
+  --assess-canvas: var(--ia-bg-body, #1b2329);
+  --assess-subtle: var(--ia-bg-subtle, #1f2930);
+  --assess-border: var(--ia-border, #374652);
+  --assess-text: var(--ia-text-main, #edf2f5);
+  --assess-body: var(--ia-text-body, #ccd7df);
+  --assess-muted: var(--ia-text-muted, #96a8b5);
+  --assess-accent: var(--ia-primary, #7eb0c2);
+  --assess-accent-soft: var(--ia-primary-subtle, #283742);
+  --assess-accent-border: var(--ia-primary-border, #3f5565);
+}
+
 .ia-assess-time-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

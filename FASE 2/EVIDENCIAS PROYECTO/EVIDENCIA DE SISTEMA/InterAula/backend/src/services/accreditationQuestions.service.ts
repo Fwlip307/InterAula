@@ -1,11 +1,19 @@
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { assessmentCatalog } from '../data/assessmentCatalog.js';
+import {
+  DEFAULT_GEMINI_MODEL,
+  buildGeminiGenerateContentUrl,
+  extractGeminiResponseText,
+  isVertexExpressKey,
+  readSafeProviderError,
+  resolveGeminiModels,
+  sanitizeGeminiApiKey,
+} from '../lib/geminiClient.js';
 import { HttpError } from '../lib/httpError.js';
 import { aiBackendService, randomizeQuestionOptions, type ChallengeQuestionDTO } from './ai.service.js';
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const FALLBACK_GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'] as const;
+export { DEFAULT_GEMINI_MODEL, resolveGeminiModels };
 
 const optionSchema = z
   .object({
@@ -131,22 +139,29 @@ const normalized = (value: string) =>
     .trim();
 
 export function resolveSubjectContext(subjectName: string, area?: string): SubjectAssessmentContext {
-  const normName = normalized(subjectName);
+  const cleanedName = subjectName.trim().replace(/^\[demo\]\s*/i, '').trim() || subjectName.trim();
+  const normName = normalized(cleanedName);
   const exactMatch =
     assessmentCatalog.find((s) => normalized(s.name) === normName && (!area || s.area === area)) ||
     assessmentCatalog.find((s) => normalized(s.name) === normName);
 
-  const areaSlug = exactMatch?.area || area || 'general';
-  const areaLabel = humanizeArea(exactMatch?.area || area);
+  const prefixMatches =
+    !exactMatch && normName.length >= 4
+      ? assessmentCatalog.filter((s) => normalized(s.name).startsWith(`${normName} `))
+      : [];
+
+  const resolvedArea = exactMatch?.area || area || prefixMatches[0]?.area;
+  const areaSlug = resolvedArea || 'general';
+  const areaLabel = humanizeArea(resolvedArea);
   const relatedSubjects = exactMatch
     ? assessmentCatalog
         .filter((s) => s.area === exactMatch.area && s.id !== exactMatch.id)
         .slice(0, 6)
         .map((s) => s.name)
-    : [];
+    : prefixMatches.slice(0, 6).map((s) => s.name);
 
   return {
-    subjectName: exactMatch?.name || subjectName.trim(),
+    subjectName: exactMatch?.name || cleanedName,
     areaSlug,
     areaLabel,
     inCatalog: Boolean(exactMatch),
@@ -154,12 +169,6 @@ export function resolveSubjectContext(subjectName: string, area?: string): Subje
     questionMix: questionMixForArea(areaSlug),
     difficultyTarget: 'Básico universitario (fundamentos esenciales verificables para tutoría inicial)',
   };
-}
-
-export function resolveGeminiModels(): string[] {
-  const configured = process.env.GEMINI_MODEL?.trim();
-  const candidates = configured ? [configured, ...FALLBACK_GEMINI_MODELS] : [...FALLBACK_GEMINI_MODELS];
-  return [...new Set(candidates.filter(Boolean))];
 }
 
 export function repeatsRecentQuestion(question: QuestionText, previous: QuestionText[]): boolean {
@@ -295,36 +304,39 @@ async function requestGeminiAccreditation(
   signal: AbortSignal
 ): Promise<string> {
   const models = resolveGeminiModels();
+  const providerTag = isVertexExpressKey(key) ? 'vertex-express' : 'ai-studio';
   let lastStatus = 0;
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            responseMimeType: 'application/json',
-          },
-        }),
-      }
-    );
+    const endpoint = buildGeminiGenerateContentUrl(model, key);
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      signal,
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192,
+          responseMimeType: 'application/json',
+        },
+      }),
+    });
 
     if (response.ok) {
       const data: any = await response.json();
-      return data?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('') || '';
+      return extractGeminiResponseText(data);
     }
 
     lastStatus = response.status;
-    console.warn(`[accreditationQuestions] Modelo Gemini "${model}" respondió HTTP ${response.status}.`);
+    const providerDetail = await readSafeProviderError(response, key);
+    console.warn(
+      `[accreditationQuestions] Modelo Gemini "${model}" (${providerTag}) respondió HTTP ${response.status}${providerDetail ? `: ${providerDetail}` : ''}.`
+    );
 
-    // Si el modelo configurado no existe o no es compatible (404 / 400), intentar con el siguiente modelo estable.
-    if ((response.status === 404 || response.status === 400) && i + 1 < models.length) {
+    // Reintentar con el siguiente modelo estable si este modelo no está habilitado, agotó cuota o sufrió un error transitorio.
+    if ([400, 403, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
       continue;
     }
 
@@ -337,10 +349,12 @@ async function requestGeminiAccreditation(
     );
   }
 
-  console.warn(`[accreditationQuestions] Ningún modelo Gemini respondió correctamente (último HTTP ${lastStatus}).`);
+  console.warn(`[accreditationQuestions] Ningún modelo Gemini (${providerTag}) respondió correctamente (último HTTP ${lastStatus}).`);
   throw new HttpError(
     503,
-    'El servicio de generación de evaluaciones no está disponible temporalmente. Puedes reintentar o solicitar revisión docente.',
+    lastStatus === 429
+      ? 'La generación alcanzó su límite temporal. Reintenta en unos minutos.'
+      : 'El servicio de generación de evaluaciones no está disponible temporalmente. Puedes reintentar o solicitar revisión docente.',
     'AI_UNAVAILABLE'
   );
 }
@@ -352,7 +366,7 @@ export async function buildAccreditationQuestions(
   previous: QuestionText[] = []
 ): Promise<{ questions: ChallengeQuestionDTO[]; source: 'reviewed' | 'generated'; context: SubjectAssessmentContext }> {
   const context = resolveSubjectContext(subjectName, area);
-  const key = process.env.GEMINI_API_KEY?.trim();
+  const key = sanitizeGeminiApiKey(process.env.GEMINI_API_KEY);
 
   if (!key) {
     const reviewed = aiBackendService

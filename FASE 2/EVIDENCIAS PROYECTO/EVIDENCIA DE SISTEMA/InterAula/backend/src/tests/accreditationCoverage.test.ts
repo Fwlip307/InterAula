@@ -160,3 +160,86 @@ test('Normalización controlada de JSON de IA y estrategia segura para asignatur
     assert.ok(aiBackendService.getAccreditationQuestions(subject).length >= 5, `Banco revisado insuficiente para ${subject}`);
   }
 });
+
+test('Vertex AI Express (clave AQ.), limpieza de prefijo [DEMO], partes thought y respaldo ante HTTP 503', async (t) => {
+  const prevKey = process.env.GEMINI_API_KEY;
+  const prevModel = process.env.GEMINI_MODEL;
+  process.env.GEMINI_API_KEY = '"AQ.Ab8RN6MockVertexExpressKey12345678901234567890123"';
+  process.env.GEMINI_MODEL = 'gemini-2.5-flash';
+  t.after(() => {
+    if (prevKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = prevKey;
+    if (prevModel === undefined) delete process.env.GEMINI_MODEL;
+    else process.env.GEMINI_MODEL = prevModel;
+  });
+
+  // [DEMO] Álgebra hace match exacto y [DEMO] Inglés infiere su área y materias relacionadas del catálogo
+  const exactDemoCtx = resolveSubjectContext('[DEMO] Álgebra');
+  assert.equal(exactDemoCtx.inCatalog, true);
+  assert.equal(exactDemoCtx.subjectName, 'Álgebra');
+  assert.equal(exactDemoCtx.areaSlug, 'matematicas_estadistica');
+
+  const demoCtx = resolveSubjectContext('[DEMO] Inglés');
+  assert.equal(demoCtx.subjectName, 'Inglés');
+  assert.notEqual(demoCtx.areaSlug, 'general');
+  assert.ok(demoCtx.relatedSubjects.length >= 1);
+
+  const calls: Array<{ url: string; body: any; keyHeader: string }> = [];
+  t.mock.method(globalThis, 'fetch', async (url: any, options: any) => {
+    const u = String(url);
+    const parsedBody = JSON.parse(options.body);
+    calls.push({ url: u, body: parsedBody, keyHeader: options.headers['x-goog-api-key'] });
+    assert.ok(u.startsWith('https://aiplatform.googleapis.com/v1/publishers/google/models/'));
+    assert.equal(u.includes('AQ.'), false);
+    assert.equal(options.headers['x-goog-api-key'], 'AQ.Ab8RN6MockVertexExpressKey12345678901234567890123');
+    assert.equal(parsedBody.contents[0].role, 'user');
+
+    // Simular 503 en gemini-2.5-flash y éxito en gemini-2.5-flash-lite con parte thought
+    if (u.includes('gemini-2.5-flash:')) {
+      return {
+        ok: false,
+        status: 503,
+        json: async () => ({ error: { status: 'UNAVAILABLE', message: 'Temporarily overloaded' } }),
+      } as Response;
+    }
+
+    const rows = Array.from({ length: 10 }, (_, idx) => ({
+      prompt: `Pregunta de gramática y comprensión lectora en Inglés número ${idx + 1} para nivel universitario`,
+      options: [
+        { id: 'a', text: `Opción correcta en inglés ${idx + 1}` },
+        { id: 'b', text: `Distractor inglés ${idx + 1}B` },
+        { id: 'c', text: `Distractor inglés ${idx + 1}C` },
+        { id: 'd', text: `Distractor inglés ${idx + 1}D` },
+      ],
+      correctOptionId: 'a',
+      explanation: `Explicación lingüística verificable número ${idx + 1}.`,
+      topic: `Grammar ${idx + 1}`,
+      difficulty: 'basic',
+    }));
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [
+                { thought: true, text: 'Internal reasoning that must be ignored' },
+                { text: JSON.stringify(rows) },
+              ],
+            },
+          },
+        ],
+      }),
+    } as Response;
+  });
+
+  const result = await buildAccreditationQuestions('[DEMO] Inglés');
+  assert.equal(result.source, 'generated');
+  assert.equal(result.questions.length, 10);
+  assert.equal(result.context.subjectName, 'Inglés');
+  assert.equal(calls.length, 2);
+  assert.ok(calls[0].url.includes('gemini-2.5-flash:generateContent'));
+  assert.ok(calls[1].url.includes('gemini-2.5-flash-lite:generateContent'));
+});

@@ -5,6 +5,12 @@
  * e inmediato a bancos de preguntas pedagógicos curados y motor heurístico si no hay clave.
  */
 
+import {
+  DEFAULT_GEMINI_MODEL,
+  buildGeminiGenerateContentUrl,
+  extractGeminiResponseText,
+  sanitizeGeminiApiKey,
+} from '../lib/geminiClient.js';
 import { HttpError } from '../lib/httpError.js';
 
 export interface ChallengeQuestionDTO {
@@ -988,15 +994,16 @@ Responde ÚNICAMENTE con un arreglo JSON válido:
     rubric?: string;
     level?: string;
   }): Promise<{ score: number; passed: boolean; feedback: string; evaluated: boolean }> {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = sanitizeGeminiApiKey(process.env.GEMINI_API_KEY);
 
-    if (geminiKey && geminiKey.trim().length > 5) {
+    if (geminiKey.length > 5) {
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 6000);
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
+          buildGeminiGenerateContentUrl(model, geminiKey),
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
@@ -1004,6 +1011,7 @@ Responde ÚNICAMENTE con un arreglo JSON válido:
             body: JSON.stringify({
               contents: [
                 {
+                  role: 'user',
                   parts: [
                     {
                       text: `Actúa como docente evaluador universitario en InterAula.
@@ -1034,7 +1042,7 @@ Evalúa la respuesta y responde ÚNICAMENTE con un JSON en este formato:
 
         if (response.ok) {
           const resJson: any = await response.json();
-          const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+          const rawText = extractGeminiResponseText(resJson);
           if (rawText) {
             const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(cleanJson);
@@ -1116,14 +1124,16 @@ REGLAS OBLIGATORIAS:
 ]`;
 
     try {
+      const cleanKey = sanitizeGeminiApiKey(key);
+      const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
+        buildGeminiGenerateContentUrl(model, cleanKey),
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': cleanKey },
           signal: controller.signal,
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
               temperature: 0.85,
               responseMimeType: 'application/json',
@@ -1136,7 +1146,7 @@ REGLAS OBLIGATORIAS:
 
       if (!response.ok) return null;
       const resJson: any = await response.json();
-      const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = extractGeminiResponseText(resJson);
       if (!rawText) return null;
 
       const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1218,14 +1228,16 @@ Responde ÚNICAMENTE un arreglo JSON con esta estructura:
 ]`;
 
     try {
+      const cleanKey = sanitizeGeminiApiKey(key);
+      const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
+        buildGeminiGenerateContentUrl(model, cleanKey),
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': cleanKey },
           signal: controller.signal,
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
               temperature: 0.85,
               responseMimeType: 'application/json',
@@ -1238,7 +1250,7 @@ Responde ÚNICAMENTE un arreglo JSON con esta estructura:
 
       if (!response.ok) return null;
       const resJson: any = await response.json();
-      const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = extractGeminiResponseText(resJson);
       if (!rawText) return null;
 
       const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1265,7 +1277,7 @@ Responde ÚNICAMENTE un arreglo JSON con esta estructura:
     subject_name?: string;
     context?: string;
   }): Promise<Array<{ title: string; estimated_minutes: number; order_index: number }>> {
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = sanitizeGeminiApiKey(process.env.GEMINI_API_KEY);
     if (!geminiKey) {
       throw new HttpError(
         503,
@@ -1289,16 +1301,17 @@ Reglas estrictas:
    - "estimated_minutes": número entero entre 5 y 60`;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const model = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`,
+        buildGeminiGenerateContentUrl(model, geminiKey),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
           signal: controller.signal,
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
               temperature: 0.4,
               responseMimeType: 'application/json',
@@ -1317,7 +1330,7 @@ Reglas estrictas:
       }
 
       const resJson: any = await response.json();
-      const rawText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const rawText = extractGeminiResponseText(resJson);
       if (!rawText) {
         throw new HttpError(
           503,

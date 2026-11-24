@@ -1,4 +1,9 @@
 import {z} from 'zod';
+import {
+ DEFAULT_GEMINI_MODEL,
+ buildGeminiGenerateContentUrl,
+ sanitizeGeminiApiKey,
+} from '../lib/geminiClient.js';
 import {HttpError} from '../lib/httpError.js';
 
 export const orientationGuideIds=['learn','tutors','become-tutor','notes','projects','create-project','organize','supports','practice','explore'] as const;
@@ -29,15 +34,15 @@ Devuelve solo JSON con message (texto plano sin HTML, Markdown ni URLs), topic (
 
 export const orientationChatService={
  async reply(input:OrientationChatInput,signal?:AbortSignal){
-  const key=process.env.GEMINI_API_KEY;
+  const key=sanitizeGeminiApiKey(process.env.GEMINI_API_KEY);
   if(!key)throw new HttpError(503,'La IA no está configurada. Puedes utilizar los recorridos manuales.');
-  const model=process.env.GEMINI_MODEL||'gemini-3.5-flash-lite';
+  const model=process.env.GEMINI_MODEL?.trim()||DEFAULT_GEMINI_MODEL;
   const controller=new AbortController(),abort=()=>controller.abort();
   if(signal?.aborted)controller.abort();
   signal?.addEventListener('abort',abort,{once:true});
   const timeout=setTimeout(abort,25_000);
   try{
-   const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
+   const response=await fetch(buildGeminiGenerateContentUrl(model,key),{
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:controller.signal,
     body:JSON.stringify({systemInstruction:{parts:[{text:ORIENTATION_SYSTEM}]},
      contents:[...input.history.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.text}]})),
