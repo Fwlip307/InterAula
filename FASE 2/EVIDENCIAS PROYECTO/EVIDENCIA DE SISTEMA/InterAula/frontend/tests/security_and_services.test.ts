@@ -603,18 +603,52 @@ describe('Mi espacio de aprendizaje: Rutas, Explicaciones Adaptables y Dominio p
 import { SUPPORT_PASSPORT_OPTIONS } from '../src/types/learningSpace.ts';
 import { INCLUSIVE_SUPPORT_RESOURCES } from '../src/data/inclusiveResources.ts';
 import { generatePersonalProgressPdf } from '../src/utils/noteExporter.ts';
-import {assessmentSubjectChoices} from '../src/utils/assessmentSubjects.ts';
+import {assessmentSubjectChoices,subjectDisplayName} from '../src/utils/assessmentSubjects.ts';
 
 describe('Catálogo completo de acreditación',()=>{
   it('incluye áreas distintas y conserva materias registradas y acreditadas',()=>{
     const id='00000000-0000-0000-0000-000000000777';
     const choices=assessmentSubjectChoices([{id,name:'Materia propia de mi perfil'}],['Marketing Digital']);
-    assert.ok(choices.length>=1000);
+    assert.ok(new Set(choices.flatMap(s=>s.aliases).filter(id=>id.startsWith('catalog:'))).size>=1000);
     assert.equal(choices.find(s=>s.id===id)?.name,'Materia propia de mi perfil');
     assert.ok(choices.some(s=>s.name.toLowerCase().includes('biología')));
     assert.ok(choices.some(s=>s.name.toLowerCase().includes('marketing')));
     assert.ok(choices.filter(s=>s.id!==id).every(s=>s.id.startsWith('catalog:')));
     assert.equal(choices.find(s=>s.name==='Marketing Digital')?.verified,true);
+  });
+  it('presenta un solo nombre sin DEMO y conserva las identidades para preselección',()=>{
+    const demoId='00000000-0000-0000-0000-000000000778';
+    const realId='00000000-0000-0000-0000-000000000779';
+    const choices=assessmentSubjectChoices([
+      {id:demoId,name:'[DEMO]  Álgebra'},
+      {id:realId,name:'  ALGEBRA  '},
+      {id:demoId,name:'[DEMO] Álgebra'},
+    ]);
+    const algebra=choices.filter(s=>s.name==='Álgebra');
+    assert.equal(algebra.length,1);
+    assert.equal(algebra[0].id,realId);
+    assert.ok(algebra[0].aliases.includes(demoId));
+    assert.ok(algebra[0].aliases.some(id=>id.startsWith('catalog:')));
+    assert.equal(new Set(choices.map(s=>s.label.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())).size,choices.length);
+    assert.ok(choices.every(s=>!s.label.includes('[DEMO')));
+  });
+  it('limpia DEMO 17, respeta materias distintas y no transfiere una acreditación de prueba',()=>{
+    const demoId='00000000-0000-0000-0000-000000000780';
+    const ownId='00000000-0000-0000-0000-000000000781';
+    const choices=assessmentSubjectChoices([
+      {id:demoId,name:'[DEMO] Álgebra'},
+      {id:ownId,name:'[DEMO 17] Python y análisis de datos'},
+      {id:'00000000-0000-0000-0000-000000000782',name:'[DEMO] Programación I'},
+      {id:'00000000-0000-0000-0000-000000000783',name:'[DEMO] Programación II'},
+    ],['[DEMO] Álgebra','[DEMO 17] Python y análisis de datos']);
+    assert.equal(choices.find(s=>s.name==='Álgebra')?.verified,false);
+    assert.notEqual(choices.find(s=>s.name==='Álgebra')?.id,demoId);
+    const own=choices.find(s=>s.name==='Python y análisis de datos');
+    assert.equal(own?.id,ownId);
+    assert.equal(own?.verified,true);
+    assert.equal(subjectDisplayName('[DEMO 17]   Cálculo diferencial'),'Cálculo diferencial');
+    assert.ok(choices.some(s=>s.name==='Programación I'));
+    assert.ok(choices.some(s=>s.name==='Programación II'));
   });
 });
 

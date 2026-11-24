@@ -15,7 +15,7 @@ import {
   XIcon,
 } from '../../../components/common/Icons';
 import { ReadAloudControls } from '../../../components/common/ReadAloudControls';
-import { assessmentSubjectChoices } from '../../../utils/assessmentSubjects';
+import { assessmentSubjectChoices, subjectDisplayName } from '../../../utils/assessmentSubjects';
 import AssessmentSubjectPicker from './AssessmentSubjectPicker';
 import AssessmentLoading from './AssessmentLoading';
 import { useCalmMode } from '../../../context/CalmModeContext';
@@ -239,7 +239,7 @@ export default function TutorValidationBotModal({
     const values = initial.current;
     setSubjectId(
       values.choices.find(
-        (s) => (s.id === values.defaultSubjectId || s.id === 'catalog:' + values.defaultSubjectId) && !s.verified
+        (s) => (s.aliases.includes(values.defaultSubjectId || '') || s.aliases.includes('catalog:' + values.defaultSubjectId)) && !s.verified
       )?.id ||
         values.choices.find((s) => !s.verified)?.id ||
         ''
@@ -659,7 +659,7 @@ export default function TutorValidationBotModal({
                 <span>Evaluación de Acreditación</span>
                 {attempt?.subjectArea && <span>· {attempt.subjectArea}</span>}
               </div>
-              <h2 id="assessment-title">{attempt?.subjectName || 'Preparar evaluación de tutor'}</h2>
+              <h2 id="assessment-title">{attempt?.subjectName ? subjectDisplayName(attempt.subjectName) : 'Preparar evaluación de tutor'}</h2>
             </div>
           </div>
 
@@ -1118,7 +1118,7 @@ export default function TutorValidationBotModal({
                   <h3>Evaluación aprobada</h3>
                   <strong className="ia-assess-score-big">{attempt.score}%</strong>
                   <p>
-                    Completaste correctamente las {totalCount} preguntas de <strong>{attempt.subjectName}</strong>.
+                    Completaste correctamente las {totalCount} preguntas de <strong>{subjectDisplayName(attempt.subjectName)}</strong>.
                     Confirma ahora para activar tu insignia de tutor acreditado en nivel básico.
                   </p>
                   <button
