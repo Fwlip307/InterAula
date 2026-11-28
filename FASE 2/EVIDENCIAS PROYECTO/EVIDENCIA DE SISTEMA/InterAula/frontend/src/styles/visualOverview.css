@@ -1,14 +1,27 @@
 .ia-visual-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--ia-primary,#2563eb); font-size: .78rem; font-weight: 700; letter-spacing: .035em; line-height: 1.5; }
-.ia-study-welcome { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); border: 1px solid var(--ia-border,#e2e8f0); border-radius: 20px; background: linear-gradient(120deg,var(--ia-bg-card,#fff),var(--ia-bg-subtle,#eff6ff)); overflow: hidden; }
-.ia-study-welcome-copy { padding: clamp(22px,3vw,34px); }
-.ia-study-welcome h1 { margin: 12px 0; font-size: clamp(1.8rem,3.5vw,2.35rem); line-height: 1.25; overflow-wrap: anywhere; }
-.ia-study-welcome-copy > p { margin: 0; color: var(--ia-text-body,#475569); font-size: .97rem; line-height: 1.75; max-width: 60ch; }
-.ia-welcome-highlights { display: flex; flex-wrap: wrap; gap: 9px 16px; margin: 20px 0; }
-.ia-welcome-highlights > span { display: inline-flex; gap: 6px; align-items: center; color: var(--ia-text-body,#475569); font-size: .8rem; }
-.ia-study-welcome-photo { position: relative; margin: 0; min-height: 280px; }
+.ia-study-welcome { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(0,0.85fr); border: 1px solid var(--ia-border,#e2e8f0); border-radius: 18px; background: linear-gradient(120deg,var(--ia-bg-card,#fff),var(--ia-bg-subtle,#eff6ff)); overflow: hidden; }
+.ia-study-welcome-copy { padding: clamp(20px,2.5vw,28px) clamp(22px,3vw,32px); display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.ia-study-welcome h1 { margin: 2px 0 0; font-size: clamp(1.65rem,3vw,2.15rem); line-height: 1.2; overflow-wrap: anywhere; }
+.ia-study-welcome-copy > p { margin: 0; color: var(--ia-text-body,#475569); font-size: .95rem; line-height: 1.6; max-width: 56ch; }
+.ia-study-welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.ia-study-welcome-photo { position: relative; margin: 0; min-height: 210px; }
 .ia-study-welcome-photo img { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: 56% center; }
-.ia-study-welcome-photo figcaption { position: absolute; bottom: 0; left: 0; right: 0; color: #fff; font-size: .82rem; line-height: 1.6; padding: 24px 20px 16px; background: linear-gradient(transparent,rgba(12,23,35,.88)); }
-.ia-app-overview > header .ia-visual-kicker { margin-bottom: 8px; }
+.ia-app-overview-head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.ia-app-overview-head h2 { margin: 4px 0 0; font-size: clamp(1.2rem, 2.2vw, 1.45rem); }
+.ia-app-overview-head p { margin: 6px 0 0; color: var(--ia-text-body,#475569); max-width: 64ch; line-height: 1.6; }
+.ia-guide-action--subtle { font-size: 0.86rem; font-weight: 600; color: var(--ia-primary,#2563eb); text-decoration: none; }
+.ia-guide-action--subtle:hover { text-decoration: underline; }
+.ia-visual-area--compact .ia-area-compact-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
+.ia-area-icon.ia-area-icon--inline { position: static; width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0; background: var(--ia-bg-subtle,#f1f5f9); }
+.ia-visual-area--compact .ia-area-compact-head .ia-area-label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--area-accent); }
+.ia-visual-area--compact .ia-area-compact-head h3 { margin: 1px 0 0; font-size: 1.08rem; color: var(--ia-text-main,#0f172a); }
+.ia-visual-area--compact .ia-area-content { padding: 12px 20px 18px; gap: 10px; }
+.ia-area-summary { margin: 0; font-size: 0.87rem; line-height: 1.55; color: var(--ia-text-body,#475569); }
+.ia-area-details { width: 100%; border-top: 1px solid var(--ia-border,#e2e8f0); padding-top: 8px; }
+.ia-area-details > summary { font-size: 0.8rem; font-weight: 600; color: var(--ia-text-muted,#64748b); cursor: pointer; user-select: none; }
+.ia-area-details > summary:hover { color: var(--ia-text-main,#0f172a); }
+.ia-area-details ul { margin: 8px 0 2px; padding-left: 18px; font-size: 0.82rem; color: var(--ia-text-body,#475569); line-height: 1.5; display: grid; gap: 5px; }
+.ia-visual-area--compact .ia-guide-action { margin-top: auto; padding-top: 4px; font-weight: 700; }
 .ia-guide-overview-card.ia-visual-area { --area-accent: #2563eb; padding: 0; gap: 0; overflow: hidden; border-radius: 16px; border-top: 3px solid var(--area-accent); }
 .ia-visual-area[data-area="support"] { --area-accent: #0f766e; }
 .ia-visual-area[data-area="community"] { --area-accent: #6d28d9; }

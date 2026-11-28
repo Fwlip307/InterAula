@@ -6,7 +6,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useModuleTab } from '../../hooks/useModuleTab';
 import { useAuth } from '../../context/AuthContext';
-import { useCalmMode } from '../../context/CalmModeContext';
 import { profileService } from '../../services/profile.service';
 import { tutoringService, type AvailableTutor } from '../../services/tutoring.service';
 import type { Subject, OfferedSubject } from '../../types/profile';
@@ -18,7 +17,6 @@ import {
 } from '../../utils/formatters';
 import {
   SearchIcon,
-  FilterIcon,
   StarIcon,
   AwardIcon,
   UsersIcon,
@@ -54,7 +52,6 @@ export default function TutoringExplore() {
   const [recommendationParams] = useSearchParams();
   const recommendedWorkshopId = recommendationParams.get('workshop');
   const [activeTab,setActiveTab]=useModuleTab(['tutors','workshops','my_classes','quizzes','materials'] as const,'tutors');
-  const { isCalmMode, toggleCalmMode } = useCalmMode();
 
   // Tutores 1 a 1
   const [tutors, setTutors] = useState<AvailableTutor[]>([]);
@@ -384,76 +381,27 @@ export default function TutoringExplore() {
   return (
     <div>
       {/* Cabecera Académica - Centro de Aprendizaje */}
-      <div className="ia-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '22px' }}>
+      <div className="ia-page-header" style={{ marginBottom: '20px' }}>
         <div>
           <h1 className="ia-page-title">Tutorías</h1>
           <p className="ia-page-subtitle">
-            Explora tutorías, busca tutores acreditados por asignatura y solicita sesiones entre pares.
+            Busca tutores acreditados por asignatura, coordina sesiones 1 a 1 o participa en talleres.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Botón Accesibilidad Neuroinclusiva: Modo Calma */}
-          <button
-            type="button"
-            onClick={toggleCalmMode}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              backgroundColor: isCalmMode ? 'var(--ia-success-bg, #ecfdf5)' : 'var(--ia-bg-subtle, #f8fafc)',
-              borderColor: isCalmMode ? 'var(--ia-success-border, #a7f3d0)' : 'var(--ia-border, #cbd5e1)',
-              color: isCalmMode ? 'var(--ia-success, #065f46)' : 'var(--ia-text-body, #475569)',
-              borderRadius: '8px',
-              border: '1px solid',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            title="Ajusta contrastes suaves y reduce sobrecargas visuales"
-          >
-            <span>{isCalmMode ? 'Modo Calma Activo' : 'Modo Calma y Foco'}</span>
-          </button>
+        <div className="ia-page-actions">
+          <Link to="/my-tutoring" className="ia-btn-secondary">
+            <span>Mis tutorías</span>
+          </Link>
 
           {!isTutor ? (
-            <Link
-              to="/profile?tab=tutoring"
-              className="ia-btn-secondary"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '9px 16px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
-                backgroundColor: 'var(--ia-success-bg, #ecfdf5)',
-                borderColor: 'var(--ia-success-border, #a7f3d0)',
-                color: 'var(--ia-success, #065f46)',
-                textDecoration: 'none',
-              }}
-            >
+            <Link to="/profile?tab=tutoring" className="ia-btn-secondary">
               <ShieldCheckIcon size={16} />
               <span>Acreditación de tutor</span>
             </Link>
           ) : (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                fontSize: '0.84rem',
-                fontWeight: 800,
-                backgroundColor: 'var(--ia-success-bg, #f0fdf4)',
-                border: '1px solid var(--ia-success-border, #86efac)',
-                color: 'var(--ia-success, #166534)',
-                borderRadius: '8px',
-              }}
-            >
-              <CheckIcon size={14} />
-              <span>Tutor Acreditado</span>
-            </div>
+            <span className="ia-badge ia-badge-success" style={{ padding: '7px 12px', fontSize: '0.82rem' }}>
+              <CheckIcon size={14} /> Tutor acreditado
+            </span>
           )}
 
           {isTutor && (
@@ -461,17 +409,9 @@ export default function TutoringExplore() {
               type="button"
               onClick={() => setIsCreateWorkshopModalOpen(true)}
               className="ia-btn-primary"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 18px',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-              }}
             >
               <VideoIcon size={16} color="#ffffff" />
-              <span>+ Programar Taller en Vivo</span>
+              <span>Programar taller en vivo</span>
             </button>
           )}
         </div>
@@ -653,542 +593,171 @@ export default function TutoringExplore() {
       <ModuleNavigation label="Secciones de tutorías" active={activeTab} onSelect={setActiveTab}
         primary={[{id:'tutors',label:'Buscar tutores'},{id:'my_classes',label:'Mis reservas'},{id:'workshops',label:'Talleres'}]}
         secondary={[{id:'quizzes',label:'Cuestionarios'},{id:'materials',label:'Materiales de estudio'}]} />
-      <section aria-label="Accesos de tutoría"><div className="ia-guided-inline"><Link to="/my-tutoring?tab=offerings">Ofrecer tutorías</Link><Link to="/my-tutoring">Mis tutorías</Link><Link to="/profile?tab=tutoring">Acreditación de tutor</Link><Link to="/my-tutoring?tab=confirmed">Aula virtual</Link></div></section>
 
       {/* Barra de Filtros y Búsqueda */}
       {activeTab !== 'my_classes' && activeTab !== 'quizzes' && (
-        <div className="ia-card" style={{ marginBottom: '24px', padding: '18px 20px' }}>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Campo de búsqueda por texto */}
-          <div style={{ position: 'relative', flex: 2, minWidth: '240px' }}>
-            <input
-              type="text"
-              className="ia-input"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              data-orientation="tutor-search"
-              aria-label="Buscar por tutor o materia"
-              placeholder="Buscar por tutor o materia (ej: Programación, Cálculo)..."
-              style={{ paddingLeft: '40px', width: '100%' }}
-            />
-            <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
-              <SearchIcon size={18} />
+        <div className="ia-card ia-filter-bar-card" style={{ marginBottom: '22px', padding: '16px 20px' }}>
+          <form onSubmit={handleSearchSubmit} className="ia-filter-primary-row">
+            <div style={{ position: 'relative', flex: '1.8 1 240px' }}>
+              <input
+                type="text"
+                className="ia-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                data-orientation="tutor-search"
+                aria-label="Buscar por tutor o materia"
+                placeholder="Buscar por tutor o materia (ej: Programación, Cálculo)..."
+                style={{ paddingLeft: '38px', width: '100%' }}
+              />
+              <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ia-text-muted)' }}>
+                <SearchIcon size={17} />
+              </div>
             </div>
-          </div>
 
-          {/* Filtro por catálogo de materias */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1.5, minWidth: '220px' }}>
-            <FilterIcon size={18} color="#2563eb" />
-            <select
-              className="ia-input"
-              value={selectedSubjectId}
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
-              style={{ width: '100%' }}
-            >
-              <option value="all">Todas las materias ({subjects.length})</option>
-              <optgroup label="Ramos Criticos de Informatica (Prioritarios)">
-                {subjects
-                  .filter((s) => s.is_pilot || [
-                    'Programación de Algoritmos',
-                    'Nivelación Matemática',
-                    'Modelamiento de Base de Datos',
-                    'Consultas de Bases de Datos',
-                    'Programación Web',
-                    'Desarrollo de Software de Escritorio',
-                    'Matemática Aplicada',
-                    'Programación de Base de Datos',
-                    'Arquitectura',
-                  ].includes(s.name))
-                  .map((sub) => (
-                    <option key={sub.id} value={sub.id}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1.2 1 210px' }}>
+              <select
+                className="ia-select"
+                aria-label="Filtrar por materia"
+                value={selectedSubjectId}
+                onChange={(e) => setSelectedSubjectId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="all">Todas las materias ({subjects.length})</option>
+                <optgroup label="Ramos prioritarios">
+                  {subjects
+                    .filter((s) => s.is_pilot || [
+                      'Programación de Algoritmos',
+                      'Nivelación Matemática',
+                      'Modelamiento de Base de Datos',
+                      'Consultas de Bases de Datos',
+                      'Programación Web',
+                      'Desarrollo de Software de Escritorio',
+                      'Matemática Aplicada',
+                      'Programación de Base de Datos',
+                      'Arquitectura',
+                    ].includes(s.name))
+                    .map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                </optgroup>
+                <optgroup label="Catálogo general">
+                  {subjects.map((sub) => (
+                    <option key={`all-${sub.id}`} value={sub.id}>
                       {sub.name}
                     </option>
                   ))}
-              </optgroup>
-            </select>
-          </div>
-
-          {/* Botón Buscar */}
-          <button type="submit" className="ia-btn-primary" style={{ padding: '9px 18px' }}>
-            <SearchIcon size={16} /> Buscar
-          </button>
-        </form>
-
-        {/* Filtro de Calidad Académica y Asignaturas Críticas de Informática */}
-        <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--ia-border, #f1f5f9)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setOnlyCertified(!onlyCertified)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  border: `1px solid ${onlyCertified ? 'var(--ia-primary, #2563eb)' : 'var(--ia-border, #cbd5e1)'}`,
-                  backgroundColor: onlyCertified ? 'var(--ia-primary-subtle, #eff6ff)' : 'var(--ia-bg-card, #ffffff)',
-                  color: onlyCertified ? 'var(--ia-primary, #1d4ed8)' : 'var(--ia-text-muted, #64748b)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <ShieldCheckIcon size={16} color={onlyCertified ? 'var(--ia-primary, #2563eb)' : 'var(--ia-text-muted, #94a3b8)'} />
-                <span>Solo Tutores Certificados</span>
-                {onlyCertified && <CheckIcon size={14} color="var(--ia-primary, #2563eb)" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setOnlyInclusive(!onlyInclusive)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  border: `1px solid ${onlyInclusive ? 'var(--ia-success, #0f766e)' : 'var(--ia-border, #cbd5e1)'}`,
-                  backgroundColor: onlyInclusive ? 'var(--ia-success-bg, #f0fdfa)' : 'var(--ia-bg-card, #ffffff)',
-                  color: onlyInclusive ? 'var(--ia-success, #0f766e)' : 'var(--ia-text-muted, #64748b)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <span>Formación en acompañamiento inclusivo</span>
-                {onlyInclusive && <CheckIcon size={14} color="var(--ia-success, #0f766e)" />}
-              </button>
+                </optgroup>
+              </select>
             </div>
 
-            <span style={{ fontSize: '0.76rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 600 }}>
-              Foco Piloto: Asignaturas Filtro de Informática
-            </span>
-          </div>
+            <button type="submit" className="ia-btn-primary">
+              <span>Buscar</span>
+            </button>
+          </form>
 
-          {/* Pastillas de Selección Rápida */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.74rem', color: 'var(--ia-text-muted, #64748b)', fontWeight: 600 }}>Ramos Troncales:</span>
-            {CRITICAL_INFORMATICS_SUBJECTS.map((subName) => {
-              const matchedSub = subjects.find((s) => s.name.toLowerCase().includes(subName.toLowerCase()));
-              const isSelected = matchedSub && selectedSubjectId === matchedSub.id;
+          <details
+            className="ia-filter-disclosure"
+            open={onlyCertified || onlyInclusive || priority !== 'balanced'}
+          >
+            <summary>
+              <span>Filtros de acreditación, ramos rápidos y orden de recomendación</span>
+              {(onlyCertified || onlyInclusive || priority !== 'balanced') && (
+                <span className="ia-badge ia-badge-blue">Personalizado</span>
+              )}
+            </summary>
 
-              return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                 <button
-                  key={subName}
                   type="button"
-                  onClick={() => {
-                    if (isSelected) {
-                      setSelectedSubjectId('all');
-                    } else if (matchedSub) {
-                      setSelectedSubjectId(matchedSub.id);
-                    } else {
-                      setSearchTerm(subName);
-                    }
-                  }}
-                  style={{
-                    padding: '3px 10px',
-                    borderRadius: '14px',
-                    fontSize: '0.74rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: isSelected ? '1px solid var(--ia-primary, #2563eb)' : '1px solid var(--ia-border, #e2e8f0)',
-                    backgroundColor: isSelected ? 'var(--ia-primary, #2563eb)' : 'var(--ia-bg-subtle, #f8fafc)',
-                    color: isSelected ? '#ffffff' : 'var(--ia-text-body, #334155)',
-                    transition: 'all 0.15s ease',
-                  }}
+                  onClick={() => setOnlyCertified(!onlyCertified)}
+                  className={onlyCertified ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                  style={{ padding: '6px 13px', fontSize: '0.8rem', borderRadius: '999px' }}
                 >
-                  {subName}
+                  <ShieldCheckIcon size={15} />
+                  <span>Solo tutores certificados</span>
                 </button>
-              );
-            })}
-          </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOnlyInclusive(!onlyInclusive)}
+                  className={onlyInclusive ? 'ia-btn-primary' : 'ia-btn-secondary'}
+                  style={{ padding: '6px 13px', fontSize: '0.8rem', borderRadius: '999px' }}
+                >
+                  <span>Formación en acompañamiento inclusivo</span>
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.76rem', color: 'var(--ia-text-muted)', fontWeight: 600 }}>Ramos rápidos:</span>
+                {CRITICAL_INFORMATICS_SUBJECTS.map((subName) => {
+                  const matchedSub = subjects.find((s) => s.name.toLowerCase().includes(subName.toLowerCase()));
+                  const isSelected = Boolean(matchedSub && selectedSubjectId === matchedSub.id);
+
+                  return (
+                    <button
+                      key={subName}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedSubjectId('all');
+                        } else if (matchedSub) {
+                          setSelectedSubjectId(matchedSub.id);
+                        } else {
+                          setSearchTerm(subName);
+                        }
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '999px',
+                        fontSize: '0.74rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        border: isSelected ? '1px solid var(--ia-primary)' : '1px solid var(--ia-border)',
+                        backgroundColor: isSelected ? 'var(--ia-primary)' : 'var(--ia-bg-subtle)',
+                        color: isSelected ? '#ffffff' : 'var(--ia-text-body)',
+                      }}
+                    >
+                      {subName}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeTab === 'tutors' && (
+                <TutorRecommendationPanel
+                  priority={priority}
+                  onChange={setPriority}
+                  model={matchingModel}
+                  loading={loading}
+                />
+              )}
+            </div>
+          </details>
         </div>
-      </div>
-    )}
+      )}
 
       {/* Contenido Principal: Grilla de Tutores */}
       {activeTab === 'tutors' && (
         <div data-orientation="tutor-results">
-          <TutorRecommendationPanel priority={priority} onChange={setPriority} model={matchingModel} loading={loading}/>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main, #0f172a)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UsersIcon size={20} color="#2563eb" />
-              Tutores Disponibles ({tutors.length})
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '1.18rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UsersIcon size={19} color="var(--ia-primary)" />
+              Tutores disponibles ({tutors.length})
             </h2>
-          <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Estudiantes activos con disponibilidad para enseñar
-          </span>
-        </div>
-
-        {errorMsg && (
-          <div
-            style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#b91c1c',
-              padding: '14px',
-              borderRadius: '12px',
-              marginBottom: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-            }}
-          >
-            <AlertCircleIcon size={20} color="#b91c1c" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-            <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando tutores disponibles...</p>
-          </div>
-        ) : tutors.length === 0 ? (
-          <div className="ia-card">
-            <EmptyState
-              style={{ padding: '48px 20px' }}
-              icon={<UsersIcon size={32} color="#2563eb" />}
-              title="No se encontraron tutores disponibles"
-              description={
-                selectedSubjectId !== 'all' || searchTerm
-                  ? 'No hay tutores disponibles que coincidan con los criterios seleccionados. Prueba buscando otra materia o quitando los filtros.'
-                  : 'Aún no hay estudiantes con disponibilidad activa y materias ofrecidas en la plataforma.'
-              }
-              action={
-                selectedSubjectId !== 'all' || searchTerm ? (
-                  <button
-                    type="button"
-                    className="ia-btn-secondary"
-                    onClick={() => {
-                      setSelectedSubjectId('all');
-                      setSearchTerm('');
-                    }}
-                  >
-                    Restablecer filtros
-                  </button>
-                ) : (
-                  <Link to="/profile?tab=tutoring" className="ia-btn-primary">
-                    Ofrecer mis materias en mi perfil
-                  </Link>
-                )
-              }
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
-              gap: '20px',
-            }}
-          >
-            {tutors.map((tutor) => {
-              const p = tutor.profile;
-              const name = getUserDisplayName(p);
-              const initial = getUserInitial(name);
-              const userEmail = user?.email?.toLowerCase();
-              const profileEmail = p.email?.toLowerCase();
-              const isCurrentUser = Boolean(
-                user &&
-                  (user.id === p.id ||
-                    (userEmail && profileEmail && userEmail === profileEmail))
-              );
-              const hasReviews = Boolean(tutor.statistics && tutor.statistics.total_reviews_received > 0);
-              const isCertifiedTutor = tutor.offeredSubjects.some((o) => o.is_verified);
-
-              return (
-                <div
-                  key={p.id}
-                  className="ia-card"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    padding: '20px',
-                    transition: 'box-shadow 0.15s ease',
-                    border: isCertifiedTutor ? '1.5px solid #bfdbfe' : undefined,
-                  }}
-                >
-                  <div>
-                    {tutor.recommendation&&<p className="ia-tutor-match-reason">{tutor.recommendation.reason}</p>}
-                    {/* Cabecera del tutor */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                      {p.avatar_url ? (
-                        <img
-                          src={p.avatar_url}
-                          alt={name}
-                          style={{
-                            width: '54px',
-                            height: '54px',
-                            borderRadius: '14px',
-                            objectFit: 'cover',
-                            border: isCertifiedTutor ? '2px solid #3b82f6' : '2px solid #e2e8f0',
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: '54px',
-                            height: '54px',
-                            borderRadius: '14px',
-                            background: isCertifiedTutor
-                              ? 'linear-gradient(135deg, #1d4ed8, #1e40af)'
-                              : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                            color: '#ffffff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 800,
-                            fontSize: '1.25rem',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {initial}
-                        </div>
-                      )}
-
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          <Link
-                            to={`/profile/${p.id}`}
-                            style={{
-                              fontSize: '1.05rem',
-                              fontWeight: 800,
-                              color: '#0f172a',
-                              textDecoration: 'none',
-                            }}
-                          >
-                            {name}
-                          </Link>
-                          {isCurrentUser && (
-                            <span style={{ fontSize: '0.72rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '9999px', fontWeight: 800 }}>
-                              Tú (Tutor Activo)
-                            </span>
-                          )}
-                          {isCertifiedTutor && (
-                            <span
-                              style={{
-                                fontSize: '0.70rem',
-                                backgroundColor: '#ecfdf5',
-                                color: '#065f46',
-                                border: '1px solid #a7f3d0',
-                                padding: '2px 7px',
-                                borderRadius: '9999px',
-                                fontWeight: 800,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                              }}
-                              title="Materia acreditada mediante evaluación o revisión de respaldo académico"
-                            >
-                              <ShieldCheckIcon size={12} color="#059669" />
-                              Materia acreditada
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px' }}>
-                          {p.career || 'Carrera no especificada'}
-                          {p.institution ? ` • ${p.institution}` : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Resumen de Reputación */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: '#f8fafc',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                        marginBottom: '14px',
-                        fontSize: '0.82rem',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <StarIcon size={16} color={hasReviews ? '#eab308' : '#94a3b8'} />
-                        <span style={{ fontWeight: 700, color: hasReviews ? '#0f172a' : '#64748b' }}>
-                          {hasReviews && tutor.statistics
-                            ? `${Number(tutor.statistics.overall_rating).toFixed(1)} / 10`
-                            : 'Aún sin evaluaciones'}
-                        </span>
-                        {hasReviews && tutor.statistics && (
-                          <span style={{ color: '#64748b', fontSize: '0.76rem' }}>
-                            ({tutor.statistics.total_reviews_received} {tutor.statistics.total_reviews_received === 1 ? 'evaluación' : 'evaluaciones'})
-                          </span>
-                        )}
-                      </div>
-
-                      {tutor.badges.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#2563eb', fontWeight: 600 }}>
-                          <AwardIcon size={14} color="#2563eb" />
-                          <span>{tutor.badges.length} {tutor.badges.length === 1 ? 'insignia' : 'insignias'}</span>
-                        </div>
-                      )}
-                      {tutor.inclusiveAccredited && (
-                        <span
-                          style={{
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            padding: '3px 8px',
-                            borderRadius: '999px',
-                            backgroundColor: '#f0fdfa',
-                            color: '#0f766e',
-                            border: '1px solid #99f6e4',
-                          }}
-                        >
-                          Tutor con formación en acompañamiento inclusivo
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Materias que Enseña */}
-                    <div style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
-                        Materias que ofrece:
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {tutor.offeredSubjects.map((item) => (
-                          <div
-                            key={item.subject_id}
-                            style={{
-                              background: item.is_verified ? '#f0fdf4' : '#eff6ff',
-                              border: `1px solid ${item.is_verified ? '#bbf7d0' : '#bfdbfe'}`,
-                              borderRadius: '6px',
-                              padding: '4px 8px',
-                              fontSize: '0.78rem',
-                              color: item.is_verified ? '#166534' : '#1e40af',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                            }}
-                          >
-                            {item.is_verified && <ShieldCheckIcon size={12} color="#16a34a" />}
-                            <strong>{item.subject?.name}</strong>
-                            <span style={{ color: item.is_verified ? '#15803d' : '#3b82f6', fontSize: '0.72rem' }}>
-                              ({formatAcademicLevel(item.level)})
-                            </span>
-                            {item.is_verified && (
-                              <span
-                                style={{
-                                  fontSize: '0.66rem',
-                                  background: '#dcfce7',
-                                  color: '#15803d',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  fontWeight: 700,
-                                }}
-                              >
-                                Aprobado
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Descripción o enfoque si existe */}
-                    {p.bio && (
-                      <p
-                        style={{
-                          fontSize: '0.82rem',
-                          color: '#475569',
-                          margin: '0 0 16px 0',
-                          lineHeight: 1.4,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {p.bio}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Botón de acción */}
-                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', marginTop: '10px' }}>
-                    {isCurrentUser ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <span
-                          style={{
-                            display: 'block',
-                            textAlign: 'center',
-                            fontSize: '0.82rem',
-                            fontWeight: 700,
-                            color: '#2563eb',
-                            background: '#eff6ff',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #bfdbfe',
-                          }}
-                        >
-                          Este es tu perfil público de tutor
-                        </span>
-                        <Link
-                          to="/profile?tab=tutoring"
-                          className="ia-btn-secondary"
-                          style={{
-                            width: '100%',
-                            justifyContent: 'center',
-                            fontSize: '0.84rem',
-                            padding: '8px',
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                          }}
-                        >
-                          <BookOpenIcon size={14} /> Gestionar mis Materias y Disponibilidad
-                        </Link>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRequest(tutor)}
-                        className="ia-btn-primary"
-                        style={{ width: '100%', justifyContent: 'center' }}
-                      >
-                        Solicitar Tutoría
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        </div>
-      )}
-
-      {/* 2. SECCIÓN: TALLERES Y CLASES EN VIVO */}
-      {activeTab === 'workshops' && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-            <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <VideoIcon size={20} color="#7c3aed" />
-                Talleres y Clases Grupales ({workshops.length})
-              </h2>
-              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                Sesiones programadas con enlace al Aula Virtual integrado. Inscríbete con anticipación para asegurar tu lugar.
-              </span>
-            </div>
+            <span style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted)' }}>
+              Estudiantes con disponibilidad activa para enseñar
+            </span>
           </div>
 
           {errorMsg && (
             <div
               style={{
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
-                color: '#b91c1c',
+                background: 'var(--ia-danger-bg)',
+                border: '1px solid var(--ia-danger-border)',
+                color: 'var(--ia-danger)',
                 padding: '14px',
                 borderRadius: '12px',
                 marginBottom: '20px',
@@ -1197,14 +766,329 @@ export default function TutoringExplore() {
                 gap: '10px',
               }}
             >
-              <AlertCircleIcon size={20} color="#b91c1c" />
+              <AlertCircleIcon size={20} color="currentColor" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="ia-card" style={{ padding: '48px 20px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--ia-text-muted)', fontSize: '0.95rem', margin: 0 }}>Cargando tutores disponibles...</p>
+            </div>
+          ) : tutors.length === 0 ? (
+            <div className="ia-card">
+              <EmptyState
+                style={{ padding: '48px 20px' }}
+                icon={<UsersIcon size={32} color="var(--ia-primary)" />}
+                title="No se encontraron tutores disponibles"
+                description={
+                  selectedSubjectId !== 'all' || searchTerm
+                    ? 'No hay tutores disponibles que coincidan con los criterios seleccionados. Prueba buscando otra materia o quitando los filtros.'
+                    : 'Aún no hay estudiantes con disponibilidad activa y materias ofrecidas en la plataforma.'
+                }
+                action={
+                  selectedSubjectId !== 'all' || searchTerm ? (
+                    <button
+                      type="button"
+                      className="ia-btn-secondary"
+                      onClick={() => {
+                        setSelectedSubjectId('all');
+                        setSearchTerm('');
+                      }}
+                    >
+                      Restablecer filtros
+                    </button>
+                  ) : (
+                    <Link to="/profile?tab=tutoring" className="ia-btn-primary">
+                      Ofrecer mis materias en mi perfil
+                    </Link>
+                  )
+                }
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 310px), 1fr))',
+                gap: '18px',
+              }}
+            >
+              {tutors.map((tutor) => {
+                const p = tutor.profile;
+                const name = getUserDisplayName(p);
+                const initial = getUserInitial(name);
+                const userEmail = user?.email?.toLowerCase();
+                const profileEmail = p.email?.toLowerCase();
+                const isCurrentUser = Boolean(
+                  user &&
+                    (user.id === p.id ||
+                      (userEmail && profileEmail && userEmail === profileEmail))
+                );
+                const hasReviews = Boolean(tutor.statistics && tutor.statistics.total_reviews_received > 0);
+                const isCertifiedTutor = tutor.offeredSubjects.some((o) => o.is_verified);
+                const primarySubjects = tutor.offeredSubjects.slice(0, 3);
+                const extraSubjects = tutor.offeredSubjects.slice(3);
+
+                return (
+                  <div
+                    key={p.id}
+                    className="ia-card"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      padding: '20px',
+                      marginBottom: 0,
+                      borderColor: isCertifiedTutor ? 'var(--ia-primary-border)' : undefined,
+                    }}
+                  >
+                    <div>
+                      {tutor.recommendation && (
+                        <p className="ia-tutor-match-reason">{tutor.recommendation.reason}</p>
+                      )}
+                      {/* Cabecera del tutor */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                        {p.avatar_url ? (
+                          <img
+                            src={p.avatar_url}
+                            alt={name}
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '12px',
+                              objectFit: 'cover',
+                              border: `2px solid ${isCertifiedTutor ? 'var(--ia-primary)' : 'var(--ia-border)'}`,
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '50px',
+                              height: '50px',
+                              borderRadius: '12px',
+                              background: 'var(--ia-primary)',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '1.15rem',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {initial}
+                          </div>
+                        )}
+
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <Link
+                              to={`/profile/${p.id}`}
+                              style={{
+                                fontSize: '1.02rem',
+                                fontWeight: 800,
+                                color: 'var(--ia-text-main)',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              {name}
+                            </Link>
+                            {isCurrentUser && (
+                              <span className="ia-badge ia-badge-blue">Tú</span>
+                            )}
+                            {isCertifiedTutor && (
+                              <span
+                                className="ia-badge ia-badge-success"
+                                title="Materia acreditada mediante evaluación o revisión de respaldo académico"
+                              >
+                                <ShieldCheckIcon size={12} /> Acreditado
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ fontSize: '0.8rem', color: 'var(--ia-text-muted)', marginTop: '2px' }}>
+                            {p.career || 'Carrera no especificada'}
+                            {p.institution ? ` · ${p.institution}` : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Resumen compacto de reputación */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '6px',
+                          background: 'var(--ia-bg-subtle)',
+                          padding: '7px 11px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--ia-border)',
+                          marginBottom: '12px',
+                          fontSize: '0.8rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <StarIcon size={15} color={hasReviews ? '#eab308' : 'var(--ia-text-light)'} />
+                          <span style={{ fontWeight: 700, color: hasReviews ? 'var(--ia-text-main)' : 'var(--ia-text-muted)' }}>
+                            {hasReviews && tutor.statistics
+                              ? `${Number(tutor.statistics.overall_rating).toFixed(1)} / 10`
+                              : 'Nuevo tutor'}
+                          </span>
+                          {hasReviews && tutor.statistics && (
+                            <span style={{ color: 'var(--ia-text-muted)', fontSize: '0.74rem' }}>
+                              ({tutor.statistics.total_reviews_received})
+                            </span>
+                          )}
+                        </div>
+
+                        {tutor.inclusiveAccredited ? (
+                          <span className="ia-badge ia-badge-success" style={{ fontSize: '0.7rem' }}>
+                            Acompañamiento inclusivo
+                          </span>
+                        ) : tutor.badges.length > 0 ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--ia-primary)', fontWeight: 600 }}>
+                            <AwardIcon size={13} color="currentColor" />
+                            <span>{tutor.badges.length}</span>
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {/* Materias ofrecidas (hasta 3 visibles + resto bajo demanda) */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {primarySubjects.map((item) => (
+                            <span
+                              key={item.subject_id}
+                              style={{
+                                background: item.is_verified ? 'var(--ia-success-bg)' : 'var(--ia-primary-subtle)',
+                                border: `1px solid ${item.is_verified ? 'var(--ia-success-border)' : 'var(--ia-primary-border)'}`,
+                                borderRadius: '6px',
+                                padding: '4px 8px',
+                                fontSize: '0.76rem',
+                                color: item.is_verified ? 'var(--ia-success)' : 'var(--ia-primary)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {item.is_verified && <ShieldCheckIcon size={12} color="currentColor" />}
+                              <span>{item.subject?.name}</span>
+                              <span style={{ opacity: 0.82, fontWeight: 500, fontSize: '0.7rem' }}>
+                                · {formatAcademicLevel(item.level)}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+
+                        {extraSubjects.length > 0 && (
+                          <details style={{ marginTop: '6px' }}>
+                            <summary style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--ia-primary)', cursor: 'pointer' }}>
+                              Ver {extraSubjects.length} {extraSubjects.length === 1 ? 'materia más' : 'materias más'}
+                            </summary>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                              {extraSubjects.map((item) => (
+                                <span
+                                  key={item.subject_id}
+                                  className="ia-badge ia-badge-neutral"
+                                >
+                                  {item.subject?.name} ({formatAcademicLevel(item.level)})
+                                </span>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+
+                      {p.bio && (
+                        <p
+                          style={{
+                            fontSize: '0.82rem',
+                            color: 'var(--ia-text-body)',
+                            margin: '0 0 12px 0',
+                            lineHeight: 1.45,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {p.bio}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Acción principal */}
+                    <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '12px', marginTop: '6px' }}>
+                      {isCurrentUser ? (
+                        <Link
+                          to="/profile?tab=tutoring"
+                          className="ia-btn-secondary"
+                          style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                          <BookOpenIcon size={14} />
+                          <span>Gestionar mis materias</span>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenRequest(tutor)}
+                          className="ia-btn-primary"
+                          style={{ width: '100%', justifyContent: 'center' }}
+                        >
+                          Solicitar tutoría
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2. SECCIÓN: TALLERES Y CLASES EN VIVO */}
+      {activeTab === 'workshops' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.18rem', fontWeight: 800, margin: 0, color: 'var(--ia-text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <VideoIcon size={19} color="var(--ia-primary)" />
+                Talleres y clases grupales ({workshops.length})
+              </h2>
+              <span style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted)' }}>
+                Sesiones programadas con enlace al Aula Virtual integrado.
+              </span>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div
+              style={{
+                background: 'var(--ia-danger-bg)',
+                border: '1px solid var(--ia-danger-border)',
+                color: 'var(--ia-danger)',
+                padding: '14px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <AlertCircleIcon size={20} color="currentColor" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {workshopsLoading ? (
-            <div className="ia-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0 }}>Cargando talleres y clases grupales en vivo...</p>
+            <div className="ia-card" style={{ padding: '48px 20px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--ia-text-muted)', fontSize: '0.95rem', margin: 0 }}>Cargando talleres y clases grupales en vivo...</p>
             </div>
           ) : workshops.length === 0 ? (
             <div className="ia-card">
@@ -1293,7 +1177,7 @@ export default function TutoringExplore() {
       {/* 4. SECCIÓN: QUIZZES Y RETOS IA ADAPTATIVOS POR INTERESES */}
       {activeTab === 'quizzes' && (
         <div style={{ marginTop: '12px' }}>
-          <AdaptiveQuizHub isCalmMode={isCalmMode} />
+          <AdaptiveQuizHub />
         </div>
       )}
 

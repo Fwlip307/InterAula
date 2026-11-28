@@ -645,222 +645,128 @@ export default function ProfileView() {
       {/* ========================================================================= */}
       {activeTab === 'tutoring' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* GUÍA PASO A PASO PARA CERTIFICARSE COMO TUTOR */}
-          <div
-            className="ia-card"
-            style={{
-              padding: '24px',
-              backgroundColor: 'var(--ia-bg-card, #ffffff)',
-              border: '1.5px solid var(--ia-success-border, #bbf7d0)',
-              borderRadius: '16px',
-              boxShadow: '0 2px 8px rgba(22, 163, 74, 0.06)',
-            }}
+          {/* GUÍA DESPLEGABLE PARA CERTIFICARSE COMO TUTOR */}
+          <details
+            className="ia-card ia-accreditation-guide-disclosure"
+            open={accreditedSubjects.length === 0 && !isProfileInstitutionComplete}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
+            <summary className="ia-accreditation-guide-summary">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span
                   style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '10px',
-                    backgroundColor: 'var(--ia-success-bg, #dcfce7)',
-                    display: 'flex',
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '9px',
+                    backgroundColor: 'var(--ia-success-bg)',
+                    display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--ia-success, #15803d)',
+                    color: 'var(--ia-success)',
+                    flexShrink: 0,
                   }}
                 >
-                  <ShieldCheckIcon size={22} />
-                </div>
+                  <ShieldCheckIcon size={19} />
+                </span>
                 <div>
-                  <h2 style={{ fontSize: '1.22rem', fontWeight: 800, color: 'var(--ia-text-main, #0f172a)', margin: 0 }}>
-                    ¿Cómo Certificarme como Tutor en InterAula?
-                  </h2>
-                  <p style={{ fontSize: '0.86rem', color: 'var(--ia-text-muted, #64748b)', margin: '2px 0 0' }}>
-                    Guía oficial paso a paso para acreditar tus conocimientos y ser reconocido en la comunidad universitaria.
-                  </p>
+                  <strong style={{ fontSize: '1.02rem', color: 'var(--ia-text-main)', display: 'block' }}>
+                    ¿Cómo certificarme como tutor en InterAula?
+                  </strong>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--ia-text-muted)' }}>
+                    Revisa los 4 pasos y beneficios cuando lo necesites
+                  </span>
                 </div>
               </div>
+              <span className="ia-badge ia-badge-success">Guía en 4 pasos</span>
+            </summary>
 
-              <span
-                style={{
-                  fontSize: '0.76rem',
-                  fontWeight: 800,
-                  backgroundColor: 'var(--ia-success-bg, #ecfdf5)',
-                  color: 'var(--ia-success, #065f46)',
-                  border: '1px solid var(--ia-success-border, #a7f3d0)',
-                  padding: '4px 12px',
-                  borderRadius: '9999px',
-                }}
-              >
-                Proceso Oficial en 4 Pasos
-              </span>
-            </div>
-
-            {/* Grilla de los 4 pasos */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '14px',
-                marginBottom: '16px',
-              }}
-            >
-              {/* Paso 1 */}
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--ia-border)' }}>
               <div
                 style={{
-                  background: 'var(--ia-bg-subtle, #f8fafc)',
-                  border: '1px solid var(--ia-border, #e2e8f0)',
-                  borderRadius: '12px',
-                  padding: '16px',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+                  gap: '12px',
+                  marginBottom: '12px',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span
+                {[
+                  {
+                    step: '1',
+                    title: 'Identificación académica',
+                    desc: 'Completa tu Institución y Carrera en tus datos personales.',
+                  },
+                  {
+                    step: '2',
+                    title: 'Elige tu asignatura',
+                    desc: 'Selecciona del catálogo la materia cursada que deseas enseñar.',
+                  },
+                  {
+                    step: '3',
+                    title: 'Evaluación IA o respaldo',
+                    desc: 'Aprueba la evaluación del asistente en pantalla completa o sube respaldo.',
+                  },
+                  {
+                    step: '4',
+                    title: 'Activa disponibilidad',
+                    desc: 'Recibe solicitudes entre pares o programa talleres grupales.',
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.step}
                     style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      background: '#2563eb',
-                      color: '#ffffff',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      background: 'var(--ia-bg-subtle)',
+                      border: '1px solid var(--ia-border)',
+                      borderRadius: '10px',
+                      padding: '13px 14px',
                     }}
                   >
-                    1
-                  </span>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Identificación Académica</strong>
-                </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
-                  Configura tu <strong>Institución</strong> (ej: Duoc UC) y tu <strong>Carrera</strong> en tus datos personales para desbloquear la habilitación.
-                </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                      <span
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          background: 'var(--ia-primary)',
+                          color: '#ffffff',
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.step}
+                      </span>
+                      <strong style={{ fontSize: '0.88rem', color: 'var(--ia-text-main)' }}>{item.title}</strong>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--ia-text-body)', margin: 0, lineHeight: 1.45 }}>
+                      {item.desc}
+                    </p>
+                  </div>
+                ))}
               </div>
 
-              {/* Paso 2 */}
               <div
                 style={{
-                  background: 'var(--ia-bg-subtle, #f8fafc)',
-                  border: '1px solid var(--ia-border, #e2e8f0)',
-                  borderRadius: '12px',
-                  padding: '16px',
+                  background: 'var(--ia-success-bg)',
+                  border: '1px solid var(--ia-success-border)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.82rem',
+                  color: 'var(--ia-success)',
+                  fontWeight: 600,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      background: '#16a34a',
-                      color: '#ffffff',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    2
-                  </span>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Selecciona tu Materia</strong>
-                </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
-                  Elige una o más materias de tu malla curricular que hayas cursado y aprobado con buen rendimiento para impartir.
-                </p>
-              </div>
-
-              {/* Paso 3 */}
-              <div
-                style={{
-                  background: 'var(--ia-bg-subtle, #f8fafc)',
-                  border: '1px solid var(--ia-border, #e2e8f0)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      background: '#d97706',
-                      color: '#ffffff',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    3
-                  </span>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Certificado de Notas (PDF)</strong>
-                </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
-                  Sube tu <strong>Certificado Académico oficial en PDF</strong> para que el sistema extraiga y valide curricularmente tu aprobación.
-                </p>
-              </div>
-
-              {/* Paso 4 */}
-              <div
-                style={{
-                  background: 'var(--ia-bg-subtle, #f8fafc)',
-                  border: '1px solid var(--ia-border, #e2e8f0)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      background: '#7c3aed',
-                      color: '#ffffff',
-                      fontSize: '0.78rem',
-                      fontWeight: 800,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    4
-                  </span>
-                  <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main, #0f172a)' }}>Evaluación IA o Docente</strong>
-                </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--ia-text-body, #64748b)', margin: 0, lineHeight: 1.45 }}>
-                  Rinde la prueba técnica interactiva con el <strong>Asistente IA</strong> en tiempo real o solicita el respaldo directo de tu profesor.
-                </p>
-              </div>
-            </div>
-
-            {/* Beneficios obtenidos */}
-            <div
-              style={{
-                background: 'var(--ia-success-bg, #f0fdf4)',
-                border: '1px solid var(--ia-success-border, #bbf7d0)',
-                borderRadius: '10px',
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '10px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: '#166534', fontWeight: 600 }}>
-                <CheckIcon size={16} color="#16a34a" />
+                <CheckIcon size={16} color="currentColor" />
                 <span>
-                  Al certificarte obtienes la <strong>Insignia de Tutor Verificado</strong>, apareces en el catálogo para recibir alumnos y puedes crear talleres grupales.
+                  Al certificarte obtienes la insignia de Tutor Verificado y apareces en el catálogo de tutorías.
                 </span>
               </div>
             </div>
-          </div>
+          </details>
           {/* Tarjeta de Disponibilidad para Tutorías (Solo visible si ya tiene materias acreditadas) */}
           {accreditedSubjects.length > 0 && (
             <div
@@ -913,8 +819,8 @@ export default function ProfileView() {
           {!isProfileInstitutionComplete ? (
             <div
               style={{
-                backgroundColor: '#fffbeb',
-                border: '1.5px solid #fde68a',
+                backgroundColor: 'var(--ia-amber-bg)',
+                border: '1.5px solid var(--ia-amber-border)',
                 borderRadius: '16px',
                 padding: '18px 22px',
                 display: 'flex',
@@ -930,22 +836,23 @@ export default function ProfileView() {
                     width: '42px',
                     height: '42px',
                     borderRadius: '12px',
-                    backgroundColor: '#fef3c7',
+                    backgroundColor: 'var(--ia-bg-card)',
+                    border: '1px solid var(--ia-amber-border)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#d97706',
+                    color: 'var(--ia-amber)',
                     flexShrink: 0,
                   }}
                 >
                   <LockIcon size={22} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#92400e', marginBottom: '2px' }}>
-                    Identificación Académica Requerida para Habilitarte como Tutor
+                  <div style={{ fontWeight: 800, fontSize: '0.98rem', color: 'var(--ia-text-main)', marginBottom: '2px' }}>
+                    Identificación académica requerida para habilitarte como tutor
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.84rem', color: '#b45309', lineHeight: 1.45 }}>
-                    Para rendir la evaluación del Asistente o tramitar respaldo docente oficial en InterAula, es necesario que indiques previamente tu <strong>Institución de Educación Superior</strong> y tu <strong>Carrera</strong> en tu perfil personal.
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--ia-text-body)', lineHeight: 1.45 }}>
+                    Indica previamente tu <strong>Institución de Educación Superior</strong> y tu <strong>Carrera</strong> en tu perfil personal.
                   </p>
                 </div>
               </div>
@@ -957,13 +864,6 @@ export default function ProfileView() {
                   setIsEditingPersonal(true);
                 }}
                 className="ia-btn-primary"
-                style={{
-                  padding: '9px 18px',
-                  fontSize: '0.84rem',
-                  fontWeight: 800,
-                  background: '#d97706',
-                  borderColor: '#b45309',
-                }}
               >
                 Completar mi Institución y Carrera
               </button>
@@ -971,8 +871,8 @@ export default function ProfileView() {
           ) : (
             <div
               style={{
-                backgroundColor: '#f0fdf4',
-                border: '1.5px solid #86efac',
+                backgroundColor: 'var(--ia-success-bg)',
+                border: '1.5px solid var(--ia-success-border)',
                 borderRadius: '14px',
                 padding: '12px 18px',
                 display: 'flex',
@@ -988,36 +888,27 @@ export default function ProfileView() {
                     width: '32px',
                     height: '32px',
                     borderRadius: '8px',
-                    backgroundColor: '#dcfce7',
+                    backgroundColor: 'var(--ia-bg-card)',
+                    border: '1px solid var(--ia-success-border)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#16a34a',
+                    color: 'var(--ia-success)',
                     flexShrink: 0,
                   }}
                 >
                   <CheckIcon size={18} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--ia-success)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Perfil académico completo
                   </div>
-                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--ia-text-main)' }}>
                     {profile?.institution} · {profile?.career}
                   </div>
                 </div>
               </div>
-              <span
-                style={{
-                  backgroundColor: '#dcfce7',
-                  color: '#166534',
-                  border: '1px solid #86efac',
-                  padding: '3px 10px',
-                  borderRadius: '12px',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                }}
-              >
+              <span className="ia-badge ia-badge-success">
                 Habilitación Desbloqueada
               </span>
             </div>

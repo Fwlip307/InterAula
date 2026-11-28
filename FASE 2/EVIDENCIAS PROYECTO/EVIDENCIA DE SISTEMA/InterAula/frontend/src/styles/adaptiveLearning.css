@@ -18,19 +18,27 @@
 .ia-adaptive-caption,.ia-adaptive-map-help {font-size:.8rem;color:var(--ia-text-secondary,#62718a);line-height:1.7;}
 .ia-adaptive-path {font-size:.82rem;padding:10px 12px;background:var(--ia-bg-body,#f7f9fc);border-radius:8px;}
 .ia-adaptive-practice {margin-bottom:22px;}
-.ia-adaptive-practice-top {display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:.85rem;color:var(--ia-text-secondary,#62718a);}
+.ia-adaptive-practice-top {display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:.85rem;color:var(--ia-text-secondary,#62718a);flex-wrap:wrap;}
+.ia-adaptive-skill-meta {display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ia-adaptive-skill-progress {padding:3px 10px;border-radius:999px;background:var(--adaptive-soft);border:1px solid var(--ia-primary-border,#bfdbfe);color:var(--adaptive-accent);font-size:.76rem;font-weight:700;}
 .ia-adaptive-practice-top label {display:flex;align-items:center;gap:8px;}
 .ia-adaptive-practice h3 {font-size:1.2rem;margin:20px 0;outline-offset:5px;}
-.ia-adaptive-prompt {font-size:1.35rem;line-height:1.8!important;margin:18px 0;}
-.ia-adaptive-practice fieldset {min-width:0;padding:0;border:0;margin:20px 0;display:flex;flex-direction:column;gap:10px;}
-.ia-adaptive-practice legend {font-size:.85rem;margin-bottom:10px;}
-.ia-adaptive-option {display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;cursor:pointer;min-height:46px;box-sizing:border-box;line-height:1.6;}
-.ia-adaptive-option input {accent-color:var(--adaptive-accent);width:17px;height:17px;flex-shrink:0;}
-.ia-adaptive-option[data-selected=true] {border-color:var(--adaptive-accent);background:var(--adaptive-soft);}
-.ia-adaptive-option:focus-within {outline:2px solid var(--adaptive-accent);outline-offset:2px;}
+.ia-adaptive-prompt {font-size:1.35rem;line-height:1.8!important;margin:18px 0;font-weight:700;}
+.ia-adaptive-practice fieldset {min-width:0;padding:0;border:0;margin:20px 0;display:flex;flex-direction:column;gap:12px;}
+.ia-adaptive-practice legend {font-size:.85rem;margin-bottom:10px;font-weight:700;}
+.ia-adaptive-option {position:relative;display:flex;align-items:center;gap:14px;padding:15px 18px;border:2px solid var(--ia-border,#dce4ef);border-radius:14px;background:var(--ia-bg-card,#fff);box-shadow:0 3px 0 var(--ia-border,#dce4ef);cursor:pointer;min-height:58px;box-sizing:border-box;line-height:1.6;transition:transform .14s ease,border-color .14s ease,background-color .14s ease,box-shadow .14s ease;}
+.ia-adaptive-option:hover {transform:translateY(-2px);border-color:var(--ia-primary-border,#93c5fd);background:var(--ia-bg-subtle,#f8fafc);}
+.ia-adaptive-option input {position:absolute;opacity:0;width:1px;height:1px;}
+.ia-adaptive-option-letter {width:32px;height:32px;border-radius:9px;border:1.5px solid var(--ia-border-strong,#cbd5e1);background:var(--ia-bg-subtle,#f1f5f9);color:var(--ia-text-main,#17233b);font-size:.84rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:background-color .14s ease,color .14s ease,border-color .14s ease;}
+.ia-adaptive-option-text {flex:1;font-weight:600;}
+.ia-adaptive-option[data-selected=true] {border-color:var(--adaptive-accent);background:var(--adaptive-soft);box-shadow:0 3px 0 var(--adaptive-accent);}
+.ia-adaptive-option[data-selected=true] .ia-adaptive-option-letter {background:var(--adaptive-accent);border-color:var(--adaptive-accent);color:#fff;}
+.ia-adaptive-option:focus-within {outline:3px solid var(--adaptive-accent);outline-offset:2px;}
 .ia-adaptive-actions {display:flex;gap:10px;flex-wrap:wrap;}
 .ia-adaptive button,.ia-adaptive a {max-width:100%;box-sizing:border-box;}
-.ia-adaptive-hint,.ia-adaptive-notice,.ia-adaptive-feedback {background:var(--ia-bg-body,#f5f8fc);padding:16px 18px;border:1px solid var(--ia-border,#dce4ef);border-radius:12px;margin:18px 0;}
+.ia-adaptive-hint,.ia-adaptive-notice,.ia-adaptive-feedback {background:var(--ia-bg-body,#f5f8fc);padding:16px 18px;border:1.5px solid var(--ia-border,#dce4ef);border-radius:14px;margin:18px 0;}
+.ia-adaptive-feedback[data-correct=true] {background:var(--ia-success-bg,#f0fdf4);border-color:var(--ia-success-border,#bbf7d0);}
+.ia-adaptive-feedback[data-correct=false] {background:var(--ia-amber-bg,#fffbeb);border-color:var(--ia-amber-border,#fde68a);}
 .ia-adaptive-hint small {font-size:.8rem;}
 .ia-adaptive-feedback p {margin-top:0;}
 .ia-adaptive-map-card {margin-bottom:22px;}

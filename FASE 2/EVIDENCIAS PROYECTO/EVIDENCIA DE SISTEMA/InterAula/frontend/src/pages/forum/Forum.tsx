@@ -3,7 +3,6 @@ import ReportLink from '../../components/common/ReportLink';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useCalmMode } from '../../context/CalmModeContext';
 import {
   forumService,
   type ForumQuestion,
@@ -34,11 +33,11 @@ const CATEGORIES = [
   'General',
 ];
 
-const POST_TYPE_LABELS: Record<ForumPostType, { label: string; bg: string; color: string; border: string }> = {
-  pregunta: { label: 'Pregunta', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-  duda: { label: 'Duda puntual', bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
-  discusion: { label: 'Debate académico', bg: '#faf5ff', color: '#7e22ce', border: '#e9d5ff' },
-  recurso: { label: 'Aporte / Recurso', bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+const POST_TYPE_LABELS: Record<ForumPostType, { label: string; badgeClass: string }> = {
+  pregunta: { label: 'Pregunta', badgeClass: 'ia-badge-blue' },
+  duda: { label: 'Duda puntual', badgeClass: 'ia-badge-amber' },
+  discusion: { label: 'Debate académico', badgeClass: 'ia-badge-purple' },
+  recurso: { label: 'Aporte / Recurso', badgeClass: 'ia-badge-success' },
 };
 
 export default function Forum() {
@@ -46,7 +45,6 @@ export default function Forum() {
   const [recommendationParams] = useSearchParams();
   const recommendedPostId = recommendationParams.get('post');
   const navigationLocation=useLocation();
-  const { isCalmMode } = useCalmMode();
 
   const [questions, setQuestions] = useState<ForumQuestion[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -611,14 +609,7 @@ export default function Forum() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 {selectedPost.postType && POST_TYPE_LABELS[selectedPost.postType] && (
-                  <span
-                    className="ia-badge"
-                    style={{
-                      background: isCalmMode ? 'var(--ia-bg-subtle)' : POST_TYPE_LABELS[selectedPost.postType].bg,
-                      color: isCalmMode ? 'var(--ia-text-body)' : POST_TYPE_LABELS[selectedPost.postType].color,
-                      border: `1px solid ${isCalmMode ? 'var(--ia-border)' : POST_TYPE_LABELS[selectedPost.postType].border}`,
-                    }}
-                  >
+                  <span className={`ia-badge ${POST_TYPE_LABELS[selectedPost.postType].badgeClass}`}>
                     {POST_TYPE_LABELS[selectedPost.postType].label}
                   </span>
                 )}
@@ -922,10 +913,10 @@ export default function Forum() {
       ) : (
         /* VISTA LISTADO Y FILTROS */
         <>
-          <div className="ia-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <div className="ia-card ia-filter-bar-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+            <div className="ia-filter-primary-row">
               <div style={{ position: 'relative', flex: '1 1 260px' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ia-text-muted)' }}>
                   <SearchIcon size={16} />
                 </span>
                 <input
@@ -939,35 +930,23 @@ export default function Forum() {
               </div>
 
               <select
-                aria-label="Filtrar por tipo de publicación"
+                aria-label="Filtrar por categoría"
                 className="ia-select"
-                style={{ width: 'auto', minWidth: '150px' }}
-                value={selectedPostType}
-                onChange={(e) => setSelectedPostType(e.target.value)}
+                style={{ flex: '0 1 190px', minWidth: '155px' }}
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
               >
-                <option value="all">Todos los tipos</option>
-                <option value="pregunta">Preguntas</option>
-                <option value="duda">Dudas puntuales</option>
-                <option value="discusion">Debates</option>
-                <option value="recurso">Recursos / Aportes</option>
-              </select>
-
-              <select
-                aria-label="Filtrar por estado"
-                className="ia-select"
-                style={{ width: 'auto', minWidth: '145px' }}
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value as 'all' | 'open' | 'solved')}
-              >
-                <option value="all">Estado: Todas</option>
-                <option value="open">Abiertas</option>
-                <option value="solved">Resueltas</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat === 'Todas' ? 'Todas las categorías' : cat}
+                  </option>
+                ))}
               </select>
 
               <select
                 aria-label="Ordenar publicaciones"
                 className="ia-select"
-                style={{ width: 'auto', minWidth: '165px' }}
+                style={{ flex: '0 1 175px', minWidth: '150px' }}
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'recent' | 'popular' | 'activity')}
               >
@@ -977,19 +956,42 @@ export default function Forum() {
               </select>
             </div>
 
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={selectedCategory === cat ? 'ia-btn-primary' : 'ia-btn-secondary'}
-                  style={{ padding: '5px 12px', fontSize: '0.8rem' }}
+            <details
+              className="ia-filter-disclosure"
+              open={selectedPostType !== 'all' || selectedStatus !== 'all'}
+            >
+              <summary>
+                <span>Filtrar por tipo y estado</span>
+                {(selectedPostType !== 'all' || selectedStatus !== 'all') && (
+                  <span className="ia-badge ia-badge-blue">Activos</span>
+                )}
+              </summary>
+              <div className="ia-filter-secondary-row">
+                <select
+                  aria-label="Filtrar por tipo de publicación"
+                  className="ia-select"
+                  value={selectedPostType}
+                  onChange={(e) => setSelectedPostType(e.target.value)}
                 >
-                  {cat}
-                </button>
-              ))}
-            </div>
+                  <option value="all">Todos los tipos</option>
+                  <option value="pregunta">Preguntas</option>
+                  <option value="duda">Dudas puntuales</option>
+                  <option value="discusion">Debates</option>
+                  <option value="recurso">Recursos / Aportes</option>
+                </select>
+
+                <select
+                  aria-label="Filtrar por estado"
+                  className="ia-select"
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value as 'all' | 'open' | 'solved')}
+                >
+                  <option value="all">Estado: Todas</option>
+                  <option value="open">Abiertas</option>
+                  <option value="solved">Resueltas</option>
+                </select>
+              </div>
+            </details>
           </div>
 
           <div className="ia-content-grid">
@@ -1060,14 +1062,7 @@ export default function Forum() {
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                 {typeMeta && (
-                                  <span
-                                    className="ia-badge"
-                                    style={{
-                                      background: isCalmMode ? 'var(--ia-bg-subtle)' : typeMeta.bg,
-                                      color: isCalmMode ? 'var(--ia-text-body)' : typeMeta.color,
-                                      border: `1px solid ${isCalmMode ? 'var(--ia-border)' : typeMeta.border}`,
-                                    }}
-                                  >
+                                  <span className={`ia-badge ${typeMeta.badgeClass}`}>
                                     {typeMeta.label}
                                   </span>
                                 )}

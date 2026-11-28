@@ -53,16 +53,22 @@ export default function AdaptiveLearningPanel({userId}:{userId:string}){
     </aside>
    </div>
    {(exercise||feedback)&&<article data-orientation="adaptive-practice" className="ia-adaptive-practice" aria-busy={busy}>
-    <div className="ia-adaptive-practice-top"><span>{exerciseSkill?.name||data.skills.find(s=>s.id===feedback?.skillId)?.name}</span><label><input type="checkbox" checked={largeText} onChange={event=>setLargeText(event.target.checked)}/>Texto amplio</label></div>
+    <div className="ia-adaptive-practice-top">
+     <div className="ia-adaptive-skill-meta">
+      <strong>{exerciseSkill?.name||data.skills.find(s=>s.id===feedback?.skillId)?.name}</strong>
+      {exerciseSkill&&<span className="ia-adaptive-skill-progress">{exerciseSkill.distinctIndependentCorrect} / 3 hacia consolidación</span>}
+     </div>
+     <label><input type="checkbox" checked={largeText} onChange={event=>setLargeText(event.target.checked)}/>Texto amplio</label>
+    </div>
     <h3 ref={practiceHeading} tabIndex={-1}>{exercise?'Una pregunta a la vez':feedback?.correct?'Buen paso. Sigamos construyendo.':'Vamos a reforzarlo, sin prisa.'}</h3>
     {exercise?<form onSubmit={event=>{event.preventDefault();void submit();}}>
      <p className="ia-adaptive-prompt">{exercise.prompt}</p><ReadAloudControls compact text={[exercise.prompt,...exercise.options.map(option=>option.text)].join('. ')} label="Escuchar ejercicio"/>
-     <fieldset disabled={busy}><legend>Elige una alternativa</legend>{exercise.options.map(option=><label className="ia-adaptive-option" key={option.id} data-selected={answer===option.id}><input type="radio" name="adaptive-answer" value={option.id} checked={answer===option.id} onChange={()=>setAnswer(option.id)}/><span>{option.text}</span></label>)}</fieldset>
+     <fieldset disabled={busy}><legend>Elige una alternativa</legend>{exercise.options.map((option,idx)=><label className="ia-adaptive-option" key={option.id} data-selected={answer===option.id}><input type="radio" name="adaptive-answer" value={option.id} checked={answer===option.id} onChange={()=>setAnswer(option.id)}/><span className="ia-adaptive-option-letter" aria-hidden="true">{String.fromCharCode(65+idx)}</span><span className="ia-adaptive-option-text">{option.text}</span></label>)}</fieldset>
      {exercise.hint&&<div className="ia-adaptive-hint" role="status"><strong>Pista</strong><p>{exercise.hint}</p><small>Esta respuesta se registrará como práctica acompañada.</small></div>}
      <div className="ia-adaptive-actions"><button type="submit" className="ia-btn-primary" disabled={busy||!answer}>{busy?'Guardando…':'Comprobar respuesta'}</button>
       <button type="button" className="ia-btn-secondary" disabled={busy||exercise.hintUsed} onClick={()=>void hint()}>{exercise.hintUsed?'Pista consultada':'Necesito una pista'}</button>
       <button type="button" className="ia-btn-secondary" disabled={busy} onClick={()=>void submit('skip')}>No lo sé todavía</button></div>
-    </form>:feedback&&<div className="ia-adaptive-feedback" role="status"><p>{feedback.feedback}</p><p className="ia-adaptive-caption">{feedback.hintUsed?'Practicaste con apoyo. Para consolidar también harán falta respuestas sin pista.':'El motor actualizó la estimación con esta respuesta.'}</p><button type="button" className="ia-btn-primary" disabled={busy||next?.kind==='complete'} data-orientation="adaptive-start" onClick={()=>void start()}>{next?.kind==='complete'?'Objetivo consolidado':'Continuar con el siguiente paso'}</button></div>}
+    </form>:feedback&&<div className="ia-adaptive-feedback" data-correct={feedback.correct} role="status"><p>{feedback.feedback}</p><p className="ia-adaptive-caption">{feedback.hintUsed?'Practicaste con apoyo. Para consolidar también harán falta respuestas sin pista.':'El motor actualizó la estimación con esta respuesta.'}</p><button type="button" className="ia-btn-primary" disabled={busy||next?.kind==='complete'} data-orientation="adaptive-start" onClick={()=>void start()}>{next?.kind==='complete'?'Objetivo consolidado':'Continuar con el siguiente paso'}</button></div>}
    </article>}
    <section className="ia-adaptive-map-card"><h3><LayersIcon size={19}/> Mi mapa de conceptos</h3>
     <AdaptiveKnowledgeMap skills={data.skills} selected={selected} onSelect={setSelected}/>

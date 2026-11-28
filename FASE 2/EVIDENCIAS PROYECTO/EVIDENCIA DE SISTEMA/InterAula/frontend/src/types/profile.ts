@@ -126,6 +126,7 @@ export interface AccessibilityPreferences {
   readingRulerIntensity?: ReadingRulerIntensity;
   disableFlashing?: boolean;
   literalLanguage?: boolean;
+  visualOnboardingCompleted?: boolean;
 }
 
 export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferences = {
@@ -148,6 +149,7 @@ export const DEFAULT_ACCESSIBILITY_PREFERENCES: AccessibilityPreferences = {
   readingRulerIntensity: 'medium',
   disableFlashing: false,
   literalLanguage: false,
+  visualOnboardingCompleted: false,
 };
 
 export interface Profile {

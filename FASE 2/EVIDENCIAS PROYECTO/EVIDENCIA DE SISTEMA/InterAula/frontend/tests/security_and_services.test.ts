@@ -898,3 +898,186 @@ describe('Reorganización de navegación en 5 categorías y mensajería directa'
     assert.equal(searchNavigation('mensajeria')[0].href, '/messages');
   });
 });
+
+import {
+  VISUAL_STYLE_OPTIONS,
+  buildVisualStylePatch,
+  hasRemoteVisualPreference,
+  hasSavedVisualPreference,
+  resolveVisualStyleId,
+  shouldPromptVisualWelcome,
+} from '../src/utils/visualPreferences.ts';
+import {
+  buildQuizAnswerRecord,
+  computeCumulativeQuizStats,
+  summarizeQuizSession,
+} from '../src/utils/quizAnalytics.ts';
+import { accessibilityPreferencesSchema } from '../../backend/src/schemas/profile.schema.ts';
+
+describe('Bienvenida visual de primera entrada y sincronización de temas', () => {
+  it('incluye únicamente Claro, Oscuro y las 3 variantes reales de Calma con vistas previas completas', () => {
+    assert.deepEqual(
+      VISUAL_STYLE_OPTIONS.map((opt) => ({
+        id: opt.id,
+        category: opt.category,
+        name: opt.name,
+        calmTone: opt.calmTone,
+      })),
+      [
+        { id: 'light', category: 'light', name: 'Claro', calmTone: undefined },
+        { id: 'dark', category: 'dark', name: 'Oscuro', calmTone: undefined },
+        { id: 'calm-sage', category: 'calm', name: 'Salvia', calmTone: 'sage' },
+        { id: 'calm-sand', category: 'calm', name: 'Arena', calmTone: 'sand' },
+        { id: 'calm-dusk', category: 'calm', name: 'Crepúsculo', calmTone: 'dusk' },
+      ]
+    );
+
+    for (const option of VISUAL_STYLE_OPTIONS) {
+      assert.ok(option.preview.bgBody.startsWith('#'));
+      assert.ok(option.preview.bgCard.startsWith('#'));
+      assert.ok(option.preview.textMain.startsWith('#'));
+      assert.ok(option.preview.primaryBg.startsWith('#'));
+    }
+  });
+
+  it('muestra la bienvenida solo en el primer ingreso sin sobrescribir preferencias previas', () => {
+    assert.equal(
+      shouldPromptVisualWelcome({
+        hasUser: true,
+        hadLocalVisualChoiceOnBoot: false,
+        userLocalDone: false,
+        remotePrefs: null,
+      }),
+      true
+    );
+
+    assert.equal(
+      shouldPromptVisualWelcome({
+        hasUser: false,
+        hadLocalVisualChoiceOnBoot: false,
+        userLocalDone: false,
+        remotePrefs: null,
+      }),
+      false
+    );
+
+    assert.equal(
+      shouldPromptVisualWelcome({
+        hasUser: true,
+        hadLocalVisualChoiceOnBoot: true,
+        userLocalDone: false,
+        remotePrefs: null,
+      }),
+      false
+    );
+
+    assert.equal(
+      shouldPromptVisualWelcome({
+        hasUser: true,
+        hadLocalVisualChoiceOnBoot: false,
+        userLocalDone: true,
+        remotePrefs: null,
+      }),
+      false
+    );
+
+    assert.equal(
+      shouldPromptVisualWelcome({
+        hasUser: true,
+        hadLocalVisualChoiceOnBoot: false,
+        userLocalDone: false,
+        remotePrefs: { themeMode: 'calm', calmMode: true, calmTone: 'dusk' },
+      }),
+      false
+    );
+
+    assert.equal(hasSavedVisualPreference({ themeMode: 'light', calmMode: false, darkMode: false }), false);
+    assert.equal(hasSavedVisualPreference({ themeMode: 'light', visualOnboardingCompleted: true }), true);
+    assert.equal(hasSavedVisualPreference({ themeMode: 'dark', darkMode: true }), true);
+    assert.equal(hasRemoteVisualPreference({ themeMode: 'light' }), true);
+  });
+
+  it('resuelve parches visuales y valida esquema estricto de backend sin perder preferencias avanzadas', () => {
+    const duskOption = VISUAL_STYLE_OPTIONS.find((o) => o.id === 'calm-dusk')!;
+    const patch = buildVisualStylePatch(duskOption, {
+      fontSize: 'large',
+      warmFilter: true,
+      reduceMotion: false,
+    });
+    assert.equal(patch.themeMode, 'calm');
+    assert.equal(patch.calmMode, true);
+    assert.equal(patch.darkMode, false);
+    assert.equal(patch.calmTone, 'dusk');
+    assert.equal(patch.reduceMotion, true);
+    assert.equal(resolveVisualStyleId(patch), 'calm-dusk');
+
+    const valid = accessibilityPreferencesSchema.safeParse({
+      themeMode: 'calm',
+      calmMode: true,
+      calmTone: 'dusk',
+      emailClassReminders: true,
+      visualOnboardingCompleted: true,
+      warmFilter: false,
+    });
+    assert.equal(valid.success, true);
+
+    const invalid = accessibilityPreferencesSchema.safeParse({
+      themeMode: 'light',
+      injectedField: true,
+    });
+    assert.equal(invalid.success, false);
+  });
+});
+
+describe('Resumen real y analítica de cuestionarios gamificados', () => {
+  it('calcula precisión, racha, fortalezas y temas por reforzar sin estadísticas ficticias', () => {
+    const sampleQ1 = {
+      id: 'q-1',
+      subject: 'Programación de Algoritmos',
+      themeId: 'videojuegos',
+      themeLabel: 'Videojuegos',
+      analogyContext: 'Contexto 1',
+      prompt: '¿Qué estructura accede por índice O(1)?',
+      options: [
+        { id: 'a', text: 'Arreglo' },
+        { id: 'b', text: 'Lista sin índice' },
+      ],
+      correctOptionId: 'a',
+      hintStepByStep: 'Pista 1',
+      explanation: 'Los arreglos usan posiciones contiguas.',
+    };
+    const sampleQ2 = {
+      ...sampleQ1,
+      id: 'q-2',
+      prompt: '¿Qué evita un ciclo infinito en while?',
+      correctOptionId: 'b',
+      options: [
+        { id: 'a', text: 'No actualizar la condición' },
+        { id: 'b', text: 'Actualizar la variable de control hacia el caso de término' },
+      ],
+    };
+    const sampleQ3 = {
+      ...sampleQ1,
+      id: 'q-3',
+      prompt: '¿Para qué sirve validar bordes en un arreglo?',
+    };
+
+    const r1 = buildQuizAnswerRecord(sampleQ1, 'a', false);
+    const r2 = buildQuizAnswerRecord(sampleQ2, 'a', true);
+    const r3 = buildQuizAnswerRecord(sampleQ3, 'a', false);
+
+    const summary = summarizeQuizSession([r1, r2, r3], 3, 200, 'Programación de Algoritmos');
+    assert.equal(summary.answeredCount, 3);
+    assert.equal(summary.correctCount, 2);
+    assert.equal(summary.accuracyPercent, 67);
+    assert.equal(summary.bestStreak, 1);
+    assert.equal(summary.strengths.length, 2);
+    assert.equal(summary.toReinforce.length, 1);
+    assert.equal(summary.toReinforce[0].questionId, 'q-2');
+
+    const emptyCumulative = computeCumulativeQuizStats([]);
+    assert.equal(emptyCumulative.completedSessions, 0);
+    assert.equal(emptyCumulative.totalPracticePoints, 0);
+    assert.equal(emptyCumulative.averageAccuracyPercent, null);
+  });
+});

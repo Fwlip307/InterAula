@@ -1,0 +1,1031 @@
+/* ==========================================================================
+   InterAula — Sistema Visual de Cuestionarios Gamificados (DUA + Temas)
+   Usa exclusivamente tokens del sistema de diseño (--ia-*) para soportar
+   Claro, Oscuro, Calma (Salvia, Arena, Crepúsculo) y Filtro Cálido.
+   ========================================================================== */
+
+.ia-gquiz-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+/* Cabecera HUD del Laboratorio Gamificado */
+.ia-gquiz-hud {
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  border-radius: 16px;
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: var(--ia-shadow-sm);
+}
+
+.ia-gquiz-hud-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 64ch;
+}
+
+.ia-gquiz-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ia-primary);
+}
+
+.ia-gquiz-hud-copy h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+  font-weight: 800;
+  color: var(--ia-text-main);
+  letter-spacing: -0.015em;
+}
+
+.ia-gquiz-hud-copy p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ia-text-body);
+  line-height: 1.5;
+}
+
+.ia-gquiz-hud-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ia-gquiz-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--ia-bg-subtle);
+  border: 1px solid var(--ia-border);
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-stat-pill--accent {
+  background: var(--ia-primary-subtle);
+  border-color: var(--ia-primary-border);
+}
+
+.ia-gquiz-stat-pill--streak {
+  background: var(--ia-amber-bg);
+  border-color: var(--ia-amber-border);
+  color: var(--ia-amber);
+}
+
+.ia-gquiz-stat-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.ia-gquiz-stat-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ia-text-muted);
+}
+
+.ia-gquiz-stat-value {
+  font-size: 0.98rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ia-text-main);
+}
+
+/* Selector de modo de juego (evita mostrar 2 columnas gigantes a la vez) */
+.ia-gquiz-mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ia-gquiz-mode-tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--ia-bg-subtle);
+  border: 1px solid var(--ia-border);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ia-gquiz-mode-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ia-text-body);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-height: 40px;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.ia-gquiz-mode-tab:hover {
+  color: var(--ia-text-main);
+  background: var(--ia-bg-card);
+}
+
+.ia-gquiz-mode-tab.is-active {
+  background: var(--ia-bg-card);
+  border-color: var(--ia-border);
+  color: var(--ia-primary);
+  box-shadow: var(--ia-shadow-sm);
+}
+
+/* Configurador compacto de misión */
+.ia-gquiz-setup-card {
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ia-gquiz-setup-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ia-gquiz-step-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--ia-primary-subtle);
+  border: 1px solid var(--ia-primary-border);
+  color: var(--ia-primary);
+  font-size: 0.74rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ia-gquiz-subject-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ia-gquiz-subject-pill {
+  appearance: none;
+  border: 1.5px solid var(--ia-border);
+  background: var(--ia-bg-card);
+  color: var(--ia-text-body);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease, color 0.14s ease;
+}
+
+.ia-gquiz-subject-pill:hover {
+  border-color: var(--ia-primary-border);
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-subject-pill.is-selected {
+  background: var(--ia-primary-subtle);
+  border-color: var(--ia-primary);
+  color: var(--ia-primary);
+  font-weight: 700;
+}
+
+.ia-gquiz-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 195px), 1fr));
+  gap: 10px;
+}
+
+.ia-gquiz-theme-card {
+  appearance: none;
+  text-align: left;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ia-border);
+  background: var(--ia-bg-body);
+  color: var(--ia-text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ia-gquiz-theme-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--ia-primary-border);
+  background: var(--ia-bg-card);
+}
+
+.ia-gquiz-theme-card.is-selected {
+  border-color: var(--ia-primary);
+  background: var(--ia-primary-subtle);
+  box-shadow: 0 0 0 2px var(--ia-primary-subtle);
+}
+
+.ia-gquiz-theme-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  color: var(--ia-primary);
+  flex-shrink: 0;
+}
+
+.ia-gquiz-theme-title {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--ia-text-main);
+  line-height: 1.25;
+}
+
+.ia-gquiz-theme-desc {
+  font-size: 0.73rem;
+  color: var(--ia-text-muted);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.ia-gquiz-topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ia-gquiz-topic-chip {
+  appearance: none;
+  border: 1px solid var(--ia-border);
+  background: var(--ia-bg-subtle);
+  color: var(--ia-text-body);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.ia-gquiz-topic-chip:hover,
+.ia-gquiz-topic-chip.is-active {
+  background: var(--ia-primary-subtle);
+  border-color: var(--ia-primary);
+  color: var(--ia-primary);
+}
+
+.ia-gquiz-launch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ia-border);
+}
+
+.ia-gquiz-launch-cta {
+  min-height: 46px;
+  padding: 11px 24px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  border-radius: 12px;
+}
+
+/* ==========================================================================
+   Escenario Activo de Pregunta (Juego Educativo)
+   ========================================================================== */
+
+.ia-gquiz-arena {
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  border-radius: 18px;
+  padding: clamp(20px, 3vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: var(--ia-shadow);
+  animation: iaQuizStageIn 0.24s ease-out;
+}
+
+.ia-gquiz-progress-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ia-gquiz-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ia-gquiz-quest-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ia-gquiz-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ia-gquiz-progress-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--ia-bg-subtle);
+  border: 1px solid var(--ia-border);
+  overflow: hidden;
+}
+
+.ia-gquiz-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--ia-primary), var(--ia-primary-hover));
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ia-gquiz-step-nodes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ia-gquiz-step-node {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ia-border);
+  background: var(--ia-bg-body);
+  color: var(--ia-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ia-gquiz-step-node[data-status='current'] {
+  border-color: var(--ia-primary);
+  background: var(--ia-primary-subtle);
+  color: var(--ia-primary);
+  box-shadow: 0 0 0 3px var(--ia-primary-subtle);
+}
+
+.ia-gquiz-step-node[data-status='correct'] {
+  border-color: var(--ia-success);
+  background: var(--ia-success-bg);
+  color: var(--ia-success);
+}
+
+.ia-gquiz-step-node[data-status='incorrect'] {
+  border-color: var(--ia-amber);
+  background: var(--ia-amber-bg);
+  color: var(--ia-amber);
+}
+
+/* Bloque protagonista de la pregunta */
+.ia-gquiz-question-box {
+  background: var(--ia-bg-body);
+  border: 1px solid var(--ia-border);
+  border-radius: 14px;
+  padding: clamp(18px, 2.5vw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ia-gquiz-analogy-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--ia-primary-subtle);
+  border: 1px solid var(--ia-primary-border);
+  color: var(--ia-text-main);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.ia-gquiz-prompt {
+  margin: 0;
+  font-size: clamp(1.12rem, 2.1vw, 1.32rem);
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-code {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #1e293b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+
+/* Alternativas tipo fichas táctiles de juego educativo (6 estados definidos) */
+.ia-gquiz-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ia-gquiz-option {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid var(--ia-border);
+  background: var(--ia-bg-card);
+  color: var(--ia-text-main);
+  box-shadow: 0 3px 0 var(--ia-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  font: inherit;
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.ia-gquiz-option:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--ia-primary-border);
+  background: var(--ia-bg-subtle);
+  box-shadow: 0 4px 0 var(--ia-primary-border);
+}
+
+.ia-gquiz-option:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--ia-border);
+}
+
+.ia-gquiz-option:focus-visible {
+  outline: 3px solid var(--ia-primary);
+  outline-offset: 2px;
+}
+
+.ia-gquiz-option-key {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1.5px solid var(--ia-border-strong);
+  background: var(--ia-bg-subtle);
+  color: var(--ia-text-main);
+  font-size: 0.84rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.ia-gquiz-option-text {
+  flex: 1;
+  font-size: 0.93rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-option-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Estado seleccionado (previo a confirmar) */
+.ia-gquiz-option[data-state='selected'] {
+  border-color: var(--ia-primary);
+  background: var(--ia-primary-subtle);
+  box-shadow: 0 3px 0 var(--ia-primary);
+}
+
+.ia-gquiz-option[data-state='selected'] .ia-gquiz-option-key {
+  background: var(--ia-primary);
+  border-color: var(--ia-primary);
+  color: #ffffff;
+}
+
+/* Estado correcto */
+.ia-gquiz-option[data-state='correct'] {
+  border-color: var(--ia-success);
+  background: var(--ia-success-bg);
+  box-shadow: 0 3px 0 var(--ia-success);
+  animation: iaQuizCorrectPop 0.28s ease-out;
+}
+
+.ia-gquiz-option[data-state='correct'] .ia-gquiz-option-key {
+  background: var(--ia-success);
+  border-color: var(--ia-success);
+  color: #ffffff;
+}
+
+/* Estado incorrecto */
+.ia-gquiz-option[data-state='incorrect'] {
+  border-color: var(--ia-danger);
+  background: var(--ia-danger-bg);
+  box-shadow: 0 2px 0 var(--ia-danger);
+  animation: iaQuizGentleNudge 0.24s ease-out;
+}
+
+.ia-gquiz-option[data-state='incorrect'] .ia-gquiz-option-key {
+  background: var(--ia-danger);
+  border-color: var(--ia-danger);
+  color: #ffffff;
+}
+
+/* Estado deshabilitado (otras opciones tras responder) */
+.ia-gquiz-option[data-state='disabled'],
+.ia-gquiz-option:disabled[data-state='normal'] {
+  opacity: 0.62;
+  cursor: default;
+  box-shadow: none;
+}
+
+.ia-gquiz-option:disabled {
+  cursor: default;
+}
+
+/* Pista paso a paso */
+.ia-gquiz-hint-box {
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: var(--ia-amber-bg);
+  border: 1px solid var(--ia-amber-border);
+  color: var(--ia-text-main);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.ia-gquiz-hint-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--ia-amber);
+  margin-bottom: 4px;
+}
+
+/* Retroalimentación pedagógica inmediata */
+.ia-gquiz-feedback-banner {
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1.5px solid var(--ia-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: iaQuizStageIn 0.22s ease-out;
+}
+
+.ia-gquiz-feedback-banner.is-correct {
+  background: var(--ia-success-bg);
+  border-color: var(--ia-success-border);
+}
+
+.ia-gquiz-feedback-banner.is-incorrect {
+  background: var(--ia-amber-bg);
+  border-color: var(--ia-amber-border);
+}
+
+.ia-gquiz-feedback-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ia-gquiz-feedback-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.ia-gquiz-feedback-banner.is-correct .ia-gquiz-feedback-title {
+  color: var(--ia-success);
+}
+
+.ia-gquiz-feedback-banner.is-incorrect .ia-gquiz-feedback-title {
+  color: var(--ia-amber);
+}
+
+.ia-gquiz-feedback-body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ia-border);
+}
+
+/* ==========================================================================
+   Pantalla Final de Resultados del Cuestionario
+   ========================================================================== */
+
+.ia-gquiz-results {
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  border-radius: 18px;
+  padding: clamp(22px, 3vw, 30px);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: iaQuizStageIn 0.28s ease-out;
+}
+
+.ia-gquiz-results-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--ia-border);
+}
+
+.ia-gquiz-ring-wrap {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ia-gquiz-ring-svg {
+  width: 108px;
+  height: 108px;
+  transform: rotate(-90deg);
+}
+
+.ia-gquiz-ring-track {
+  fill: none;
+  stroke: var(--ia-border);
+  stroke-width: 9;
+}
+
+.ia-gquiz-ring-fill {
+  fill: none;
+  stroke: var(--ia-primary);
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease-out;
+}
+
+.ia-gquiz-ring-fill.is-high {
+  stroke: var(--ia-success);
+}
+
+.ia-gquiz-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ia-gquiz-ring-pct {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--ia-text-main);
+  line-height: 1.1;
+}
+
+.ia-gquiz-ring-sub {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ia-text-muted);
+  text-transform: uppercase;
+}
+
+.ia-gquiz-results-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 12px;
+}
+
+.ia-gquiz-metric-box {
+  background: var(--ia-bg-subtle);
+  border: 1px solid var(--ia-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ia-gquiz-metric-box strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ia-text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+.ia-gquiz-metric-box span {
+  font-size: 0.78rem;
+  color: var(--ia-text-muted);
+}
+
+.ia-gquiz-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.ia-gquiz-insight-card {
+  padding: 15px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ia-border);
+  background: var(--ia-bg-body);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ia-gquiz-insight-card h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ia-text-main);
+}
+
+.ia-gquiz-insight-card ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.83rem;
+  color: var(--ia-text-body);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ia-gquiz-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ia-gquiz-review-item {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--ia-border);
+  background: var(--ia-bg-body);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   Constructor de Secuencia Lógica (4 Bloques IA)
+   ========================================================================== */
+
+.ia-gquiz-seq-card {
+  background: var(--ia-bg-card);
+  border: 1px solid var(--ia-border);
+  border-radius: 18px;
+  padding: clamp(20px, 3vw, 26px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ia-gquiz-seq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ia-gquiz-seq-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--ia-border);
+  border-left: 4px solid var(--ia-primary);
+  background: var(--ia-bg-body);
+  cursor: grab;
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.ia-gquiz-seq-item:hover {
+  background: var(--ia-bg-subtle);
+  border-color: var(--ia-primary-border);
+}
+
+.ia-gquiz-seq-item.is-correct-slot {
+  border-color: var(--ia-success);
+  border-left-color: var(--ia-success);
+  background: var(--ia-success-bg);
+}
+
+.ia-gquiz-seq-slot-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--ia-primary-subtle);
+  border: 1px solid var(--ia-primary-border);
+  color: var(--ia-primary);
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ia-gquiz-seq-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ia-gquiz-seq-arrow {
+  appearance: none;
+  border: 1px solid var(--ia-border);
+  background: var(--ia-bg-card);
+  color: var(--ia-text-main);
+  width: 30px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ia-gquiz-seq-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@keyframes iaQuizStageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes iaQuizCorrectPop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.018); }
+  100% { transform: scale(1); }
+}
+
+@keyframes iaQuizGentleNudge {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-3px); }
+  70% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ia-gquiz-shell *,
+  .ia-gquiz-arena,
+  .ia-gquiz-option,
+  .ia-gquiz-progress-fill,
+  .ia-gquiz-ring-fill {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+html[data-reduce-motion='true'] .ia-gquiz-shell *,
+html.ia-calm-mode .ia-gquiz-arena,
+html.ia-calm-mode .ia-gquiz-option {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+@media (max-width: 760px) {
+  .ia-gquiz-options-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ia-gquiz-results-hero {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .ia-gquiz-hud,
+  .ia-gquiz-setup-card,
+  .ia-gquiz-arena,
+  .ia-gquiz-results,
+  .ia-gquiz-seq-card {
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+
+  .ia-gquiz-launch-cta,
+  .ia-gquiz-action-bar .ia-btn-primary,
+  .ia-gquiz-action-bar .ia-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ia-gquiz-mode-tabs {
+    width: 100%;
+  }
+
+  .ia-gquiz-mode-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 0.8rem;
+  }
+}

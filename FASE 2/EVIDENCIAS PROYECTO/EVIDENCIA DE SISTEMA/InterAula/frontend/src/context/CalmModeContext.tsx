@@ -4,6 +4,7 @@ import {
   type AccessibilityPreferences,
   type VisualThemeMode,
 } from '../types/profile';
+import { hasSavedVisualPreference } from '../utils/visualPreferences';
 
 const CALM_MODE_STORAGE_KEY = 'ia_calm_mode';
 const ACCESSIBILITY_STORAGE_KEY = 'ia_accessibility_prefs';
@@ -14,6 +15,8 @@ export interface CalmModeContextValue {
   /** True whenever the active visual surface is dark (Dark Mode OR Calm Mode - Crepúsculo). */
   isDarkSurface: boolean;
   themeMode: VisualThemeMode;
+  /** True when the browser already had an explicit visual choice before initial mount or completed onboarding. */
+  hadExplicitVisualChoice: boolean;
   setCalmMode: (enabled: boolean) => void;
   toggleCalmMode: () => void;
   setDarkMode: (enabled: boolean) => void;
@@ -21,14 +24,23 @@ export interface CalmModeContextValue {
   setThemeMode: (mode: VisualThemeMode) => void;
   preferences: AccessibilityPreferences;
   updatePreferences: (partial: Partial<AccessibilityPreferences>) => void;
+  markVisualOnboardingDone: (partial?: Partial<AccessibilityPreferences>) => AccessibilityPreferences;
   resetPreferences: () => void;
 }
 
 const CalmModeContext = createContext<CalmModeContextValue | undefined>(undefined);
 
-function loadInitialPreferences(): AccessibilityPreferences {
+interface BootPreferencesState {
+  preferences: AccessibilityPreferences;
+  hadExplicitChoice: boolean;
+}
+
+function loadBootPreferencesState(): BootPreferencesState {
   if (typeof window === 'undefined') {
-    return { ...DEFAULT_ACCESSIBILITY_PREFERENCES };
+    return {
+      preferences: { ...DEFAULT_ACCESSIBILITY_PREFERENCES },
+      hadExplicitChoice: false,
+    };
   }
   try {
     const prefersReduced =
@@ -40,6 +52,7 @@ function loadInitialPreferences(): AccessibilityPreferences {
 
     if (savedRaw) {
       const parsed = JSON.parse(savedRaw) as Partial<AccessibilityPreferences>;
+      const explicit = hasSavedVisualPreference(parsed, legacyCalm);
       const calm =
         typeof parsed.calmMode === 'boolean'
           ? parsed.calmMode
@@ -51,30 +64,44 @@ function loadInitialPreferences(): AccessibilityPreferences {
         parsed.themeMode || (dark ? 'dark' : calm ? 'calm' : 'light');
 
       return {
-        ...DEFAULT_ACCESSIBILITY_PREFERENCES,
-        ...parsed,
-        themeMode: resolvedTheme,
-        darkMode: resolvedTheme === 'dark',
-        calmMode: resolvedTheme === 'calm',
-        reduceMotion: typeof parsed.reduceMotion === 'boolean' ? parsed.reduceMotion : calm || prefersReduced,
+        preferences: {
+          ...DEFAULT_ACCESSIBILITY_PREFERENCES,
+          ...parsed,
+          themeMode: resolvedTheme,
+          darkMode: resolvedTheme === 'dark',
+          calmMode: resolvedTheme === 'calm',
+          reduceMotion: typeof parsed.reduceMotion === 'boolean' ? parsed.reduceMotion : calm || prefersReduced,
+        },
+        hadExplicitChoice: explicit,
       };
     }
 
+    const explicitLegacy = legacyCalm === 'true';
     const initialCalm = legacyCalm !== null ? legacyCalm === 'true' : prefersReduced;
     return {
-      ...DEFAULT_ACCESSIBILITY_PREFERENCES,
-      themeMode: initialCalm ? 'calm' : 'light',
-      darkMode: false,
-      calmMode: initialCalm,
-      reduceMotion: initialCalm || prefersReduced,
+      preferences: {
+        ...DEFAULT_ACCESSIBILITY_PREFERENCES,
+        themeMode: initialCalm ? 'calm' : 'light',
+        darkMode: false,
+        calmMode: initialCalm,
+        reduceMotion: initialCalm || prefersReduced,
+      },
+      hadExplicitChoice: explicitLegacy,
     };
   } catch {
-    return { ...DEFAULT_ACCESSIBILITY_PREFERENCES };
+    return {
+      preferences: { ...DEFAULT_ACCESSIBILITY_PREFERENCES },
+      hadExplicitChoice: false,
+    };
   }
 }
 
 export function CalmModeProvider({ children }: { children: ReactNode }) {
-  const [preferences, setPreferences] = useState<AccessibilityPreferences>(loadInitialPreferences);
+  const [bootState] = useState<BootPreferencesState>(loadBootPreferencesState);
+  const [preferences, setPreferences] = useState<AccessibilityPreferences>(bootState.preferences);
+  const [hadExplicitVisualChoice, setHadExplicitVisualChoice] = useState<boolean>(
+    bootState.hadExplicitChoice
+  );
 
   const isDarkMode = Boolean(preferences.darkMode || preferences.themeMode === 'dark');
   const isCalmMode = !isDarkMode && Boolean(preferences.calmMode || preferences.themeMode === 'calm');
@@ -140,6 +167,9 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         try {
           const parsed = JSON.parse(e.newValue) as Partial<AccessibilityPreferences>;
           setPreferences((prev) => ({ ...prev, ...parsed }));
+          if (parsed.visualOnboardingCompleted) {
+            setHadExplicitVisualChoice(true);
+          }
         } catch {
           // Ignore malformed storage payload
         }
@@ -150,16 +180,19 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setCalmMode = useCallback((enabled: boolean) => {
+    setHadExplicitVisualChoice(true);
     setPreferences((prev) => ({
       ...prev,
       calmMode: enabled,
       darkMode: enabled ? false : prev.darkMode,
       themeMode: enabled ? 'calm' : prev.darkMode ? 'dark' : 'light',
       reduceMotion: enabled ? true : prev.reduceMotion,
+      visualOnboardingCompleted: true,
     }));
   }, []);
 
   const toggleCalmMode = useCallback(() => {
+    setHadExplicitVisualChoice(true);
     setPreferences((prev) => {
       const nextCalm = !prev.calmMode;
       return {
@@ -168,20 +201,24 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         darkMode: nextCalm ? false : prev.darkMode,
         themeMode: nextCalm ? 'calm' : prev.darkMode ? 'dark' : 'light',
         reduceMotion: nextCalm ? true : prev.reduceMotion,
+        visualOnboardingCompleted: true,
       };
     });
   }, []);
 
   const setDarkMode = useCallback((enabled: boolean) => {
+    setHadExplicitVisualChoice(true);
     setPreferences((prev) => ({
       ...prev,
       darkMode: enabled,
       calmMode: enabled ? false : prev.calmMode,
       themeMode: enabled ? 'dark' : prev.calmMode ? 'calm' : 'light',
+      visualOnboardingCompleted: true,
     }));
   }, []);
 
   const toggleDarkMode = useCallback(() => {
+    setHadExplicitVisualChoice(true);
     setPreferences((prev) => {
       const nextDark = !prev.darkMode;
       return {
@@ -189,17 +226,20 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         darkMode: nextDark,
         calmMode: nextDark ? false : prev.calmMode,
         themeMode: nextDark ? 'dark' : prev.calmMode ? 'calm' : 'light',
+        visualOnboardingCompleted: true,
       };
     });
   }, []);
 
   const setThemeMode = useCallback((mode: VisualThemeMode) => {
+    setHadExplicitVisualChoice(true);
     setPreferences((prev) => ({
       ...prev,
       themeMode: mode,
       darkMode: mode === 'dark',
       calmMode: mode === 'calm',
       reduceMotion: mode === 'calm' ? true : prev.reduceMotion,
+      visualOnboardingCompleted: true,
     }));
   }, []);
 
@@ -220,12 +260,44 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         merged.darkMode = false;
         merged.themeMode = 'calm';
       }
+      if (partial.visualOnboardingCompleted) {
+        setHadExplicitVisualChoice(true);
+      }
       return merged;
     });
   }, []);
 
+  const markVisualOnboardingDone = useCallback(
+    (partial?: Partial<AccessibilityPreferences>): AccessibilityPreferences => {
+      setHadExplicitVisualChoice(true);
+      let snapshot: AccessibilityPreferences = {
+        ...preferences,
+        ...partial,
+        visualOnboardingCompleted: true,
+      };
+      setPreferences((prev) => {
+        const merged: AccessibilityPreferences = {
+          ...prev,
+          ...partial,
+          visualOnboardingCompleted: true,
+        };
+        if (partial?.themeMode) {
+          merged.darkMode = partial.themeMode === 'dark';
+          merged.calmMode = partial.themeMode === 'calm';
+        }
+        snapshot = merged;
+        return merged;
+      });
+      return snapshot;
+    },
+    [preferences]
+  );
+
   const resetPreferences = useCallback(() => {
-    setPreferences({ ...DEFAULT_ACCESSIBILITY_PREFERENCES });
+    setPreferences((prev) => ({
+      ...DEFAULT_ACCESSIBILITY_PREFERENCES,
+      visualOnboardingCompleted: Boolean(prev.visualOnboardingCompleted),
+    }));
   }, []);
 
   return (
@@ -235,6 +307,7 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         isDarkMode,
         isDarkSurface,
         themeMode: resolvedThemeMode,
+        hadExplicitVisualChoice,
         setCalmMode,
         toggleCalmMode,
         setDarkMode,
@@ -242,6 +315,7 @@ export function CalmModeProvider({ children }: { children: ReactNode }) {
         setThemeMode,
         preferences,
         updatePreferences,
+        markVisualOnboardingDone,
         resetPreferences,
       }}
     >
@@ -258,6 +332,7 @@ export function useCalmMode(): CalmModeContextValue {
       isDarkMode: false,
       isDarkSurface: false,
       themeMode: 'light',
+      hadExplicitVisualChoice: false,
       setCalmMode: () => {},
       toggleCalmMode: () => {},
       setDarkMode: () => {},
@@ -265,6 +340,7 @@ export function useCalmMode(): CalmModeContextValue {
       setThemeMode: () => {},
       preferences: DEFAULT_ACCESSIBILITY_PREFERENCES,
       updatePreferences: () => {},
+      markVisualOnboardingDone: () => DEFAULT_ACCESSIBILITY_PREFERENCES,
       resetPreferences: () => {},
     };
   }

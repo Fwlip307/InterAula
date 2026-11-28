@@ -2233,10 +2233,10 @@ export default function ProjectsHub() {
             primary={[{id:'explore',label:'Explorar proyectos'},{id:'my_projects',label:'Mis proyectos'},{id:'my_applications',label:'Mis postulaciones'}]} />
 
           {activeTab === 'explore' && (
-            <div className="ia-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', flex: '1 1 240px' }}>
-                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+            <div className="ia-card ia-filter-bar-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+              <div className="ia-filter-primary-row">
+                <div style={{ position: 'relative', flex: '1 1 250px' }}>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ia-text-muted)' }}>
                     <SearchIcon size={16} />
                   </span>
                   <input
@@ -2245,7 +2245,7 @@ export default function ProjectsHub() {
                     style={{ paddingLeft: '36px' }}
                     data-orientation="projects-search"
                     aria-label="Buscar proyectos"
-                    placeholder="Buscar por proyecto, rol (Frontend, 3D, QA...), tecnología o problema..."
+                    placeholder="Buscar por proyecto, rol, tecnología o problema..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -2266,7 +2266,7 @@ export default function ProjectsHub() {
                 <select
                   aria-label="Filtrar por categoría"
                   className="ia-select"
-                  style={{ width: 'auto', minWidth: '175px' }}
+                  style={{ flex: '0 1 200px', minWidth: '165px' }}
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
                 >
@@ -2277,57 +2277,73 @@ export default function ProjectsHub() {
                     </option>
                   ))}
                 </select>
-
-                <select
-                  aria-label="Filtrar por modalidad"
-                  className="ia-select"
-                  style={{ width: 'auto', minWidth: '150px' }}
-                  value={filterModality}
-                  onChange={(e) => setFilterModality(e.target.value)}
-                >
-                  <option value="all">Modalidad: Todas</option>
-                  <option value="online">Online / Remoto</option>
-                  <option value="hibrido">Híbrido</option>
-                  <option value="presencial">Presencial</option>
-                </select>
-
-                <select
-                  aria-label="Filtrar por estado"
-                  className="ia-select"
-                  style={{ width: 'auto', minWidth: '150px' }}
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="all">Estado: Todos</option>
-                  <option value="open">Abiertos</option>
-                  <option value="in_progress">En Desarrollo</option>
-                  <option value="completed">Finalizados</option>
-                </select>
-
-                <select
-                  aria-label="Filtrar por compensación"
-                  className="ia-select"
-                  style={{ width: 'auto', minWidth: '175px' }}
-                  value={filterCompensation}
-                  onChange={(e) => setFilterCompensation(e.target.value)}
-                >
-                  <option value="all">Compensación: Todas</option>
-                  <option value="unpaid_academic">Académico (Sin pago)</option>
-                  <option value="paid">Remunerado</option>
-                  <option value="milestone_based">Por Hitos</option>
-                  <option value="revenue_share">Participación</option>
-                  <option value="negotiable">A convenir</option>
-                </select>
-
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={onlyOpenVacancies}
-                    onChange={(e) => setOnlyOpenVacancies(e.target.checked)}
-                  />
-                  <span>Solo con vacantes abiertas</span>
-                </label>
               </div>
+
+              <details
+                className="ia-filter-disclosure"
+                open={
+                  filterModality !== 'all' ||
+                  filterStatus !== 'all' ||
+                  filterCompensation !== 'all' ||
+                  onlyOpenVacancies
+                }
+              >
+                <summary>
+                  <span>Más filtros de proyecto</span>
+                  {(filterModality !== 'all' ||
+                    filterStatus !== 'all' ||
+                    filterCompensation !== 'all' ||
+                    onlyOpenVacancies) && <span className="ia-badge ia-badge-blue">Activos</span>}
+                </summary>
+                <div className="ia-filter-secondary-row">
+                  <select
+                    aria-label="Filtrar por modalidad"
+                    className="ia-select"
+                    value={filterModality}
+                    onChange={(e) => setFilterModality(e.target.value)}
+                  >
+                    <option value="all">Modalidad: Todas</option>
+                    <option value="online">Online / Remoto</option>
+                    <option value="hibrido">Híbrido</option>
+                    <option value="presencial">Presencial</option>
+                  </select>
+
+                  <select
+                    aria-label="Filtrar por estado"
+                    className="ia-select"
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                  >
+                    <option value="all">Estado: Todos</option>
+                    <option value="open">Abiertos</option>
+                    <option value="in_progress">En Desarrollo</option>
+                    <option value="completed">Finalizados</option>
+                  </select>
+
+                  <select
+                    aria-label="Filtrar por compensación"
+                    className="ia-select"
+                    value={filterCompensation}
+                    onChange={(e) => setFilterCompensation(e.target.value)}
+                  >
+                    <option value="all">Compensación: Todas</option>
+                    <option value="unpaid_academic">Académico (Sin pago)</option>
+                    <option value="paid">Remunerado</option>
+                    <option value="milestone_based">Por Hitos</option>
+                    <option value="revenue_share">Participación</option>
+                    <option value="negotiable">A convenir</option>
+                  </select>
+
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={onlyOpenVacancies}
+                      onChange={(e) => setOnlyOpenVacancies(e.target.checked)}
+                    />
+                    <span>Solo con vacantes abiertas</span>
+                  </label>
+                </div>
+              </details>
             </div>
           )}
 
@@ -2434,7 +2450,7 @@ export default function ProjectsHub() {
               }
 
               return (
-                <div data-orientation="projects-results" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '18px' }}>
+                <div data-orientation="projects-results" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: '18px' }}>
                   {list.map((proj) => {
                     const isOwner = Boolean(user?.id && proj.owner_id === user.id);
                     const compMeta = COMPENSATION_LABELS[proj.compensation_type || 'unpaid_academic'];

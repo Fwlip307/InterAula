@@ -64,26 +64,44 @@ export default function ForYouSection({compact=false}:{compact?:boolean}) {
         :error?'Explora los recursos y las personas de la comunidad mientras se habilitan las sugerencias.'
         :'Empieza explorando novedades o elige tus intereses para recibir sugerencias más cercanas a ti.'}</p></div>
       {!notReady&&<Link className="ia-btn-secondary" to="/profile?tab=interests">{data?.mode==='starter'?'Elegir mis intereses':'Ajustar mis intereses'}</Link>}</header>
-    <nav className="ia-reco-explore" aria-label="Explorar toda la comunidad"><span>Explorar todo:</span>
-      <Link to="/community">Mi comunidad académica</Link><Link to="/resources">Apuntes</Link><Link to="/forum">Foro</Link><Link to="/projects">Proyectos</Link><Link to="/tutoring">Tutorías y talleres</Link></nav>
+    {!compact&&<nav className="ia-reco-explore" aria-label="Explorar toda la comunidad"><span>Explorar todo:</span>
+      <Link to="/community">Mi comunidad académica</Link><Link to="/resources">Apuntes</Link><Link to="/forum">Foro</Link><Link to="/projects">Proyectos</Link><Link to="/tutoring">Tutorías y talleres</Link></nav>}
     {(error||actionError)&&<div className="ia-reco-error" role="alert"><p>{error||actionError}</p>{error&&<button type="button" className="ia-btn-secondary" disabled={loading} onClick={()=>{setLoading(true);setError('');setReload(value=>value+1);}}>Reintentar</button>}</div>}
     {message&&<div className="ia-reco-notice" role="status">{message} {hidden&&<button type="button" onClick={()=>restore()} disabled={busy||loading}>Deshacer</button>}</div>}
     {loading&&<p role="status">Buscando sugerencias…</p>}
     {data&&!error&&<>
-      <p className="ia-community-summary">{data.community?.preferences.scope==='campus'?'Buscando en tu sede':data.community?.preferences.scope==='institution'?'Buscando en tu institución':data.community?.preferences.scope==='nearby'?'Buscando sedes de la misma comuna':'Explorando toda la comunidad'} · <Link to="/community">Cambiar comunidad o modalidad</Link></p>
-      {data.matching&&<p className="ia-reco-matching" role="status">{data.matching.description}</p>}
-      <InterestDemoPanel/>
-      <div className="ia-reco-toolbar"><label>Mostrar <select value={kind} onChange={event=>setKind(event.target.value as RecommendationKind|'all')}>
-        <option value="all">Todas las sugerencias</option>{(Object.entries(RECOMMENDATION_KIND_LABELS) as [RecommendationKind,string][]).map(([value,label])=><option key={value} value={value}>{label}</option>)}
-      </select></label>{data.hiddenCount>0&&<button type="button" className="ia-reco-text-button" disabled={busy||loading} onClick={()=>restore(true)}>Restaurar sugerencias ocultas ({data.hiddenCount})</button>}</div>
+      <div className="ia-reco-toolbar">
+        <label>Mostrar <select value={kind} onChange={event=>setKind(event.target.value as RecommendationKind|'all')}>
+          <option value="all">Todas las sugerencias</option>{(Object.entries(RECOMMENDATION_KIND_LABELS) as [RecommendationKind,string][]).map(([value,label])=><option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <span className="ia-community-summary">
+          {data.community?.preferences.scope==='campus'?'En tu sede':data.community?.preferences.scope==='institution'?'En tu institución':data.community?.preferences.scope==='nearby'?'Sedes cercanas':'Toda la comunidad'} · <Link to="/community">Ajustar alcance</Link>
+        </span>
+        {data.hiddenCount>0&&<button type="button" className="ia-reco-text-button" disabled={busy||loading} onClick={()=>restore(true)}>Restaurar ocultas ({data.hiddenCount})</button>}
+      </div>
       <div className="ia-reco-grid">{visibleItems.map(item=><article key={`${item.kind}:${item.id}`} className="ia-reco-card">
         <span className={`ia-reco-kind ia-reco-kind-${item.kind}`}>{RECOMMENDATION_KIND_LABELS[item.kind]}</span>
-        <h3><Link to={item.href}>{item.title}</Link></h3>{item.summary&&<p className="ia-reco-summary">{item.summary}</p>}
-        <p className="ia-reco-reason">{item.reason}</p>{item.clusterReason&&<p className="ia-reco-cluster">{item.clusterReason}</p>}{item.communityReason&&<p className="ia-reco-community">{item.communityReason}</p>}
+        <h3><Link to={item.href}>{item.title}</Link></h3>
+        {item.summary&&<p className="ia-reco-summary">{item.summary}</p>}
+        <p className="ia-reco-reason">{item.reason}</p>
+        {!compact && item.clusterReason && <p className="ia-reco-cluster">{item.clusterReason}</p>}
+        {!compact && item.communityReason && <p className="ia-reco-community">{item.communityReason}</p>}
         <div className="ia-reco-card-footer"><Link to={item.href}>{item.kind==='person'?'Ver perfil':'Ver detalle'}</Link>
           <button type="button" className="ia-reco-text-button" disabled={busy||loading} onClick={()=>dismiss(item)} aria-label={`No me interesa: ${item.title}`}>No me interesa</button></div>
       </article>)}</div>
-      {compact&&items.length>3&&<button type="button" className="ia-btn-secondary ia-reco-more" onClick={()=>setShowAll(value=>!value)} aria-expanded={showAll}>{showAll?'Mostrar tres sugerencias':'Ver todas las sugerencias ('+items.length+')'}</button>}
+      {compact&&items.length>3&&<button type="button" className="ia-btn-secondary ia-reco-more" onClick={()=>setShowAll(value=>!value)} aria-expanded={showAll}>{showAll?'Mostrar menos':'Ver todas las sugerencias ('+items.length+')'}</button>}
+      {compact ? (
+        <details className="ia-guided-disclosure ia-reco-advanced-disclosure">
+          <summary>Cómo personalizamos estas sugerencias y simulador de afinidad</summary>
+          {data.matching&&<p className="ia-reco-matching" role="status">{data.matching.description}</p>}
+          <InterestDemoPanel/>
+        </details>
+      ) : (
+        <>
+          {data.matching&&<p className="ia-reco-matching" role="status">{data.matching.description}</p>}
+          <InterestDemoPanel/>
+        </>
+      )}
       {!loading&&items.length===0&&<div className="ia-reco-empty"><h3>{kind==='all'?'Todavía no hay coincidencias disponibles':'No hay sugerencias de este tipo'}</h3>
         <p>Prueba otros temas, amplía tu comunidad o restaura sugerencias ocultas.</p><Link to="/community" className="ia-btn-secondary">Ampliar mi comunidad</Link>
         <Link to="/profile?tab=interests" className="ia-btn-secondary">Revisar mis intereses</Link></div>}

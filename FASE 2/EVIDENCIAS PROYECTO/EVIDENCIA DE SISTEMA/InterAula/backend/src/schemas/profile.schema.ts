@@ -13,6 +13,7 @@ export const accessibilityPreferencesSchema = z
     untimedQuizzes: z.boolean().optional(),
     quietNotifications: z.boolean().optional(),
     emailTutoring: z.boolean().optional(),
+    emailClassReminders: z.boolean().optional(),
     emailProjects: z.boolean().optional(),
     warmFilter: z.boolean().optional(),
     easyReadingFont: z.boolean().optional(),
@@ -20,6 +21,7 @@ export const accessibilityPreferencesSchema = z
     readingRulerIntensity: z.enum(['soft', 'medium', 'strong']).optional(),
     disableFlashing: z.boolean().optional(),
     literalLanguage: z.boolean().optional(),
+    visualOnboardingCompleted: z.boolean().optional(),
   })
   .strict();
 

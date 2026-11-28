@@ -915,78 +915,93 @@ export const LearningSpace = () => {
                     <button type="button" className="ia-btn-secondary" onClick={()=>handleTabChange('tasks')}>Organizar mis tareas</button>
                   </section>
                 </div>
-                  {/* Progreso flexible y descarga de reporte personal */}
-                  <div className="panel" style={{ marginBottom: '1rem' }}>
-                    <div className="panel__header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
-                      <div>
-                        <h2 className="panel__title">Progreso flexible esta semana</h2>
-                        <p className="text-muted" style={{ margin: '0.2rem 0 0 0', fontSize: '0.86rem' }}>
-                          Meta semanal configurable, sin rachas punitivas si necesitas pausar un día.
-                        </p>
-                      </div>
-                      <span className="badge badge--primary">
-                        {currentWeekDays} / {config.weeklyGoalDays || 3} días activos
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-sm"
-                          onClick={handleRecordTodayStudy}
-                          disabled={(config.activeStudyDates || []).includes(todayIso)}
-                        >
-                          {(config.activeStudyDates || []).includes(todayIso)
-                            ? 'Hoy ya está registrado'
-                            : 'Registrar día activo hoy'}
-                        </button>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem' }}>
-                          Meta semanal:
-                          <select
-                            value={config.weeklyGoalDays || 3}
-                            onChange={async (e) => {
-                              const nextGoal = Number(e.target.value);
-                              try {
-                                const saved = await learningSpaceService.updateConfig({ weeklyGoalDays: nextGoal });
-                                setConfig(saved);
-                              } catch {
-                                // ignore
-                              }
-                            }}
-                            style={{ padding: '0.25rem 0.5rem', borderRadius: '6px' }}
+                <details className="panel ia-guided-disclosure-panel">
+                  <summary className="ia-guided-disclosure-summary">
+                    <span>Progreso semanal, reporte PDF y recursos relacionados</span>
+                    <span className="badge badge--primary">
+                      {currentWeekDays} / {config.weeklyGoalDays || 3} días activos
+                    </span>
+                  </summary>
+
+                  <div className="ia-guided-disclosure-body">
+                    {/* Progreso flexible y descarga de reporte personal */}
+                    <div className="ia-overview-subblock">
+                      <p className="text-muted" style={{ margin: '0 0 0.75rem 0', fontSize: '0.86rem' }}>
+                        Meta semanal configurable, sin rachas punitivas si necesitas pausar un día.
+                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={handleRecordTodayStudy}
+                            disabled={(config.activeStudyDates || []).includes(todayIso)}
                           >
-                            {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                              <option key={d} value={d}>{d} días</option>
-                            ))}
-                          </select>
-                        </label>
+                            {(config.activeStudyDates || []).includes(todayIso)
+                              ? 'Hoy ya está registrado'
+                              : 'Registrar día activo hoy'}
+                          </button>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem' }}>
+                            Meta semanal:
+                            <select
+                              value={config.weeklyGoalDays || 3}
+                              onChange={async (e) => {
+                                const nextGoal = Number(e.target.value);
+                                try {
+                                  const saved = await learningSpaceService.updateConfig({ weeklyGoalDays: nextGoal });
+                                  setConfig(saved);
+                                } catch {
+                                  // ignore
+                                }
+                              }}
+                              style={{ padding: '0.25rem 0.5rem', borderRadius: '6px' }}
+                            >
+                              {[1, 2, 3, 4, 5, 6, 7].map((d) => (
+                                <option key={d} value={d}>{d} días</option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={includePassportInPdf}
+                              onChange={(e) => setIncludePassportInPdf(e.target.checked)}
+                            />
+                            Incluir mis apoyos en el PDF
+                          </label>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={handleDownloadPersonalPdf}
+                          >
+                            Descargar reporte PDF personal
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.82rem', cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={includePassportInPdf}
-                            onChange={(e) => setIncludePassportInPdf(e.target.checked)}
-                          />
-                          Incluir mis apoyos en el PDF
-                        </label>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          onClick={handleDownloadPersonalPdf}
-                        >
-                          Descargar reporte PDF personal
-                        </button>
+                    </div>
+
+                    <div className="ia-overview-subblock ia-overview-subblock--bordered">
+                      <h3 className="ia-guided-section-title">Material y comunidad</h3>
+                      {relatedNotes.length > 0 && (
+                        <div className="ia-guided-mini-list">
+                          {relatedNotes.slice(0, 3).map((note) => (
+                            <Link key={note.id} to={'/resources?note=' + encodeURIComponent(note.id)}>
+                              <strong>{note.title}</strong>
+                              <span>{note.subjectName}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      <div className="ia-guided-inline" style={{ paddingBottom: 0 }}>
+                        <Link to="/resources">Explorar apuntes</Link>
+                        <Link to="/forum">Foro ({relatedForumPosts.length} temas recientes)</Link>
+                        <Link to="/projects">Proyectos ({relatedProjects.length} abiertos)</Link>
                       </div>
                     </div>
                   </div>
-
-
-                <section className="panel" aria-labelledby="study-resources-title">
-                  <h2 id="study-resources-title" className="ia-guided-section-title">Material y comunidad</h2>
-                  <div className="ia-guided-mini-list">{relatedNotes.slice(0,3).map(note=><Link key={note.id} to={'/resources?note='+encodeURIComponent(note.id)}><strong>{note.title}</strong><span>{note.subjectName}</span></Link>)}</div>
-                  <div className="ia-guided-inline"><Link to="/resources">Explorar apuntes</Link><Link to="/forum">Foro ({relatedForumPosts.length} temas recientes)</Link><Link to="/projects">Proyectos ({relatedProjects.length} abiertos)</Link></div>
-                </section>
+                </details>
               </div>
             )}
 

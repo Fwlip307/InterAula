@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useCalmMode } from '../../../context/CalmModeContext';
@@ -13,6 +13,12 @@ import {
   type SequenceStepItem,
 } from '../../../services/adaptiveQuiz.service';
 import {
+  buildQuizAnswerRecord,
+  computeCumulativeQuizStats,
+  summarizeQuizSession,
+  type QuizAnswerRecord,
+} from '../../../utils/quizAnalytics';
+import {
   SparklesIcon,
   CheckIcon,
   XIcon,
@@ -22,8 +28,11 @@ import {
   LightbulbIcon,
   TargetIcon,
   RotateCcwIcon,
+  LayersIcon,
+  AwardIcon,
 } from '../../../components/common/Icons';
 import { ReadAloudControls } from '../../../components/common/ReadAloudControls';
+import '../../../styles/gamifiedQuiz.css';
 
 const CRITICAL_SUBJECTS = [
   'Programación de Algoritmos',
@@ -402,10 +411,12 @@ interface AdaptiveQuizHubProps {
   isCalmMode?: boolean;
 }
 
-export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubProps) {
+export default function AdaptiveQuizHub({ isCalmMode: calmProp = false }: AdaptiveQuizHubProps) {
   const { user } = useAuth();
-  const { isDarkSurface, preferences } = useCalmMode();
-  const isDarkMode = isDarkSurface;
+  const { isCalmMode: calmCtx, preferences } = useCalmMode();
+  const effectiveCalm = calmProp || calmCtx;
+
+  const [studioMode, setStudioMode] = useState<'quiz' | 'sequence'>('quiz');
   const [subjects, setSubjects] = useState<string[]>(CRITICAL_SUBJECTS);
   const [selectedSubject, setSelectedSubject] = useState<string>(CRITICAL_SUBJECTS[0]);
   const [customTopic, setCustomTopic] = useState<string>('');
@@ -415,24 +426,24 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
   const [quizHistory, setQuizHistory] = useState<QuizAttemptProgress[]>(() =>
     adaptiveQuizService.getQuizHistory()
   );
-  const [missedTopics, setMissedTopics] = useState<string[]>([]);
 
   useEffect(() => {
     setUntimedMode(preferences.untimedQuizzes !== false);
   }, [preferences.untimedQuizzes]);
 
-  // Estado del juego de preguntas
+  // Estado del desafío interactivo de preguntas
   const [questions, setQuestions] = useState<AdaptiveQuizQuestion[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  const [pendingOptionId, setPendingOptionId] = useState<string | null>(null);
+  const [confirmedOptionId, setConfirmedOptionId] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
-  const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [answerRecords, setAnswerRecords] = useState<QuizAnswerRecord[]>([]);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
 
-  // Estado para el Laboratorio de Secuencia por Bloques Arrastrables con IA
+  // Estado para el Constructor Lógico de 4 Bloques IA
   const [seqVariantSeed, setSeqVariantSeed] = useState<number>(0);
   const initialChallenge = getSequenceStepsForSubject(CRITICAL_SUBJECTS[0], 0, '');
   const [sequenceTitle, setSequenceTitle] = useState<string>(initialChallenge.title);
@@ -441,11 +452,24 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
     scrambleSteps(initialChallenge.steps, 0)
   );
   const [loadingSequenceAI, setLoadingSequenceAI] = useState<boolean>(false);
-  const [sequenceSourceLabel, setSequenceSourceLabel] = useState<string>('IA Adaptativa DUA');
+  const [sequenceSourceLabel, setSequenceSourceLabel] = useState<string>('Motor IA DUA');
   const [draggedSeqIndex, setDraggedSeqIndex] = useState<number | null>(null);
   const [sequenceChecked, setSequenceChecked] = useState<'none' | 'ok' | 'retry'>('none');
 
-  // Sincronizar bloques localmente de inmediato cuando cambia asignatura y luego pedir a la IA
+  const isAnswered = confirmedOptionId !== null;
+  const currentQ = questions[currentIdx];
+  const topicSuggestions = getTopicSuggestions(selectedSubject);
+
+  const cumulativeStats = useMemo(
+    () => computeCumulativeQuizStats(quizHistory),
+    [quizHistory]
+  );
+
+  const sessionSummary = useMemo(
+    () => summarizeQuizSession(answerRecords, questions.length || 3, score, selectedSubject),
+    [answerRecords, questions.length, score, selectedSubject]
+  );
+
   const handleResetSequenceForSubject = (subj: string, topicValue = customTopic) => {
     const nextSeed = seqVariantSeed + 1;
     setSeqVariantSeed(nextSeed);
@@ -456,7 +480,6 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
     setSequenceChecked('none');
   };
 
-  // Generar reto de bloques directamente con la IA en base a asignatura + tema escrito + interés
   const handleGenerateAISequenceBlocks = async (
     subj = selectedSubject,
     theme = selectedTheme,
@@ -503,14 +526,15 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
   const handleCheckSequence = () => {
     const isOrdered = sequenceBlocks.every((blk, i) => blk.correctOrder === i + 1);
     if (isOrdered) {
+      if (sequenceChecked !== 'ok') {
+        setScore((prev) => prev + 50);
+      }
       setSequenceChecked('ok');
-      setScore((prev) => prev + 50);
     } else {
       setSequenceChecked('retry');
     }
   };
 
-  // Cargar materias que el alumno necesita reforzar desde su perfil
   useEffect(() => {
     async function loadStudentNeeds() {
       if (!user) return;
@@ -535,20 +559,20 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
         console.warn('[AdaptiveQuizHub] No fue posible cargar materias necesarias:', err);
       }
     }
-    loadStudentNeeds();
+    void loadStudentNeeds();
   }, [user]);
 
-  // Generar Quiz + Actualizar Bloques con IA
   const handleStartQuiz = async () => {
+    setStudioMode('quiz');
     setLoadingQuiz(true);
     setQuizCompleted(false);
     setCurrentIdx(0);
-    setSelectedOptionId(null);
+    setPendingOptionId(null);
+    setConfirmedOptionId(null);
     setShowHint(false);
-    setIsAnswered(false);
     setScore(0);
-    setCorrectCount(0);
-    setMissedTopics([]);
+    setCurrentStreak(0);
+    setAnswerRecords([]);
 
     try {
       const generated = await adaptiveQuizService.generateQuiz(
@@ -575,32 +599,38 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
     }
   };
 
-  const handleSelectOption = (optionId: string) => {
+  const handleChooseOption = (optionId: string) => {
     if (isAnswered) return;
-    setSelectedOptionId(optionId);
-    setIsAnswered(true);
+    setPendingOptionId(optionId);
+  };
 
-    const q = questions[currentIdx];
-    if (q && optionId === q.correctOptionId) {
+  const handleConfirmAnswer = () => {
+    if (!currentQ || !pendingOptionId || isAnswered) return;
+    setConfirmedOptionId(pendingOptionId);
+
+    const record = buildQuizAnswerRecord(currentQ, pendingOptionId, showHint);
+    setAnswerRecords((prev) => [...prev, record]);
+
+    if (record.isCorrect) {
       setScore((prev) => prev + 100);
-      setCorrectCount((prev) => prev + 1);
-    } else if (q) {
-      setMissedTopics((prev) => [...prev, q.prompt]);
+      setCurrentStreak((prev) => prev + 1);
+    } else {
+      setCurrentStreak(0);
     }
   };
 
   const handleNextQuestion = () => {
     if (currentIdx + 1 < questions.length) {
       setCurrentIdx((prev) => prev + 1);
-      setSelectedOptionId(null);
+      setPendingOptionId(null);
+      setConfirmedOptionId(null);
       setShowHint(false);
-      setIsAnswered(false);
     } else {
       setQuizCompleted(true);
       adaptiveQuizService.saveQuizProgress({
         subject: selectedSubject,
         theme: selectedTheme.name,
-        score: score,
+        score,
         totalQuestions: questions.length,
         completedAt: new Date().toISOString(),
       });
@@ -608,172 +638,537 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
     }
   };
 
-  const currentQ = questions[currentIdx];
-  const topicSuggestions = getTopicSuggestions(selectedSubject);
+  const handleReturnToSetup = () => {
+    setQuestions([]);
+    setQuizCompleted(false);
+    setPendingOptionId(null);
+    setConfirmedOptionId(null);
+    setShowHint(false);
+  };
 
-  // Colores de acento para cada posición de paso en el laboratorio de bloques
-  const STEP_ACCENTS = [
-    { border: '#2563eb', badgeBg: '#dbeafe', badgeText: '#1e40af', darkBadgeBg: 'rgba(37, 99, 235, 0.25)', darkBadgeText: '#93c5fd' },
-    { border: '#7c3aed', badgeBg: '#ede9fe', badgeText: '#5b21b6', darkBadgeBg: 'rgba(124, 58, 237, 0.25)', darkBadgeText: '#c4b5fd' },
-    { border: '#0891b2', badgeBg: '#cffafe', badgeText: '#155e75', darkBadgeBg: 'rgba(8, 145, 178, 0.25)', darkBadgeText: '#67e8f9' },
-    { border: '#059669', badgeBg: '#d1fae5', badgeText: '#065f46', darkBadgeBg: 'rgba(5, 150, 105, 0.25)', darkBadgeText: '#6ee7b7' },
-  ];
+  useEffect(() => {
+    if (studioMode !== 'quiz' || !currentQ || quizCompleted || loadingQuiz) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+
+      const key = e.key.toLowerCase();
+      const idxMap: Record<string, number> = {
+        '1': 0, '2': 1, '3': 2, '4': 3,
+        a: 0, b: 1, c: 2, d: 3,
+      };
+
+      if (!isAnswered && key in idxMap) {
+        const opt = currentQ.options[idxMap[key]];
+        if (opt) {
+          e.preventDefault();
+          setPendingOptionId(opt.id);
+        }
+      } else if (e.key === 'Enter' && !e.shiftKey && target?.tagName !== 'BUTTON') {
+        if (!isAnswered && pendingOptionId) {
+          e.preventDefault();
+          handleConfirmAnswer();
+        } else if (isAnswered) {
+          e.preventDefault();
+          handleNextQuestion();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [studioMode, currentQ, quizCompleted, loadingQuiz, isAnswered, pendingOptionId]);
+
+  const activeQuizInProgress = studioMode === 'quiz' && questions.length > 0 && !quizCompleted;
+  const answeredSoFar = answerRecords.length;
+  const totalInRun = Math.max(questions.length, 1);
+  const progressPct = Math.round((answeredSoFar / totalInRun) * 100);
+
+  const ringRadius = 44;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset =
+    ringCircumference - (sessionSummary.accuracyPercent / 100) * ringCircumference;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
-      {/* Banner Superior Neuroinclusivo */}
-      <div
-        className="ia-quiz-hero-banner"
-        style={{
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #1e1b4b 0%, #172554 55%, #0f172a 100%)'
-            : isCalmMode
-            ? '#e8efe5'
-            : 'linear-gradient(135deg, #eff6ff 0%, #f5f3ff 55%, #ecfdf5 100%)',
-          border: `1.5px solid ${isDarkMode ? '#3730a3' : isCalmMode ? '#b8c9b2' : '#c4b5fd'}`,
-          borderRadius: '16px',
-          padding: '22px 26px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ maxWidth: '820px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
-              <span
-                style={{
-                  background: isCalmMode ? '#2c5b6c' : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                  color: '#ffffff',
-                  fontSize: '0.73rem',
-                  fontWeight: 800,
-                  padding: '4px 12px',
-                  borderRadius: '999px',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                LABORATORIO ADAPTATIVO DUA + IA
-              </span>
-              <span style={{ fontSize: '0.82rem', color: isDarkMode ? '#c4b5fd' : '#5b21b6', fontWeight: 700 }}>
-                Preguntas y bloques dinámicos generados según tu materia, tema e intereses
-              </span>
-            </div>
-
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: isDarkMode ? '#f8fafc' : '#0f172a', margin: '0 0 6px 0' }}>
-              Micro-Quizzes y Bloques Lógicos Interactivos con IA
-            </h2>
-            <p style={{ fontSize: '0.9rem', color: isDarkMode ? '#cbd5e1' : '#334155', lineHeight: 1.55, margin: 0 }}>
-              Elige tu asignatura, escribe opcionalmente el tema exacto que estás estudiando y selecciona tu interés favorito.
-              La IA generará preguntas inéditas y un desafío de bloques ordenables a tu medida.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: isDarkMode ? '#0f172a' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#334155' : '#ddd6fe'}`,
-              padding: '10px 18px',
-              borderRadius: '14px',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.06)',
-            }}
-          >
-            <SparklesIcon size={20} color={isDarkMode ? '#a78bfa' : '#7c3aed'} />
-            <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--ia-text-muted)', textTransform: 'uppercase' }}>
-                Dominio acumulado
-              </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 900, color: isDarkMode ? '#f8fafc' : '#4c1d95' }}>
-                {score} pts
-              </div>
-            </div>
-          </div>
+    <div className="ia-gquiz-shell" data-calm={effectiveCalm ? 'true' : 'false'}>
+      <header className="ia-gquiz-hud">
+        <div className="ia-gquiz-hud-copy">
+          <span className="ia-gquiz-kicker">
+            <SparklesIcon size={14} /> Práctica interactiva adaptada a tus intereses
+          </span>
+          <h2>Desafíos de Aprendizaje con IA</h2>
+          <p>
+            Pon a prueba lo que estudias con retos breves, pistas paso a paso y ejemplos conectados con lo que te gusta.
+          </p>
         </div>
+
+        <div className="ia-gquiz-hud-stats" aria-label="Indicadores de práctica">
+          <div className="ia-gquiz-stat-pill ia-gquiz-stat-pill--accent">
+            <SparklesIcon size={17} color="var(--ia-primary)" />
+            <div className="ia-gquiz-stat-meta">
+              <span className="ia-gquiz-stat-label">Puntos sesión</span>
+              <span className="ia-gquiz-stat-value">{score} pts</span>
+            </div>
+          </div>
+
+          {currentStreak > 0 && (
+            <div className="ia-gquiz-stat-pill ia-gquiz-stat-pill--streak">
+              <AwardIcon size={17} color="currentColor" />
+              <div className="ia-gquiz-stat-meta">
+                <span className="ia-gquiz-stat-label">Racha actual</span>
+                <span className="ia-gquiz-stat-value">{currentStreak} seguidas</span>
+              </div>
+            </div>
+          )}
+
+          {cumulativeStats.completedSessions > 0 && (
+            <div className="ia-gquiz-stat-pill">
+              <CheckCircleIcon size={17} color="var(--ia-success)" />
+              <div className="ia-gquiz-stat-meta">
+                <span className="ia-gquiz-stat-label">Partidas jugadas</span>
+                <span className="ia-gquiz-stat-value">{cumulativeStats.completedSessions}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="ia-gquiz-mode-bar">
+        <div className="ia-gquiz-mode-tabs" role="tablist" aria-label="Modalidad de práctica">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={studioMode === 'quiz'}
+            className={`ia-gquiz-mode-tab ${studioMode === 'quiz' ? 'is-active' : ''}`}
+            onClick={() => setStudioMode('quiz')}
+          >
+            <TargetIcon size={16} />
+            <span>Desafío de preguntas</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={studioMode === 'sequence'}
+            className={`ia-gquiz-mode-tab ${studioMode === 'sequence' ? 'is-active' : ''}`}
+            onClick={() => setStudioMode('sequence')}
+          >
+            <LayersIcon size={16} />
+            <span>Constructor lógico (4 bloques)</span>
+          </button>
+        </div>
+
+        {activeQuizInProgress && (
+          <button type="button" className="ia-btn-secondary" onClick={handleReturnToSetup}>
+            Cambiar asignatura o interés
+          </button>
+        )}
       </div>
 
-      {/* GRILLA DE 2 COLUMNAS DE ANCHO COMPLETO: IZQUIERDA (QUIZ) | DERECHA (LABORATORIO DE BLOQUES IA) */}
-      <div className="ia-quiz-studio-grid">
-        {/* COLUMNA IZQUIERDA: CONFIGURADOR Y REPRODUCTOR DE MICRO-QUIZ */}
-        <div
-          className="ia-card"
-          style={{
-            margin: 0,
-            padding: '24px',
-            borderRadius: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-          }}
-        >
-          {questions.length === 0 || quizCompleted ? (
-            <>
-              {quizCompleted && (
-                <div
-                  style={{
-                    background: isDarkMode ? 'rgba(16, 185, 129, 0.14)' : '#f0fdf4',
-                    border: `1.5px solid ${isDarkMode ? '#059669' : '#86efac'}`,
-                    padding: '18px 20px',
-                    borderRadius: '14px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                    <CheckCircleIcon size={26} color="#10b981" />
-                    <div>
-                      <h3 style={{ margin: '0 0 2px', fontSize: '1.12rem', fontWeight: 800, color: isDarkMode ? '#ecfdf5' : '#166534' }}>
-                        ¡Gran avance en {selectedSubject}!
-                      </h3>
-                      <p style={{ margin: 0, fontSize: '0.88rem', color: isDarkMode ? '#a7f3d0' : '#15803d' }}>
-                        Obtuviste <strong>{score} puntos</strong> ({correctCount} de {questions.length} aciertos) con analogías de{' '}
-                        <strong>{selectedTheme.name}</strong>.
-                      </p>
-                    </div>
+      {studioMode === 'quiz' && (
+        <>
+          {quizCompleted && questions.length > 0 ? (
+            <section className="ia-gquiz-results" aria-labelledby="gquiz-results-title">
+              <div className="ia-gquiz-results-hero">
+                <div className="ia-gquiz-ring-wrap" aria-hidden="true">
+                  <svg className="ia-gquiz-ring-svg" viewBox="0 0 108 108">
+                    <circle className="ia-gquiz-ring-track" cx="54" cy="54" r={ringRadius} />
+                    <circle
+                      className={`ia-gquiz-ring-fill ${
+                        sessionSummary.accuracyPercent >= 66 ? 'is-high' : ''
+                      }`}
+                      cx="54"
+                      cy="54"
+                      r={ringRadius}
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={ringOffset}
+                    />
+                  </svg>
+                  <div className="ia-gquiz-ring-center">
+                    <span className="ia-gquiz-ring-pct">{sessionSummary.accuracyPercent}%</span>
+                    <span className="ia-gquiz-ring-sub">Precisión</span>
                   </div>
+                </div>
 
-                  {missedTopics.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: '12px',
-                        padding: '12px 14px',
-                        borderRadius: '10px',
-                        background: isDarkMode ? '#0f172a' : '#ffffff',
-                        border: `1px solid ${isDarkMode ? '#334155' : '#bbf7d0'}`,
-                      }}
-                    >
-                      <strong style={{ fontSize: '0.82rem', color: isDarkMode ? '#6ee7b7' : '#166534', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                        <TargetIcon size={15} color="#10b981" />
-                        <span>Conceptos sugeridos para repasar con un tutor o apunte:</span>
-                      </strong>
-                      <ul style={{ margin: '0 0 10px 0', paddingLeft: '18px', fontSize: '0.82rem', color: 'var(--ia-text-body)', lineHeight: 1.5 }}>
-                        {missedTopics.map((topic, i) => (
-                          <li key={i}>{topic}</li>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span className="ia-badge ia-badge-success">{sessionSummary.levelBadge}</span>
+                    <span className="ia-badge ia-badge-blue">{selectedTheme.name}</span>
+                  </div>
+                  <h3 id="gquiz-results-title" style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--ia-text-main)' }}>
+                    {sessionSummary.motivationalTitle}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.92rem', color: 'var(--ia-text-body)', lineHeight: 1.55 }}>
+                    {sessionSummary.motivationalCopy}
+                  </p>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--ia-text-muted)' }}>
+                    Puntaje de práctica formativa (no equivale a nota oficial ni acreditación de tutor).
+                  </span>
+                </div>
+              </div>
+
+              <div className="ia-gquiz-results-metrics">
+                <div className="ia-gquiz-metric-box">
+                  <strong>{sessionSummary.correctCount} / {sessionSummary.totalQuestions}</strong>
+                  <span>Respuestas correctas</span>
+                </div>
+                <div className="ia-gquiz-metric-box">
+                  <strong>{sessionSummary.answeredCount}</strong>
+                  <span>Preguntas respondidas</span>
+                </div>
+                <div className="ia-gquiz-metric-box">
+                  <strong>{sessionSummary.practicePoints} pts</strong>
+                  <span>Puntos de práctica</span>
+                </div>
+                <div className="ia-gquiz-metric-box">
+                  <strong>{sessionSummary.bestStreak}</strong>
+                  <span>Mejor racha seguida</span>
+                </div>
+              </div>
+
+              <div className="ia-gquiz-insights-grid">
+                <div className="ia-gquiz-insight-card">
+                  <h4>
+                    <CheckCircleIcon size={16} color="var(--ia-success)" />
+                    <span>Fortalezas en esta partida ({sessionSummary.strengths.length})</span>
+                  </h4>
+                  {sessionSummary.strengths.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--ia-text-muted)' }}>
+                      Aún no hubo aciertos en este intento. Revisa la explicación de cada pregunta abajo y vuelve a intentarlo sin prisa.
+                    </p>
+                  ) : (
+                    <ul>
+                      {sessionSummary.strengths.map((item) => (
+                        <li key={item.questionId}>
+                          {item.prompt}
+                          {item.usedHint ? ' (resuelta con pista)' : ''}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="ia-gquiz-insight-card">
+                  <h4>
+                    <TargetIcon size={16} color="var(--ia-amber)" />
+                    <span>Contenidos que conviene reforzar ({sessionSummary.toReinforce.length})</span>
+                  </h4>
+                  {sessionSummary.toReinforce.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--ia-text-muted)' }}>
+                      ¡No registraste errores en esta ronda! Puedes explorar un tema más específico o pasar al constructor de bloques.
+                    </p>
+                  ) : (
+                    <>
+                      <ul>
+                        {sessionSummary.toReinforce.map((item) => (
+                          <li key={item.questionId}>{item.prompt}</li>
                         ))}
                       </ul>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <Link to="/tutoring" className="ia-btn-primary ia-btn-sm">
-                          Buscar Tutor en {selectedSubject}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                        <Link
+                          to={`/tutoring?search=${encodeURIComponent(selectedSubject)}`}
+                          className="ia-btn-secondary"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                        >
+                          Buscar tutor en {selectedSubject}
                         </Link>
-                        <Link to="/resources" className="ia-btn-secondary ia-btn-sm">
-                          Ver Apuntes de {selectedSubject}
+                        <Link
+                          to="/resources"
+                          className="ia-btn-secondary"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                        >
+                          Revisar apuntes
                         </Link>
                       </div>
-                    </div>
+                    </>
                   )}
+                </div>
+              </div>
+
+              {answerRecords.length > 0 && (
+                <details className="ia-guided-disclosure">
+                  <summary>Revisar mis respuestas y explicaciones ({answerRecords.length})</summary>
+                  <div className="ia-gquiz-review-list">
+                    {answerRecords.map((rec, idx) => (
+                      <div key={`${rec.questionId}-${idx}`} className="ia-gquiz-review-item">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--ia-text-main)' }}>
+                            Pregunta {idx + 1}: {rec.prompt}
+                          </strong>
+                          <span className={`ia-badge ${rec.isCorrect ? 'ia-badge-success' : 'ia-badge-amber'}`}>
+                            {rec.isCorrect ? 'Correcta' : 'Por reforzar'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.83rem', color: 'var(--ia-text-body)' }}>
+                          <strong>Tu respuesta:</strong> {rec.selectedOptionText}
+                        </div>
+                        {!rec.isCorrect && (
+                          <div style={{ fontSize: '0.83rem', color: 'var(--ia-success)', fontWeight: 600 }}>
+                            <strong>Respuesta correcta:</strong> {rec.correctOptionText}
+                          </div>
+                        )}
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--ia-text-muted)', lineHeight: 1.5 }}>
+                          {rec.explanation}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              <div className="ia-gquiz-action-bar">
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="ia-btn-primary"
+                    onClick={() => void handleStartQuiz()}
+                    disabled={loadingQuiz}
+                  >
+                    <RotateCcwIcon size={16} />
+                    <span>{loadingQuiz ? 'Generando preguntas...' : 'Intentar nuevo desafío'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="ia-btn-secondary"
+                    onClick={() => setStudioMode('sequence')}
+                  >
+                    <LayersIcon size={16} />
+                    <span>Practicar en Constructor de Bloques</span>
+                  </button>
+                </div>
+
+                <button type="button" className="ia-btn-secondary" onClick={handleReturnToSetup}>
+                  Elegir otra materia o interés
+                </button>
+              </div>
+            </section>
+          ) : activeQuizInProgress && currentQ ? (
+            <section className="ia-gquiz-arena" aria-label="Pregunta actual del cuestionario">
+              <div className="ia-gquiz-progress-header">
+                <div className="ia-gquiz-progress-meta">
+                  <div className="ia-gquiz-quest-badges">
+                    <span className="ia-badge ia-badge-blue">{currentQ.subject}</span>
+                    <span className="ia-badge ia-badge-neutral">{currentQ.themeLabel}</span>
+                    {untimedMode && <span className="ia-badge ia-badge-success">Sin reloj</span>}
+                  </div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--ia-text-body)' }}>
+                    Pregunta {currentIdx + 1} de {questions.length} · {progressPct}% completado
+                  </span>
+                </div>
+
+                <div className="ia-gquiz-progress-bar-wrap">
+                  <div
+                    className="ia-gquiz-progress-track"
+                    role="progressbar"
+                    aria-valuenow={progressPct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Avance del cuestionario: ${progressPct}%`}
+                  >
+                    <div
+                      className="ia-gquiz-progress-fill"
+                      style={{
+                        width: `${Math.max(
+                          progressPct,
+                          Math.round(((currentIdx + 0.35) / questions.length) * 100)
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="ia-gquiz-step-nodes" aria-label="Estado por pregunta">
+                    {questions.map((qItem, idx) => {
+                      const prevRec = answerRecords[idx];
+                      const status = prevRec
+                        ? prevRec.isCorrect
+                          ? 'correct'
+                          : 'incorrect'
+                        : idx === currentIdx
+                          ? 'current'
+                          : 'pending';
+                      return (
+                        <span
+                          key={qItem.id}
+                          className="ia-gquiz-step-node"
+                          data-status={status}
+                          title={
+                            status === 'correct'
+                              ? `Pregunta ${idx + 1}: Correcta`
+                              : status === 'incorrect'
+                                ? `Pregunta ${idx + 1}: Por reforzar`
+                                : status === 'current'
+                                  ? `Pregunta ${idx + 1}: Actual`
+                                  : `Pregunta ${idx + 1}: Pendiente`
+                          }
+                        >
+                          {status === 'correct' ? '✓' : idx + 1}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="ia-gquiz-question-box">
+                <div className="ia-gquiz-analogy-banner">
+                  <div>
+                    <strong style={{ color: 'var(--ia-primary)', display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '2px' }}>
+                      Contexto aplicado · {currentQ.themeLabel}
+                    </strong>
+                    <span>{currentQ.analogyContext}</span>
+                  </div>
+                  <ReadAloudControls
+                    compact
+                    text={[
+                      currentQ.analogyContext,
+                      currentQ.prompt,
+                      ...currentQ.options.map(
+                        (o, i) => `Alternativa ${String.fromCharCode(65 + i)}: ${o.text}`
+                      ),
+                    ].join('. ')}
+                    label="Escuchar"
+                  />
+                </div>
+
+                <h3 className="ia-gquiz-prompt">{currentQ.prompt}</h3>
+
+                {currentQ.codeSnippet && (
+                  <pre className="ia-gquiz-code">{currentQ.codeSnippet}</pre>
+                )}
+              </div>
+
+              <div className="ia-gquiz-options-grid" role="radiogroup" aria-label="Alternativas de respuesta">
+                {currentQ.options.map((opt, idx) => {
+                  const letter = String.fromCharCode(65 + idx);
+                  const isPendingSelected = !isAnswered && pendingOptionId === opt.id;
+                  const isRightAnswer = opt.id === currentQ.correctOptionId;
+                  const isChosenWrong = isAnswered && confirmedOptionId === opt.id && !isRightAnswer;
+
+                  let optionState: 'normal' | 'selected' | 'correct' | 'incorrect' | 'disabled' = 'normal';
+                  if (!isAnswered) {
+                    optionState = isPendingSelected ? 'selected' : 'normal';
+                  } else if (isRightAnswer) {
+                    optionState = 'correct';
+                  } else if (isChosenWrong) {
+                    optionState = 'incorrect';
+                  } else {
+                    optionState = 'disabled';
+                  }
+
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isAnswered ? confirmedOptionId === opt.id : isPendingSelected}
+                      disabled={isAnswered}
+                      data-state={optionState}
+                      className="ia-gquiz-option"
+                      onClick={() => handleChooseOption(opt.id)}
+                    >
+                      <span className="ia-gquiz-option-key" aria-hidden="true">
+                        {letter}
+                      </span>
+                      <span className="ia-gquiz-option-text">{opt.text}</span>
+                      <span className="ia-gquiz-option-indicator" aria-hidden="true">
+                        {optionState === 'correct' && <CheckIcon size={18} color="var(--ia-success)" />}
+                        {optionState === 'incorrect' && <XIcon size={18} color="var(--ia-danger)" />}
+                        {optionState === 'selected' && <CheckIcon size={17} color="var(--ia-primary)" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {showHint && (
+                <div className="ia-gquiz-hint-box" role="status">
+                  <div className="ia-gquiz-hint-title">
+                    <LightbulbIcon size={16} />
+                    <span>Pista paso a paso</span>
+                  </div>
+                  <div>{currentQ.hintStepByStep}</div>
                 </div>
               )}
 
-              {/* Paso 1: Selección de Materia */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.92rem', fontWeight: 800, color: 'var(--ia-text-main)', marginBottom: '8px' }}>
-                  1. Selecciona la asignatura que deseas practicar:
-                </label>
-                {neededSubjectsList.length > 0 && (
-                  <p style={{ margin: '0 0 10px', fontSize: '0.8rem', color: 'var(--ia-primary)', fontWeight: 600 }}>
-                    Incluye las asignaturas registradas en tu perfil para refuerzo prioritario.
-                  </p>
-                )}
+              {isAnswered && (
+                <div
+                  className={`ia-gquiz-feedback-banner ${
+                    confirmedOptionId === currentQ.correctOptionId ? 'is-correct' : 'is-incorrect'
+                  }`}
+                  role="status"
+                >
+                  <div className="ia-gquiz-feedback-head">
+                    <span className="ia-gquiz-feedback-title">
+                      {confirmedOptionId === currentQ.correctOptionId ? (
+                        <>
+                          <CheckCircleIcon size={19} />
+                          <span>¡Respuesta correcta! +100 pts de práctica</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircleIcon size={19} />
+                          <span>Revisemos el razonamiento clave</span>
+                        </>
+                      )}
+                    </span>
+                    <ReadAloudControls compact text={currentQ.explanation} label="Escuchar explicación" />
+                  </div>
+                  <p className="ia-gquiz-feedback-body">{currentQ.explanation}</p>
+                </div>
+              )}
 
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="ia-gquiz-action-bar">
+                {!isAnswered ? (
+                  <>
+                    <button
+                      type="button"
+                      className="ia-btn-secondary"
+                      onClick={() => setShowHint((prev) => !prev)}
+                    >
+                      <LightbulbIcon size={15} />
+                      <span>{showHint ? 'Ocultar pista' : 'Pedir pista paso a paso'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="ia-btn-primary"
+                      disabled={!pendingOptionId}
+                      onClick={handleConfirmAnswer}
+                    >
+                      <span>Comprobar respuesta</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--ia-text-muted)' }}>
+                      {currentIdx + 1 < questions.length
+                        ? `Quedan ${questions.length - (currentIdx + 1)} pregunta(s) en esta ronda`
+                        : 'Completaste todas las preguntas de la ronda'}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="ia-btn-primary"
+                      onClick={handleNextQuestion}
+                    >
+                      <span>
+                        {currentIdx + 1 < questions.length
+                          ? 'Siguiente pregunta'
+                          : 'Ver pantalla de resultados'}
+                      </span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </section>
+          ) : (
+            <section className="ia-gquiz-setup-card" aria-label="Configurar desafío de preguntas">
+              <div className="ia-gquiz-setup-step">
+                <div className="ia-gquiz-step-label">
+                  <span className="ia-gquiz-step-num">1</span>
+                  <span>Elige la asignatura que quieres practicar</span>
+                </div>
+                <div className="ia-gquiz-subject-pills">
                   {subjects.map((sub) => {
                     const isSelected = selectedSubject === sub;
                     const isProfileNeeded = neededSubjectsList.some((n) => n.subject?.name === sub);
@@ -781,48 +1176,17 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                       <button
                         key={sub}
                         type="button"
+                        className={`ia-gquiz-subject-pill ${isSelected ? 'is-selected' : ''}`}
                         onClick={() => {
                           setSelectedSubject(sub);
                           handleResetSequenceForSubject(sub, customTopic);
-                          handleGenerateAISequenceBlocks(sub, selectedTheme, customTopic);
-                        }}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: '10px',
-                          fontSize: '0.84rem',
-                          fontWeight: isSelected ? 800 : 600,
-                          border: `1.5px solid ${
-                            isSelected
-                              ? 'var(--ia-primary, #6366f1)'
-                              : 'var(--ia-border-strong, #cbd5e1)'
-                          }`,
-                          background: isSelected
-                            ? 'var(--ia-primary-subtle, #eef2ff)'
-                            : 'var(--ia-bg-card, #ffffff)',
-                          color: isSelected
-                            ? 'var(--ia-primary, #4338ca)'
-                            : 'var(--ia-text-body)',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          transition: 'all 0.15s ease',
                         }}
                       >
-                        <BookOpenIcon size={14} color={isSelected ? '#6366f1' : '#64748b'} />
+                        <BookOpenIcon size={14} />
                         <span>{sub}</span>
                         {isProfileNeeded && (
-                          <span
-                            style={{
-                              backgroundColor: isDarkMode ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
-                              color: isDarkMode ? '#fbbf24' : '#b45309',
-                              fontSize: '0.68rem',
-                              fontWeight: 800,
-                              padding: '1px 6px',
-                              borderRadius: '6px',
-                            }}
-                          >
-                            Prioritaria
+                          <span className="ia-badge ia-badge-amber" style={{ fontSize: '0.66rem', padding: '1px 6px' }}>
+                            Tu meta
                           </span>
                         )}
                       </button>
@@ -831,869 +1195,230 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
                 </div>
               </div>
 
-              {/* Paso 2: Tema específico opcional para dirigir la IA */}
-              <div
-                style={{
-                  background: 'var(--ia-bg-subtle)',
-                  border: '1px solid var(--ia-border)',
-                  borderRadius: '12px',
-                  padding: '14px 16px',
-                }}
-              >
-                <label
-                  htmlFor="quiz-custom-topic"
-                  style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: 'var(--ia-text-main)', marginBottom: '4px' }}
-                >
-                  2. ¿Qué tema o contenido específico quieres que la IA genere? (Opcional)
-                </label>
-                <p style={{ margin: '0 0 10px', fontSize: '0.79rem', color: 'var(--ia-text-muted)' }}>
-                  Escribe un concepto o elige una sugerencia rápida: tanto el Micro-Quiz como los bloques ordenables de la derecha se adaptarán a lo que pongas.
-                </p>
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  <input
-                    id="quiz-custom-topic"
-                    type="text"
-                    value={customTopic}
-                    onChange={(e) => setCustomTopic(e.target.value)}
-                    placeholder={`Ej: ${topicSuggestions[0]}...`}
-                    className="ia-input"
-                    style={{ flex: 1, minWidth: '220px' }}
-                  />
-                  <button
-                    type="button"
-                    className="ia-btn-secondary ia-btn-sm"
-                    onClick={() => handleGenerateAISequenceBlocks(selectedSubject, selectedTheme, customTopic)}
-                    disabled={loadingSequenceAI}
-                  >
-                    <SparklesIcon size={14} color="#6366f1" />
-                    <span>{loadingSequenceAI ? 'Generando bloques...' : 'Adaptar bloques con IA'}</span>
-                  </button>
+              <div className="ia-gquiz-setup-step">
+                <div className="ia-gquiz-step-label">
+                  <span className="ia-gquiz-step-num">2</span>
+                  <span>Conecta los ejercicios con un tema de tu interés</span>
                 </div>
-
-                {/* Chips de sugerencias rápidas por asignatura */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--ia-text-muted)' }}>
-                    Temas sugeridos:
-                  </span>
-                  {topicSuggestions.map((sug) => {
-                    const activeSug = customTopic === sug;
+                <div className="ia-gquiz-theme-grid">
+                  {INTEREST_THEMES.map((theme) => {
+                    const isSelected = selectedTheme.id === theme.id;
                     return (
                       <button
-                        key={sug}
+                        key={theme.id}
                         type="button"
-                        onClick={() => {
-                          const nextVal = activeSug ? '' : sug;
-                          setCustomTopic(nextVal);
-                          handleResetSequenceForSubject(selectedSubject, nextVal);
-                          handleGenerateAISequenceBlocks(selectedSubject, selectedTheme, nextVal);
-                        }}
-                        style={{
-                          fontSize: '0.74rem',
-                          fontWeight: 600,
-                          padding: '3px 10px',
-                          borderRadius: '999px',
-                          border: `1px solid ${activeSug ? 'var(--ia-primary)' : 'var(--ia-border-strong)'}`,
-                          background: activeSug
-                            ? 'var(--ia-primary-subtle)'
-                            : 'var(--ia-bg-card)',
-                          color: activeSug
-                            ? 'var(--ia-primary)'
-                            : 'var(--ia-text-body)',
-                          cursor: 'pointer',
-                        }}
+                        className={`ia-gquiz-theme-card ${isSelected ? 'is-selected' : ''}`}
+                        onClick={() => setSelectedTheme(theme)}
                       >
-                        {sug}
+                        <span className="ia-gquiz-theme-tag">{theme.emoji}</span>
+                        <div>
+                          <div className="ia-gquiz-theme-title">{theme.name}</div>
+                          <div className="ia-gquiz-theme-desc">{theme.description}</div>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Paso 3: Selección de Pasión / Interés */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.92rem', fontWeight: 800, color: 'var(--ia-text-main)', marginBottom: '4px' }}>
-                  3. Elige tu interés para las analogías explicativas:
-                </label>
-                <p style={{ margin: '0 0 10px', fontSize: '0.8rem', color: 'var(--ia-text-muted)' }}>
-                  Conectamos la teoría de {selectedSubject} con contextos que te resulten familiares y entretenidos.
-                </p>
+              <details className="ia-guided-disclosure" open={Boolean(customTopic.trim())}>
+                <summary>Personalizar contenido específico o ajustes de tiempo (opcional)</summary>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+                  <div>
+                    <label htmlFor="quiz-custom-topic" className="ia-label">
+                      Contenido o unidad puntual de {selectedSubject}
+                    </label>
+                    <input
+                      id="quiz-custom-topic"
+                      type="text"
+                      className="ia-input"
+                      placeholder={`Ej: ${topicSuggestions[0]}`}
+                      value={customTopic}
+                      onChange={(e) => setCustomTopic(e.target.value)}
+                    />
+                    <div className="ia-gquiz-topic-chips">
+                      {topicSuggestions.map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          className={`ia-gquiz-topic-chip ${customTopic === sug ? 'is-active' : ''}`}
+                          onClick={() => setCustomTopic(customTopic === sug ? '' : sug)}
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                    gap: '10px',
-                  }}
-                >
-                  {INTEREST_THEMES.map((theme) => {
-                    const isSelected = selectedTheme.id === theme.id;
-                    return (
-                      <div
-                        key={theme.id}
-                        onClick={() => {
-                          setSelectedTheme(theme);
-                          handleGenerateAISequenceBlocks(selectedSubject, theme, customTopic);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setSelectedTheme(theme);
-                            handleGenerateAISequenceBlocks(selectedSubject, theme, customTopic);
-                          }
-                        }}
-                        style={{
-                          border: `2px solid ${
-                            isSelected
-                              ? theme.color
-                              : 'var(--ia-border)'
-                          }`,
-                          background: isSelected
-                            ? isDarkMode
-                              ? `${theme.color}22`
-                              : `${theme.color}12`
-                            : 'var(--ia-bg-card)',
-                          borderRadius: '12px',
-                          padding: '12px 14px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '5px',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span
-                            style={{
-                              fontSize: '0.7rem',
-                              fontWeight: 800,
-                              padding: '2px 8px',
-                              borderRadius: '6px',
-                              backgroundColor: `${theme.color}20`,
-                              color: theme.color,
-                            }}
-                          >
-                            {theme.emoji}
-                          </span>
-                          {isSelected && (
-                            <span
-                              style={{
-                                backgroundColor: theme.color,
-                                color: '#ffffff',
-                                padding: '2px 8px',
-                                borderRadius: '999px',
-                                fontSize: '0.68rem',
-                                fontWeight: 800,
-                              }}
-                            >
-                              Activo
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--ia-text-main)' }}>
-                          {theme.name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ia-text-muted)', lineHeight: 1.35 }}>
-                          {theme.description}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', color: 'var(--ia-text-body)', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={untimedMode}
+                      onChange={(e) => setUntimedMode(e.target.checked)}
+                    />
+                    <span>Practicar sin presión de cronómetro y con pistas habilitadas</span>
+                  </label>
                 </div>
-              </div>
+              </details>
 
-              {/* Botón de Lanzamiento y Modo de Ritmo */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '12px',
-                  paddingTop: '10px',
-                  borderTop: '1px solid var(--ia-border)',
-                }}
-              >
-                <label
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    color: 'var(--ia-text-body)',
-                    cursor: 'pointer',
-                    padding: '8px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--ia-bg-subtle)',
-                    border: '1px solid var(--ia-border)',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={untimedMode}
-                    onChange={(e) => setUntimedMode(e.target.checked)}
-                  />
-                  <span>Sin límite de tiempo (Ritmo pausado)</span>
-                </label>
+              <div className="ia-gquiz-launch-bar">
+                <span style={{ fontSize: '0.84rem', color: 'var(--ia-text-muted)' }}>
+                  3 preguntas dinámicas · Pistas paso a paso · Retroalimentación inmediata
+                </span>
 
                 <button
                   type="button"
-                  onClick={handleStartQuiz}
+                  className="ia-btn-primary ia-gquiz-launch-cta"
+                  onClick={() => void handleStartQuiz()}
                   disabled={loadingQuiz}
-                  className="ia-btn-primary"
-                  style={{
-                    background: isCalmMode
-                      ? '#2c5b6c'
-                      : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                    borderColor: isCalmMode ? '#2c5b6c' : '#4f46e5',
-                    padding: '11px 22px',
-                    fontSize: '0.92rem',
-                    fontWeight: 800,
-                  }}
                 >
                   <SparklesIcon size={17} color="#ffffff" />
-                  <span>
-                    {loadingQuiz
-                      ? 'Generando preguntas con IA...'
-                      : quizCompleted
-                      ? 'Generar Nuevo Micro-Quiz IA'
-                      : 'Comenzar Micro-Quiz Adaptativo'}
-                  </span>
+                  <span>{loadingQuiz ? 'Preparando tu desafío con IA...' : 'Iniciar desafío interactivo'}</span>
                 </button>
               </div>
-            </>
-          ) : (
-            /* Reproductor del Quiz Interactivo */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <span
-                    style={{
-                      background: isDarkMode ? 'rgba(124, 58, 237, 0.25)' : '#ede9fe',
-                      color: isDarkMode ? '#c4b5fd' : '#6d28d9',
-                      fontSize: '0.76rem',
-                      fontWeight: 900,
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                    }}
-                  >
-                    PREGUNTA {currentIdx + 1} DE {questions.length}
-                  </span>
-                  <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--ia-text-main)' }}>
-                    {currentQ.subject}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setQuestions([])}
-                  className="ia-btn-secondary ia-btn-sm"
-                >
-                  Cambiar materia o tema
-                </button>
-              </div>
-
-              {currentQ.analogyContext && (
-                <div
-                  style={{
-                    background: isDarkMode ? '#172033' : '#f5f3ff',
-                    borderLeft: '4px solid #7c3aed',
-                    padding: '12px 16px',
-                    borderRadius: '10px',
-                    fontSize: '0.87rem',
-                    color: 'var(--ia-text-body)',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <strong style={{ color: isDarkMode ? '#c4b5fd' : '#6d28d9' }}>
-                    Contexto ({currentQ.themeLabel}):{' '}
-                  </strong>
-                  {currentQ.analogyContext}
-                </div>
-              )}
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--ia-text-main)', margin: 0, lineHeight: 1.45, flex: 1 }}>
-                    {currentQ.prompt}
-                  </h3>
-                  <ReadAloudControls
-                    text={`${currentQ.prompt}${currentQ.options ? '. ' + currentQ.options.map((o) => o.text).join('. ') : ''}`}
-                    label="Escuchar pregunta"
-                    compact
-                  />
-                </div>
-
-                {currentQ.codeSnippet && (
-                  <pre
-                    style={{
-                      backgroundColor: '#0f172a',
-                      color: '#e2e8f0',
-                      padding: '14px 18px',
-                      borderRadius: '10px',
-                      fontSize: '0.85rem',
-                      fontFamily: 'Consolas, monospace',
-                      overflowX: 'auto',
-                      lineHeight: 1.5,
-                      margin: '10px 0',
-                      border: '1px solid #334155',
-                    }}
-                  >
-                    <code>{currentQ.codeSnippet}</code>
-                  </pre>
-                )}
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowHint((prev) => !prev)}
-                  className="ia-btn-secondary ia-btn-sm"
-                  style={{ borderStyle: 'dashed' }}
-                >
-                  <LightbulbIcon size={15} color="#3b82f6" />
-                  <span>{showHint ? 'Ocultar pista paso a paso' : 'Ver pista paso a paso (sin penalización)'}</span>
-                </button>
-              </div>
-
-              {showHint && (
-                <div
-                  style={{
-                    background: isDarkMode ? 'rgba(37, 99, 235, 0.16)' : '#eff6ff',
-                    border: `1px solid ${isDarkMode ? '#3b82f6' : '#bfdbfe'}`,
-                    padding: '12px 16px',
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
-                    color: isDarkMode ? '#bfdbfe' : '#1e40af',
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-line',
-                  }}
-                >
-                  <div style={{ fontWeight: 800, marginBottom: '4px' }}>Andamiaje paso a paso:</div>
-                  {currentQ.hintStepByStep}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {currentQ.options.map((opt) => {
-                  const isSelected = selectedOptionId === opt.id;
-                  const isCorrect = opt.id === currentQ.correctOptionId;
-
-                  let optBg = 'var(--ia-bg-card)';
-                  let optBorder = 'var(--ia-border-strong)';
-                  let optColor = 'var(--ia-text-main)';
-
-                  if (isAnswered) {
-                    if (isCorrect) {
-                      optBg = 'var(--ia-success-bg)';
-                      optBorder = 'var(--ia-success)';
-                      optColor = 'var(--ia-success)';
-                    } else if (isSelected) {
-                      optBg = 'var(--ia-danger-bg)';
-                      optBorder = 'var(--ia-danger)';
-                      optColor = 'var(--ia-danger)';
-                    }
-                  } else if (isSelected) {
-                    optBg = 'var(--ia-primary-subtle)';
-                    optBorder = 'var(--ia-primary)';
-                    optColor = 'var(--ia-primary)';
-                  }
-
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleSelectOption(opt.id)}
-                      disabled={isAnswered}
-                      style={{
-                        backgroundColor: optBg,
-                        border: `2px solid ${optBorder}`,
-                        color: optColor,
-                        padding: '13px 16px',
-                        borderRadius: '12px',
-                        textAlign: 'left',
-                        fontSize: '0.9rem',
-                        fontWeight: isSelected ? 700 : 500,
-                        cursor: isAnswered ? 'default' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '8px',
-                            backgroundColor:
-                              isSelected || (isAnswered && isCorrect)
-                                ? optBorder
-                                : isDarkMode
-                                ? '#0f172a'
-                                : '#f1f5f9',
-                            color:
-                              isSelected || (isAnswered && isCorrect)
-                                ? '#ffffff'
-                                : 'var(--ia-text-muted)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.8rem',
-                            fontWeight: 800,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {opt.id.toUpperCase()}
-                        </span>
-                        <span>{opt.text}</span>
-                      </div>
-
-                      {isAnswered && isCorrect && <CheckIcon size={20} color="#10b981" />}
-                      {isAnswered && isSelected && !isCorrect && <XIcon size={20} color="#ef4444" />}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {isAnswered && (
-                <div
-                  style={{
-                    background:
-                      selectedOptionId === currentQ.correctOptionId
-                        ? isDarkMode
-                          ? 'rgba(16, 185, 129, 0.14)'
-                          : '#f0fdf4'
-                        : isDarkMode
-                        ? 'rgba(245, 158, 11, 0.14)'
-                        : '#fffbeb',
-                    border: `1.5px solid ${
-                      selectedOptionId === currentQ.correctOptionId ? '#10b981' : '#f59e0b'
-                    }`,
-                    padding: '16px 18px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {selectedOptionId === currentQ.correctOptionId ? (
-                      <>
-                        <CheckIcon size={18} color="#10b981" />
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: isDarkMode ? '#6ee7b7' : '#166534' }}>
-                          ¡Respuesta Correcta! (+100 pts)
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircleIcon size={18} color="#f59e0b" />
-                        <span style={{ fontSize: '0.92rem', fontWeight: 800, color: isDarkMode ? '#fcd34d' : '#92400e' }}>
-                          ¡Buen intento! Analicemos la lógica:
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--ia-text-body)', lineHeight: 1.5 }}>
-                    {currentQ.explanation}
-                  </p>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                    <button
-                      type="button"
-                      onClick={handleNextQuestion}
-                      className="ia-btn-primary ia-btn-sm"
-                    >
-                      {currentIdx + 1 < questions.length ? 'Siguiente Pregunta' : 'Ver Resultados Finales'}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            </section>
           )}
-        </div>
+        </>
+      )}
 
-        {/* COLUMNA DERECHA: LABORATORIO VISUAL DE SECUENCIA LÓGICA CON IA (REDISEÑADO) */}
-        <div
-          className="ia-card ia-sequence-studio-card"
-          style={{
-            margin: 0,
-            padding: '24px',
-            borderRadius: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            background: 'var(--ia-bg-card)',
-            border: '1.5px solid var(--ia-border)',
-          }}
-        >
-          {/* Cabecera del Laboratorio de Bloques */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+      {studioMode === 'sequence' && (
+        <section className="ia-gquiz-seq-card" aria-label="Constructor de secuencia lógica">
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    padding: '3px 10px',
-                    borderRadius: '999px',
-                    background: isDarkMode ? 'rgba(59, 130, 246, 0.22)' : '#dbeafe',
-                    color: isDarkMode ? '#93c5fd' : '#1d4ed8',
-                  }}
-                >
-                   Constructor Interactivo Drag & Drop
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    padding: '3px 9px',
-                    borderRadius: '999px',
-                    background: isDarkMode ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7',
-                    color: isDarkMode ? '#6ee7b7' : '#15803d',
-                  }}
-                >
-                  {sequenceSourceLabel} · {selectedSubject}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                <span className="ia-badge ia-badge-blue">{selectedSubject}</span>
+                <span className="ia-badge ia-badge-neutral">{sequenceSourceLabel}</span>
               </div>
-
-              <h3 style={{ fontSize: '1.12rem', fontWeight: 800, color: 'var(--ia-text-main)', margin: '0 0 4px 0' }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: '1.18rem', fontWeight: 800, color: 'var(--ia-text-main)' }}>
                 {sequenceTitle}
               </h3>
-              <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--ia-text-muted)', lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--ia-text-body)', lineHeight: 1.5 }}>
                 {sequenceScenario}
               </p>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <select
+                aria-label="Cambiar asignatura del reto de bloques"
+                className="ia-select"
+                style={{ width: 'auto', minWidth: '190px' }}
+                value={selectedSubject}
+                onChange={(e) => {
+                  const sub = e.target.value;
+                  setSelectedSubject(sub);
+                  handleResetSequenceForSubject(sub, customTopic);
+                  void handleGenerateAISequenceBlocks(sub, selectedTheme, customTopic);
+                }}
+              >
+                {subjects.map((sub) => (
+                  <option key={sub} value={sub}>
+                    {sub}
+                  </option>
+                ))}
+              </select>
+
               <button
                 type="button"
-                className="ia-btn-secondary ia-btn-sm"
-                onClick={() => handleGenerateAISequenceBlocks(selectedSubject, selectedTheme, customTopic)}
+                className="ia-btn-secondary"
                 disabled={loadingSequenceAI}
-                title="Generar un nuevo desafío de bloques con IA para esta asignatura y tema"
+                onClick={() => void handleGenerateAISequenceBlocks(selectedSubject, selectedTheme, customTopic)}
               >
-                <SparklesIcon size={14} color="#6366f1" />
+                <RotateCcwIcon size={15} />
                 <span>{loadingSequenceAI ? 'Generando...' : 'Nuevo reto IA'}</span>
-              </button>
-              <button
-                type="button"
-                className="ia-btn-secondary ia-btn-sm"
-                onClick={() => handleResetSequenceForSubject(selectedSubject, customTopic)}
-                title="Mezclar el orden de los bloques"
-              >
-                <RotateCcwIcon size={14} />
-                <span>Mezclar</span>
-              </button>
-              <button
-                type="button"
-                className="ia-btn-primary ia-btn-sm"
-                onClick={handleCheckSequence}
-              >
-                <CheckCircleIcon size={14} />
-                <span>Verificar orden</span>
               </button>
             </div>
           </div>
 
-          {/* Pista visual de progreso de bloques */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: '8px',
-              padding: '10px 12px',
-              borderRadius: '12px',
-              background: isDarkMode ? '#172033' : '#f1f5f9',
-              border: `1px solid ${isDarkMode ? '#283548' : '#e2e8f0'}`,
-            }}
-          >
-            {[0, 1, 2, 3].map((slotIdx) => {
-              const blk = sequenceBlocks[slotIdx];
-              const isSpotOk = sequenceChecked !== 'none' && blk?.correctOrder === slotIdx + 1;
-              const isSpotErr = sequenceChecked !== 'none' && blk?.correctOrder !== slotIdx + 1;
-              const accent = STEP_ACCENTS[slotIdx];
-              return (
-                <div
-                  key={slotIdx}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    color: isSpotOk
-                      ? '#10b981'
-                      : isSpotErr
-                      ? '#f59e0b'
-                      : 'var(--ia-text-body)',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      background: isSpotOk
-                        ? '#10b981'
-                        : isSpotErr
-                        ? '#f59e0b'
-                        : accent.border,
-                      color: '#ffffff',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {isSpotOk ? '✓' : slotIdx + 1}
-                  </span>
-                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {slotIdx === 0
-                      ? 'Entrada'
-                      : slotIdx === 1
-                      ? 'Planteamiento'
-                      : slotIdx === 2
-                      ? 'Desarrollo'
-                      : 'Verificación'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Lienzo de Bloques Arrastrables con Conectores de Flujo */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="ia-gquiz-seq-list">
             {sequenceBlocks.map((blk, index) => {
               const isCorrectSpot = sequenceChecked !== 'none' && blk.correctOrder === index + 1;
               const isWrongSpot = sequenceChecked !== 'none' && blk.correctOrder !== index + 1;
-              const accent = STEP_ACCENTS[index % STEP_ACCENTS.length];
-              const isBeingDragged = draggedSeqIndex === index;
 
               return (
-                <div key={blk.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div
-                    draggable
-                    onDragStart={(e) => {
-                      setDraggedSeqIndex(index);
-                      e.dataTransfer.setData('text/plain', String(index));
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const from =
-                        draggedSeqIndex !== null
-                          ? draggedSeqIndex
-                          : Number(e.dataTransfer.getData('text/plain'));
-                      if (!Number.isNaN(from)) {
-                        handleMoveSeqBlock(from, index);
-                      }
-                      setDraggedSeqIndex(null);
-                    }}
-                    onDragEnd={() => setDraggedSeqIndex(null)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '14px',
-                      padding: '14px 16px',
-                      borderRadius: '14px',
-                      cursor: 'grab',
-                      opacity: isBeingDragged ? 0.65 : 1,
-                      border: `1.5px solid ${
-                        isCorrectSpot
-                          ? '#10b981'
-                          : isWrongSpot
-                          ? '#f59e0b'
-                          : isDarkMode
-                          ? '#283548'
-                          : '#cbd5e1'
-                      }`,
-                      borderLeft: `6px solid ${
-                        isCorrectSpot ? '#10b981' : isWrongSpot ? '#f59e0b' : accent.border
-                      }`,
-                      background: isCorrectSpot
-                        ? 'var(--ia-success-bg)'
-                        : isWrongSpot
-                        ? 'var(--ia-amber-bg)'
-                        : 'var(--ia-bg-subtle)',
-                      boxShadow: 'var(--ia-shadow-sm)',
-                      transition: 'all 0.16s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: 0 }}>
-                      {/* Grip + Número de Posición Actual */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '4px',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '10px',
-                            background: isCorrectSpot
-                              ? '#10b981'
-                              : isWrongSpot
-                              ? '#f59e0b'
-                              : isDarkMode
-                              ? accent.darkBadgeBg
-                              : accent.badgeBg,
-                            color:
-                              isCorrectSpot || isWrongSpot
-                                ? '#ffffff'
-                                : isDarkMode
-                                ? accent.darkBadgeText
-                                : accent.badgeText,
-                            fontWeight: 900,
-                            fontSize: '0.88rem',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {index + 1}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 900,
-                            color: 'var(--ia-text-muted)',
-                            letterSpacing: '1px',
-                            userSelect: 'none',
-                          }}
-                          title="Arrastrar bloque"
-                        >
-                          ⋮⋮
-                        </span>
-                      </div>
+                <div
+                  key={blk.id}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedSeqIndex(index);
+                    e.dataTransfer.setData('text/plain', String(index));
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const from =
+                      draggedSeqIndex !== null
+                        ? draggedSeqIndex
+                        : Number(e.dataTransfer.getData('text/plain'));
+                    if (!Number.isNaN(from)) {
+                      handleMoveSeqBlock(from, index);
+                    }
+                    setDraggedSeqIndex(null);
+                  }}
+                  onDragEnd={() => setDraggedSeqIndex(null)}
+                  className={`ia-gquiz-seq-item ${isCorrectSpot ? 'is-correct-slot' : ''}`}
+                  style={{
+                    opacity: draggedSeqIndex === index ? 0.65 : 1,
+                    borderColor: isWrongSpot ? 'var(--ia-amber)' : undefined,
+                    borderLeftColor: isWrongSpot ? 'var(--ia-amber)' : undefined,
+                  }}
+                >
+                  <span className="ia-gquiz-seq-slot-num">
+                    {isCorrectSpot ? '✓' : index + 1}
+                  </span>
 
-                      {/* Contenido del Bloque */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                          <span
-                            style={{
-                              fontSize: '0.68rem',
-                              fontWeight: 800,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.03em',
-                              padding: '2px 8px',
-                              borderRadius: '6px',
-                              background: isDarkMode ? 'rgba(148, 163, 184, 0.14)' : '#f1f5f9',
-                              color: isDarkMode ? '#cbd5e1' : '#475569',
-                            }}
-                          >
-                            Posición actual #{index + 1}
-                          </span>
-                          {isCorrectSpot && (
-                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#10b981' }}>
-                              ✓ Paso {blk.correctOrder} en orden correcto
-                            </span>
-                          )}
-                          {isWrongSpot && (
-                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f59e0b' }}>
-                              Reubicar bloque
-                            </span>
-                          )}
-                        </div>
-
-                        <strong
-                          style={{
-                            display: 'block',
-                            fontSize: '0.92rem',
-                            color: 'var(--ia-text-main)',
-                            lineHeight: 1.35,
-                            marginBottom: '6px',
-                          }}
-                        >
-                          {blk.label}
-                        </strong>
-
-                        <div
-                          style={{
-                            display: 'inline-block',
-                            padding: '5px 10px',
-                            borderRadius: '8px',
-                            background: isDarkMode ? '#0f172a' : '#f8fafc',
-                            border: `1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}`,
-                            fontSize: '0.78rem',
-                            color: isDarkMode ? '#93c5fd' : '#1e40af',
-                            fontFamily: 'Consolas, monospace',
-                            lineHeight: 1.4,
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {blk.codeOrHint}
-                        </div>
-                      </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--ia-text-muted)', textTransform: 'uppercase' }}>
+                        Paso #{index + 1}
+                      </span>
+                      {isCorrectSpot && (
+                        <span className="ia-badge ia-badge-success">Posición correcta</span>
+                      )}
+                      {isWrongSpot && (
+                        <span className="ia-badge ia-badge-amber">Mover de posición</span>
+                      )}
                     </div>
+                    <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--ia-text-main)', marginBottom: '4px' }}>
+                      {blk.label}
+                    </strong>
+                    <code
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '0.78rem',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        background: 'var(--ia-bg-subtle)',
+                        border: '1px solid var(--ia-border)',
+                        color: 'var(--ia-primary)',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {blk.codeOrHint}
+                    </code>
+                  </div>
 
-                    {/* Botones Accesibles de Subir / Bajar */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        disabled={index === 0}
-                        onClick={() => handleMoveSeqBlock(index, index - 1)}
-                        aria-label="Subir bloque una posición"
-                        title="Subir bloque"
-                        style={{
-                          width: '32px',
-                          height: '28px',
-                          borderRadius: '8px',
-                          border: `1px solid ${isDarkMode ? '#334155' : '#cbd5e1'}`,
-                          background: isDarkMode ? '#0f172a' : '#f8fafc',
-                          color: 'var(--ia-text-main)',
-                          fontWeight: 800,
-                          cursor: index === 0 ? 'not-allowed' : 'pointer',
-                          opacity: index === 0 ? 0.4 : 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        disabled={index === sequenceBlocks.length - 1}
-                        onClick={() => handleMoveSeqBlock(index, index + 1)}
-                        aria-label="Bajar bloque una posición"
-                        title="Bajar bloque"
-                        style={{
-                          width: '32px',
-                          height: '28px',
-                          borderRadius: '8px',
-                          border: `1px solid ${isDarkMode ? '#334155' : '#cbd5e1'}`,
-                          background: isDarkMode ? '#0f172a' : '#f8fafc',
-                          color: 'var(--ia-text-main)',
-                          fontWeight: 800,
-                          cursor: index === sequenceBlocks.length - 1 ? 'not-allowed' : 'pointer',
-                          opacity: index === sequenceBlocks.length - 1 ? 0.4 : 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        ↓
-                      </button>
-                    </div>
+                  <div className="ia-gquiz-seq-controls">
+                    <button
+                      type="button"
+                      className="ia-gquiz-seq-arrow"
+                      disabled={index === 0}
+                      onClick={() => handleMoveSeqBlock(index, index - 1)}
+                      aria-label="Subir bloque una posición"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="ia-gquiz-seq-arrow"
+                      disabled={index === sequenceBlocks.length - 1}
+                      onClick={() => handleMoveSeqBlock(index, index + 1)}
+                      aria-label="Bajar bloque una posición"
+                    >
+                      ↓
+                    </button>
                   </div>
                 </div>
               );
@@ -1701,54 +1426,75 @@ export default function AdaptiveQuizHub({ isCalmMode = false }: AdaptiveQuizHubP
           </div>
 
           {sequenceChecked === 'ok' && (
-            <div className="alert alert-success" style={{ marginTop: '4px' }}>
-              <CheckCircleIcon size={18} />
-              <span>
-                <strong>¡Secuencia lógica perfecta!</strong> Ordenaste los 4 pasos de {selectedSubject} correctamente (+50 pts de dominio práctico).
+            <div className="ia-gquiz-feedback-banner is-correct" role="status">
+              <span className="ia-gquiz-feedback-title">
+                <CheckCircleIcon size={18} />
+                <span>¡Secuencia lógica completada! +50 pts de práctica</span>
               </span>
-            </div>
-          )}
-          {sequenceChecked === 'retry' && (
-            <div className="alert alert-error" style={{ marginTop: '4px' }}>
-              <AlertCircleIcon size={18} />
-              <span>
-                Los bloques marcados en <strong>verde</strong> ya están en su posición correcta. Arrastra o usa las flechas <strong>↑ / ↓</strong> en los bloques en ámbar para completar la secuencia.
-              </span>
+              <p className="ia-gquiz-feedback-body">
+                Ordenaste correctamente los 4 pasos de {selectedSubject}. Puedes generar una variante nueva o volver al desafío de preguntas.
+              </p>
             </div>
           )}
 
-          {/* Historial de Intentos Recientes */}
-          {quizHistory.length > 0 && (
-            <div style={{ borderTop: '1px solid var(--ia-border)', paddingTop: '14px', marginTop: '4px' }}>
-              <h4 style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--ia-text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', margin: '0 0 10px 0' }}>
-                Tu Historial de Práctica Reciente ({quizHistory.length})
-              </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '8px' }}>
-                {quizHistory.slice(0, 4).map((attempt, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: '10px',
-                      border: '1px solid var(--ia-border)',
-                      background: 'var(--ia-bg-subtle)',
-                      fontSize: '0.78rem',
-                    }}
-                  >
-                    <div style={{ fontWeight: 800, color: 'var(--ia-text-main)' }}>{attempt.subject}</div>
-                    <div style={{ color: isDarkMode ? '#c4b5fd' : '#6d28d9', fontWeight: 600 }}>
-                      {attempt.theme}
-                    </div>
-                    <div style={{ color: isDarkMode ? '#6ee7b7' : '#15803d', fontWeight: 700, marginTop: '3px' }}>
-                      {attempt.score} pts ({attempt.totalQuestions} preguntas)
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {sequenceChecked === 'retry' && (
+            <div className="ia-gquiz-feedback-banner is-incorrect" role="status">
+              <span className="ia-gquiz-feedback-title">
+                <AlertCircleIcon size={18} />
+                <span>Algunos pasos aún no están en su orden lógico</span>
+              </span>
+              <p className="ia-gquiz-feedback-body">
+                Los pasos marcados como correctos ya están en su lugar. Arrastra o usa las flechas ↑ / ↓ en los pasos restantes y vuelve a comprobar.
+              </p>
             </div>
           )}
-        </div>
-      </div>
+
+          <div className="ia-gquiz-action-bar">
+            <span style={{ fontSize: '0.82rem', color: 'var(--ia-text-muted)' }}>
+              Arrastra las tarjetas o usa los botones ↑ / ↓ con teclado o pantalla táctil.
+            </span>
+            <button type="button" className="ia-btn-primary" onClick={handleCheckSequence}>
+              <CheckIcon size={16} color="#ffffff" />
+              <span>Comprobar secuencia</span>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {quizHistory.length > 0 && (
+        <details className="ia-card" style={{ margin: 0, padding: '14px 18px' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: 'var(--ia-text-main)' }}>
+            Historial de partidas recientes ({quizHistory.length})
+          </summary>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 200px), 1fr))',
+              gap: '10px',
+              marginTop: '12px',
+            }}
+          >
+            {quizHistory.slice(0, 6).map((attempt, idx) => (
+              <div
+                key={`${attempt.completedAt}-${idx}`}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--ia-border)',
+                  background: 'var(--ia-bg-subtle)',
+                  fontSize: '0.8rem',
+                }}
+              >
+                <div style={{ fontWeight: 700, color: 'var(--ia-text-main)' }}>{attempt.subject}</div>
+                <div style={{ color: 'var(--ia-text-muted)', fontSize: '0.75rem' }}>{attempt.theme}</div>
+                <div style={{ color: 'var(--ia-primary)', fontWeight: 700, marginTop: '3px' }}>
+                  {attempt.score} pts · {attempt.totalQuestions} preguntas
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   );
 }

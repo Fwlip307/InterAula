@@ -848,11 +848,11 @@ export default function Resources() {
           <ModuleNavigation label="Secciones de apuntes" active={activeTab} onSelect={setActiveTab}
             primary={[{id:'community',label:'Explorar apuntes'},{id:'mine',label:'Mis apuntes'},{id:'drafts',label:'Borradores'}]} />
 
-          {/* Barra de búsqueda y filtros */}
-          <div className="ia-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative', flex: '1 1 250px' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+          {/* Barra de búsqueda principal + filtros progresivos */}
+          <div className="ia-card ia-filter-bar-card" style={{ padding: '16px 20px', marginBottom: '20px' }}>
+            <div className="ia-filter-primary-row">
+              <div style={{ position: 'relative', flex: '1 1 260px' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ia-text-muted)' }}>
                   <SearchIcon size={16} />
                 </span>
                 <input
@@ -861,7 +861,7 @@ export default function Resources() {
                   style={{ paddingLeft: '36px' }}
                   data-orientation="notes-search"
                   aria-label="Buscar apuntes"
-                  placeholder="Buscar por título, contenido, asignatura, autor o etiqueta..."
+                  placeholder="Buscar por título, asignatura, autor o etiqueta..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -871,7 +871,7 @@ export default function Resources() {
                 data-orientation="notes-subject"
                 aria-label="Filtrar por asignatura"
                 className="ia-select"
-                style={{ width: 'auto', minWidth: '180px' }}
+                style={{ flex: '0 1 230px', minWidth: '175px' }}
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
               >
@@ -884,53 +884,9 @@ export default function Resources() {
               </select>
 
               <select
-                aria-label="Filtrar por categoría"
-                className="ia-select"
-                style={{ width: 'auto', minWidth: '160px' }}
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">Todos los tipos</option>
-                {BUSINESS_RULES.NOTES.CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-
-              {foldersAvailable.length > 0 && (
-                <select
-                  aria-label="Filtrar por carpeta"
-                  className="ia-select"
-                  style={{ width: 'auto', minWidth: '145px' }}
-                  value={selectedFolder}
-                  onChange={(e) => setSelectedFolder(e.target.value)}
-                >
-                  <option value="all">Todas las carpetas</option>
-                  {foldersAvailable.map((f) => (
-                    <option key={f} value={f}>
-                      Carpeta: {f}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <select
-                aria-label="Filtrar por origen"
-                className="ia-select"
-                style={{ width: 'auto', minWidth: '145px' }}
-                value={selectedFormat}
-                onChange={(e) => setSelectedFormat(e.target.value)}
-              >
-                <option value="all">Origen: Todos</option>
-                <option value="editor">Editor InterAula</option>
-                <option value="upload">Archivos subidos</option>
-              </select>
-
-              <select
                 aria-label="Ordenar apuntes"
                 className="ia-select"
-                style={{ width: 'auto', minWidth: '155px' }}
+                style={{ flex: '0 1 170px', minWidth: '145px' }}
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'recent' | 'popular' | 'title')}
               >
@@ -939,6 +895,60 @@ export default function Resources() {
                 <option value="title">Orden alfabético</option>
               </select>
             </div>
+
+            <details
+              className="ia-filter-disclosure"
+              open={selectedCategory !== 'all' || selectedFolder !== 'all' || selectedFormat !== 'all'}
+            >
+              <summary>
+                <span>Más filtros</span>
+                {(selectedCategory !== 'all' || selectedFolder !== 'all' || selectedFormat !== 'all') && (
+                  <span className="ia-badge ia-badge-blue">Activos</span>
+                )}
+              </summary>
+              <div className="ia-filter-secondary-row">
+                <select
+                  aria-label="Filtrar por categoría"
+                  className="ia-select"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  <option value="all">Todos los tipos</option>
+                  {BUSINESS_RULES.NOTES.CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+
+                {foldersAvailable.length > 0 && (
+                  <select
+                    aria-label="Filtrar por carpeta"
+                    className="ia-select"
+                    value={selectedFolder}
+                    onChange={(e) => setSelectedFolder(e.target.value)}
+                  >
+                    <option value="all">Todas las carpetas</option>
+                    {foldersAvailable.map((f) => (
+                      <option key={f} value={f}>
+                        Carpeta: {f}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <select
+                  aria-label="Filtrar por origen"
+                  className="ia-select"
+                  value={selectedFormat}
+                  onChange={(e) => setSelectedFormat(e.target.value)}
+                >
+                  <option value="all">Origen: Todos</option>
+                  <option value="editor">Editor InterAula</option>
+                  <option value="upload">Archivos subidos</option>
+                </select>
+              </div>
+            </details>
           </div>
 
           {/* Grilla de Apuntes */}

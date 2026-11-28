@@ -1040,6 +1040,18 @@
   border: 1px solid #e9d5ff;
 }
 
+html[data-dark-surface="true"] .ia-badge-purple {
+  background-color: rgba(139, 92, 246, 0.18);
+  color: #ddd6fe;
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+html.ia-calm-mode:not([data-calm-tone="dusk"]) .ia-badge-purple {
+  background-color: var(--ia-bg-subtle);
+  color: var(--ia-text-body);
+  border-color: var(--ia-border-strong);
+}
+
 /* Cabecera del perfil */
 .ia-profile-header-card {
   background: var(--ia-bg-card);
@@ -1536,6 +1548,32 @@
     flex: 1;
     text-align: center;
     justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Evita auto-zoom en smartphones al enfocar formularios y mejora área táctil */
+  .ia-input,
+  .ia-select,
+  .ia-textarea,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .ia-btn-primary,
+  .ia-btn-secondary,
+  .btn-primary,
+  .btn-outline {
+    min-height: 42px;
+  }
+
+  .ia-dropdown-menu,
+  .ia-dropdown-menu--wide {
+    right: 0;
+    max-width: calc(100vw - 24px);
   }
 }
 
@@ -4795,13 +4833,42 @@ body,
   max-width: calc(100vw - 24px);
 }
 
+@media (max-width: 1240px) and (min-width: 961px) {
+  .ia-navbar-inner {
+    padding: 0 14px;
+    gap: 8px;
+  }
+
+  .ia-nav-links {
+    gap: 3px;
+  }
+
+  .ia-nav-item {
+    padding: 6px 8px;
+    font-size: 0.83rem;
+  }
+
+  .ia-nav-user {
+    gap: 6px;
+  }
+
+  .ia-unified-mode-text {
+    display: none;
+  }
+
+  .ia-user-name-text {
+    max-width: 88px;
+  }
+}
+
 @media (max-width: 1024px) {
   .ia-main {
     padding: 20px 18px 44px;
   }
 
   .ia-dashboard-grid,
-  .ia-two-col-grid {
+  .ia-two-col-grid,
+  .learning-space-grid {
     grid-template-columns: 1fr !important;
   }
 }
@@ -4871,6 +4938,32 @@ body,
     right: 12px;
     left: 12px;
     width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Evita auto-zoom en smartphones al enfocar formularios y mejora área táctil */
+  .ia-input,
+  .ia-select,
+  .ia-textarea,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .ia-btn-primary,
+  .ia-btn-secondary,
+  .btn-primary,
+  .btn-outline {
+    min-height: 42px;
+  }
+
+  .ia-dropdown-menu,
+  .ia-dropdown-menu--wide {
+    right: 0;
+    max-width: calc(100vw - 24px);
   }
 }
 

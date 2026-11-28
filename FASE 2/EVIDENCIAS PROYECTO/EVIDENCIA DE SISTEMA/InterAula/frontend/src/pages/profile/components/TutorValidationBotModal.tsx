@@ -1115,8 +1115,14 @@ export default function TutorValidationBotModal({
                   <span className="ia-assess-stage-icon ia-assess-stage-icon--success" aria-hidden="true">
                     <CheckIcon size={32} />
                   </span>
+                  <span className="ia-assess-pill">Acreditación superada</span>
                   <h3>Evaluación aprobada</h3>
                   <strong className="ia-assess-score-big">{attempt.score}%</strong>
+                  <div className="ia-assess-confirm-stats">
+                    <span>Materia: {subjectDisplayName(attempt.subjectName)}</span>
+                    <span>Respondidas: {totalCount} / {totalCount}</span>
+                    <span>Integridad: {attempt.integrityCount} / {attempt.integrityLimit} incidencias</span>
+                  </div>
                   <p>
                     Completaste correctamente las {totalCount} preguntas de <strong>{subjectDisplayName(attempt.subjectName)}</strong>.
                     Confirma ahora para activar tu insignia de tutor acreditado en nivel básico.
@@ -1153,12 +1159,13 @@ export default function TutorValidationBotModal({
                           : 'Este intento se cerró sin acreditación. Puedes volver a intentarlo o solicitar revisión docente.'}
                   </p>
                   <div className="ia-assess-confirm-stats">
+                    <span>Precisión alcanzada: {Math.round((answeredCount > 0 && attempt.terminationReason === 'incorrect_answer' ? Math.max(0, answeredCount - 1) : answeredCount) / Math.max(1, totalCount) * 100)}%</span>
                     <span>Respondidas: {answeredCount} / {totalCount}</span>
                     <span>Incidencias: {attempt.integrityCount} / {attempt.integrityLimit}</span>
                   </div>
                   <div className="ia-assess-confirm-actions">
                     <button type="button" className="ia-btn-primary" onClick={reset} disabled={busy}>
-                      Elegir asignatura nuevamente
+                      Volver a intentarlo con preguntas nuevas
                     </button>
                     <button type="button" className="ia-btn-secondary" onClick={() => void close(false)} disabled={busy}>
                       Cerrar

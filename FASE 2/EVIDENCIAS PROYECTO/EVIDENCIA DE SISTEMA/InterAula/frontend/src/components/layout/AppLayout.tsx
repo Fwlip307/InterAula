@@ -1,13 +1,21 @@
 import ModerationStatus from '../support/ModerationStatus';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import ReadingRuler from '../common/ReadingRuler';
+import VisualWelcomeModal from '../common/VisualWelcomeModal';
 import { useCalmMode } from '../../context/CalmModeContext';
 import { MAIN_DESTINATIONS, isCategoryActive } from '../../navigation/guidedNavigation';
 import { useAuth } from '../../context/AuthContext';
 import { OrientationProvider } from '../../context/OrientationContext';
 import OrientationAssistant from '../orientation/OrientationAssistant';
+import { profileService } from '../../services/profile.service';
+import type { AccessibilityPreferences } from '../../types/profile';
+import {
+  getVisualWelcomeStorageKey,
+  hasRemoteVisualPreference,
+  shouldPromptVisualWelcome,
+} from '../../utils/visualPreferences';
 import interaulaLogo from '../../assets/branding/interaula-logo.png';
 import '../../styles/dashboard.css';
 import '../../styles/guidedExperience.css';
@@ -22,12 +30,104 @@ export default function AppLayout() {
 }
 
 function AppLayoutContent() {
-  const { isCalmMode, toggleCalmMode } = useCalmMode();
+  const { user } = useAuth();
+  const {
+    isCalmMode,
+    toggleCalmMode,
+    hadExplicitVisualChoice,
+    updatePreferences,
+  } = useCalmMode();
+  const [showVisualWelcome, setShowVisualWelcome] = useState(false);
   const location = useLocation();
   const main = useRef<HTMLElement>(null);
+  const hydratedUserRef = useRef<string | null>(null);
   const group = MAIN_DESTINATIONS.find((item) =>
     isCategoryActive(item, location.pathname, location.search)
   );
+
+  useEffect(() => {
+    if (!user?.id) {
+      hydratedUserRef.current = null;
+      setShowVisualWelcome(false);
+      return;
+    }
+    if (hydratedUserRef.current === user.id) return;
+    hydratedUserRef.current = user.id;
+
+    let active = true;
+    const storageKey = getVisualWelcomeStorageKey(user.id);
+    let userLocalDone = false;
+    try {
+      userLocalDone = window.localStorage.getItem(storageKey) === 'true';
+    } catch {
+      userLocalDone = false;
+    }
+
+    profileService
+      .getMyProfile()
+      .then((profile) => {
+        if (!active) return;
+        const remotePrefs = profile?.accessibility_preferences ?? null;
+
+        if (remotePrefs && hasRemoteVisualPreference(remotePrefs)) {
+          // Respetar preferencia existente en la cuenta sin sobrescribirla ni repetir la bienvenida
+          if (!hadExplicitVisualChoice) {
+            updatePreferences({
+              ...remotePrefs,
+              visualOnboardingCompleted: true,
+            });
+          }
+          try {
+            window.localStorage.setItem(storageKey, 'true');
+          } catch {
+            // Ignorar errores de almacenamiento restringido
+          }
+          setShowVisualWelcome(false);
+          return;
+        }
+
+        const shouldOpen = shouldPromptVisualWelcome({
+          hasUser: true,
+          hadLocalVisualChoiceOnBoot: hadExplicitVisualChoice,
+          userLocalDone,
+          remotePrefs,
+        });
+
+        if (!shouldOpen && hadExplicitVisualChoice) {
+          try {
+            window.localStorage.setItem(storageKey, 'true');
+          } catch {
+            // Ignorar errores de almacenamiento restringido
+          }
+        }
+        setShowVisualWelcome(shouldOpen);
+      })
+      .catch(() => {
+        if (!active) return;
+        setShowVisualWelcome(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, hadExplicitVisualChoice, updatePreferences]);
+
+  const handleCompleteVisualWelcome = async (finalPreferences: AccessibilityPreferences) => {
+    setShowVisualWelcome(false);
+    if (!user?.id) return;
+    try {
+      window.localStorage.setItem(getVisualWelcomeStorageKey(user.id), 'true');
+    } catch {
+      // Ignorar errores de almacenamiento restringido
+    }
+    try {
+      await profileService.updateMyProfile({
+        accessibility_preferences: finalPreferences,
+      });
+    } catch (err) {
+      console.warn('[VisualWelcome] Preferencia aplicada localmente; sincronización diferida:', err);
+    }
+  };
 
   useEffect(() => {
     if (!location.hash) {
@@ -162,6 +262,10 @@ function AppLayoutContent() {
       </footer>
 
       <OrientationAssistant />
+      <VisualWelcomeModal
+        isOpen={showVisualWelcome}
+        onComplete={handleCompleteVisualWelcome}
+      />
     </div>
   );
 }

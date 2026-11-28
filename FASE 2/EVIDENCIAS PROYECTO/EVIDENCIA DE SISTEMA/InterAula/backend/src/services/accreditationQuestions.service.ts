@@ -344,8 +344,13 @@ async function requestGeminiAccreditation(
       `[accreditationQuestions] Modelo Gemini "${model}" (${providerTag}) respondió HTTP ${response.status}${providerDetail ? `: ${providerDetail}` : ''}.`
     );
 
+    // Si las credenciales o permisos de la clave fallan (401/403), no reintentar otros modelos en el mismo endpoint.
+    if (response.status === 401 || response.status === 403) {
+      break;
+    }
+
     // Reintentar con el siguiente modelo estable si este modelo fue retirado, saturado o sufrió error transitorio.
-    if ([400, 403, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
+    if ([400, 404, 429, 500, 502, 503, 504].includes(response.status) && i + 1 < models.length) {
       continue;
     }
 
@@ -374,6 +379,13 @@ async function requestGeminiAccreditation(
   }
 
   console.warn(`[accreditationQuestions] Ningún modelo Gemini (${providerTag}) respondió correctamente (último HTTP ${lastStatus}).`);
+  if (lastStatus === 401 || lastStatus === 403) {
+    throw new HttpError(
+      503,
+      'La evaluación con IA requiere revisar la configuración de credenciales o permisos del servicio; no es un problema de esta materia. Solicita revisión docente mientras se habilita.',
+      lastStatus === 401 ? 'AI_AUTHENTICATION_FAILED' : 'AI_PERMISSION_DENIED'
+    );
+  }
   throw new HttpError(
     503,
     lastStatus === 429

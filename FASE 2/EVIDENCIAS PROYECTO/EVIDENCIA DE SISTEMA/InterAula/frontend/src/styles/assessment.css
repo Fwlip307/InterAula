@@ -570,8 +570,8 @@ html.ia-calm-mode[data-calm-tone='dusk'] .ia-assessment-overlay {
 .ia-assess-progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--assess-accent);
-  transition: width 0.25s ease;
+  background: linear-gradient(90deg, var(--assess-accent), var(--ia-primary-hover, #1d4ed8));
+  transition: width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ia-assess-step-strip {
@@ -692,22 +692,33 @@ html.ia-calm-mode[data-calm-tone='dusk'] .ia-assessment-overlay {
   gap: 16px;
   min-height: 68px;
   padding: 16px 20px;
-  border-radius: 12px;
-  border: 1.5px solid var(--assess-border);
+  border-radius: 14px;
+  border: 2px solid var(--assess-border);
   background: var(--assess-surface);
+  box-shadow: 0 3px 0 var(--assess-border);
   color: var(--assess-text);
   cursor: pointer;
-  transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.1s ease;
+  transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease;
 }
 
 .ia-assess-option-card:hover {
+  transform: translateY(-2px);
   border-color: var(--ia-border-strong, #94a3b8);
   background: var(--assess-subtle);
+  box-shadow: 0 4px 0 var(--ia-border-strong, #94a3b8);
 }
 
 .ia-assess-option-card[data-selected='true'] {
   border-color: var(--assess-accent);
   background: var(--assess-accent-soft);
+  box-shadow: 0 3px 0 var(--assess-accent);
+}
+
+.ia-assess-options:disabled .ia-assess-option-card {
+  opacity: 0.65;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
 }
 
 .ia-assess-option-card:focus-within {

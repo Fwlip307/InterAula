@@ -325,97 +325,38 @@ export default function MyTutoring() {
     <div>
       <SharedLearningSupports />
       {/* Cabecera del Panel de Tutor */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px',
-          marginBottom: '24px',
-        }}
-      >
+      <div className="ia-page-header" style={{ marginBottom: '22px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span
-              style={{
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                color: '#15803d',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                background: '#f0fdf4',
-                padding: '3px 10px',
-                borderRadius: '9999px',
-                border: '1px solid #bbf7d0',
-              }}
-            >
-              Aprendizaje Colaborativo
-            </span>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>· Gestión de Sesiones, Solicitudes y Material</span>
-          </div>
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0f172a', margin: '0 0 6px 0' }}>
-            Gestión de Tutorías y Apoyo Académico
-          </h1>
-          <p style={{ fontSize: '0.92rem', color: '#475569', margin: 0, maxWidth: '720px' }}>
-            En InterAula puedes recibir apoyo en materias desafiantes y enseñar aquellas que dominas. Gestiona tus solicitudes recibidas, tus sesiones como estudiante, talleres grupales y apuntes compartidos.
+          <h1 className="ia-page-title">Mis Tutorías y Apoyo Académico</h1>
+          <p className="ia-page-subtitle">
+            Gestiona tus solicitudes recibidas, sesiones reservadas, talleres grupales y material compartido.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="ia-page-actions">
           <button
             type="button"
             onClick={() => navigate('/profile?tab=tutoring')}
-            className="ia-btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-              borderColor: '#15803d',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '9px 18px',
-              fontSize: '0.86rem',
-              fontWeight: 700,
-            }}
+            className="ia-btn-secondary"
           >
-            <PlusIcon size={16} color="#ffffff" />
-            <span>Acreditar una materia</span>
+            <span>Acreditar materia</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('materials')}
             className="ia-btn-secondary"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '9px 16px',
-              fontSize: '0.86rem',
-              fontWeight: 700,
-            }}
           >
-            <PlusIcon size={16} />
-            <span>+ Subir Apunte o Guía</span>
+            <span>Subir apunte</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsCreateWorkshopModalOpen(true)}
             className="ia-btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-              borderColor: '#7c3aed',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              fontSize: '0.86rem',
-              fontWeight: 700,
-            }}
           >
             <VideoIcon size={16} color="#ffffff" />
-            <span>+ Programar Taller Grupal</span>
+            <span>Programar taller grupal</span>
           </button>
         </div>
       </div>
@@ -424,9 +365,9 @@ export default function MyTutoring() {
       {errorMsg && (
         <div
           style={{
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
-            color: '#b91c1c',
+            background: 'var(--ia-danger-bg)',
+            border: '1px solid var(--ia-danger-border)',
+            color: 'var(--ia-danger)',
             padding: '12px 18px',
             borderRadius: '10px',
             marginBottom: '20px',
@@ -436,7 +377,7 @@ export default function MyTutoring() {
             fontSize: '0.9rem',
           }}
         >
-          <AlertCircleIcon size={18} color="#b91c1c" />
+          <AlertCircleIcon size={18} color="currentColor" />
           <span>{errorMsg}</span>
         </div>
       )}

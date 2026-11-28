@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCalmMode } from '../../context/CalmModeContext';
+import { useAuth } from '../../context/AuthContext';
+import { profileService } from '../../services/profile.service';
+import type { AccessibilityPreferences, CalmTone, VisualThemeMode } from '../../types/profile';
 import {
   SunIcon,
   MoonIcon,
@@ -14,6 +17,7 @@ interface ThemeModeMenuProps {
 }
 
 export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
+  const { user } = useAuth();
   const {
     isCalmMode,
     isDarkMode,
@@ -22,6 +26,41 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
     preferences,
     updatePreferences,
   } = useCalmMode();
+
+  const persistRemoteTheme = (patch: Partial<AccessibilityPreferences>) => {
+    if (!user?.id || variant !== 'app') return;
+    const nextPrefs: AccessibilityPreferences = {
+      ...preferences,
+      ...patch,
+      visualOnboardingCompleted: true,
+    };
+    void profileService
+      .updateMyProfile({ accessibility_preferences: nextPrefs })
+      .catch(() => {});
+  };
+
+  const applyModeFromMenu = (mode: VisualThemeMode, calmTone?: CalmTone) => {
+    if (calmTone) {
+      const patch: Partial<AccessibilityPreferences> = {
+        themeMode: 'calm',
+        calmMode: true,
+        darkMode: false,
+        calmTone,
+        reduceMotion: true,
+        visualOnboardingCompleted: true,
+      };
+      updatePreferences(patch);
+      persistRemoteTheme(patch);
+      return;
+    }
+    setThemeMode(mode);
+    persistRemoteTheme({
+      themeMode: mode,
+      darkMode: mode === 'dark',
+      calmMode: mode === 'calm',
+      reduceMotion: mode === 'calm' ? true : preferences.reduceMotion,
+    });
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -110,7 +149,7 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
               type="button"
               className={`ia-theme-mode-option ${themeMode === 'light' && !isCalmMode ? 'selected' : ''}`}
               onClick={() => {
-                setThemeMode('light');
+                applyModeFromMenu('light');
                 setIsOpen(false);
               }}
             >
@@ -132,7 +171,7 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
               type="button"
               className={`ia-theme-mode-option ${themeMode === 'dark' ? 'selected' : ''}`}
               onClick={() => {
-                setThemeMode('dark');
+                applyModeFromMenu('dark');
                 setIsOpen(false);
               }}
             >
@@ -154,7 +193,7 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
               type="button"
               className={`ia-theme-mode-option ${themeMode === 'calm' || isCalmMode ? 'selected' : ''}`}
               onClick={() => {
-                setThemeMode('calm');
+                applyModeFromMenu('calm');
               }}
             >
               <div className="ia-theme-mode-option__icon calm">
@@ -186,12 +225,7 @@ export default function ThemeModeMenu({ variant = 'app' }: ThemeModeMenuProps) {
                     type="button"
                     className={`ia-theme-calm-tone-pill ${activeTone ? 'active' : ''}`}
                     onClick={() => {
-                      updatePreferences({
-                        themeMode: 'calm',
-                        calmMode: true,
-                        darkMode: false,
-                        calmTone: tone.id,
-                      });
+                      applyModeFromMenu('calm', tone.id);
                     }}
                   >
                     <span
